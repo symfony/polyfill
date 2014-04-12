@@ -908,7 +908,7 @@ class NumberFormatter
      */
     private function normalizeGroupingUsedValue($value)
     {
-        return (int) (Boolean) (int) $value;
+        return (int) (bool) (int) $value;
     }
 
     /**
