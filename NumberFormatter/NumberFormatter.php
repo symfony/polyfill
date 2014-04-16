@@ -709,7 +709,7 @@ class NumberFormatter
     /**
      * Rounds a value.
      *
-     * @param int    |float $value     The value to round
+     * @param int|float     $value     The value to round
      * @param int           $precision The number of decimal digits to round to
      *
      * @return integer|float The rounded value
@@ -749,7 +749,7 @@ class NumberFormatter
     /**
      * Formats a number.
      *
-     * @param int    |float $value     The numeric value to format
+     * @param int|float     $value     The numeric value to format
      * @param int           $precision The number of decimal digits to use
      *
      * @return string The formatted number
