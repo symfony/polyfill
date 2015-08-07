@@ -348,6 +348,20 @@ abstract class AbstractIntlDateFormatterTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function testFormatWithDateTimeZone()
+    {
+        $formatter = $this->getDateFormatter('en', IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT, new \DateTimeZone('GMT+03:00'), IntlDateFormatter::GREGORIAN, 'zzzz');
+
+        $this->assertEquals('GMT+03:00', $formatter->format(0));
+    }
+
+    public function testFormatWithIntlTimeZone()
+    {
+        $formatter = $this->getDateFormatter('en', IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT, \IntlTimeZone::createTimeZone('GMT+03:00'), IntlDateFormatter::GREGORIAN, 'zzzz');
+
+        $this->assertEquals('GMT+03:00', $formatter->format(0));
+    }
+
     public function testFormatWithTimezoneFromPhp()
     {
         $tz = date_default_timezone_get();
