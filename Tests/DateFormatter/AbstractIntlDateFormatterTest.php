@@ -798,15 +798,17 @@ abstract class AbstractIntlDateFormatterTest extends \PHPUnit_Framework_TestCase
 
     public function setTimeZoneIdProvider()
     {
+        $isPhp55 = PHP_VERSION_ID >= 50500 || (extension_loaded('intl') && method_exists('IntlDateFormatter', 'setTimeZone'));
+
         return array(
             array('UTC', 'UTC'),
             array('GMT', 'GMT'),
             array('GMT-03:00', 'GMT-03:00'),
             array('Europe/Zurich', 'Europe/Zurich'),
-            array('GMT-0300', 'GMT-0300'),
-            array('Foo/Bar', 'Foo/Bar'),
-            array('GMT+00:AA', 'GMT+00:AA'),
-            array('GMT+00AA', 'GMT+00AA'),
+            array(null, $isPhp55 ? date_default_timezone_get() : null),
+            array('Foo/Bar', $isPhp55 ? 'UTC' : 'Foo/Bar'),
+            array('GMT+00:AA', $isPhp55 ? 'UTC' : 'GMT+00:AA'),
+            array('GMT+00AA', $isPhp55 ? 'UTC' : 'GMT+00AA'),
         );
     }
 
@@ -819,7 +821,9 @@ abstract class AbstractIntlDateFormatterTest extends \PHPUnit_Framework_TestCase
     {
         $dateTime = new \DateTime();
         $dateTime->setTimestamp(null === $timestamp ? time() : $timestamp);
-        $dateTime->setTimezone(new \DateTimeZone($timeZone));
+        if (null !== $timeZone) {
+            $dateTime->setTimezone(new \DateTimeZone($timeZone));
+        }
 
         return $dateTime;
     }

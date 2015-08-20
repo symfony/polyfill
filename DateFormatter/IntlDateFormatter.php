@@ -369,7 +369,14 @@ class IntlDateFormatter
             return $this->timeZoneId;
         }
 
+<<<<<<< HEAD
         return date_default_timezone_get();
+=======
+        // In PHP 5.5 default timezone depends on `date_default_timezone_get()` method
+        if (PHP_VERSION_ID >= 50500 || (extension_loaded('intl') && method_exists('IntlDateFormatter', 'setTimeZone'))) {
+            return date_default_timezone_get();
+        }
+>>>>>>> Windows and Intl fixes
     }
 
     /**
@@ -531,7 +538,20 @@ class IntlDateFormatter
     public function setTimeZoneId($timeZoneId)
     {
         if (null === $timeZoneId) {
+<<<<<<< HEAD
             $timeZoneId = date_default_timezone_get();
+=======
+            // In PHP 5.5 if $timeZoneId is null it fallbacks to `date_default_timezone_get()` method
+            if (PHP_VERSION_ID >= 50500 || (extension_loaded('intl') && method_exists('IntlDateFormatter', 'setTimeZone'))) {
+                $timeZoneId = date_default_timezone_get();
+            } else {
+                // TODO: changes were made to ext/intl in PHP 5.4.4 release that need to be investigated since it will
+                // use ini's date.timezone when the time zone is not provided. As a not well tested workaround, uses UTC.
+                // See the first two items of the commit message for more information:
+                // https://github.com/php/php-src/commit/eb346ef0f419b90739aadfb6cc7b7436c5b521d9
+                $timeZoneId = getenv('TZ') ?: 'UTC';
+            }
+>>>>>>> Windows and Intl fixes
 
             $this->uninitializedTimeZoneId = true;
         }
@@ -550,8 +570,16 @@ class IntlDateFormatter
 
         try {
             $this->dateTimeZone = new \DateTimeZone($timeZoneId);
+            if ('GMT' !== $timeZoneId && $this->dateTimeZone->getName() !== $timeZoneId) {
+                $timeZoneId = $timeZone = $this->getTimeZoneId();
+            }
         } catch (\Exception $e) {
-            $this->dateTimeZone = new \DateTimeZone('UTC');
+            if (PHP_VERSION_ID >= 50500 || (extension_loaded('intl') && method_exists('IntlDateFormatter', 'setTimeZone'))) {
+                $timeZoneId = $timeZone = $this->getTimeZoneId();
+            } else {
+                $timeZoneId = 'UTC';
+            }
+            $this->dateTimeZone = new \DateTimeZone($timeZoneId);
         }
 
         $this->timeZoneId = $timeZone;
@@ -617,7 +645,7 @@ class IntlDateFormatter
         if (self::NONE !== $this->timetype) {
             $patternParts[] = $this->defaultTimeFormats[$this->timetype];
         }
-        $pattern = implode(' ', $patternParts);
+        $pattern = implode(', ', $patternParts);
 
         return $pattern;
     }
