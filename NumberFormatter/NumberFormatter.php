@@ -855,6 +855,10 @@ class NumberFormatter
             return false;
         }
 
+        if (PHP_INT_SIZE !== 8 && ($value > self::$int32Range['positive'] || $value < self::$int32Range['negative'])) {
+            return (float) $value;
+        }
+
         return (int) $value;
     }
 

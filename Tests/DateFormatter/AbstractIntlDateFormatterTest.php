@@ -301,10 +301,6 @@ abstract class AbstractIntlDateFormatterTest extends \PHPUnit_Framework_TestCase
             array(0, 'Europe/Dublin', '1970-01-01 01:00:00'),
             array(0, 'Europe/Warsaw', '1970-01-01 01:00:00'),
             array(0, 'Pacific/Fiji', '1970-01-01 12:00:00'),
-            array(0, 'Foo/Bar', '1970-01-01 00:00:00'),
-            array(0, 'Foo/Bar', '1970-01-01 00:00:00'),
-            array(0, 'UTC+04:30', '1970-01-01 00:00:00'),
-            array(0, 'UTC+04:AA', '1970-01-01 00:00:00'),
         );
 
         return $data;
