@@ -811,7 +811,7 @@ class NumberFormatter
      * @param mixed $value The value to be converted
      * @param int   $type  The type to convert. Can be TYPE_DOUBLE (float) or TYPE_INT32 (int)
      *
-     * @return int|float The converted value
+     * @return int|float|false The converted value
      */
     private function convertValueDataType($value, $type)
     {
@@ -831,7 +831,7 @@ class NumberFormatter
      *
      * @param mixed $value The value to be converted
      *
-     * @return int The converted value
+     * @return int|false The converted value
      */
     private function getInt32Value($value)
     {

@@ -348,7 +348,14 @@ abstract class AbstractIntlDateFormatterTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testFormatWithDateTimeZone()
+    public function testFormatWithDateTimeZoneGmt()
+    {
+        $formatter = $this->getDateFormatter('en', IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT, new \DateTimeZone('GMT'), IntlDateFormatter::GREGORIAN, 'zzzz');
+
+        $this->assertEquals('GMT', $formatter->format(0));
+    }
+
+    public function testFormatWithDateTimeZoneGmtOffset()
     {
         $formatter = $this->getDateFormatter('en', IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT, new \DateTimeZone('GMT+03:00'), IntlDateFormatter::GREGORIAN, 'zzzz');
 
