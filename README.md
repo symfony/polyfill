@@ -21,7 +21,7 @@ Polyfills are provided for:
 - the `*Error` classes, the `error_clear_last`, `preg_replace_callback_array` and
   `intdiv` functions introduced in PHP 7.0;
 - a `Binary` utility class to be used when compatibility with
-  `mbstring.func_overload` is required.
+  `mbstring.func_overload` is required;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions when possible. This polyfill should be used only when there is no
@@ -33,7 +33,7 @@ Compatibility notes
 To write portable code between PHP5 and PHP7, some care must be taken:
 - `\*Error` exceptions must by caught before `\Exception`;
 - after calling `error_clear_last()`, the result of `$e = error_get_last()` must be
-  verified using `isset($e['message'][0])` instead of `null === $e`.
+  verified using `isset($e['message'][0])` instead of `null === $e`;
 
 Design
 ======
