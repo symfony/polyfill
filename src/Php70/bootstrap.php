@@ -21,4 +21,8 @@ if (PHP_VERSION_ID < 70000) {
     if (!function_exists('error_clear_last')) {
         function error_clear_last() { return p\Php70::error_clear_last(); }
     }
+    if (!function_exists('random_bytes')) {
+        function random_bytes($length) { return p\Php70Random::random_bytes($length); }
+        function random_int($min, $max) { return p\Php70Random::random_int($min, $max); }
+    }
 }
