@@ -17,9 +17,13 @@ Polyfills are provided for:
   introduced in PHP 5.4;
 - the `array_column`, `boolval`, `json_last_error_msg` and `hash_pbkdf2`
   functions introduced in PHP 5.5;
+- the `password_hash` and `password_*` related functions introduced in PHP 5.5,
+  provided by the `ircmaxell/password-compat` package;
 - the `hash_equals` and `ldap_escape` functions introduced in PHP 5.6;
 - the `*Error` classes, the `error_clear_last`, `preg_replace_callback_array` and
   `intdiv` functions introduced in PHP 7.0;
+- the `random_bytes` and `random_int` functions introduced in PHP 7.0,
+  provided by the `paragonie/random_compat` package;
 - a `Binary` utility class to be used when compatibility with
   `mbstring.func_overload` is required.
 

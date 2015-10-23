@@ -16,9 +16,10 @@
         }
     ],
     "require": {
-        "php": ">=5.3.9",
+        "php": ">=5.3.3",
         "ircmaxell/password-compat": "~1.0",
-        "symfony/intl": "~2.8|~3.0"
+        "paragonie/random_compat": "~1.0",
+        "symfony/intl": "~2.3|~3.0"
     },
     "replace": {
         "symfony/polyfill-php54": "self.version",

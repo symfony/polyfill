@@ -16,8 +16,7 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3",
-        "symfony/polyfill-php55": "~1.0"
+        "php": ">=5.3.3"
     },
     "autoload": {
         "psr-4": { "Symfony\\Polyfill\\Php54\\": "" },

@@ -101,7 +101,7 @@ class IconvTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?B?Kg==?= .'));
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .'));
-        if (!defined('HHVM_VERSION')) {
+        if (!defined('HHVM_VERSION') && '\\' !== DIRECTORY_SEPARATOR) {
             $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
             $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.chr(0xA1).'?= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
         }
