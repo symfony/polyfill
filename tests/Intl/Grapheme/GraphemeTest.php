@@ -78,9 +78,9 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
 
         if (PHP_VERSION_ID >= 50418 && PHP_VERSION_ID !== 50500) {
             // See http://bugs.php.net/62759 and 55562
-            $this->assertSame( 'jà', grapheme_substr($c, -2,  3) );
-            $this->assertSame( '', grapheme_substr($c, -1,  0) );
-            $this->assertSame( false, grapheme_substr($c,  1, -4) );
+            $this->assertSame('jà', grapheme_substr($c, -2,  3));
+            $this->assertSame('', grapheme_substr($c, -1,  0));
+            $this->assertSame(false, grapheme_substr($c,  1, -4));
         }
 
         $this->assertSame('jà', grapheme_substr($c,  2));
