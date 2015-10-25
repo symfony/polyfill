@@ -27,7 +27,7 @@ namespace Symfony\Polyfill\Php55;
 /**
  * @internal
  */
-class Php55ArrayColumn
+final class Php55ArrayColumn
 {
     public static function array_column(array $input, $columnKey, $indexKey = null)
     {

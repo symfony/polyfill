@@ -16,7 +16,7 @@ namespace Symfony\Polyfill\Xml;
  *
  * @internal
  */
-class Xml
+final class Xml
 {
     public static function utf8_encode($s)
     {

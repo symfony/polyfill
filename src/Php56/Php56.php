@@ -16,7 +16,7 @@ use Symfony\Polyfill\Util\Binary;
 /**
  * @internal
  */
-class Php56
+final class Php56
 {
     const LDAP_ESCAPE_FILTER = 1;
     const LDAP_ESCAPE_DN = 2;

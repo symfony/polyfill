@@ -31,7 +31,7 @@ define('SYMFONY_GRAPHEME_CLUSTER_RX', PCRE_VERSION >= '8.32' ? '\X' : Grapheme::
  *
  * @internal
  */
-class Grapheme
+final class Grapheme
 {
     // (CRLF|([ZWNJ-ZWJ]|T+|L*(LV?V+|LV|LVT)T*|L+|[^Control])[Extend]*|[Control])
     // This regular expression is a work around for http://bugs.exim.org/1279

@@ -16,7 +16,7 @@ namespace Symfony\Polyfill\Php54;
  *
  * @internal
  */
-class Php54
+final class Php54
 {
     public static function hex2bin($data)
     {
