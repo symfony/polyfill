@@ -20,47 +20,47 @@ namespace Symfony\Polyfill\Util;
  */
 class BinaryOnFuncOverload
 {
-    static function strlen($s)
+    public static function strlen($s)
     {
         return mb_strlen($s, '8bit');
     }
 
-    static function strpos($haystack, $needle, $offset = 0)
+    public static function strpos($haystack, $needle, $offset = 0)
     {
         return mb_strpos($haystack, $needle, $offset, '8bit');
     }
 
-    static function strrpos($haystack, $needle, $offset = 0)
+    public static function strrpos($haystack, $needle, $offset = 0)
     {
         return mb_strrpos($haystack, $needle, $offset, '8bit');
     }
 
-    static function substr($string, $start, $length = 2147483647)
+    public static function substr($string, $start, $length = 2147483647)
     {
         return mb_substr($string, $start, $length, '8bit');
     }
 
-    static function stripos($s, $needle, $offset = 0)
+    public static function stripos($s, $needle, $offset = 0)
     {
         return mb_stripos($s, $needle, $offset, '8bit');
     }
 
-    static function stristr($s, $needle, $part = false)
+    public static function stristr($s, $needle, $part = false)
     {
         return mb_stristr($s, $needle, $part, '8bit');
     }
 
-    static function strrchr($s, $needle, $part = false)
+    public static function strrchr($s, $needle, $part = false)
     {
         return mb_strrchr($s, $needle, $part, '8bit');
     }
 
-    static function strripos($s, $needle, $offset = 0)
+    public static function strripos($s, $needle, $offset = 0)
     {
         return mb_strripos($s, $needle, $offset, '8bit');
     }
 
-    static function strstr($s, $needle, $part = false)
+    public static function strstr($s, $needle, $part = false)
     {
         return mb_strstr($s, $needle, $part, '8bit');
     }

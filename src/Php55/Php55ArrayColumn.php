@@ -34,7 +34,6 @@ class Php55ArrayColumn
         $output = array();
 
         foreach ($input as $row) {
-
             $key = $value = null;
             $keySet = $valueSet = false;
 
@@ -58,7 +57,6 @@ class Php55ArrayColumn
                     $output[] = $value;
                 }
             }
-
         }
 
         return $output;

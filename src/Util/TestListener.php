@@ -65,7 +65,7 @@ class TestListener extends \PHPUnit_Framework_TestSuite implements \PHPUnit_Fram
                         throw new \ReflectionException();
                     }
                     if (false !== strpos($f['signature'], '&')) {
-                        $defLine = sprintf("return \\%s%s", $f['name'], $f['args']);
+                        $defLine = sprintf('return \\%s%s', $f['name'], $f['args']);
                     } else {
                         $defLine = sprintf("return \\call_user_func_array('%s', func_get_args())", $f['name']);
                     }
