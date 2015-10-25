@@ -19,7 +19,7 @@
         "php": ">=5.3.3"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Util": "" }
+        "psr-4": { "Symfony\\Polyfill\\Util\\": "" }
     },
     "minimum-stability": "dev",
     "extra": {
