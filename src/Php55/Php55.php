@@ -14,7 +14,7 @@ namespace Symfony\Polyfill\Php55;
 /**
  * @internal
  */
-class Php55
+final class Php55
 {
     public static function boolval($val)
     {

@@ -34,7 +34,7 @@ namespace Symfony\Polyfill\Iconv;
  *
  * @internal
  */
-class Iconv
+final class Iconv
 {
     const ERROR_ILLEGAL_CHARACTER = 'iconv(): Detected an illegal character in input string';
     const ERROR_WRONG_CHARSET = 'iconv(): Wrong charset, conversion from `%s\' to `%s\' is not allowed';
