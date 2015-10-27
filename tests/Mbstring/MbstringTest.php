@@ -170,6 +170,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse(p::mb_check_encoding());
         $this->assertTrue(mb_check_encoding('aςσb', 'UTF8'));
         $this->assertTrue(mb_check_encoding('abc', 'ASCII'));
+        $this->assertTrue(mb_check_encoding("\xE9", 'Windows-1252'));
     }
 
     /**
@@ -180,7 +181,8 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue(mb_detect_order('ASCII, UTF-8'));
         $this->assertSame('ASCII', mb_detect_encoding('abc'));
         $this->assertSame('UTF-8', mb_detect_encoding('abc', 'UTF8, ASCII'));
-        $this->assertSame('ISO-8859-1', mb_detect_encoding("\x9D", array('UTF-8', 'ASCII', 'ISO-8859-1')));
+        $this->assertSame('ISO-8859-1', mb_detect_encoding("\xE9", array('UTF-8', 'ASCII', 'ISO-8859-1'), true));
+        $this->assertFalse(mb_detect_encoding("\xE9", array('UTF-8', 'ASCII', 'Windows-1252'), true));
     }
 
     /**
