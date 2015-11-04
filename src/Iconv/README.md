@@ -6,7 +6,7 @@ This component provides a native PHP implementation of the
 (short of [`ob_iconv_handler`](http://php.net/manual/en/function.ob-iconv-handler.php)).
 
 More information can be found in the 
-[root Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
 =======

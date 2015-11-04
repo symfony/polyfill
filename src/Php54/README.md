@@ -9,7 +9,7 @@ This component provides functions unavailable in releases prior to PHP 5.4:
 - `session_register_shutdown`
 
 More information can be found in the 
-[root Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
 =======

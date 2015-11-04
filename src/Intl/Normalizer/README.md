@@ -6,7 +6,7 @@ This component provides a fallback implementation for the
 by the [Intl](http://php.net/intl) extension.
 
 More information can be found in the 
-[root Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
 =======

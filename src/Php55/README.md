@@ -7,9 +7,10 @@ This component provides functions unavailable in releases prior to PHP 5.5:
 - `json_last_error_msg`
 - `array_column`
 - `hash_pbkdf2`
+- `password_*` functions (from [ircmaxell/password_compat](https://github.com/ircmaxell/password_compat))
 
 More information can be found in the 
-[root Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
 =======

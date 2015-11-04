@@ -23,7 +23,7 @@ This component provides a partial, native PHP implementation of the
 - `grapheme_substr`: Return part of a string
 
 More information can be found in the 
-[root Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
 =======

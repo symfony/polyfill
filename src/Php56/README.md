@@ -7,7 +7,7 @@ This component provides functions unavailable in releases prior to PHP 5.6:
 - `ldap_escape` (part of [ldap](http://php.net/ldap) extension)
 
 More information can be found in the 
-[root Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
 =======

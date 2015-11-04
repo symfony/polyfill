@@ -5,7 +5,7 @@ This component provides binary-safe string functions, using the
 [mbstring](https://php.net/mbstring) extension when available.
 
 More information can be found in the 
-[root Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
 =======
