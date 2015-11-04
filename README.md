@@ -1,9 +1,9 @@
 Symfony Polyfill
 ================
 
-This project backports features found in latest PHP versions. It also provides
-compatibility PHP implementations for some extensions and functions. You should
-use it when portability across PHP versions and extensions is desired.
+This project backports features found in the latest PHP versions and provides
+compatibility layers for some extensions and functions. It is intended to be
+used when portability across PHP versions and extensions is desired.
 
 Polyfills are provided for:
 - the `mbstring` and `iconv` extensions;
@@ -28,7 +28,7 @@ Polyfills are provided for:
   `mbstring.func_overload` is required.
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
-extensions when possible. This polyfill should be used only when there is no
+extensions whenever possible. This polyfill should be used only when there is no
 better choice or when portability is a requirement.
 
 Compatibility notes
@@ -44,9 +44,14 @@ Design
 
 This package is designed for low overhead and high quality polyfilling.
 
-It adds only a few lightweight `require` to the bootstrapping process of your
-applications for all polyfills. Implementations are then loaded on-demand when
-they are needed during code execution.
+It adds only a few lightweight `require` statements to the bootstrap process
+to support all polyfills. Implementations are then loaded on-demand when
+needed during code execution.
 
-Polyfills are unit-tested alongside with their native implementation so that
-feature and behavior parity can be proven and enforced on the long run.
+Polyfills are unit-tested alongside their native implementation so that
+feature and behavior parity can be proven and enforced in the long run.
+
+License
+=======
+
+This library is released under the [MIT license](LICENSE).
