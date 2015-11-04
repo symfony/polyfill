@@ -1,7 +1,7 @@
 Symfony Polyfill / Intl: Grapheme
 =================================
 
-The `[symfony/polyfill](https://github.com/symfony/polyfill)` library backports
+The [`symfony/polyfill`](https://github.com/symfony/polyfill) library backports
 features found in the latest PHP versions and provides compatibility layers for
 some extensions and functions.
 
@@ -19,7 +19,7 @@ This `intl-grapheme` component provides a partial, native PHP implementation of 
 - `grapheme_strstr`: Returns part of haystack string from the first occurrence of needle to the end of haystack
 - `grapheme_substr`: Return part of a string
 
-More information can be found in the [root README](../../README.md).
+More information can be found in the [root README](../../../README.md).
 
 License
 =======

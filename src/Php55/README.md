@@ -1,7 +1,7 @@
 Symfony Polyfill / Php55
 ========================
 
-The `[symfony/polyfill](https://github.com/symfony/polyfill)` library backports
+The [`symfony/polyfill`](https://github.com/symfony/polyfill) library backports
 features found in the latest PHP versions and provides compatibility layers for
 some extensions and functions.
 
@@ -12,7 +12,7 @@ The `php55` component provides functions unavailable in releases prior to PHP 5.
 - `array_column`
 - `hash_pbkdf2`
 
-More information can be found in the [root README](../README.md).
+More information can be found in the [root README](../../README.md).
 
 License
 =======
