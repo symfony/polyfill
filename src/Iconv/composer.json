@@ -22,7 +22,7 @@
         "psr-4": { "Symfony\\Polyfill\\Iconv\\": "" },
         "files": [ "bootstrap.php" ]
     },
-    "suggests": {
+    "suggest": {
         "ext-iconv": "For best performance"
     },
     "minimum-stability": "dev",
