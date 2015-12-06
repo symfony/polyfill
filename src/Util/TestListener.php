@@ -148,4 +148,8 @@ EOPHP
     public function endTest(\PHPUnit_Framework_Test $test, $time)
     {
     }
+
+    public function addWarning(\PHPUnit_Framework_Test $test, \PHPUnit_Framework_Warning $e, $time)
+    {
+    }
 }
