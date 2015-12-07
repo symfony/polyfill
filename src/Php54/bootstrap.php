@@ -24,4 +24,7 @@ if (PHP_VERSION_ID < 50400) {
     if (!function_exists('session_register_shutdown')) {
         function session_register_shutdown() { register_shutdown_function('session_write_close'); }
     }
+    if (!function_exists('http_response_code')) {
+        function http_response_code($reponse_code = null) { return p\Php54::http_response_code($reponse_code); }
+    }
 }

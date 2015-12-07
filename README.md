@@ -12,7 +12,7 @@ Polyfills are provided for:
 - the `Collator`, `NumberFormatter`, `Locale` and `IntlDateFormatter` classes;
 - the `intl_error_name`, `intl_get_error_code`, `intl_get_error_message` and
   `intl_is_failure` functions;
-- the `hex2bin` function, the `CallbackFilterIterator`,
+- the `hex2bin` and `http_response_code` functions, the `CallbackFilterIterator`,
   `RecursiveCallbackFilterIterator` and `SessionHandlerInterface` classes
   introduced in PHP 5.4;
 - the `array_column`, `boolval`, `json_last_error_msg` and `hash_pbkdf2`
