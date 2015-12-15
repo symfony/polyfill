@@ -44,14 +44,16 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
         $c = 'déjà';
         $d = in::normalize($c, pn::NFD);
 
-        $this->assertTrue(pn::isNormalized(''));
-        $this->assertTrue(pn::isNormalized('abc'));
-        $this->assertTrue(pn::isNormalized($c));
-        $this->assertTrue(pn::isNormalized($c, pn::NFC));
+        // normalizer_is_normalized() returns an integer on HHVM and a boolean on PHP
+        $this->assertEquals(true, normalizer_is_normalized(''));
+        $this->assertEquals(true, normalizer_is_normalized('abc'));
+        $this->assertEquals(true, normalizer_is_normalized($c));
+        $this->assertEquals(true, normalizer_is_normalized($c, pn::NFC));
+        $this->assertEquals(false, normalizer_is_normalized($c, pn::NFD));
+        $this->assertEquals(false, normalizer_is_normalized($d, pn::NFC));
+        $this->assertEquals(false, normalizer_is_normalized("\xFF"));
+
         $this->assertFalse(pn::isNormalized($d, pn::NFD)); // The current implementation defensively says false
-        $this->assertFalse(pn::isNormalized($c, pn::NFD));
-        $this->assertFalse(pn::isNormalized($d, pn::NFC));
-        $this->assertFalse(pn::isNormalized("\xFF"));
     }
 
     /**
@@ -60,22 +62,84 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
     public function testNormalize()
     {
         $c = in::normalize('déjà', pn::NFC).in::normalize('훈쇼™', pn::NFD);
-        $this->assertSame($c, pn::normalize($c, pn::NONE));
-        $this->assertSame($c, in::normalize($c, pn::NONE));
+        $this->assertSame($c, normalizer_normalize($c, pn::NONE));
 
         $c = 'déjà 훈쇼™';
         $d = in::normalize($c, pn::NFD);
         $kc = in::normalize($c, pn::NFKC);
         $kd = in::normalize($c, pn::NFKD);
 
-        $this->assertSame('', pn::normalize(''));
-        $this->assertSame($c, pn::normalize($d));
-        $this->assertSame($c, pn::normalize($d, pn::NFC));
-        $this->assertSame($d, pn::normalize($c, pn::NFD));
-        $this->assertSame($kc, pn::normalize($d, pn::NFKC));
-        $this->assertSame($kd, pn::normalize($c, pn::NFKD));
+        $this->assertSame('', normalizer_normalize(''));
+        $this->assertSame($c, normalizer_normalize($d));
+        $this->assertSame($c, normalizer_normalize($d, pn::NFC));
+        $this->assertSame($d, normalizer_normalize($c, pn::NFD));
+        $this->assertSame($kc, normalizer_normalize($d, pn::NFKC));
+        $this->assertSame($kd, normalizer_normalize($c, pn::NFKD));
 
-        $this->assertFalse(pn::normalize($c, -1));
-        $this->assertFalse(pn::normalize("\xFF"));
+        $this->assertEquals(false, normalizer_normalize($c, -1)); // HHVM returns null, PHP returns false
+        $this->assertFalse(normalizer_normalize("\xFF"));
+
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
+     */
+    public function testNormalizeConformance()
+    {
+        $t = file(__DIR__.'/NormalizationTest.txt');
+        $c = array();
+
+        foreach ($t as $s) {
+            $t = explode('#', $s);
+            $t = explode(';', $t[0]);
+
+            if (6 === count($t)) {
+                foreach ($t as $k => $s) {
+                    $t = explode(' ', $s);
+                    $t = array_map('hexdec', $t);
+                    $t = array_map(__CLASS__.'::chr', $t);
+                    $c[$k] = implode('', $t);
+                }
+
+                $this->assertSame($c[1], normalizer_normalize($c[0], pn::NFC));
+                $this->assertSame($c[1], normalizer_normalize($c[1], pn::NFC));
+                $this->assertSame($c[1], normalizer_normalize($c[2], pn::NFC));
+                $this->assertSame($c[3], normalizer_normalize($c[3], pn::NFC));
+                $this->assertSame($c[3], normalizer_normalize($c[4], pn::NFC));
+
+                $this->assertSame($c[2], normalizer_normalize($c[0], pn::NFD));
+                $this->assertSame($c[2], normalizer_normalize($c[1], pn::NFD));
+                $this->assertSame($c[2], normalizer_normalize($c[2], pn::NFD));
+                $this->assertSame($c[4], normalizer_normalize($c[3], pn::NFD));
+                $this->assertSame($c[4], normalizer_normalize($c[4], pn::NFD));
+
+                $this->assertSame($c[3], normalizer_normalize($c[0], pn::NFKC));
+                $this->assertSame($c[3], normalizer_normalize($c[1], pn::NFKC));
+                $this->assertSame($c[3], normalizer_normalize($c[2], pn::NFKC));
+                $this->assertSame($c[3], normalizer_normalize($c[3], pn::NFKC));
+                $this->assertSame($c[3], normalizer_normalize($c[4], pn::NFKC));
+
+                $this->assertSame($c[4], normalizer_normalize($c[0], pn::NFKD));
+                $this->assertSame($c[4], normalizer_normalize($c[1], pn::NFKD));
+                $this->assertSame($c[4], normalizer_normalize($c[2], pn::NFKD));
+                $this->assertSame($c[4], normalizer_normalize($c[3], pn::NFKD));
+                $this->assertSame($c[4], normalizer_normalize($c[4], pn::NFKD));
+            }
+        }
+    }
+
+    private static function chr($c)
+    {
+        if (0x80 > $c %= 0x200000) {
+            return chr($c);
+        }
+        if (0x800 > $c) {
+            return chr(0xC0 | $c >> 6).chr(0x80 | $c & 0x3F);
+        }
+        if (0x10000 > $c) {
+            return chr(0xE0 | $c >> 12).chr(0x80 | $c >> 6 & 0x3F).chr(0x80 | $c & 0x3F);
+        }
+
+        return chr(0xF0 | $c >> 18).chr(0x80 | $c >> 12 & 0x3F).chr(0x80 | $c >> 6 & 0x3F).chr(0x80 | $c & 0x3F);
     }
 }
