@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2015-12-15T17:22:33Z
+
+So, now that unicode conformance tests run against the native implementations, we have to find a common subset that works for all the various ICU versions into the wild.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2015-12-16T15:09:43Z
+
+Green
