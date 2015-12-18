@@ -1,0 +1,53 @@
+---------------------------------------------------------------------------
+
+by keradus at 2015-12-07T15:10:03Z
+
+adding some tests would be awesome!
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2015-12-07T15:16:55Z
+
+The travis failure is not in my code ;-)
+
+It looks like php-7 is using phpunit-5, but perhaps the tests were written for phpunit-4
+
+---------------------------------------------------------------------------
+
+by keradus at 2015-12-07T15:18:17Z
+
+ref https://github.com/symfony/polyfill/pull/15 ( and https://github.com/symfony/polyfill/pull/15#issuecomment-162552595 )
+
+---------------------------------------------------------------------------
+
+by stof at 2015-12-07T15:23:09Z
+
+The Travis failure is because of a BC break in PHPUnit 5.1
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2015-12-07T15:28:05Z
+
+> adding some tests would be awesome!
+
+Since we are working around a platform-specific problem, I'm not sure how we create a meaningful test?
+
+To trigger the code, we'd need to create a situation where the function `gzopen()` does not exist.  Since we cannot "unload" PHP libraries at runtime, I don't see how to do this.
+
+Besides, none of the other "thin wrappers" have unit tests.
+
+FYI, I've tested the code on a VM...
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2015-12-07T15:30:49Z
+
+> $mode doesn't default to 'r'
+
+Oops.  My bad.  Fixed
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2015-12-07T16:46:37Z
+
+:+1:
