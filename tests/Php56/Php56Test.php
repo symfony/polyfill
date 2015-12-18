@@ -67,7 +67,9 @@ class Php56Test extends \PHPUnit_Framework_TestCase
 
     /**
      * Provides values for the ldap_escape shim. These tests come from the official
-     * extension.
+     * extension, with the exception of the last one. The last test accounts for
+     * leading/trailing spaces and carriage returns as outlined in RFC 4514. Those
+     * values are not actually handled by ldap_escape, so make sure we don't either.
      *
      * @see https://github.com/php/php-src/blob/master/ext/ldap/tests/ldap_escape_dn.phpt
      * @see https://github.com/php/php-src/blob/master/ext/ldap/tests/ldap_escape_all.phpt
@@ -85,6 +87,7 @@ class Php56Test extends \PHPUnit_Framework_TestCase
             array('foo=bar(baz)*', null, p::LDAP_ESCAPE_DN | p::LDAP_ESCAPE_FILTER, 'foo\3dbar\28baz\29\2a'),
             array('foo=bar(baz)*', null, p::LDAP_ESCAPE_FILTER, 'foo=bar\28baz\29\2a'),
             array('foo=bar(baz)*', 'ao', null, '\66oo\3d\62a\72\28\62a\7a\29\2a'),
+            array(" foo=bar\r(baz)* ", null, p::LDAP_ESCAPE_DN, ' foo\3dbar'."\r".'(baz)* '),
         );
     }
 }
