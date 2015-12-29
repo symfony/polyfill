@@ -6,6 +6,7 @@ compatibility layers for some extensions and functions. It is intended to be
 used when portability across PHP versions and extensions is desired.
 
 Polyfills are provided for:
+- the `apcu` extension when the legacy `apc` extension is installed;
 - the `mbstring` and `iconv` extensions;
 - the `Normalizer` class and the `grapheme_*` functions;
 - the `utf8_encode` and `utf8_decode` functions from the `xml` extension;

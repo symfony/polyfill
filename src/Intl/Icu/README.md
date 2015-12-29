@@ -14,7 +14,7 @@ This component maps a collection of functions/classes using the
 - [`Locale`](http://php.net/Locale)
 - [`IntlDateFormatter`](http://php.net/IntlDateFormatter)
 
-More information can be found in the 
+More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License

@@ -20,6 +20,8 @@ install:
     - IF %PHP%==1 7z x ICU-51.2-dlls.zip -y >nul
     - IF %PHP%==1 del /Q *.zip
     - IF %PHP%==1 cd ext
+    - IF %PHP%==1 appveyor DownloadFile http://windows.php.net/downloads/pecl/releases/apcu/4.0.10/php_apcu-4.0.10-5.3-nts-vc9-x86.zip
+    - IF %PHP%==1 7z x php_apcu-4.0.10-5.3-nts-vc9-x86.zip -y >nul
     - IF %PHP%==1 appveyor DownloadFile http://nebm.ist.utl.pt/~glopes/misc/intl_win/php_intl-3.0.0-5.3-nts-vc9-x86.zip
     - IF %PHP%==1 7z x php_intl-3.0.0-5.3-nts-vc9-x86.zip -y >nul
     - IF %PHP%==1 del /Q *.zip
@@ -32,6 +34,8 @@ install:
     - IF %PHP%==1 echo date.timezone="UTC" >> php.ini
     - IF %PHP%==1 echo extension_dir=ext >> php.ini
     - IF %PHP%==1 echo extension=php_openssl.dll >> php.ini
+    - IF %PHP%==1 echo extension=php_apcu.dll >> php.ini
+    - IF %PHP%==1 echo apc.enable_cli=1 >> php.ini
     - IF %PHP%==1 echo extension=php_intl.dll >> php.ini
     - IF %PHP%==1 echo extension=php_mbstring.dll >> php.ini
     - IF %PHP%==1 echo extension=php_ldap.dll >> php.ini
