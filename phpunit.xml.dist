@@ -8,6 +8,7 @@
 >
     <php>
         <ini name="error_reporting" value="-1" />
+        <ini name="apc.enable_cli" value="1" />
     </php>
 
     <testsuites>
