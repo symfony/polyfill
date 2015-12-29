@@ -1,8 +1,7 @@
-Symfony Polyfill / Util
-=======================
+Symfony Polyfill / APCu
+========================
 
-This component provides binary-safe string functions, using the
-[mbstring](https://php.net/mbstring) extension when available.
+This component provides all `apcu_*` functions and the `APCUIterator` class to users of the legacy APC extension.
 
 More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).

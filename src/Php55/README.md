@@ -9,7 +9,7 @@ This component provides functions unavailable in releases prior to PHP 5.5:
 - [`hash_pbkdf2`](http://php.net/hash_pbkdf2)
 - `password_*` functions (from [ircmaxell/password_compat](https://github.com/ircmaxell/password_compat))
 
-More information can be found in the 
+More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License
