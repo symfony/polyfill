@@ -63,4 +63,26 @@ class Php70Test extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(5, $count);
     }
+
+    public function testCatchExceptionBeforeThrowable()
+    {
+        try {
+            throw new \Error('Catch me, if you can');
+        } catch (\Exception $e) {
+            $this->assertTrue(PHP_VERSION_ID < 70000, 'This will only work in PHP5');
+        } catch (\Throwable $t) {
+            $this->assertTrue(PHP_VERSION_ID >= 70000, 'This will only work in PHP7');
+        }
+    }
+
+    public function testCatchThrowableBeforeException()
+    {
+        try {
+            throw new \Error('Catch me, if you can');
+        } catch (\Throwable $t) {
+            $this->assertTrue(PHP_VERSION_ID >= 70000, 'This will only work in PHP7');
+        } catch (\Exception $e) {
+            $this->assertTrue(PHP_VERSION_ID < 70000, 'This will only work in PHP5');
+        }
+    }
 }
