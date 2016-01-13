@@ -22,7 +22,7 @@ This component provides a partial, native PHP implementation of the
   the first occurrence of needle to the end of haystack
 - [`grapheme_substr`](http://php.net/grapheme_substr): Return part of a string
 
-More information can be found in the 
+More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
 
 License

@@ -44,6 +44,9 @@ class TestListener extends \PHPUnit_Framework_TestSuite implements \PHPUnit_Fram
                 $mainSuite->addTest(self::warning('Unknown naming convention for '.$testClass));
                 continue;
             }
+            if (!class_exists($m[1].$m[2])) {
+                continue;
+            }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
             $bootstrap = new \SplFileObject(dirname($testedClass->getFileName()).'/bootstrap.php');
             $warnings = array();

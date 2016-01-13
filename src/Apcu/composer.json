@@ -1,0 +1,31 @@
+{
+    "name": "symfony/polyfill-apcu",
+    "type": "library",
+    "description": "Symfony polyfill backporting apcu_* functions to lower PHP versions",
+    "keywords": ["polyfill", "shim", "compatibility", "portable", "apcu"],
+    "homepage": "https://symfony.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nicolas Grekas",
+            "email": "p@tchwork.com"
+        },
+        {
+            "name": "Symfony Community",
+            "homepage": "https://symfony.com/contributors"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3"
+    },
+    "autoload": {
+        "files": [ "bootstrap.php" ],
+        "classmap": [ "Resources/stubs" ]
+    },
+    "minimum-stability": "dev",
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    }
+}
