@@ -1,0 +1,53 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-04T16:06:04Z
+
+ping @dunglas @wouterj @ogizanagi
+
+---------------------------------------------------------------------------
+
+by dunglas at 2016-01-04T16:19:52Z
+
+Btw, APC is not used directly in Symfony except in the `ApcClassLoader` (https://github.com/symfony/symfony/search?utf8=%E2%9C%93&q=apc_fetch&type=Code).
+
+Most APC calls are done by the Doctrine Cache library.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-08T17:23:47Z
+
+Ping @symfony/deciders
+
+---------------------------------------------------------------------------
+
+by dunglas at 2016-01-08T18:31:51Z
+
+:+1:
+
+---------------------------------------------------------------------------
+
+by Tobion at 2016-01-10T16:47:38Z
+
+The doc about `apcu_entry http://php.net/manual/en/function.apcu-entry.php says
+
+> In addition, it prohibits the concurrent execution of any other APCu functions, since they will acquire the same lock.
+
+This does not happen in the current polyfill implementation. This means you can still have race conditions if another process modifies the data while you are working with it inside the generator callable.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-10T16:58:12Z
+
+@tobion then we should acquire the lock in every apc function call, I'll add it tomorrow.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-11T09:22:57Z
+
+@Tobion I removed the polyfilling of `apcu_entry`: too many edge cases with locking, and not required for moving forward.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2016-01-13T07:02:08Z
+
+:+1:
