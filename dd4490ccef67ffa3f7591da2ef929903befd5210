@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by stof at 2016-01-13T09:25:05Z
+
+Do we also have some places in Symfony affected by this bug ?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-15T10:28:28Z
+
+@stof as you may have already spotted, this has been fixed in Symfony now
