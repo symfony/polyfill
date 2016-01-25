@@ -40,6 +40,28 @@ To write portable code between PHP5 and PHP7, some care must be taken:
 - after calling `error_clear_last()`, the result of `$e = error_get_last()` must be
   verified using `isset($e['message'][0])` instead of `null === $e`.
 
+Usage
+=====
+
+When using [Composer](https://getcomposer.org/) to manage your dependencies, you
+should **not** `require` the `symfony/polyfill` package, but the standalone ones:
+- `symfony/polyfill-apcu` for using the `apcu_*` functions,
+- `symfony/polyfill-php54` for using the PHP 5.4 functions,
+- `symfony/polyfill-php55` for using the PHP 5.5 functions,
+- `symfony/polyfill-php56` for using the PHP 5.6 functions,
+- `symfony/polyfill-php70` for using the PHP 7.0 functions,
+- `symfony/polyfill-iconv` for using the iconv functions,
+- `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
+- `symfony/polyfill-intl-icu` for using the intl functions and classes,
+- `symfony/polyfill-intl-normalizer` for using the intl normalizer,
+- `symfony/polyfill-mbstring` for using the mbstring functions,
+- `symfony/polyfill-util` for using the polyfill utility helpers,
+- `symfony/polyfill-xml` for using the `utf8_encode/decode` functions.
+
+Requiring `symfony/polyfill` directly would prevent Composer from sharing
+correctly polyfills in dependency graphs. As such, it would likely install
+more code than required.
+
 Design
 ======
 
