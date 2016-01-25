@@ -1,0 +1,44 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-20T09:17:43Z
+
+Is it a new feature? There is no newly created interface here, but only a polyfill for an existing one.
+This looks like a case where semver doesn't apply very well to me...
+
+---------------------------------------------------------------------------
+
+by stof at 2016-01-20T09:19:26Z
+
+Well, there is a new polyfilled API. This is a new feature in the package (the public API of the package is the list of polyfilled APIs).
+Adding more polyfills is not a bug fix.
+
+---------------------------------------------------------------------------
+
+by keradus at 2016-01-20T09:41:03Z
+
+We have new features (/polyfill) at main symfony/polyfill repo, raise MAJOR semver version, great. Why do we raise version of each separated polyfill, even if it wasn't touched?
+I know that this is that way at whole symfony repos, but could you ref some documentation about bumping version of modules?
+
+---------------------------------------------------------------------------
+
+by stof at 2016-01-20T09:57:27Z
+
+@keradus why major version for new features ? New features are semver minor.
+
+And this is bumped for all sub-components due to the way our development process work. If we want to decouple the versionning of each polyfill component, we cannot have them in the same repo in the first place (as they would share the same tags). They would have to be developed separately (which is what the ZF team is doing now btw)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-20T10:02:12Z
+
+And which is something which would be way more difficult to scale. I heard someone asking how the Symfony project managed to keep adding new components without imploding. This process is really a key element to the answer. Makes everyone's life easier, both for maintainers, releasers and even users. One number to remember for a bunch of components managed in bulk. Thank you @fabpot!
+
+---------------------------------------------------------------------------
+
+by keradus at 2016-01-20T10:07:05Z
+
+@stof yeah minor, sorry ;)
+
+I know what ZF is doing and indeed it could be painful, for end-users it is for sure easier to contribute/use it with Symfony way, but I can't find any refs with background of that decision.
+
+Thanks ;)
