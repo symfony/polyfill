@@ -753,7 +753,7 @@ class NumberFormatter
             $value /= $roundingCoef;
         }
 
-        return $value;
+        return round($value, $precision, $roundingMode);
     }
 
     /**
