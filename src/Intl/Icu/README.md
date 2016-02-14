@@ -2,7 +2,7 @@ Symfony Polyfill / Intl: ICU
 ============================
 
 This component maps a collection of functions/classes using the
-[`symfony/intl`](https://github.com/symfony/intl) package in the abscense of the
+[`symfony/intl`](https://github.com/symfony/intl) package in the absence of the
 [Intl](http://php.net/intl) extension, including:
 
 - [`intl_is_failure()`](http://php.net/manual/en/function.intl-is-failure.php)
