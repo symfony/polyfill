@@ -23,7 +23,7 @@
         "files": [ "bootstrap.php" ],
         "classmap": [ "Resources/stubs" ]
     },
-    "suggests": {
+    "suggest": {
         "ext-intl": "For best performance"
     },
     "minimum-stability": "dev",
