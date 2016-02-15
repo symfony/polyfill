@@ -22,7 +22,7 @@
         "psr-4": { "Symfony\\Polyfill\\Intl\\Grapheme\\": "" },
         "files": [ "bootstrap.php" ]
     },
-    "suggests": {
+    "suggest": {
         "ext-intl": "For best performance"
     },
     "minimum-stability": "dev",
