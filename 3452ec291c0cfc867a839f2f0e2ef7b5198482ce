@@ -1,0 +1,58 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-25T11:00:36Z
+
+Could you add a test please ?
+
+---------------------------------------------------------------------------
+
+by WouterJ at 2016-01-25T13:10:32Z
+
+@nicolas-grekas done
+
+---------------------------------------------------------------------------
+
+by WouterJ at 2016-01-25T13:18:57Z
+
+I've completely changed the function now btw, as it had to return an array and not a boolean as it did before.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-25T13:25:06Z
+
+Great! Some comments:
+- class_uses with a non-existent class name  returns false,
+-  we miss a test with a class instance,
+- I'm not sure using spl_autoload_register provides more behavior coverage, does it? If yes, then I'd suggest unregistering the autoloader to leave the global state clean after the test has run.
+
+---------------------------------------------------------------------------
+
+by WouterJ at 2016-01-25T14:00:50Z
+
+I've fixed the first 2 comments.
+
+The test with `spl_autoload_register` was there to test the second argument of class_uses: `$autoload`. However, I couldn't get things to work probably (unregistering didn't work for me for some reason), so I've removed the tests for now.
+
+---------------------------------------------------------------------------
+
+by WouterJ at 2016-01-25T17:19:14Z
+
+Updated again
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-01-25T19:24:13Z
+
+:+1: (the missing warning is a bonus to me, nobody should rely on it)
+
+---------------------------------------------------------------------------
+
+by xabbuh at 2016-01-30T08:54:26Z
+
+:+1: (if you wanted to add the warning too that would be nice though)
+
+---------------------------------------------------------------------------
+
+by WouterJ at 2016-02-25T17:13:06Z
+
+Can we please merge this?
