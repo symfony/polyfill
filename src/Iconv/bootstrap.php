@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-use Symfony\Component\Polyfill\Iconv as p;
+use Symfony\Polyfill\Iconv as p;
 
 if (!function_exists('iconv')) {
     define('ICONV_IMPL', 'Symfony');
