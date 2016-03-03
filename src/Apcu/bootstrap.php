@@ -26,3 +26,13 @@ if (!function_exists('apcu_add')) {
     function apcu_sma_info($limited = false) { return apc_sma_info($limited); }
     function apcu_store($key, $var = null, $ttl = 0) { return apc_store($key, $var, $ttl); }
 }
+
+if (!class_exists('APCUIterator', false)) {
+    class APCUIterator extends APCIterator
+    {
+        public function __construct($search = null, $format = APC_ITER_ALL, $chunk_size = 100, $list = APC_LIST_ACTIVE)
+        {
+            parent::__construct('user', $search, $format, $chunk_size, $list);
+        }
+    }
+}

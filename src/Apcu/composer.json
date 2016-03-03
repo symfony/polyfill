@@ -19,8 +19,7 @@
         "php": ">=5.3.3"
     },
     "autoload": {
-        "files": [ "bootstrap.php" ],
-        "classmap": [ "Resources/stubs" ]
+        "files": [ "bootstrap.php" ]
     },
     "minimum-stability": "dev",
     "extra": {

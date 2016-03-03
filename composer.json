@@ -51,7 +51,6 @@
             "src/Xml/bootstrap.php"
         ],
         "classmap": [
-            "src/Apcu/Resources/stubs",
             "src/Intl/Normalizer/Resources/stubs",
             "src/Php70/Resources/stubs",
             "src/Php54/Resources/stubs"
