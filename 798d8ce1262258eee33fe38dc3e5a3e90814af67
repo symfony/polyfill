@@ -1,0 +1,24 @@
+---------------------------------------------------------------------------
+
+by xabbuh at 2016-03-10T12:40:44Z
+
+:+1:
+
+---------------------------------------------------------------------------
+
+by keradus at 2016-03-10T12:51:28Z
+
+For 1.0.0
+```
+* feature #9 Always use mbstring if it is loaded, since other extensions can potentially overload core string fucntions (ircmaxell)
++ * feature #7 [Mbstring] Allow checking for all iconv supported charsets (nicolas-grekas)
++ * feature #3 Stop propagating php* reqs, add random_compat to php70 (nicolas-grekas)
+```
+were great!
+I would bring them back and remove `Hello symfony/polyfill`. Then, it would bring much more information (like when particular polyfill has been introduced)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-03-10T12:55:57Z
+
+@keradus listing the features of 1.0 makes no sense, and these 3 specific ones are really only the top of the iceberg
