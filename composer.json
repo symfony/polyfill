@@ -18,7 +18,7 @@
     "require": {
         "php": ">=5.3.3",
         "ircmaxell/password-compat": "~1.0",
-        "paragonie/random_compat": "~1.0",
+        "paragonie/random_compat": "~1.0|~2.0",
         "symfony/intl": "~2.3|~3.0"
     },
     "replace": {
