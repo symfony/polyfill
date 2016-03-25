@@ -33,10 +33,6 @@ final class Php54
 
         $data = pack('H*', $data);
 
-        if (false !== strpos($data, "\0")) {
-            return false;
-        }
-
         return $data;
     }
 }
