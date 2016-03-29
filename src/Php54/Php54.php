@@ -31,8 +31,6 @@ final class Php54
             return false;
         }
 
-        $data = pack('H*', $data);
-
-        return $data;
+        return pack('H*', $data);
     }
 }
