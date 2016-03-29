@@ -37,7 +37,7 @@ class Php54Test extends \PHPUnit_Framework_TestCase
 
     public function testHexToBinValid()
     {
-        $this->assertEquals("\x61\x62\x00\x63\x64", hex2bin("6162006364")); // With null byte, see #48
+        $this->assertEquals("\x61\x62\x00\x63\x64", hex2bin("6162006364")); // With null byte
         $this->assertEquals("\x61\x62\x63\x64", hex2bin("61626364"));
     }
 
