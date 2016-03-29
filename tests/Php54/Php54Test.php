@@ -34,4 +34,16 @@ class Php54Test extends \PHPUnit_Framework_TestCase
     {
         $this->assertFalse(@class_uses('NotDefined'));
     }
+
+    public function testHexToBinValid()
+    {
+        $this->assertEquals("\x61\x62\x00\x63\x64", hex2bin("6162006364")); // With null byte
+        $this->assertEquals("\x61\x62\x63\x64", hex2bin("61626364"));
+    }
+
+    public function testHexToBinInvalid()
+    {
+        $this->assertNull(@hex2bin(array())); // Invalid type 
+        $this->assertFalse(@hex2bin("123")); // Invalid string length
+    }
 }
