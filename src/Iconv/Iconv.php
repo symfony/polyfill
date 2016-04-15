@@ -716,8 +716,8 @@ final class Iconv
 
     private static function getData($file)
     {
-        if (file_exists($file = __DIR__.'/Resources/charset/'.$file.'.ser')) {
-            return unserialize(file_get_contents($file));
+        if (file_exists($file = __DIR__.'/Resources/charset/'.$file.'.php')) {
+            return require $file;
         }
 
         return false;
