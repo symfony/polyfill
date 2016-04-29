@@ -1,0 +1,59 @@
+---------------------------------------------------------------------------
+
+by xabbuh at 2016-03-29T07:08:55Z
+
+The `composer.json` file of the PHP 7 polyfill subpackage must be upated too.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-04-15T07:07:34Z
+
+Needs bumping to v2.0 of symfony/polyfill
+
+---------------------------------------------------------------------------
+
+by derrabus at 2016-04-15T09:19:10Z
+
+@nicolas-grekas Why? As long as v1.0 is allowed, indicating compatibility with version 2 should not be a breaking change for Symfony Polyfills.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-04-15T09:20:26Z
+
+For exactly the same reasons that made paragonie bump to v2.: apps falling-back to openssl would break.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2016-04-15T09:21:30Z
+
+Those apps should mark v2 of random-compat as conflicting and they're fine.
+
+---------------------------------------------------------------------------
+
+by stof at 2016-04-15T09:24:08Z
+
+@derrabus but if they don't depend on it explicitly today (and they don't, as they get it through Symfony), they will still face a breaking change when updating deps, which is against semver.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2016-04-15T09:27:01Z
+
+If we continue this thought, Symfony with the same argument would not be able to indicate compatibility with version 2 of the polyfills until the 4.0 release, right? That means that we depend on random_compat v1 to be maintained and security-patched until November 2021, correct?
+
+---------------------------------------------------------------------------
+
+by derrabus at 2016-04-15T09:51:34Z
+
+And actually, there's a precedent for this. Let's say, back in the days, I had created an app with these dependencies:
+```json
+{
+    "require": {
+        "symfony/http-kernel": "~2.3"
+    }
+}
+```
+Composer installed the HttpKernel component along with HttpFoundation and EventDispatcher, all in version 2.3. If I updated this app now, I would receive HttpKernel 2.8 and HttpFoundation and EventDispatcher in version 3.0 including breaking changes. From my point of view, this is more or less the same issue.
+
+And it's the same with Silex 1 applications. Those will be updated to Symfony 3 components as well, unless they actively block Symfony 3. And imho, this is absolutely fine, since Silex 1 remains compatible with Symfony 2.
+
+To sum it up: Indicating support for random_compat 2 is (from my understanding of semver) fine for a 1.x release. Dropping support for random_compat 1 on the other hand would require a version bump. But this is not what this PR suggests.
