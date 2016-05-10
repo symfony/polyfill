@@ -18,6 +18,9 @@
     "require": {
         "php": ">=5.3.3"
     },
+    "provide": {
+        "ext-iconv": "7"
+    },
     "autoload": {
         "psr-4": { "Symfony\\Polyfill\\Iconv\\": "" },
         "files": [ "bootstrap.php" ]

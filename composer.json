@@ -21,6 +21,10 @@
         "paragonie/random_compat": "~1.0|~2.0",
         "symfony/intl": "~2.3|~3.0"
     },
+    "provide": {
+        "ext-iconv": "7",
+        "ext-mbstring": "7"
+    },
     "replace": {
         "symfony/polyfill-apcu": "self.version",
         "symfony/polyfill-php54": "self.version",
