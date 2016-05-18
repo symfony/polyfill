@@ -42,6 +42,9 @@ class Normalizer
 
     public static function isNormalized($s, $form = self::NFC)
     {
+        if ($form <= self::NONE || self::NFKC < $form) {
+            return false;
+        }
         if (strspn($s .= '', self::$ASCII) === strlen($s)) {
             return true;
         }

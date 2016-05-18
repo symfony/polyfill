@@ -54,6 +54,9 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(false, normalizer_is_normalized("\xFF"));
 
         $this->assertFalse(pn::isNormalized($d, pn::NFD)); // The current implementation defensively says false
+
+        $this->assertFalse(pn::isNormalized('', pn::NONE));
+        $this->assertFalse(pn::isNormalized('', 6));
     }
 
     /**
