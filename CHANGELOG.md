@@ -1,3 +1,12 @@
+* v1.2.0
+
+ * bug #59 Normalizer::recompose() should reset the last combining class on ASCII (nicolas-grekas)
+ * bug #59 Normalizer::isNormalized() should fail with Normalizer::NONE (nicolas-grekas)
+ * bug #59 Normalizer::isNormalized() and ::normalize() should check for multibyte string function overload (nicolas-grekas)
+ * feature #44/#53 allow paragonie/random_compat 2.0 (ickbinhier)
+ * feature #51 Use plain PHP for data maps to benefit from OPcache on PHP 5.6+ (nicolas-grekas)
+ * bug #49 Fix hex2bin return null (fuhry, binwiederhier)
+
 * v1.1.1
 
  * bug #40 [Apcu] Load APCUIterator only when APCIterator exists (nicolas-grekas)
