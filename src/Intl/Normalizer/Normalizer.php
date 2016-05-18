@@ -42,7 +42,10 @@ class Normalizer
 
     public static function isNormalized($s, $form = self::NFC)
     {
-        if (strspn($s .= '', self::$ASCII) === strlen($s)) {
+        if ($form <= self::NONE || self::NFKC < $form) {
+            return false;
+        }
+        if (!isset($s[strspn($s .= '', self::$ASCII)])) {
             return true;
         }
         if (self::NFC === $form && preg_match('//u', $s) && !preg_match('/[^\x00-\x{2FF}]/u', $s)) {
@@ -80,15 +83,24 @@ class Normalizer
             self::$cC = self::getData('combiningClass');
         }
 
+        if (null !== $mbEncoding = (2 /* MB_OVERLOAD_STRING */ & (int) ini_get('mbstring.func_overload')) ? mb_internal_encoding() : null) {
+            mb_internal_encoding('8bit');
+        }
+
+        $r = self::decompose($s, $K);
+
         if ($C) {
             if (null === self::$C) {
                 self::$C = self::getData('canonicalComposition');
             }
 
-            return self::recompose(self::decompose($s, $K));
+            $r = self::recompose($r);
+        }
+        if (null !== $mbEncoding) {
+            mb_internal_encoding($mbEncoding);
         }
 
-        return self::decompose($s, $K);
+        return $r;
     }
 
     private static function recompose($s)
@@ -122,6 +134,7 @@ class Normalizer
 
                 $result .= $lastUchr;
                 $lastUchr = $s[$i];
+                $lastUcls = 0;
                 ++$i;
                 continue;
             }

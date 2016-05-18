@@ -54,6 +54,9 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(false, normalizer_is_normalized("\xFF"));
 
         $this->assertFalse(pn::isNormalized($d, pn::NFD)); // The current implementation defensively says false
+
+        $this->assertFalse(pn::isNormalized('', pn::NONE));
+        $this->assertFalse(pn::isNormalized('', 6));
     }
 
     /**
@@ -79,6 +82,7 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(false, normalizer_normalize($c, -1)); // HHVM returns null, PHP returns false
         $this->assertFalse(normalizer_normalize("\xFF"));
 
+        $this->assertSame("\xcc\x83\xc3\x92\xd5\x9b", normalizer_normalize("\xcc\x83\xc3\x92\xd5\x9b"));
     }
 
     /**
