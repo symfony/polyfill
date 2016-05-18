@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by stof at 2016-05-18T09:40:21Z
+
+:+1:
+
+---------------------------------------------------------------------------
+
+by stof at 2016-05-18T09:41:09Z
+
+We should include a patch fixing tests on PHP 7 before the release though IMO (see the discussion in #59)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-05-18T14:24:06Z
+
+:+1: after rebase and changelog update
