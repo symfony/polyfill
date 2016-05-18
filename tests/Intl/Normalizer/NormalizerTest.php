@@ -83,6 +83,7 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse(normalizer_normalize("\xFF"));
 
         $this->assertSame("\xcc\x83\xc3\x92\xd5\x9b", normalizer_normalize("\xcc\x83\xc3\x92\xd5\x9b"));
+        $this->assertSame("\xe0\xbe\xb2\xe0\xbd\xb1\xe0\xbe\x80\xe0\xbe\x80", normalizer_normalize("\xe0\xbd\xb6\xe0\xbe\x81", pn::NFD));
     }
 
     /**
