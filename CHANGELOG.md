@@ -1,5 +1,6 @@
 * v1.2.0
 
+ * bug #61 Normalizer::decompose() should reorder "recursive" combining chars (nicolas-grekas)
  * bug #59 Normalizer::recompose() should reset the last combining class on ASCII (nicolas-grekas)
  * bug #59 Normalizer::isNormalized() should fail with Normalizer::NONE (nicolas-grekas)
  * bug #59 Normalizer::isNormalized() and ::normalize() should check for multibyte string function overload (nicolas-grekas)
