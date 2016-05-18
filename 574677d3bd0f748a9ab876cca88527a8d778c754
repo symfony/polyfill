@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by stof at 2016-05-18T09:00:59Z
+
+Looks good to me. :+1:
+
+Btw, it would be great to check why the Grapheme tests are failing on PHP 7
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-05-18T09:06:10Z
+
+I guess tests are failing until https://github.com/tchwork/utf8/pull/59 is ported here
