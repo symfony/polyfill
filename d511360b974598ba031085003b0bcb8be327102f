@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-05-18T10:18:17Z
+
+See also https://3v4l.org/Svk6W
+
+---------------------------------------------------------------------------
+
+by stof at 2016-05-18T12:37:08Z
+
+We should keep a test covering negative indexes, to ensure they produce the same behavior than PHP for each version (being accepted silently as 0, being rejected, or being taken from the end in PHP 7.1)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-05-18T13:32:52Z
+
+@stof fixed
+
+---------------------------------------------------------------------------
+
+by stof at 2016-05-18T13:53:15Z
+
+:+1:
