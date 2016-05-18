@@ -122,6 +122,7 @@ class Normalizer
 
                 $result .= $lastUchr;
                 $lastUchr = $s[$i];
+                $lastUcls = 0;
                 ++$i;
                 continue;
             }
