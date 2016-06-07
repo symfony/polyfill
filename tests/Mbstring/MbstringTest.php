@@ -73,6 +73,8 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
      */
     public function testStrlen()
     {
+        $this->assertSame(2, mb_strlen("\x00\xFF", 'ASCII'));
+        $this->assertSame(2, mb_strlen("\x00\xFF", 'CP850'));
         $this->assertSame(3, mb_strlen('한국어'));
         $this->assertSame(8, mb_strlen(\Normalizer::normalize('한국어', \Normalizer::NFD)));
     }
