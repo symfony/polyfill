@@ -226,4 +226,30 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(4, mb_strwidth('déjà', 'UTF-8'));
         $this->assertSame(4, mb_strwidth(utf8_decode('déjà'), 'CP1252'));
     }
+
+    /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_chr
+     */
+    public function testChr()
+    {
+        $this->assertSame("\xF0\xA0\xAE\xB7", mb_chr(0x20BB7));
+        $this->assertSame("\xE9", mb_chr(0xE9, 'CP1252'));
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_ord
+     */
+    public function testOrd()
+    {
+        $this->assertSame(0x20BB7, mb_ord("\xF0\xA0\xAE\xB7"));
+        $this->assertSame(0xE9, mb_ord("\xE9", 'CP1252'));
+    }
+
+    public function testScrub()
+    {
+        $subst = \mb_substitute_character();
+        \mb_substitute_character('none');
+        $this->assertSame('ab', mb_scrub("a\xE9b"));
+        \mb_substitute_character($subst);
+    }
 }
