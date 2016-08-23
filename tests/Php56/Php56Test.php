@@ -69,7 +69,7 @@ class Php56Test extends \PHPUnit_Framework_TestCase
      * Provides values for the ldap_escape shim. These tests come from the official
      * extension, with the exception of the last one. The last test accounts for
      * leading/trailing spaces and carriage returns as outlined in RFC 4514. Those
-     * values are not actually handled by ldap_escape, so make sure we don't either.
+     * values are not actually handled by ldap_escape before PHP 7.1.
      *
      * @see https://github.com/php/php-src/blob/master/ext/ldap/tests/ldap_escape_dn.phpt
      * @see https://github.com/php/php-src/blob/master/ext/ldap/tests/ldap_escape_all.phpt
@@ -81,13 +81,18 @@ class Php56Test extends \PHPUnit_Framework_TestCase
      */
     public function provideLdapEscapeValues()
     {
-        return array(
+        $values = array(
             array('foo=bar(baz)*', null, p::LDAP_ESCAPE_DN, 'foo\3dbar(baz)*'),
             array('foo=bar(baz)*', null, null, '\66\6f\6f\3d\62\61\72\28\62\61\7a\29\2a'),
             array('foo=bar(baz)*', null, p::LDAP_ESCAPE_DN | p::LDAP_ESCAPE_FILTER, 'foo\3dbar\28baz\29\2a'),
             array('foo=bar(baz)*', null, p::LDAP_ESCAPE_FILTER, 'foo=bar\28baz\29\2a'),
             array('foo=bar(baz)*', 'ao', null, '\66oo\3d\62a\72\28\62a\7a\29\2a'),
-            array(" foo=bar\r(baz)* ", null, p::LDAP_ESCAPE_DN, ' foo\3dbar'."\r".'(baz)* '),
         );
+
+        if (PHP_VERSION_ID >= 70100) {
+            $values[] = array(" foo=bar\r(baz)* ", null, p::LDAP_ESCAPE_DN, '\20foo\3dbar\0d(baz)*\20');
+        }
+
+        return $values;
     }
 }

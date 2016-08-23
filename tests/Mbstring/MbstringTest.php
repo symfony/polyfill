@@ -135,8 +135,12 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
     public function testStrposNegativeOffset()
     {
         mb_strpos('abc', 'a');
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'Offset not contained in string');
-        mb_strpos('abc', 'a', -1);
+        if (PHP_VERSION_ID >= 70100) {
+            $this->assertFalse(mb_strpos('abc', 'a', -1));
+        } else {
+            $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'Offset not contained in string');
+            mb_strpos('abc', 'a', -1);
+        }
     }
 
     /**
