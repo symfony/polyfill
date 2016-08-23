@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-08-17T08:25:54Z
+
+@ChadSikorra @csarrazi FYI, PHP 7.1 fixed encoding leading/trailing space and carriage returns for DN. I think we should only polyfill the correct behavior. This PR does just that, with an adaptive test case.
+
+---------------------------------------------------------------------------
+
+by ChadSikorra at 2016-08-17T15:16:07Z
+
+Good catch. I forgot to open an issue for polyfill after I sent the PR to fix that for PHP :/
