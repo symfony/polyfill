@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by Ener-Getick at 2016-08-30T12:51:19Z
+
+As a side node, it could be used  [in the core](https://github.com/symfony/symfony/blob/b1a4d569658ddf45d52610b86f2e4613455298c1/src/Symfony/Component/Yaml/Unescaper.php#L128-L141).
