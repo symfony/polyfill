@@ -95,6 +95,13 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('',   mb_substr($c, -2, -2));
         $this->assertSame('',   mb_substr($c,  5,  0));
         $this->assertSame('',   mb_substr($c, -5,  0));
+
+        $this->assertSame("\xFF",     mb_substr("\x00\xFF", -1, 1, 'ASCII'));
+        $this->assertSame("\x00",     mb_substr("\x00\xFF", 0, 1, 'ASCII'));
+        $this->assertSame("\x00\xFF", mb_substr("\x00\xFF", 0, 2, 'ASCII'));
+        $this->assertSame("\xFF",     mb_substr("\x00\xFF", -1, 1, 'CP850'));
+        $this->assertSame("\x00",     mb_substr("\x00\xFF", 0, 1, 'CP850'));
+        $this->assertSame("\x00\xFF", mb_substr("\x00\xFF", 0, 2, 'CP850'));
     }
 
     /**
