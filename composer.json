@@ -43,6 +43,7 @@
             "src/Php55/bootstrap.php",
             "src/Php56/bootstrap.php",
             "src/Php70/bootstrap.php",
+            "src/Php71/bootstrap.php",
             "src/Iconv/bootstrap.php",
             "src/Intl/Grapheme/bootstrap.php",
             "src/Intl/Icu/bootstrap.php",
