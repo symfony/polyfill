@@ -23,6 +23,7 @@ Polyfills are provided for:
 - the `hash_equals` and `ldap_escape` functions introduced in PHP 5.6;
 - the `*Error` classes, the `error_clear_last`, `preg_replace_callback_array` and
   `intdiv` functions introduced in PHP 7.0;
+- the `is_iterable` function introduced in PHP 7.1;
 - the `random_bytes` and `random_int` functions introduced in PHP 7.0,
   provided by the `paragonie/random_compat` package;
 - a `Binary` utility class to be used when compatibility with
@@ -50,6 +51,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php55` for using the PHP 5.5 functions,
 - `symfony/polyfill-php56` for using the PHP 5.6 functions,
 - `symfony/polyfill-php70` for using the PHP 7.0 functions,
+- `symfony/polyfill-php71` for using the PHP 7.1 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-icu` for using the intl functions and classes,
