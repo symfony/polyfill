@@ -27,6 +27,7 @@
         "symfony/polyfill-php55": "self.version",
         "symfony/polyfill-php56": "self.version",
         "symfony/polyfill-php70": "self.version",
+        "symfony/polyfill-php71": "self.version",
         "symfony/polyfill-iconv": "self.version",
         "symfony/polyfill-intl-grapheme": "self.version",
         "symfony/polyfill-intl-icu": "self.version",
