@@ -1,6 +1,11 @@
 * v1.3.0
 
- * n/a
+ * added polyfill for `is_iterable()`
+ * added polyfills for `mb_chr()`, `mb_ord()` and `mb_scrub()`
+ * added support for PHP 7.1
+ * silenced `iconv_strlen()` in `mb_strlen()` polyfill
+ * bypassed iconv for some charsets in mb_strlen
+ * fixed `mb_convert_variables()` poylfill
 
 * v1.2.0
 
