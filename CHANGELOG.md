@@ -1,3 +1,7 @@
+* v1.3.0
+
+ * n/a
+
 * v1.2.0
 
  * bug #61 Normalizer::decompose() should reorder "recursive" combining chars (nicolas-grekas)
