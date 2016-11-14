@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by keradus at 2016-11-07T12:57:00Z
+
+Thanks @stof !
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2016-11-13T22:13:17Z
+
+:+1:
+Note that before releasing 1.3, we maybe should look at new functions in 7.1 that could be polyfilled:
+https://github.com/php/php-src/blob/PHP-7.1.0/UPGRADING#L238
