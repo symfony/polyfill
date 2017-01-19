@@ -13,6 +13,12 @@ namespace Symfony\Polyfill\Tests\Php70;
 
 class Php70Test extends \PHPUnit_Framework_TestCase
 {
+    public function testPhpIntMin()
+    {
+        $this->assertTrue(defined('PHP_INT_MIN'));
+    }
+
+
     /**
      * @dataProvider provideIntdiv
      */

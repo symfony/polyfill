@@ -12,6 +12,7 @@
 use Symfony\Polyfill\Php70 as p;
 
 if (PHP_VERSION_ID < 70000) {
+    define('PHP_INT_MIN', ~PHP_INT_MAX);
     if (!function_exists('intdiv')) {
         function intdiv($dividend, $divisor) { return p\Php70::intdiv($dividend, $divisor); }
     }
