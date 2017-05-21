@@ -238,9 +238,6 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         return $formatData;
     }
 
-    /**
-     * @requires PHP 5.5.10
-     */
     public function testFormatUtcAndGmtAreSplit()
     {
         $pattern = "yyyy.MM.dd 'at' HH:mm:ss zzz";
@@ -313,7 +310,6 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
 
     /**
      * @dataProvider formatTimezoneProvider
-     * @requires PHP 5.5
      */
     public function testFormatTimezone($pattern, $timezone, $expected)
     {
