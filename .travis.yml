@@ -2,6 +2,11 @@ language: php
 
 sudo: false
 
+cache:
+    directories:
+        - vendor
+        - $HOME/.composer/cache/files
+
 matrix:
     include:
         - php: hhvm
@@ -18,6 +23,7 @@ before_install:
     - if [[ $TRAVIS_PHP_VERSION != hhvm ]]; then INI_FILE=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini; else INI_FILE=/etc/hhvm/php.ini; fi;
     - echo memory_limit = -1 >> $INI_FILE
     - echo session.gc_probability = 0 >> $INI_FILE
+    - echo hhvm.jit = 0 >> $INI_FILE
     - if [[ $TRAVIS_PHP_VERSION != hhvm ]]; then phpenv config-rm xdebug.ini || echo "xdebug not available"; fi;
     - if [[ $TRAVIS_PHP_VERSION = 5.* ]]; then (echo yes | pecl install -f apcu-4.0.11 && echo apc.enable_cli = 1 >> $INI_FILE) || echo "Let's continue without apcu extension"; fi;
     - if [[ $TRAVIS_PHP_VERSION = 7.0 ]]; then (echo yes | pecl install -f apcu-5.1.5 && echo apc.enable_cli = 1 >> $INI_FILE) || echo "Let's continue without apcu extension"; fi;
@@ -29,4 +35,4 @@ install:
     - composer --prefer-source install;
 
 script:
-    - phpunit
+    - ./vendor/bin/simple-phpunit
