@@ -66,6 +66,10 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         if (PCRE_VERSION >= '8.10') {
             $this->assertSame('Déjà Σσσ Iı Ii İi', mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', MB_CASE_TITLE));
         }
+        if (PHP_VERSION_ID >= 70000) {
+            // Native iconv() is buggy before PHP 7
+            $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
+        }
     }
 
     /**
