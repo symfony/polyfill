@@ -147,6 +147,7 @@ HEADERS;
     /**
      * @covers Symfony\Polyfill\Iconv\Iconv::iconv_get_encoding
      * @covers Symfony\Polyfill\Iconv\Iconv::iconv_set_encoding
+     * @group legacy
      */
     public function testIconvGetEncoding()
     {

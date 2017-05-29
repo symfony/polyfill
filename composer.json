@@ -21,6 +21,9 @@
         "paragonie/random_compat": "~1.0|~2.0",
         "symfony/intl": "~2.3|~3.0|~4.0"
     },
+    "require-dev": {
+        "symfony/phpunit-bridge": "~3.2"
+    },
     "replace": {
         "symfony/polyfill-apcu": "self.version",
         "symfony/polyfill-php54": "self.version",
