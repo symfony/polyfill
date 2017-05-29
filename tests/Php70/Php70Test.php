@@ -16,6 +16,7 @@ class Php70Test extends \PHPUnit_Framework_TestCase
     public function testPhpIntMin()
     {
         $this->assertTrue(defined('PHP_INT_MIN'));
+        $this->assertSame(~PHP_INT_MAX, PHP_INT_MIN);
     }
 
     /**
