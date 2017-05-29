@@ -1,0 +1,33 @@
+---------------------------------------------------------------------------
+
+by stof at 2016-11-23T19:37:50Z
+
+This is broken, as it would load the apcu function polyfill for people not having apc at all, but these functions would be broken (as the polyfill rely on apc).
+
+If APCUIterator does not exist in older APCu versions, it means it should be loaded separately from other apcu polyfills to have a different safeguard check
+
+---------------------------------------------------------------------------
+
+by davidstrauss at 2016-11-23T19:46:19Z
+
+> This is broken, as it would load the apcu function polyfill for people not having apc at all
+
+That is not the case given the early return after extension existence check. Here is what this PR does:
+
+ * No APC or APCu: Returns early as before.
+ * Only APC: Polyfills as before.
+ * Only APCu: With this PR: runs the function/class checks and adds `APCUIterator` if it's missing. Before this PR: returns early, leaving no APCUIterator defined.
+ * Both APC and APCu: Polyfills as before.
+
+> If APCUIterator does not exist in older APCu versions, it means it should be loaded separately from other apcu polyfills to have a different safeguard check
+
+Then it should be separated however you like. Regardless, the current Polyfill is buggy because it makes APC 3.x look like APCu 5.x but doesn't make APCu 4.x look like APCu 5.x. So, this only works properly with very old and very new stacks, not ones like PHP 5.6 with APCu 4.x (and PHP 5.6 cannot use APCu 5.x).
+
+---------------------------------------------------------------------------
+
+by davidstrauss at 2016-11-23T19:56:11Z
+
+In any case, the extension existence check should have one of the following properties:
+
+ * If the `return` does nothing, then the current code already has the bug you're mentioning.
+ * If the `return` works, then it should have the behavior I specified above.
