@@ -18,7 +18,6 @@ class Php70Test extends \PHPUnit_Framework_TestCase
         $this->assertTrue(defined('PHP_INT_MIN'));
     }
 
-
     /**
      * @dataProvider provideIntdiv
      */
