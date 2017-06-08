@@ -9,15 +9,25 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Xml;
+namespace Symfony\Polyfill\Php72;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
  * @internal
  */
-final class Xml
+final class Php72
 {
+    public static function stream_isatty($stream)
+    {
+        return function_exists('posix_isatty') && @posix_isatty($stream);
+    }
+
+    public static function sapi_windows_vt100_support()
+    {
+        return false;
+    }
+
     public static function utf8_encode($s)
     {
         $s .= $s;

@@ -34,18 +34,24 @@ class Php70Test extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException ArithmeticError
+     * @expectedException \ArithmeticError
      */
     public function testIntdivArithmetic()
     {
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('HHVM fails here.');
+        }
         intdiv(~PHP_INT_MAX, -1);
     }
 
     /**
-     * @expectedException DivisionByZeroError
+     * @expectedException \DivisionByZeroError
      */
     public function testIntdivByZero()
     {
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('HHVM fails here.');
+        }
         intdiv(1, 0);
     }
 

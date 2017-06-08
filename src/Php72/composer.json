@@ -1,8 +1,8 @@
 {
-    "name": "symfony/polyfill-intl-icu",
+    "name": "symfony/polyfill-php72",
     "type": "library",
-    "description": "Symfony polyfill for intl's ICU-related data and classes",
-    "keywords": ["polyfill", "shim", "compatibility", "portable", "intl", "icu"],
+    "description": "Symfony polyfill backporting some PHP 7.2+ features to lower PHP versions",
+    "keywords": ["polyfill", "shim", "compatibility", "portable"],
     "homepage": "https://symfony.com",
     "license": "MIT",
     "authors": [
@@ -16,14 +16,11 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3",
-        "symfony/intl": "~2.3|~3.0|~4.0"
+        "php": ">=5.3.3"
     },
     "autoload": {
+        "psr-4": { "Symfony\\Polyfill\\Php72\\": "" },
         "files": [ "bootstrap.php" ]
-    },
-    "suggest": {
-        "ext-intl": "For best performance"
     },
     "minimum-stability": "dev",
     "extra": {

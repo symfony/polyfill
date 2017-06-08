@@ -9,18 +9,18 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Tests\Xml;
+namespace Symfony\Polyfill\Tests\Php72;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
- * @covers Symfony\Polyfill\Xml\Xml::<!public>
+ * @covers Symfony\Polyfill\Php72\Php72::<!public>
  */
-class XmlTest extends \PHPUnit_Framework_TestCase
+class Php72Test extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @covers Symfony\Polyfill\Xml\Xml::utf8_encode
-     * @covers Symfony\Polyfill\Xml\Xml::utf8_decode
+     * @covers Symfony\Polyfill\Php72\Php72::utf8_encode
+     * @covers Symfony\Polyfill\Php72\Php72::utf8_decode
      */
     public function testUtf8Encode()
     {

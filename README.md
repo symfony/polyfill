@@ -9,7 +9,7 @@ Polyfills are provided for:
 - the `apcu` extension when the legacy `apc` extension is installed;
 - the `mbstring` and `iconv` extensions;
 - the `Normalizer` class and the `grapheme_*` functions;
-- the `utf8_encode` and `utf8_decode` functions from the `xml` extension;
+- the `utf8_encode` and `utf8_decode` functions from the `xml` extension or PHP-7.2 core;
 - the `Collator`, `NumberFormatter`, `Locale` and `IntlDateFormatter` classes;
 - the `intl_error_name`, `intl_get_error_code`, `intl_get_error_message` and
   `intl_is_failure` functions;
@@ -27,7 +27,9 @@ Polyfills are provided for:
 - the `random_bytes` and `random_int` functions introduced in PHP 7.0,
   provided by the `paragonie/random_compat` package;
 - a `Binary` utility class to be used when compatibility with
-  `mbstring.func_overload` is required.
+  `mbstring.func_overload` is required;
+- the `stream_isatty` function introduced in PHP 7.2;
+- the `sapi_windows_vt100_support` function (Windows only) introduced in PHP 7.2.
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
@@ -52,13 +54,13 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php56` for using the PHP 5.6 functions,
 - `symfony/polyfill-php70` for using the PHP 7.0 functions,
 - `symfony/polyfill-php71` for using the PHP 7.1 functions,
+- `symfony/polyfill-php72` for using the PHP 7.2 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-icu` for using the intl functions and classes,
 - `symfony/polyfill-intl-normalizer` for using the intl normalizer,
 - `symfony/polyfill-mbstring` for using the mbstring functions,
-- `symfony/polyfill-util` for using the polyfill utility helpers,
-- `symfony/polyfill-xml` for using the `utf8_encode/decode` functions.
+- `symfony/polyfill-util` for using the polyfill utility helpers.
 
 Requiring `symfony/polyfill` directly would prevent Composer from sharing
 correctly polyfills in dependency graphs. As such, it would likely install
