@@ -1,3 +1,7 @@
+* v1.4.0
+
+ * added PHP 7.2 polyfill
+
 * v1.3.1
 
  * added missing validation to mb_convert_case()
