@@ -1,3 +1,10 @@
+* v1.3.1
+
+ * added missing validation to mb_convert_case()
+ * added missing PHP_INT_MIN constant
+ * fixed iconv_substr(): Detected an illegal character in input string
+ * provided APCUIterator for APCu 4.x users
+
 * v1.3.0
 
  * added polyfill for `is_iterable()`
