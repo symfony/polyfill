@@ -9,18 +9,18 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Tests\Xml;
+namespace Symfony\Polyfill\Tests\Php72;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
- * @covers Symfony\Polyfill\Xml\Xml::<!public>
+ * @covers Symfony\Polyfill\Php72\Php72::<!public>
  */
-class XmlTest extends \PHPUnit_Framework_TestCase
+class Php72Test extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @covers Symfony\Polyfill\Xml\Xml::utf8_encode
-     * @covers Symfony\Polyfill\Xml\Xml::utf8_decode
+     * @covers Symfony\Polyfill\Php72\Php72::utf8_encode
+     * @covers Symfony\Polyfill\Php72\Php72::utf8_decode
      */
     public function testUtf8Encode()
     {
@@ -30,10 +30,7 @@ class XmlTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(\utf8_encode($s), utf8_encode($s));
         $this->assertSame(\utf8_decode($e), utf8_decode($e));
-
-        if (!defined('HHVM_VERSION') || HHVM_VERSION_ID >= 30801) {
-            $this->assertSame('??', utf8_decode('Σ어'));
-        }
+        $this->assertSame('??', utf8_decode('Σ어'));
 
         $s = 444;
 

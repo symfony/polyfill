@@ -44,14 +44,13 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
         $c = 'déjà';
         $d = in::normalize($c, pn::NFD);
 
-        // normalizer_is_normalized() returns an integer on HHVM and a boolean on PHP
-        $this->assertEquals(true, normalizer_is_normalized(''));
-        $this->assertEquals(true, normalizer_is_normalized('abc'));
-        $this->assertEquals(true, normalizer_is_normalized($c));
-        $this->assertEquals(true, normalizer_is_normalized($c, pn::NFC));
-        $this->assertEquals(false, normalizer_is_normalized($c, pn::NFD));
-        $this->assertEquals(false, normalizer_is_normalized($d, pn::NFC));
-        $this->assertEquals(false, normalizer_is_normalized("\xFF"));
+        $this->assertSame(true, normalizer_is_normalized(''));
+        $this->assertSame(true, normalizer_is_normalized('abc'));
+        $this->assertSame(true, normalizer_is_normalized($c));
+        $this->assertSame(true, normalizer_is_normalized($c, pn::NFC));
+        $this->assertSame(false, normalizer_is_normalized($c, pn::NFD));
+        $this->assertSame(false, normalizer_is_normalized($d, pn::NFC));
+        $this->assertSame(false, normalizer_is_normalized("\xFF"));
 
         $this->assertFalse(pn::isNormalized($d, pn::NFD)); // The current implementation defensively says false
 
@@ -79,7 +78,7 @@ class NormalizerTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($kc, normalizer_normalize($d, pn::NFKC));
         $this->assertSame($kd, normalizer_normalize($c, pn::NFKD));
 
-        $this->assertEquals(false, normalizer_normalize($c, -1)); // HHVM returns null, PHP returns false
+        $this->assertSame(false, normalizer_normalize($c, -1));
         $this->assertFalse(normalizer_normalize("\xFF"));
 
         $this->assertSame("\xcc\x83\xc3\x92\xd5\x9b", normalizer_normalize("\xcc\x83\xc3\x92\xd5\x9b"));

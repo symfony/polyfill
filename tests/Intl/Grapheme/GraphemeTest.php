@@ -103,7 +103,7 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(false, grapheme_strpos('abc', ''));
         $this->assertSame(false, grapheme_strpos('abc', 'd'));
         $this->assertSame(false, grapheme_strpos('abc', 'a', 3));
-        if (defined('HHVM_VERSION_ID') || PHP_VERSION_ID < 50535 || (50600 <= PHP_VERSION_ID && PHP_VERSION_ID < 50621) || (70000 <= PHP_VERSION_ID && PHP_VERSION_ID < 70006)) {
+        if (PHP_VERSION_ID < 50535 || (50600 <= PHP_VERSION_ID && PHP_VERSION_ID < 50621) || (70000 <= PHP_VERSION_ID && PHP_VERSION_ID < 70006)) {
             $this->assertSame(0, grapheme_strpos('abc', 'a', -1));
         } else {
             $this->assertFalse(grapheme_strpos('abc', 'a', -1));

@@ -40,7 +40,7 @@ class Php70Test extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException ArithmeticError
+     * @expectedException \ArithmeticError
      */
     public function testIntdivArithmetic()
     {
@@ -48,7 +48,7 @@ class Php70Test extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException DivisionByZeroError
+     * @expectedException \DivisionByZeroError
      */
     public function testIntdivByZero()
     {
