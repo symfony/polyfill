@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-05-29T14:46:47Z
+
+can you please add a "defined()" check around?
+
+---------------------------------------------------------------------------
+
+by Fleshgrinder at 2017-05-29T16:42:06Z
+
+I guess I did this in a hurry, done. 😸
