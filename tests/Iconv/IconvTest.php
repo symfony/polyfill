@@ -27,7 +27,7 @@ class IconvTest extends \PHPUnit_Framework_TestCase
     {
         // Native iconv() behavior varies between versions and OS for these two tests
         // See e.g. https://bugs.php.net/52211
-        if (defined('HHVM_VERSION') ? HHVM_VERSION_ID >= 30901 : (PHP_VERSION_ID >= 50610)) {
+        if (PHP_VERSION_ID >= 50610) {
             $this->assertFalse(@iconv('UTF-8', 'ISO-8859-1', 'nœud'));
             $this->assertSame('nud', iconv('UTF-8', 'ISO-8859-1//IGNORE', 'nœud'));
         }
@@ -77,9 +77,6 @@ class IconvTest extends \PHPUnit_Framework_TestCase
      */
     public function testIconvMimeEncode()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('HHVM incompatible.');
-        }
         $text = "\xE3\x83\x86\xE3\x82\xB9\xE3\x83\x88\xE3\x83\x86\xE3\x82\xB9\xE3\x83\x88";
         $options = array(
             'scheme' => 'Q',
@@ -101,7 +98,7 @@ class IconvTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?B?Kg==?= .'));
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .'));
-        if (!defined('HHVM_VERSION') && '\\' !== DIRECTORY_SEPARATOR) {
+        if ('\\' !== DIRECTORY_SEPARATOR) {
             $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
             $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.chr(0xA1).'?= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
         }

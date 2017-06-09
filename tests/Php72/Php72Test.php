@@ -30,10 +30,7 @@ class Php72Test extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(\utf8_encode($s), utf8_encode($s));
         $this->assertSame(\utf8_decode($e), utf8_decode($e));
-
-        if (!defined('HHVM_VERSION') || HHVM_VERSION_ID >= 30801) {
-            $this->assertSame('??', utf8_decode('Σ어'));
-        }
+        $this->assertSame('??', utf8_decode('Σ어'));
 
         $s = 444;
 

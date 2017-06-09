@@ -38,9 +38,6 @@ class Php70Test extends \PHPUnit_Framework_TestCase
      */
     public function testIntdivArithmetic()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('HHVM fails here.');
-        }
         intdiv(~PHP_INT_MAX, -1);
     }
 
@@ -49,9 +46,6 @@ class Php70Test extends \PHPUnit_Framework_TestCase
      */
     public function testIntdivByZero()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('HHVM fails here.');
-        }
         intdiv(1, 0);
     }
 
