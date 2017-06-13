@@ -23,3 +23,6 @@ if (PHP_VERSION_ID < 70200) {
         function utf8_decode($s) { return p\Php72::utf8_decode($s); }
     }
 }
+if (!defined('PHP_OS_FAMILY')) {
+    define('PHP_OS_FAMILY', p\Php72::php_os_family());
+}
