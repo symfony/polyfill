@@ -23,8 +23,9 @@ Polyfills are provided for:
 - the `hash_equals` and `ldap_escape` functions introduced in PHP 5.6;
 - the `*Error` classes, the `error_clear_last`, `preg_replace_callback_array` and
   `intdiv` functions introduced in PHP 7.0;
-- the `is_iterable` function introduced in PHP 7.1;
 - the `random_bytes` and `random_int` functions introduced in PHP 7.0,
+- the `PHP_INT_MIN` constant introduced in PHP 7.0,
+- the `is_iterable` function introduced in PHP 7.1;
   provided by the `paragonie/random_compat` package;
 - a `Binary` utility class to be used when compatibility with
   `mbstring.func_overload` is required;
