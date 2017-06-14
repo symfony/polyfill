@@ -30,7 +30,8 @@ Polyfills are provided for:
 - a `Binary` utility class to be used when compatibility with
   `mbstring.func_overload` is required;
 - the `stream_isatty` function introduced in PHP 7.2;
-- the `sapi_windows_vt100_support` function (Windows only) introduced in PHP 7.2.
+- the `sapi_windows_vt100_support` function (Windows only) introduced in PHP 7.2;
+- the `PHP_OS_FAMILY` constant introduced in PHP 7.2.
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
