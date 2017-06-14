@@ -1,3 +1,7 @@
+* v1.5.0
+
+ * added `PHP_OS_FAMILY` polyfil
+
 * v1.4.0
 
  * added PHP 7.2 polyfill
