@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by stof at 2017-06-14T15:49:10Z
+
+@nicolas-grekas do you have a script to update this on symfony/polyfill and symfony/symfony, or is it just a search&replace on the project ?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-06-14T15:49:32Z
+
+search-and-replace
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-06-14T19:09:11Z
+
+I have a script for symfony/symfony :)
