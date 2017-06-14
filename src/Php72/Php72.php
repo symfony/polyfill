@@ -69,7 +69,7 @@ final class Php72
         }
 
         $map = array(
-            'Darwin' => 'Mac',
+            'Darwin' => 'Darwin',
             'DragonFly' => 'BSD',
             'FreeBSD' => 'BSD',
             'NetBSD' => 'BSD',
