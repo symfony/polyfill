@@ -11,6 +11,8 @@
 
 namespace Symfony\Polyfill\Tests\Php72;
 
+use Symfony\Polyfill\Php72\Php72 as p;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
@@ -36,5 +38,14 @@ class Php72Test extends \PHPUnit_Framework_TestCase
 
         $this->assertSame(\utf8_encode($s), utf8_encode($s));
         $this->assertSame(\utf8_decode($s), utf8_decode($s));
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Php72\Php72::php_os_family
+     */
+    public function testPhpOsFamily()
+    {
+          $this->assertTrue(defined('PHP_OS_FAMILY'));
+          $this->assertSame(PHP_OS_FAMILY, p::php_os_family());
     }
 }
