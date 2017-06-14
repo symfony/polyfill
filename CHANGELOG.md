@@ -1,6 +1,6 @@
 * v1.5.0
 
- * added `PHP_OS_FAMILY` polyfil
+ * added `PHP_OS_FAMILY` polyfill
 
 * v1.4.0
 
