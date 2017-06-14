@@ -1,0 +1,41 @@
+---------------------------------------------------------------------------
+
+by bcremer at 2017-06-14T06:55:35Z
+
+See https://github.com/sebastianbergmann/environment/issues/21 for PHPUnit's implementation.
+
+---------------------------------------------------------------------------
+
+by keradus at 2017-06-14T06:59:17Z
+
+ref https://github.com/sebastianbergmann/phpunit/issues/2697#issuecomment-308098725
+
+---------------------------------------------------------------------------
+
+by stof at 2017-06-14T15:18:06Z
+
+We need to bump the dev version to 1.5 (best would be to do it before merging to have the right version in the GH merge commit)
+
+---------------------------------------------------------------------------
+
+by keradus at 2017-06-14T15:30:43Z
+
+sorry, I didn't follow up on release process here and there is no contributing guidelines. is it responsibility of feature PR to bump version ?
+
+---------------------------------------------------------------------------
+
+by stof at 2017-06-14T15:34:00Z
+
+@keradus no. My comment was a reminder for maintainers to bump the version before the merge so that we get the right version (as I may not be the one doing the merge)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-06-14T15:45:24Z
+
+Here we are: #92
+
+---------------------------------------------------------------------------
+
+by keradus at 2017-06-14T16:19:11Z
+
+then also changelog need to be updated, but after merge ;)
