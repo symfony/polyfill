@@ -94,7 +94,7 @@ EOPHP
                 );
             }
             if (!$warnings && null === $defLine) {
-                $warnings[] = new \PHPUnit_Framework_SkippedTestCase('No Polyfills found in bootstrap.php for '.$testClass);
+                $warnings[] = new \PHPUnit_Framework_SkippedTestError('No Polyfills found in bootstrap.php for '.$testClass);
             } else {
                 $mainSuite->addTest(new static($suite));
             }
