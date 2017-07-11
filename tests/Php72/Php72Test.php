@@ -48,4 +48,20 @@ class Php72Test extends \PHPUnit_Framework_TestCase
           $this->assertTrue(defined('PHP_OS_FAMILY'));
           $this->assertSame(PHP_OS_FAMILY, p::php_os_family());
     }
+
+    /**
+     * @covers Symfony\Polyfill\Php72\Php72::spl_object_id
+     */
+    public function testSplObjectId()
+    {
+        $obj = new \stdClass();
+        $id = spl_object_id($obj);
+        ob_start();
+        var_dump($obj);
+        $dump = ob_get_clean();
+
+        $this->assertStringStartsWith("object(stdClass)#$id ", $dump);
+
+        $this->assertNull(@spl_object_id(123));
+    }
 }
