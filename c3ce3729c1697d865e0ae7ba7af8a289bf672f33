@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------
+
+by stof at 2017-07-11T13:05:52Z
+
+@nicolas-grekas I suppose that VarDumper can then be migrated to use the new `spl_object_id` function, right ?
+
+---------------------------------------------------------------------------
+
+by stof at 2017-07-11T13:06:40Z
+
+note: merging this PR must wait until the PR is merged in PHP itself. We don't want to merge the polyfill if they reject the PR.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-07-11T13:32:50Z
+
+@stof VarDumper can use this polyfill only in master, because of HHVM compat...
+
+---------------------------------------------------------------------------
+
+by robfrawley at 2017-08-11T00:57:36Z
+
+The `spl_object_id()` function now merged upstream in https://github.com/php/php-src/commit/5097e2ee13de12b4445b4123e1554c0733c6853c (also see https://github.com/php/php-src/pull/2611#issuecomment-319717081) so this can now be safely merged here, as well.
