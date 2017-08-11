@@ -29,7 +29,7 @@ Polyfills are provided for:
 - the `is_iterable` function introduced in PHP 7.1;
 - a `Binary` utility class to be used when compatibility with
   `mbstring.func_overload` is required;
-- the `stream_isatty` function introduced in PHP 7.2;
+- the `spl_object_id` and `stream_isatty` functions introduced in PHP 7.2;
 - the `sapi_windows_vt100_support` function (Windows only) introduced in PHP 7.2;
 - the `PHP_OS_FAMILY` constant introduced in PHP 7.2.
 
