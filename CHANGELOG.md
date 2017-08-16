@@ -1,3 +1,7 @@
+* v1.5.1
+
+ * n/a
+
 * v1.5.0
 
  * added polyfill for spl_object_id()
