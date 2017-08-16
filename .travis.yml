@@ -18,18 +18,20 @@ matrix:
     fast_finish: true
 
 before_install:
-    - INI_FILE=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
-    - echo memory_limit = -1 >> $INI_FILE
-    - echo session.gc_probability = 0 >> $INI_FILE
-    - echo extension = ldap.so >> $INI_FILE
+    - INI=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+    - echo memory_limit = -1 >> $INI
+    - echo session.gc_probability = 0 >> $INI
+    - echo extension = ldap.so >> $INI
+    - echo apc.enable_cli = 1 >> $INI
     - phpenv config-rm xdebug.ini || echo "xdebug not available"
-    - if [[ $TRAVIS_PHP_VERSION = 5.* ]]; then (echo yes | pecl install -f apcu-4.0.11 && echo apc.enable_cli = 1 >> $INI_FILE) || echo "Let's continue without apcu extension"; fi;
-    - if [[ $TRAVIS_PHP_VERSION = 7.0 ]]; then (echo yes | pecl install -f apcu-5.1.5 && echo apc.enable_cli = 1 >> $INI_FILE) || echo "Let's continue without apcu extension"; fi;
+    - if [[ $TRAVIS_PHP_VERSION = 5.* ]]; then echo yes | pecl install -f apcu-4.0.11; fi
+    - if [[ $TRAVIS_PHP_VERSION = 7.0 ]]; then echo yes | pecl install -f apcu-5.1.5; fi
+    - if [[ $TRAVIS_PHP_VERSION = 7.0 ]]; then echo yes | pecl install channel://pecl.php.net/apcu_bc-1.0.3 && echo extension = apc.so >> $INI; fi
     - php -i
 
 install:
-    - if [[ $TRAVIS_BRANCH = master ]]; then export COMPOSER_ROOT_VERSION=dev-master; else export COMPOSER_ROOT_VERSION=$TRAVIS_BRANCH.x-dev; fi;
-    - composer --prefer-source install;
+    - if [[ $TRAVIS_BRANCH = master ]]; then export COMPOSER_ROOT_VERSION=dev-master; else export COMPOSER_ROOT_VERSION=$TRAVIS_BRANCH.x-dev; fi
+    - composer --prefer-source install
 
 script:
     - ./vendor/bin/simple-phpunit
