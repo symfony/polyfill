@@ -1,5 +1,7 @@
 * v1.5.0
 
+ * added polyfill for spl_object_id()
+ * fixed apcu function when apc ones are polyfilled with Zend Server's Data Cache
  * added `PHP_OS_FAMILY` polyfill
 
 * v1.4.0
