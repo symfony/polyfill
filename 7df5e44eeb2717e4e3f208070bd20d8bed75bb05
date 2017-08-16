@@ -1,0 +1,37 @@
+---------------------------------------------------------------------------
+
+by stof at 2017-06-19T14:57:22Z
+
+The APCUIterator polyfill should not be defined in case you skip the loading of other parts of the polyfill due to being in the CLI or phpdbg on Zend Server.
+
+---------------------------------------------------------------------------
+
+by kategray at 2017-06-19T15:03:17Z
+
+Zend Server doesn't define the APCIterator class, so that code doesn't run.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-07-03T15:48:44Z
+
+@kategray any chance you might finish this PR? please advise, I can take over.
+
+---------------------------------------------------------------------------
+
+by kategray at 2017-07-03T17:20:47Z
+
+I'm swamped for a couple weeks.  I can do it after that, or you're welcome to.  Whichever you prefer.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-07-05T15:11:16Z
+
+@kategray no pb, I took over :)
+I removed the SAPI-related checks because I don't get them.
+Should be green and ready.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-07-05T15:20:37Z
+
+@kategray PS: http://sanfrancisco2017.live.symfony.com ;)
