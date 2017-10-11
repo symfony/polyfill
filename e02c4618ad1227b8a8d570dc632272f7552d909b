@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by stof at 2017-10-11T09:11:51Z
+
+The precise environment will be deleted next year, but this allows us to keep testing the polyfill on PHP 5.3 in the meantime.
