@@ -1,6 +1,6 @@
 * v1.5.1
 
- * n/a
+ * fixed loading of Apcu polyfill when Zend Server's Data Cache is used
 
 * v1.5.0
 
