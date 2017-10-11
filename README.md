@@ -26,6 +26,7 @@ Polyfills are provided for:
 - the `random_bytes` and `random_int` functions introduced in PHP 7.0,
   provided by the `paragonie/random_compat` package;
 - the `PHP_INT_MIN` constant introduced in PHP 7.0,
+- the `SessionUpdateTimestampHandlerInterface` interface introduced in PHP 7.0,
 - the `is_iterable` function introduced in PHP 7.1;
 - a `Binary` utility class to be used when compatibility with
   `mbstring.func_overload` is required;
