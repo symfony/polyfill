@@ -1,5 +1,6 @@
-* v1.5.1
+* v1.6.0
 
+ * add `SessionUpdateTimestampHandlerInterface` in PHP 7.0 polyfill
  * fixed loading of Apcu polyfill when Zend Server's Data Cache is used
 
 * v1.5.0
