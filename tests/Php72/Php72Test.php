@@ -64,4 +64,26 @@ class Php72Test extends \PHPUnit_Framework_TestCase
 
         $this->assertNull(@spl_object_id(123));
     }
+
+    /**
+     * @covers Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
+     */
+    public function testSapiWindowsVt100Support()
+    {
+        if ('\\' !== DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Windows only test');
+        }
+
+        $this->assertFalse(p::sapi_windows_vt100_support(STDOUT, true));
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Php72\Php72::stream_isatty
+     */
+    public function testStreamIsatty()
+    {
+        $fp = fopen('php://temp', 'r+');
+        $this->assertFalse(p::stream_isatty($fp));
+        fclose($fp);
+    }
 }
