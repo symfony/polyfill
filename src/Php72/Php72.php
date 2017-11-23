@@ -97,8 +97,8 @@ final class Php72
 
     public static function sapi_windows_vt100_support($stream, $enable = null)
     {
-        // We cannot actually enable vt100 support
-        if (true === $enable || !self::stream_isatty($stream)) {
+        // We cannot actually disable vt100 support if it is set
+        if (false === $enable || !self::stream_isatty($stream)) {
             return false;
         }
 

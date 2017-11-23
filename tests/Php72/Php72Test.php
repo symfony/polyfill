@@ -74,7 +74,7 @@ class Php72Test extends \PHPUnit_Framework_TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->assertFalse(p::sapi_windows_vt100_support(STDOUT, true));
+        $this->assertFalse(p::sapi_windows_vt100_support(STDOUT, false));
     }
 
     /**
