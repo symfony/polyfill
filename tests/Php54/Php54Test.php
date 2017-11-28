@@ -11,7 +11,9 @@
 
 namespace Symfony\Polyfill\Tests\Php54;
 
-class Php54Test extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class Php54Test extends TestCase
 {
     /**
      * @dataProvider provideClassUsesValid

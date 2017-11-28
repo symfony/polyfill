@@ -11,15 +11,22 @@
 
 namespace Symfony\Polyfill\Util;
 
+use PHPUnit\Framework\AssertionFailedError;
+use PHPUnit\Framework\Warning;
+use PHPUnit\Framework\SkippedTestError;
+use PHPUnit\Framework\Test;
+use PHPUnit\Framework\TestListener as PHPUnit_Framework_TestListener;
+use PHPUnit\Framework\TestSuite;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
-class TestListener extends \PHPUnit_Framework_TestSuite implements \PHPUnit_Framework_TestListener
+class TestListener extends TestSuite implements PHPUnit_Framework_TestListener
 {
     public static $enabledPolyfills;
     private $suite;
 
-    public function __construct(\PHPUnit_Framework_TestSuite $suite = null)
+    public function __construct(TestSuite $suite = null)
     {
         if ($suite) {
             $this->suite = $suite;
@@ -28,7 +35,7 @@ class TestListener extends \PHPUnit_Framework_TestSuite implements \PHPUnit_Fram
         }
     }
 
-    public function startTestSuite(\PHPUnit_Framework_TestSuite $mainSuite)
+    public function startTestSuite(TestSuite $mainSuite)
     {
         if (null !== self::$enabledPolyfills) {
             return;
@@ -73,12 +80,13 @@ class TestListener extends \PHPUnit_Framework_TestSuite implements \PHPUnit_Fram
                         $defLine = sprintf("return \\call_user_func_array('%s', func_get_args())", $f['name']);
                     }
                 } catch (\ReflectionException $e) {
-                    $defLine = sprintf("throw new \PHPUnit_Framework_SkippedTestError('Internal function not found: %s')", $f['name']);
+                    $defLine = sprintf("throw new SkippedTestError('Internal function not found: %s')", $f['name']);
                 }
 
                 eval(<<<EOPHP
 namespace {$testNamespace};
 
+use PHPUnit\Framework\SkippedTestError;
 use Symfony\Polyfill\Util\TestListener;
 use {$testedClass->getNamespaceName()} as p;
 
@@ -94,7 +102,7 @@ EOPHP
                 );
             }
             if (!$warnings && null === $defLine) {
-                $warnings[] = new \PHPUnit_Framework_SkippedTestError('No Polyfills found in bootstrap.php for '.$testClass);
+                $warnings[] = new SkippedTestError('No Polyfills found in bootstrap.php for '.$testClass);
             } else {
                 $mainSuite->addTest(new static($suite));
             }
@@ -114,7 +122,7 @@ EOPHP
         self::$enabledPolyfills = false;
     }
 
-    public function addError(\PHPUnit_Framework_Test $test, \Exception $e, $time)
+    public function addError(Test $test, \Exception $e, $time)
     {
         if (false !== self::$enabledPolyfills) {
             $r = new \ReflectionProperty('Exception', 'message');
@@ -123,32 +131,36 @@ EOPHP
         }
     }
 
-    public function addFailure(\PHPUnit_Framework_Test $test, \PHPUnit_Framework_AssertionFailedError $e, $time)
+    public function addFailure(Test $test, AssertionFailedError $e, $time)
     {
         $this->addError($test, $e, $time);
     }
 
-    public function addIncompleteTest(\PHPUnit_Framework_Test $test, \Exception $e, $time)
+    public function addWarning(Test $test, Warning $e, $time)
     {
     }
 
-    public function addRiskyTest(\PHPUnit_Framework_Test $test, \Exception $e, $time)
+    public function addIncompleteTest(Test $test, \Exception $e, $time)
     {
     }
 
-    public function addSkippedTest(\PHPUnit_Framework_Test $test, \Exception $e, $time)
+    public function addRiskyTest(Test $test, \Exception $e, $time)
     {
     }
 
-    public function endTestSuite(\PHPUnit_Framework_TestSuite $suite)
+    public function addSkippedTest(Test $test, \Exception $e, $time)
     {
     }
 
-    public function startTest(\PHPUnit_Framework_Test $test)
+    public function endTestSuite(TestSuite $suite)
     {
     }
 
-    public function endTest(\PHPUnit_Framework_Test $test, $time)
+    public function startTest(Test $test)
+    {
+    }
+
+    public function endTest(Test $test, $time)
     {
     }
 }

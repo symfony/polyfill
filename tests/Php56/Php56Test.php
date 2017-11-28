@@ -11,9 +11,10 @@
 
 namespace Symfony\Polyfill\Tests\Php56;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Php56\Php56 as p;
 
-class Php56Test extends \PHPUnit_Framework_TestCase
+class Php56Test extends TestCase
 {
     /**
      * @dataProvider provideHashEqualsTrue
