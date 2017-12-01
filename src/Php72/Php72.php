@@ -109,8 +109,7 @@ final class Php72
         return !$stdin
             && (false !== getenv('ANSICON')
             || 'ON' === getenv('ConEmuANSI')
-            || 'xterm' === getenv('TERM')
-            || 'cygwin' === getenv('TERM'));
+            || 'xterm' === getenv('TERM'));
     }
 
     public static function stream_isatty($stream)
