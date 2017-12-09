@@ -33,7 +33,7 @@ class IconvTest extends \PHPUnit_Framework_TestCase
         }
 
         $this->assertSame(utf8_decode('déjà'), iconv('CP1252', 'ISO-8859-1', utf8_decode('déjà')));
-        $this->assertSame('deja noeud', p::iconv('UTF-8', 'US-ASCII//TRANSLIT', 'déjà nœud'));
+        $this->assertSame('deja noeud', p::iconv('UTF-8//ignore//IGNORE', 'US-ASCII//TRANSLIT//IGNORE//translit', 'déjà nœud'));
 
         $this->assertSame('4', iconv('UTF-8', 'UTF-8', 4));
     }
