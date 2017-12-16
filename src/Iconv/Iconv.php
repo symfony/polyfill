@@ -145,22 +145,33 @@ final class Iconv
             $inCharset = 'iso-8859-1';
         }
 
-        if ('//translit' === substr($outCharset, -10)) {
-            $translit = '//TRANSLIT';
-            $outCharset = substr($outCharset, 0, -10);
-        }
+        do {
+            $loop = false;
 
-        if ('//ignore' === substr($outCharset, -8)) {
-            $ignore = '//IGNORE';
-            $outCharset = substr($outCharset, 0, -8);
-        }
+            if ('//translit' === substr($outCharset, -10)) {
+                $loop = $translit = true;
+                $outCharset = substr($outCharset, 0, -10);
+            }
 
-        if ('//translit' === substr($inCharset, -10)) {
-            $inCharset = substr($inCharset, 0, -10);
-        }
-        if ('//ignore' === substr($inCharset, -8)) {
-            $inCharset = substr($inCharset, 0, -8);
-        }
+            if ('//ignore' === substr($outCharset, -8)) {
+                $loop = $ignore = true;
+                $outCharset = substr($outCharset, 0, -8);
+            }
+        } while ($loop);
+
+        do {
+            $loop = false;
+
+            if ('//translit' === substr($inCharset, -10)) {
+                $loop = true;
+                $inCharset = substr($inCharset, 0, -10);
+            }
+
+            if ('//ignore' === substr($inCharset, -8)) {
+                $loop = true;
+                $inCharset = substr($inCharset, 0, -8);
+            }
+        } while ($loop);
 
         if (isset(self::$alias[ $inCharset])) {
             $inCharset = self::$alias[ $inCharset];
