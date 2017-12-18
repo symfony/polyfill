@@ -114,13 +114,13 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
      */
     public function testStrpos()
     {
-        $this->assertSame(false, @mb_strpos('abc', ''));
-        $this->assertSame(false, @mb_strpos('abc', 'a', -1));
-        $this->assertSame(false, mb_strpos('abc', 'd'));
-        $this->assertSame(false, mb_strpos('abc', 'a', 3));
+        $this->assertFalse(@mb_strpos('abc', ''));
+        $this->assertFalse(@mb_strpos('abc', 'a', -1));
+        $this->assertFalse(mb_strpos('abc', 'd'));
+        $this->assertFalse(mb_strpos('abc', 'a', 3));
         $this->assertSame(1, mb_strpos('한국어', '국'));
         $this->assertSame(3, mb_stripos('DÉJÀ', 'à'));
-        $this->assertSame(false, mb_strrpos('한국어', ''));
+        $this->assertFalse(mb_strrpos('한국어', ''));
         $this->assertSame(1, mb_strrpos('한국어', '국'));
         $this->assertSame(3, mb_strripos('DÉJÀ', 'à'));
         $this->assertSame(1, mb_stripos('aςσb', 'ΣΣ'));

@@ -60,7 +60,7 @@ class IconvTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertSame(1, iconv_strpos('11--', '1-', 0, 'UTF-8'));
         $this->assertSame(2, iconv_strpos('-11--', '1-', 0, 'UTF-8'));
-        $this->assertSame(false, iconv_strrpos('한국어', '', 'UTF-8'));
+        $this->assertFalse(iconv_strrpos('한국어', '', 'UTF-8'));
         $this->assertSame(1, iconv_strrpos('한국어', '국', 'UTF-8'));
     }
 

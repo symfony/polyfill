@@ -80,15 +80,15 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
             // See http://bugs.php.net/62759 and 55562
             $this->assertSame('jà', grapheme_substr($c, -2,  3));
             $this->assertSame('', grapheme_substr($c, -1,  0));
-            $this->assertSame(false, grapheme_substr($c,  1, -4));
+            $this->assertFalse(grapheme_substr($c,  1, -4));
         }
 
         $this->assertSame('jà', grapheme_substr($c,  2));
         $this->assertSame('jà', grapheme_substr($c, -2));
         $this->assertSame('j', grapheme_substr($c, -2, -1));
         $this->assertSame('', grapheme_substr($c, -2, -2));
-        $this->assertSame(false, grapheme_substr($c,  5,  0));
-        $this->assertSame(false, grapheme_substr($c, -5,  0));
+        $this->assertFalse(grapheme_substr($c,  5,  0));
+        $this->assertFalse(grapheme_substr($c, -5,  0));
     }
 
     /**
@@ -100,9 +100,9 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
      */
     public function testGraphemeStrpos()
     {
-        $this->assertSame(false, grapheme_strpos('abc', ''));
-        $this->assertSame(false, grapheme_strpos('abc', 'd'));
-        $this->assertSame(false, grapheme_strpos('abc', 'a', 3));
+        $this->assertFalse(grapheme_strpos('abc', ''));
+        $this->assertFalse(grapheme_strpos('abc', 'd'));
+        $this->assertFalse(grapheme_strpos('abc', 'a', 3));
         if (PHP_VERSION_ID < 50535 || (50600 <= PHP_VERSION_ID && PHP_VERSION_ID < 50621) || (70000 <= PHP_VERSION_ID && PHP_VERSION_ID < 70006)) {
             $this->assertSame(0, grapheme_strpos('abc', 'a', -1));
         } else {
@@ -110,7 +110,7 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
         }
         $this->assertSame(1, grapheme_strpos('한국어', '국'));
         $this->assertSame(3, grapheme_stripos('DÉJÀ', 'à'));
-        $this->assertSame(false, grapheme_strrpos('한국어', ''));
+        $this->assertFalse(grapheme_strrpos('한국어', ''));
         $this->assertSame(1, grapheme_strrpos('한국어', '국'));
         $this->assertSame(3, grapheme_strripos('DÉJÀ', 'à'));
     }
