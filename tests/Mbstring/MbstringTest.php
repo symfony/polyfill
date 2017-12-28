@@ -53,6 +53,133 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     */
+    public function testDecodeNumericEntity()
+    {
+        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+        $this->assertNull(@mb_decode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
+        $this->assertFalse(@mb_decode_numericentity('déjà', new \stdClass(), 'UTF-8'));
+        $this->assertFalse(@mb_decode_numericentity('déjà', array(), 'UTF-8'));
+        $this->assertEmpty(@mb_decode_numericentity('déjà', $convmap, new \stdClass()));  // PHPUnit returns null.
+
+        $this->assertSame('', mb_decode_numericentity('', $convmap, 'UTF-8'));
+        $iso = 'déjà &amp; &225; &#E1; &#XE1; &#e1; &#Xe1;';
+        $this->assertSame($iso, mb_decode_numericentity($iso, $convmap, 'UTF-8'));
+
+        $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
+        $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#0000225; &#0000226;', $convmap, 'UTF-8'));
+        if (PHP_VERSION > 54000) {
+            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#xe1; &#xe2;', $convmap, 'UTF-8'));
+            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#x0000e1; &#x0000e2;', $convmap, 'UTF-8'));
+            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#xE1; &#xE2;', $convmap, 'UTF-8'));
+            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#x0000E1; &#x0000E2;', $convmap, 'UTF-8'));
+        }
+        --$convmap[2];
+        $this->assertSame('déjà &#0; á â', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
+        --$convmap[2];
+        $this->assertSame('déjà &#0; â ã', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
+
+        $bogusDecEntities = 'déjà &#0; &#225;&#225; &#&#225&#225 &#225 &#225t';
+        $this->assertSame('déjà &#0; ââ &#&#225â â ât', mb_decode_numericentity($bogusDecEntities, $convmap, 'UTF-8'));
+
+        if (PHP_VERSION > 54000) {
+            $bogusHexEntities = 'déjà &#x0; &#xe1;&#xe1; &#xe1 &#xe1t &#xE1 &#xE1t';
+            $this->assertSame('déjà &#x0; ââ â ât â ât', mb_decode_numericentity($bogusHexEntities, $convmap, 'UTF-8'));
+        }
+
+        array_push($convmap, 0x1f600, 0x1f64f, -0x1f602, 0x0);
+        $this->assertSame('déjà 😂 â ã', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
+
+        $convmap = array(0x100, 0x10ffff, 0x0, 0x1fffff);
+        $this->assertSame("\xFE", mb_decode_numericentity('&#351;', $convmap, 'ISO-8859-9'));
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     */
+    public function testDecodeNumericEntityWarnsOnInvalidInputType()
+    {
+        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be string');
+        mb_decode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     */
+    public function testDecodeNumericEntityWarnsOnInvalidEncodingType()
+    {
+        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 3 to be string');
+        mb_decode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_encode_numericentity
+     */
+    public function testEncodeNumericEntity()
+    {
+        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+        $this->assertNull(@mb_encode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
+        $this->assertFalse(@mb_encode_numericentity('déjà', new \stdClass(), 'UTF-8'));
+        $this->assertFalse(@mb_encode_numericentity('déjà', array(), 'UTF-8'));
+        $this->assertNull(@mb_encode_numericentity('déjà', $convmap, new \stdClass()));
+        $this->assertNull(@mb_encode_numericentity('déjà', $convmap, 'UTF-8', new \stdClass()));
+
+        $this->assertSame('', mb_encode_numericentity('', $convmap, 'UTF-8'));
+        $iso = 'abc &amp; &#225; &#xe1; &#xE1;';
+        $this->assertSame($iso, mb_encode_numericentity($iso, $convmap, 'UTF-8'));
+
+        $convmap[0] = 0x21;
+        $this->assertSame('&#98; &#225; &#23456; &#128515;', mb_encode_numericentity('a à 実 😂', $convmap, 'UTF-8'));
+        --$convmap[2];
+        $this->assertSame('&#97; &#224; &#23455; &#128514;', mb_encode_numericentity('a à 実 😂', $convmap, 'UTF-8'));
+        --$convmap[2];
+        $this->assertSame('&#96; &#223; &#23454; &#128513;', mb_encode_numericentity('a à 実 😂', $convmap, 'UTF-8'));
+
+        array_push($convmap, 0x0, 0x1f, 0x1f602, 0x1fffff);
+        $this->assertSame('&#128514; &#96;', mb_encode_numericentity("\x00 a", $convmap, 'UTF-8'));
+
+        $convmap = array(0x100, 0x10ffff, 0x0, 0x1fffff);
+        $this->assertSame('&#351;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9'));
+
+        if (PHP_VERSION > 54000) {
+            $this->assertSame('&#351;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9', false));
+            $this->assertSame('&#x15F;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9', true));
+        }
+
+        // U+1F602 FACE WITH TEARS OF JOY is F0 9F 98 82 in UTF-8. ISO-8859-9 leaves 7F-9F undefined.
+        $this->assertSame("abc &#287;\x9F\x98\x82", mb_encode_numericentity('abc 😂', $convmap, 'ISO-8859-9'));
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     */
+    public function testEncodeNumericEntityWarnsOnInvalidInputType()
+    {
+        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be string');
+        mb_encode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
+    }
+
+    /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     */
+    public function testEncodeNumericEntityWarnsOnInvalidEncodingType()
+    {
+        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 3 to be string');
+        mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
+    }
+
+    /**
+     * @requires PHP 5.4
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     */
+    public function testEncodeNumericEntityWarnsOnInvalidIsHexType()
+    {
+        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 4 to be boolean');
+        mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
+    }
+
+    /**
      * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_strtolower
      * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_strtoupper
      * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_convert_case
