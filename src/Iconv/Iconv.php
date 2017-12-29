@@ -127,7 +127,8 @@ final class Iconv
 
     public static function iconv($inCharset, $outCharset, $str)
     {
-        if ('' === $str .= '') {
+        $str = (string) $str;
+        if ('' === $str) {
             return '';
         }
 
@@ -532,7 +533,7 @@ final class Iconv
             return false;
         }
 
-        $s .= '';
+        $s = (string) $s;
         $slen = self::iconv_strlen($s, 'utf-8');
         $start = (int) $start;
 
@@ -633,7 +634,7 @@ final class Iconv
         return substr($u, 0, $j);
     }
 
-    private static function mapToUtf8(&$result, $map, $str, $ignore)
+    private static function mapToUtf8(&$result, array $map, $str, $ignore)
     {
         $len = strlen($str);
         for ($i = 0; $i < $len; ++$i) {
@@ -651,7 +652,7 @@ final class Iconv
         return true;
     }
 
-    private static function mapFromUtf8(&$result, $map, $str, $ignore, $translit)
+    private static function mapFromUtf8(&$result, array $map, $str, $ignore, $translit)
     {
         $ulenMask = self::$ulenMask;
         $valid = self::$isValidUtf8;
@@ -707,7 +708,7 @@ final class Iconv
         return true;
     }
 
-    private static function qpByteCallback($m)
+    private static function qpByteCallback(array $m)
     {
         return '='.strtoupper(dechex(ord($m[0])));
     }
