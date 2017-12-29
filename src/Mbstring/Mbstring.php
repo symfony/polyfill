@@ -177,7 +177,7 @@ final class Mbstring
             $convmap[$i + 1] += $convmap[$i + 2];
         }
 
-        $s = preg_replace_callback('/&#(?:0*([0-9]+)|x0*([0-9a-fA-F]+))(?!&);?/', function ($m) use ($cnt, $convmap) {
+        $s = preg_replace_callback('/&#(?:0*([0-9]+)|x0*([0-9a-fA-F]+))(?!&);?/', function (array $m) use ($cnt, $convmap) {
             $c = isset($m[2]) ? (int) hexdec($m[2]) : $m[1];
             for ($i = 0; $i < $cnt; $i += 4) {
                 if ($c >= $convmap[$i] && $c <= $convmap[$i + 1]) {
@@ -723,7 +723,7 @@ final class Mbstring
         return self::mb_substr($haystack, $pos, null, $encoding);
     }
 
-    private static function html_encoding_callback($m)
+    private static function html_encoding_callback(array $m)
     {
         $i = 1;
         $entities = '';
@@ -748,12 +748,12 @@ final class Mbstring
         return $entities;
     }
 
-    private static function title_case_lower($s)
+    private static function title_case_lower(array $s)
     {
         return self::mb_convert_case($s[0], MB_CASE_LOWER, 'UTF-8');
     }
 
-    private static function title_case_upper($s)
+    private static function title_case_upper(array $s)
     {
         return self::mb_convert_case($s[0], MB_CASE_UPPER, 'UTF-8');
     }
