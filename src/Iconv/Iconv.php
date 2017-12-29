@@ -127,7 +127,8 @@ final class Iconv
 
     public static function iconv($inCharset, $outCharset, $str)
     {
-        if ('' === $str .= '') {
+        $str = (string) $str;
+        if ('' === $str) {
             return '';
         }
 
@@ -532,7 +533,7 @@ final class Iconv
             return false;
         }
 
-        $s .= '';
+        $s = (string) $s;
         $slen = self::iconv_strlen($s, 'utf-8');
         $start = (int) $start;
 

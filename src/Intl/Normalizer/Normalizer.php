@@ -45,7 +45,8 @@ class Normalizer
         if ($form <= self::NONE || self::NFKC < $form) {
             return false;
         }
-        if (!isset($s[strspn($s .= '', self::$ASCII)])) {
+        $s = (string) $s;
+        if (!isset($s[strspn($s, self::$ASCII)])) {
             return true;
         }
         if (self::NFC === $form && preg_match('//u', $s) && !preg_match('/[^\x00-\x{2FF}]/u', $s)) {
@@ -57,7 +58,8 @@ class Normalizer
 
     public static function normalize($s, $form = self::NFC)
     {
-        if (!preg_match('//u', $s .= '')) {
+        $s = (string) $s;
+        if (!preg_match('//u', $s)) {
             return false;
         }
 

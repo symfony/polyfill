@@ -154,7 +154,8 @@ final class Mbstring
             return '';  // Instead of null (cf. mb_encode_numericentity).
         }
 
-        if ('' === $s .= '') {
+        $s = (string) $s;
+        if ('' === $s) {
             return '';
         }
 
@@ -215,7 +216,8 @@ final class Mbstring
             return null;
         }
 
-        if ('' === $s .= '') {
+        $s = (string) $s;
+        if ('' === $s) {
             return '';
         }
 
@@ -262,7 +264,8 @@ final class Mbstring
 
     public static function mb_convert_case($s, $mode, $encoding = null)
     {
-        if ('' === $s .= '') {
+        $s = (string) $s;
+        if ('' === $s) {
             return '';
         }
 
@@ -477,7 +480,8 @@ final class Mbstring
             return strpos($haystack, $needle, $offset);
         }
 
-        if ('' === $needle .= '') {
+        $needle = (string) $needle;
+        if ('' === $needle) {
             trigger_error(__METHOD__.': Empty delimiter', E_USER_WARNING);
 
             return false;
@@ -551,7 +555,7 @@ final class Mbstring
             }
         }
 
-        return iconv_substr($s, $start, $length, $encoding).'';
+        return (string) iconv_substr($s, $start, $length, $encoding);
     }
 
     public static function mb_stripos($haystack, $needle, $offset = 0, $encoding = null)
