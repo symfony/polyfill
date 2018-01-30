@@ -168,10 +168,12 @@ final class Grapheme
 
     private static function grapheme_position($s, $needle, $offset, $mode)
     {
-        if (!preg_match('/./us', $needle .= '')) {
+        $needle = (string) $needle;
+        if (!preg_match('/./us', $needle)) {
             return false;
         }
-        if (!preg_match('/./us', $s .= '')) {
+        $s = (string) $s;
+        if (!preg_match('/./us', $s)) {
             return false;
         }
         if ($offset > 0) {
