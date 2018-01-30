@@ -74,7 +74,7 @@ class Php72Test extends \PHPUnit_Framework_TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->assertFalse(p::sapi_windows_vt100_support(STDOUT, false));
+        $this->assertFalse(sapi_windows_vt100_support(STDIN, true));
     }
 
     /**
@@ -83,7 +83,7 @@ class Php72Test extends \PHPUnit_Framework_TestCase
     public function testStreamIsatty()
     {
         $fp = fopen('php://temp', 'r+');
-        $this->assertFalse(p::stream_isatty($fp));
+        $this->assertFalse(stream_isatty($fp));
         fclose($fp);
     }
 }
