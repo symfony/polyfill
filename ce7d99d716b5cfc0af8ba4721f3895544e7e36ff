@@ -1,0 +1,35 @@
+---------------------------------------------------------------------------
+
+by johnstevenson at 2017-11-23T11:46:58Z
+
+I've changed the logic in `sapi_windows_vt100_support`, based on the following:
+
+The only way to enable support for vt100 sequences in modern Windows consoles is to use the `SetConsoleMode` API function and PHP now provides a way to do this with `sapi_windows_vt100_support`. This is a multi-purpose function that can enable support, disable support or return whether support is enabled. Note that on cli start-up support will not be enabled.
+
+So in userland, an app that outputs vt100 sequences will either enable it early on, or on-demand in an output handler. It would unnecessary to disable it, because an app would simply omit vt100 sequences if they were inappropriate.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-11-23T11:51:53Z
+
+I would trust you on this one, looks :+1: to me.
+
+---------------------------------------------------------------------------
+
+by johnstevenson at 2017-11-23T14:33:53Z
+
+@nicolas-grekas Thanks. I reviewed the [PR](https://github.com/php/php-src/pull/2103) that added this to php-src and contributed some mods and stuff (like the `stream_isatty` function), which might or might not set your mind at rest.
+
+---------------------------------------------------------------------------
+
+by johnstevenson at 2017-12-01T19:00:40Z
+
+@nicolas-grekas Apologies, but I found some Git Bash weirdness happening when testing [composer/xdebug-handler](https://github.com/composer/xdebug-handler/commit/e8183436dec249085f98be35df2e89d89bb8ff4c)
+
+In addition, if you invoke `git-bash.exe` then `TERM=xterm`, but if you use `Git\bin\bash.exe` then `TERM=cygwin` and color output is not supported (although it was on older versions of Git for Windows).
+
+---------------------------------------------------------------------------
+
+by johnstevenson at 2018-01-30T19:20:49Z
+
+@nicolas-grekas To confirm: The tests pass on PHP-7.2 on Windows
