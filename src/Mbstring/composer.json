@@ -16,7 +16,11 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.3.3",
+        "ext-iconv": "*"
+    },
+    "provide": {
+        "ext-mbstring": "7"
     },
     "autoload": {
         "psr-4": { "Symfony\\Polyfill\\Mbstring\\": "" },

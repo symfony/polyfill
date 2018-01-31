@@ -24,6 +24,10 @@
     "require-dev": {
         "symfony/phpunit-bridge": "~3.2"
     },
+    "provide": {
+        "ext-iconv": "7",
+        "ext-mbstring": "7"
+    },
     "replace": {
         "symfony/polyfill-apcu": "self.version",
         "symfony/polyfill-php54": "self.version",
