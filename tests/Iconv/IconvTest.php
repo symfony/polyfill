@@ -11,6 +11,7 @@
 
 namespace Symfony\Polyfill\Tests\Iconv;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Iconv\Iconv as p;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Polyfill\Iconv\Iconv as p;
  *
  * @covers Symfony\Polyfill\Iconv\Iconv::<!public>
  */
-class IconvTest extends \PHPUnit_Framework_TestCase
+class IconvTest extends TestCase
 {
     /**
      * @covers Symfony\Polyfill\Iconv\Iconv::iconv
@@ -110,7 +111,8 @@ class IconvTest extends \PHPUnit_Framework_TestCase
     public function testIconvMimeDecodeIllegal()
     {
         iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .');
-        $this->setExpectedException('PHPUnit_Framework_Error_Notice', 'Detected an illegal character in input string');
+        $this->expectException('PHPUnit\Framework\Error\Notice');
+        $this->expectExceptionMessage('Detected an illegal character in input string');
         iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.chr(0xA1).'?= .');
     }
 

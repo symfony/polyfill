@@ -11,6 +11,7 @@
 
 namespace Symfony\Polyfill\Tests\Intl\Grapheme;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Intl\Grapheme\Grapheme as p;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Polyfill\Intl\Grapheme\Grapheme as p;
  *
  * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::<!public>
  */
-class GraphemeTest extends \PHPUnit_Framework_TestCase
+class GraphemeTest extends TestCase
 {
     /**
      * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
@@ -26,7 +27,8 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
     public function testGraphemeExtractArrayError()
     {
         grapheme_extract('', 0);
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be string, array given');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('expects parameter 1 to be string, array given');
         grapheme_extract(array(), 0);
     }
 

@@ -11,6 +11,7 @@
 
 namespace Symfony\Polyfill\Tests\Mbstring;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Mbstring\Mbstring as p;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Polyfill\Mbstring\Mbstring as p;
  *
  * @covers Symfony\Polyfill\Mbstring\Mbstring::<!public>
  */
-class MbstringTest extends \PHPUnit_Framework_TestCase
+class MbstringTest extends TestCase
 {
     /**
      * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_internal_encoding
@@ -261,7 +262,8 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
     public function testStrposEmptyDelimiter()
     {
         mb_strpos('abc', 'a');
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'Empty delimiter');
+	$this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('Empty delimiter');
         mb_strpos('abc', '');
     }
 
@@ -274,7 +276,8 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         if (PHP_VERSION_ID >= 70100) {
             $this->assertFalse(mb_strpos('abc', 'a', -1));
         } else {
-            $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'Offset not contained in string');
+            $this->expectException('PHPUnit\Framework\Error\Warning');
+            $this->expectExceptionMessage('Offset not contained in string');
             mb_strpos('abc', 'a', -1);
         }
     }

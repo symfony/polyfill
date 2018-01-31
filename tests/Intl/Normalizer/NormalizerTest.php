@@ -11,6 +11,7 @@
 
 namespace Symfony\Polyfill\Tests\Intl\Normalizer;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Intl\Normalizer\Normalizer as pn;
 use Normalizer as in;
 
@@ -20,7 +21,7 @@ use Normalizer as in;
  * @covers Symfony\Polyfill\Intl\Normalizer\Normalizer::<!public>
  * @requires extension intl
  */
-class NormalizerTest extends \PHPUnit_Framework_TestCase
+class NormalizerTest extends TestCase
 {
     public function testConstants()
     {

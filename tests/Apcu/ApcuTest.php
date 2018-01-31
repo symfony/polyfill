@@ -11,10 +11,12 @@
 
 namespace Symfony\Polyfill\Tests\Apcu;
 
+use PHPUnit\Framework\TestCase;
+
 /**
  * @requires extension apc
  */
-class ApcuTest extends \PHPUnit_Framework_TestCase
+class ApcuTest extends TestCase
 {
     public function testApcu()
     {

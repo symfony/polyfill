@@ -11,7 +11,9 @@
 
 namespace Symfony\Polyfill\Tests\Php71;
 
-class Php71Test extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class Php71Test extends TestCase
 {
     /**
      * @dataProvider provideIsIterable
