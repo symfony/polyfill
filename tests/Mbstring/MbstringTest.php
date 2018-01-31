@@ -11,6 +11,7 @@
 
 namespace Symfony\Polyfill\Tests\Mbstring;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Mbstring\Mbstring as p;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Polyfill\Mbstring\Mbstring as p;
  *
  * @covers Symfony\Polyfill\Mbstring\Mbstring::<!public>
  */
-class MbstringTest extends \PHPUnit_Framework_TestCase
+class MbstringTest extends TestCase
 {
     /**
      * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_internal_encoding
@@ -100,7 +101,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be string');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string');
         mb_decode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -109,7 +110,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 3 to be string');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string');
         mb_decode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -156,7 +157,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be string');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string');
         mb_encode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -165,7 +166,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 3 to be string');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -175,7 +176,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidIsHexType()
     {
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 4 to be boolean');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 4 to be boolean');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
     }
 
@@ -261,7 +262,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
     public function testStrposEmptyDelimiter()
     {
         mb_strpos('abc', 'a');
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'Empty delimiter');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Empty delimiter');
         mb_strpos('abc', '');
     }
 
@@ -274,7 +275,7 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         if (PHP_VERSION_ID >= 70100) {
             $this->assertFalse(mb_strpos('abc', 'a', -1));
         } else {
-            $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'Offset not contained in string');
+            $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Offset not contained in string');
             mb_strpos('abc', 'a', -1);
         }
     }
@@ -391,5 +392,18 @@ class MbstringTest extends \PHPUnit_Framework_TestCase
         \mb_substitute_character('none');
         $this->assertSame('ab', mb_scrub("a\xE9b"));
         \mb_substitute_character($subst);
+    }
+
+    public function setExpectedException($exception, $message = '', $code = null)
+    {
+        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
+            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
+        }
+        if (method_exists($this, 'expectException')) {
+            $this->expectException($exception);
+            $this->expectExceptionMessage($message);
+        } else {
+            parent::setExpectedException($exception, $message, $code);
+        }
     }
 }
