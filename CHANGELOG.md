@@ -1,3 +1,9 @@
+* v1.7.0
+
+ * added logic to new stream functions on Windows (sapi_windows_vt100_support)
+ * added polyfills for mb_*_numericentity
+ * made translit/ignore flags order-insensitive
+
 * v1.6.0
 
  * add `SessionUpdateTimestampHandlerInterface` in PHP 7.0 polyfill
