@@ -11,6 +11,7 @@
 
 namespace Symfony\Polyfill\Tests\Intl\Grapheme;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Intl\Grapheme\Grapheme as p;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Polyfill\Intl\Grapheme\Grapheme as p;
  *
  * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::<!public>
  */
-class GraphemeTest extends \PHPUnit_Framework_TestCase
+class GraphemeTest extends TestCase
 {
     /**
      * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
@@ -26,7 +27,7 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
     public function testGraphemeExtractArrayError()
     {
         grapheme_extract('', 0);
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be string, array given');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string, array given');
         grapheme_extract(array(), 0);
     }
 
@@ -133,5 +134,18 @@ class GraphemeTest extends \PHPUnit_Framework_TestCase
         }
         $this->assertSame(16, grapheme_stripos('der Straße nach Paris', 'Paris'));
         $this->assertSame('Paris', grapheme_stristr('der Straße nach Paris', 'Paris'));
+    }
+
+    public function setExpectedException($exception, $message = '', $code = null)
+    {
+        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
+            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
+        }
+        if (method_exists($this, 'expectException')) {
+            $this->expectException($exception);
+            $this->expectExceptionMessage($message);
+        } else {
+            parent::setExpectedException($exception, $message, $code);
+        }
     }
 }

@@ -11,6 +11,7 @@
 
 namespace Symfony\Polyfill\Tests\Php72;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Php72\Php72 as p;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Polyfill\Php72\Php72 as p;
  *
  * @covers Symfony\Polyfill\Php72\Php72::<!public>
  */
-class Php72Test extends \PHPUnit_Framework_TestCase
+class Php72Test extends TestCase
 {
     /**
      * @covers Symfony\Polyfill\Php72\Php72::utf8_encode

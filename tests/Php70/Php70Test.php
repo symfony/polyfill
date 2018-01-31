@@ -11,7 +11,9 @@
 
 namespace Symfony\Polyfill\Tests\Php70;
 
-class Php70Test extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class Php70Test extends TestCase
 {
     public function testPhpIntMin()
     {

@@ -5,7 +5,7 @@ clone_folder: c:\projects\polyfill
 
 cache:
     - c:\php -> appveyor.yml
-    - vendor
+    - vendor -> appveyor.yml
 
 init:
     - SET PATH=c:\php;%PATH%
