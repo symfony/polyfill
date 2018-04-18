@@ -1,8 +1,8 @@
 {
-    "name": "symfony/polyfill-util",
+    "name": "symfony/polyfill-php73",
     "type": "library",
-    "description": "Symfony utilities for portability of PHP codes",
-    "keywords": ["polyfill", "shim", "compat", "compatibility"],
+    "description": "Symfony polyfill backporting some PHP 7.3+ features to lower PHP versions",
+    "keywords": ["polyfill", "shim", "compatibility", "portable"],
     "homepage": "https://symfony.com",
     "license": "MIT",
     "authors": [
@@ -19,7 +19,8 @@
         "php": ">=5.3.3"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Util\\": "" }
+        "psr-4": { "Symfony\\Polyfill\\Php73\\": "" },
+        "files": [ "bootstrap.php" ]
     },
     "minimum-stability": "dev",
     "extra": {
