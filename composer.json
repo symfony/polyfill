@@ -26,6 +26,7 @@
     },
     "replace": {
         "symfony/polyfill-apcu": "self.version",
+        "symfony/polyfill-ctype": "self.version",
         "symfony/polyfill-php54": "self.version",
         "symfony/polyfill-php55": "self.version",
         "symfony/polyfill-php56": "self.version",
