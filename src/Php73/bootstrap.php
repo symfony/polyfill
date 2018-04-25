@@ -11,8 +11,6 @@
 
 if (PHP_VERSION_ID < 70300) {
     if (!function_exists('is_countable')) {
-        function is_countable($var) {
-            return is_array($var) || $var instanceof Countable;
-        }
+        function is_countable($var) { return is_array($var) || $var instanceof Countable; }
     }
 }

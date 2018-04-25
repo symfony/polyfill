@@ -87,7 +87,7 @@ class Php72Test extends TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be resource');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be resource');
         sapi_windows_vt100_support('foo', true);
     }
 
@@ -100,7 +100,7 @@ class Php72Test extends TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'was not able to analyze the specified stream');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'was not able to analyze the specified stream');
         sapi_windows_vt100_support(fopen('php://memory', 'wb'), true);
     }
 
@@ -119,7 +119,20 @@ class Php72Test extends TestCase
      */
     public function testStreamIsattyWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit_Framework_Error_Warning', 'expects parameter 1 to be resource');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be resource');
         stream_isatty('foo');
+    }
+
+    public function setExpectedException($exception, $message = '', $code = null)
+    {
+        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
+            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
+        }
+        if (method_exists($this, 'expectException')) {
+            $this->expectException($exception);
+            $this->expectExceptionMessage($message);
+        } else {
+            parent::setExpectedException($exception, $message, $code);
+        }
     }
 }

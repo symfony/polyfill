@@ -18,9 +18,6 @@ use PHPUnit\Framework\TestCase;
  */
 class Php73Test extends TestCase
 {
-    /**
-     * @covers Symfony\Polyfill\Php73\Php73::is_countable
-     */
     public function testIsCountable()
     {
         $this->assertTrue(is_countable(array(1, 2, '3')));
@@ -30,7 +27,6 @@ class Php73Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php73\Php73::is_countable
      * @requires PHP 5.5
      */
     public function testIsCountableForGenerator()
