@@ -46,6 +46,7 @@
         "psr-4": { "Symfony\\Polyfill\\": "src/" },
         "files": [
             "src/Apcu/bootstrap.php",
+            "src/Ctype/bootstrap.php",
             "src/Php54/bootstrap.php",
             "src/Php55/bootstrap.php",
             "src/Php56/bootstrap.php",
