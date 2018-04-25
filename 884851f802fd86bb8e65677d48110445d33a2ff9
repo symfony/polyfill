@@ -1,0 +1,12 @@
+---------------------------------------------------------------------------
+
+by johnstevenson at 2018-03-01T18:43:19Z
+
+Thanks for the changes but it doesn't catch the error thrown on `php://temp` because it is not selectable. I'd suggest just relying on the stream_type being `STDIO`:
+
+```php
+if ('STDIO' !== $meta['stream_type']) {
+    trigger_error('sapi_windows_vt100_support() was not able to analyze the specified stream', E_USER_WARNING);
+    return false;
+}
+```
