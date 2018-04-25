@@ -48,8 +48,16 @@ class CtypeTest extends TestCase
 
     public function provideInvalidAlnum()
     {
-        return array (
-            array (8),
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
+            array(8),
             array(43),
             array(-127),
             array('asd df'),
@@ -91,8 +99,16 @@ class CtypeTest extends TestCase
 
     public function provideInvalidAlpha()
     {
-        return array (
-            array (8),
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
+            array(8),
             array(43),
             array(53),
             array('asd df'),
@@ -134,7 +150,15 @@ class CtypeTest extends TestCase
 
     public function provideInvalidCntrl()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
             array(53),
             array(65),
             array(98),
@@ -180,11 +204,21 @@ class CtypeTest extends TestCase
 
     public function provideInvalidDigit()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
             array(8),
             array(43),
             array(65),
             array(98),
+            array(-129),
+            array(-456),
             array('asd df'),
             array(''),
             array('é'),
@@ -206,6 +240,8 @@ class CtypeTest extends TestCase
     public function provideValidGraphs()
     {
         return array(
+            array(-129),
+            array(-386),
             array('0'),
             array(43),
             array(53),
@@ -230,7 +266,13 @@ class CtypeTest extends TestCase
 
     public function provideInvalidGraph()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
             array(8),
             array(127),
             array('asd df'),
@@ -254,7 +296,7 @@ class CtypeTest extends TestCase
         return array(
             array(98),
             array('asdf'),
-            array('stuff')
+            array('stuff'),
         );
     }
 
@@ -268,7 +310,15 @@ class CtypeTest extends TestCase
 
     public function provideInvalidLower()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
             array('asd df'),
             array('ADD'),
             array('123'),
@@ -292,6 +342,8 @@ class CtypeTest extends TestCase
     public function provideValidPrints()
     {
         return array(
+            array(-129),
+            array(-386),
             array('0'),
             array(43),
             array(53),
@@ -301,7 +353,7 @@ class CtypeTest extends TestCase
             array('567'),
             array('!!'),
             array('@@!#^$'),
-            array('asd df')
+            array('asd df'),
         );
     }
 
@@ -315,12 +367,18 @@ class CtypeTest extends TestCase
 
     public function provideInvalidPrint()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
             array(8),
             array(127),
             array('é'),
             array("\n"),
-            array("\x00asdf")
+            array("\x00asdf"),
         );
     }
 
@@ -337,7 +395,7 @@ class CtypeTest extends TestCase
         return array(
             array(43),
             array('!!'),
-            array('@@!#^$')
+            array('@@!#^$'),
         );
     }
 
@@ -351,7 +409,15 @@ class CtypeTest extends TestCase
 
     public function provideInvalidPunct()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
             array(8),
             array(53),
             array(65),
@@ -364,7 +430,7 @@ class CtypeTest extends TestCase
             array('A1cbad'),
             array(''),
             array("\n"),
-            array("\x00asdf")
+            array("\x00asdf"),
         );
     }
 
@@ -384,7 +450,7 @@ class CtypeTest extends TestCase
             array("\n"),
             array("\r\n"),
             array("\n\r"),
-            array("\r")
+            array("\r"),
         );
     }
 
@@ -398,7 +464,15 @@ class CtypeTest extends TestCase
 
     public function provideInvalidSpace()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
             array(8),
             array(65),
             array(98),
@@ -410,7 +484,7 @@ class CtypeTest extends TestCase
             array("\x01"),
             array(''),
             array('Ad12'),
-            array('ADD')
+            array('ADD'),
         );
     }
 
@@ -428,7 +502,7 @@ class CtypeTest extends TestCase
             array(65),
             array('ADD'),
             array('ASDF'),
-            array('DDD')
+            array('DDD'),
         );
     }
 
@@ -442,7 +516,15 @@ class CtypeTest extends TestCase
 
     public function provideInvalidUpper()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
             array(8),
             array(43),
             array(53),
@@ -486,7 +568,7 @@ class CtypeTest extends TestCase
             array('a0123'),
             array('A4fD'),
             array('DDD'),
-            array('bbb')
+            array('bbb'),
         );
     }
 
@@ -500,7 +582,15 @@ class CtypeTest extends TestCase
 
     public function provideInvalidXdigit()
     {
-        return array (
+        return array(
+            array(array()),
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array(53.0),
+            array(25.4),
+            array(-129),
+            array(-386),
             array(43),
             array(71),
             array(103),
@@ -515,7 +605,7 @@ class CtypeTest extends TestCase
             array("\n"),
             array("\r\n"),
             array("\n\r"),
-            array("\r")
+            array("\r"),
         );
     }
 }
