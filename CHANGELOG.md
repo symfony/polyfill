@@ -1,3 +1,7 @@
+* v1.8.0
+
+ * added PHP 7.3 polyfill
+
 * v1.7.0
 
  * added logic to new stream functions on Windows (sapi_windows_vt100_support)

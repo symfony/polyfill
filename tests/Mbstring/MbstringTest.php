@@ -176,7 +176,7 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidIsHexType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 4 to be boolean');
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 4 to be bool');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
     }
 
