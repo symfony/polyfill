@@ -12,7 +12,10 @@
 if (PHP_VERSION_ID < 70300) {
     if (!function_exists('is_countable')) {
         function is_countable($var) {
-            return is_array($var) || $var instanceof Countable;
+            return is_array($var)
+                || $var instanceof Countable
+                || $var instanceof ResourceBundle
+                || $var instanceof SimpleXmlElement;
         }
     }
 }

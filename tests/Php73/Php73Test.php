@@ -26,6 +26,8 @@ class Php73Test extends TestCase
         $this->assertTrue(is_countable(array(1, 2, '3')));
         $this->assertTrue(is_countable(new \ArrayIterator(array('foo', 'bar', 'baz'))));
         $this->assertTrue(is_countable(new \ArrayIterator()));
+        $this->assertTrue(is_countable(new \SimpleXMLElement('<foo><bar/><bar/><bar/></foo>')));
+        $this->assertTrue(is_countable(\ResourceBundle::create('en', __DIR__.'/fixtures')));
         $this->assertFalse(is_countable(new \stdClass()));
     }
 
