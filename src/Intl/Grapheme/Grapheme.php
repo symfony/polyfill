@@ -39,7 +39,7 @@ final class Grapheme
 
     public static function grapheme_extract($s, $size, $type = GRAPHEME_EXTR_COUNT, $start = 0, &$next = 0)
     {
-        if (!is_scalar($s)) {
+        if (!\is_scalar($s)) {
             $hasError = false;
             set_error_handler(function () use (&$hasError) {$hasError = true;});
             $next = substr($s, $start);
@@ -79,7 +79,7 @@ final class Grapheme
             if (GRAPHEME_EXTR_COUNT === $type) {
                 --$size;
             } elseif (GRAPHEME_EXTR_MAXBYTES === $type) {
-                $size -= strlen($s[$i]);
+                $size -= \strlen($s[$i]);
             } else {
                 $size -= iconv_strlen($s[$i], 'UTF-8//IGNORE');
             }
@@ -89,7 +89,7 @@ final class Grapheme
             }
         } while (isset($s[++$i]) && $size > 0);
 
-        $next += strlen($ret);
+        $next += \strlen($ret);
 
         return $ret;
     }
@@ -105,7 +105,7 @@ final class Grapheme
     {
         preg_match_all('/'.SYMFONY_GRAPHEME_CLUSTER_RX.'/u', $s, $s);
 
-        $slen = count($s[0]);
+        $slen = \count($s[0]);
         $start = (int) $start;
 
         if (0 > $start) {

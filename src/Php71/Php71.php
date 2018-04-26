@@ -20,6 +20,6 @@ final class Php71
 {
     public static function is_iterable($var)
     {
-        return is_array($var) || $var instanceof \Traversable;
+        return \is_array($var) || $var instanceof \Traversable;
     }
 }
