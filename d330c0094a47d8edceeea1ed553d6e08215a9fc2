@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by carusogabriel at 2018-04-25T20:12:01Z
+
+@pierredup Is there any way to find all of then?
+
+---------------------------------------------------------------------------
+
+by pierredup at 2018-04-25T20:52:40Z
+
+I used [https://github.com/php/php-src/search?utf8=✓&q=count_elements&type=](https://github.com/php/php-src/search?utf8=✓&q=count_elements&type=) as a simple check, which should cover everything in core. The other items found in the result (SplHeap, DoublyLinkedList, SplFixedArray etc) already implement Countable
