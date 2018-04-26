@@ -26,12 +26,11 @@ before_install:
     - INI=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
     - echo memory_limit = -1 >> $INI
     - echo session.gc_probability = 0 >> $INI
-    - echo extension = ldap.so >> $INI
     - echo apc.enable_cli = 1 >> $INI
     - phpenv config-rm xdebug.ini || echo "xdebug not available"
     - if [[ $TRAVIS_PHP_VERSION = 5.* ]]; then echo yes | pecl install -f apcu-4.0.11; fi
-    - if [[ $TRAVIS_PHP_VERSION = 7.0 ]]; then echo yes | pecl install -f apcu-5.1.5; fi
-    - if [[ $TRAVIS_PHP_VERSION = 7.0 ]]; then echo yes | pecl install channel://pecl.php.net/apcu_bc-1.0.3 && echo extension = apc.so >> $INI; fi
+    - if [[ $TRAVIS_PHP_VERSION = 7.* ]]; then echo yes | pecl install -f apcu_bc-1.0.4; fi
+    - if [[ $TRAVIS_PHP_VERSION = 7.* ]]; then echo yes | pecl install -f apcu-5.1.11; fi
     - php -i
 
 install:
