@@ -23,7 +23,7 @@ final class Apcu
 {
     public static function apcu_add($key, $var = null, $ttl = 0)
     {
-        if (!is_array($key)) {
+        if (!\is_array($key)) {
             return apc_add($key, $var, $ttl);
         }
 
@@ -39,7 +39,7 @@ final class Apcu
 
     public static function apcu_store($key, $var = null, $ttl = 0)
     {
-        if (!is_array($key)) {
+        if (!\is_array($key)) {
             return apc_store($key, $var, $ttl);
         }
 
@@ -55,7 +55,7 @@ final class Apcu
 
     public static function apcu_exists($keys)
     {
-        if (!is_array($keys)) {
+        if (!\is_array($keys)) {
             return apc_exists($keys);
         }
 
@@ -71,7 +71,7 @@ final class Apcu
 
     public static function apcu_fetch($key, &$success = null)
     {
-        if (!is_array($key)) {
+        if (!\is_array($key)) {
             return apc_fetch($key, $success);
         }
 
@@ -92,7 +92,7 @@ final class Apcu
 
     public static function apcu_delete($key)
     {
-        if (!is_array($key)) {
+        if (!\is_array($key)) {
             return apc_delete($key);
         }
 
