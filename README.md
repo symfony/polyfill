@@ -7,6 +7,7 @@ used when portability across PHP versions and extensions is desired.
 
 Polyfills are provided for:
 - the `apcu` extension when the legacy `apc` extension is installed;
+- the `ctype` extension when php is compiled without ctype;
 - the `mbstring` and `iconv` extensions;
 - the `Normalizer` class and the `grapheme_*` functions;
 - the `utf8_encode` and `utf8_decode` functions from the `xml` extension or PHP-7.2 core;

@@ -1,6 +1,7 @@
 * v1.8.0
 
  * added PHP 7.3 polyfill
+ * added polyfills for `ctype_*` functions
 
 * v1.7.0
 
