@@ -54,6 +54,7 @@ Usage
 When using [Composer](https://getcomposer.org/) to manage your dependencies, you
 should **not** `require` the `symfony/polyfill` package, but the standalone ones:
 - `symfony/polyfill-apcu` for using the `apcu_*` functions,
+- `symfony/polyfill-ctype` for using the ctype functions,
 - `symfony/polyfill-php54` for using the PHP 5.4 functions,
 - `symfony/polyfill-php55` for using the PHP 5.5 functions,
 - `symfony/polyfill-php56` for using the PHP 5.6 functions,
