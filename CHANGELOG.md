@@ -1,3 +1,7 @@
+* v1.9.0
+
+ * added polyfill for `hrtime()`
+
 * v1.8.0
 
  * added PHP 7.3 polyfill
