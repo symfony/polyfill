@@ -3,12 +3,20 @@
 namespace Symfony\Polyfill\Php73;
 
 /**
+ * @author Gabriel Caruso <carusogabriel34@gmail.com>
+ * @author Ion Bazan <ion.bazan@gmail.com>
+ *
  * @internal
  */
 final class Php73
 {
     const NANO_IN_SEC = 1000000000.0;
 
+    /**
+     * @param mixed $var
+     *
+     * @return bool
+     */
     public static function is_countable($var)
     {
         return is_array($var)
@@ -17,6 +25,11 @@ final class Php73
             || $var instanceof \SimpleXmlElement;
     }
 
+    /**
+     * @param bool $as_num
+     *
+     * @return array|float
+     */
     public static function hrtime($as_num = false)
     {
         if ($as_num) {
