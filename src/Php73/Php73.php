@@ -26,13 +26,13 @@ final class Php73
     }
 
     /**
-     * @param bool $as_num
+     * @param bool $asNum
      *
      * @return array|float
      */
-    public static function hrtime($as_num = false)
+    public static function hrtime($asNum = false)
     {
-        if ($as_num) {
+        if ($asNum) {
             return microtime(true) * self::NANO_IN_SEC;
         }
 

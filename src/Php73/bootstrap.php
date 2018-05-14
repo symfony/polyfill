@@ -17,6 +17,6 @@ if (PHP_VERSION_ID < 70300) {
     }
 
     if (!function_exists('hrtime')) {
-        function hrtime($as_num = false) { return p\Php73::hrtime($as_num); }
+        function hrtime($asNum = false) { return p\Php73::hrtime($asNum); }
     }
 }
