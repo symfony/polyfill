@@ -11,7 +11,8 @@ namespace Symfony\Polyfill\Php73;
 final class Php73
 {
     const NANO_IN_SEC = 1e9;
-    const NANO_IN_MSEC = 1e3;
+    const NANO_IN_MSEC = 1000;
+    const MSEC_IN_SEC = 1e6;
 
     private static $startAt = null;
     private static $startAtArr = null;
@@ -23,25 +24,42 @@ final class Php73
      */
     public static function hrtime($asNum = false)
     {
-        if ($asNum) {
-            if (null === self::$startAt) {
-                self::$startAt = microtime(true);
+        if (null === self::$startAt) {
+            self::$startAtArr = self::microtimeNumbers();
+            self::$startAt = self::$startAtArr[0] + (float) self::$startAtArr[1];
+            if (\PHP_INT_SIZE !== 4) {
+                self::$startAt = (int) (self::$startAt * self::MSEC_IN_SEC);
             }
-            $nanos = (microtime(true) - self::$startAt) * self::NANO_IN_SEC;
+        }
 
+        if ($asNum) {
             if (\PHP_INT_SIZE === 4) {
+                $nanos = (microtime(true) - self::$startAt) * self::NANO_IN_SEC;
+
+                // Floor removes rounding errors from floating point
                 return floor($nanos);
             }
+            $now = (int) (microtime(true) * self::MSEC_IN_SEC);
 
-            return (int) $nanos;
+            return ($now - self::$startAt) * self::NANO_IN_MSEC;
         }
 
-        if (null === self::$startAtArr) {
-            self::$startAtArr = explode(' ', microtime());
+        $time = self::microtimeNumbers();
+
+        $secs = $time[1] - self::$startAtArr[1];
+        $msecs = $time[0] - self::$startAtArr[0];
+        if ($msecs < 0) {
+            $msecs += 1;
+            $secs -= 1;
         }
 
+        return array($secs, (int) ($msecs * self::NANO_IN_SEC));
+    }
+
+    private static function microtimeNumbers()
+    {
         $time = explode(' ', microtime());
 
-        return array((int) $time[1] - self::$startAt[1], (int) (($time[0] - self::$startAt[0]) * self::NANO_IN_MSEC));
+        return array((float) $time[0], (int) $time[1]);
     }
 }
