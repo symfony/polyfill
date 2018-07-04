@@ -38,29 +38,52 @@ class Php73Test extends TestCase
         $this->assertFalse(is_countable(genOneToTen()));
     }
 
+    public function testHardwareTimeAsNumType()
+    {
+        $hrtime = hrtime(true);
+        if (PHP_INT_SIZE === 4) {
+            $this->assertTrue(is_float($hrtime));
+        } else {
+            $this->assertTrue(is_int($hrtime));
+        }
+    }
+
     public function testHardwareTimeAsNum()
     {
         $hrtime = hrtime(true);
-        $this->assertTrue(is_float($hrtime) || is_int($hrtime));
 
-        usleep(1000);
+        usleep(1000000);
         $d1 = hrtime(true) - $hrtime;
 
-        $this->assertEquals(10000000, $d1, '', 9e6);
+        $this->assertEquals(1000000000, $d1, '', 9e7);
     }
 
-    public function testHardwareTimeAsArray()
+    public function testHardwareTimeAsArrayType()
     {
         $hrtime = hrtime();
         $this->assertInternalType('array', $hrtime);
         $this->assertCount(2, $hrtime);
         $this->assertInternalType('int', $hrtime[0]);
         $this->assertInternalType('int', $hrtime[1]);
+    }
 
+    public function testHardwareTimeAsArrayNanos()
+    {
+        $hrtime = hrtime();
         usleep(1000);
         $hrtime2 = hrtime();
 
         $this->assertSame(0, $hrtime2[0] - $hrtime[0]);
         $this->assertEquals(1000000, $hrtime2[1] - $hrtime[1], '', 9e6);
+    }
+
+    public function testHardwareTimeAsArraySeconds()
+    {
+        $hrtime = hrtime();
+        usleep(1e6);
+        $hrtime2 = hrtime();
+
+        $this->assertSame(1, $hrtime2[0] - $hrtime[0]);
+        $this->assertEquals(0, $hrtime2[1] - $hrtime[1], '', 9e6);
     }
 }
