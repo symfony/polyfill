@@ -11,8 +11,9 @@ namespace Symfony\Polyfill\Php73;
 final class Php73
 {
     const NANO_IN_SEC = 1000000000;
+    const NANO_IN_SEC_F = 1000000000.0;
     const NANO_IN_MSEC = 1000;
-    const MSEC_IN_SEC = 1000000.0;
+    const MSEC_IN_SEC_F = 1000000.0;
 
     private static $startAt = null;
 
@@ -24,29 +25,28 @@ final class Php73
     public static function hrtime($asNum = false)
     {
         if (null === self::$startAt) {
-            self::$startAt = microtime(true);
+            self::$startAt = \microtime(true);
             if (\PHP_INT_SIZE !== 4) {
                 // In this case $startAt is a int, number of micro seconds
-                self::$startAt = (int) (self::$startAt * self::MSEC_IN_SEC);
+                self::$startAt = (int) (self::$startAt * self::MSEC_IN_SEC_F);
             }
         }
 
         if (\PHP_INT_SIZE === 4) {
             // Floor removes rounding errors from floating point
-            $nanos = floor((microtime(true) - self::$startAt) * self::NANO_IN_SEC);
+            $nanos = \floor((\microtime(true) - self::$startAt) * self::NANO_IN_SEC_F);
         } else {
-            $nowNanos = (int)(microtime(true) * self::MSEC_IN_SEC);
-
-            $nanos = ($nowNanos - self::$startAt) * self::NANO_IN_MSEC;
+            $nowMsecs = (int) (\microtime(true) * self::MSEC_IN_SEC_F);
+            $nanos = ($nowMsecs - self::$startAt) * self::NANO_IN_MSEC;
         }
 
         if ($asNum) {
             return $nanos;
         }
 
-        $secs = (int) ($nanos / self::NANO_IN_SEC);
-        $nanosPart = (int) $nanos - ($secs * self::NANO_IN_SEC);
+        $secsPart = (int) ($nanos / self::NANO_IN_SEC_F);
+        $nanosPart = (int) $nanos - ($secsPart * self::NANO_IN_SEC);
 
-        return array($secs, $nanosPart);
+        return array($secsPart, $nanosPart);
     }
 }
