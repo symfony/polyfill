@@ -10,12 +10,9 @@ namespace Symfony\Polyfill\Php73;
  */
 final class Php73
 {
-    const NANO_IN_SEC = 1e9;
-    const NANO_IN_MSEC = 1000;
-    const MSEC_IN_SEC = 1e6;
+    const NANO_IN_SEC = 1000000000;
 
     private static $startAt = null;
-    private static $startAtArr = null;
 
     /**
      * @param bool $asNum
@@ -25,38 +22,31 @@ final class Php73
     public static function hrtime($asNum = false)
     {
         if (null === self::$startAt) {
-            self::$startAtArr = self::microtimeNumbers();
-            self::$startAt = self::$startAtArr[0] + (float) self::$startAtArr[1];
-            if (\PHP_INT_SIZE !== 4) {
-                self::$startAt = (int) (self::$startAt * self::MSEC_IN_SEC);
-            }
+            self::$startAt = self::microtime();
         }
 
-        if ($asNum) {
-            if (\PHP_INT_SIZE === 4) {
-                $nanos = (microtime(true) - self::$startAt) * self::NANO_IN_SEC;
+        $time = self::microtime();
 
-                // Floor removes rounding errors from floating point
-                return floor($nanos);
-            }
-            $now = (int) (microtime(true) * self::MSEC_IN_SEC);
-
-            return ($now - self::$startAt) * self::NANO_IN_MSEC;
-        }
-
-        $time = self::microtimeNumbers();
-
-        $secs = $time[1] - self::$startAtArr[1];
-        $msecs = $time[0] - self::$startAtArr[0];
+        $secs = $time[1] - self::$startAt[1];
+        $msecs = $time[0] - self::$startAt[0];
         if ($msecs < 0) {
             $msecs += 1;
             $secs -= 1;
         }
 
-        return array($secs, (int) ($msecs * self::NANO_IN_SEC));
+        if (!$asNum) {
+            return array($secs, (int) ($msecs * self::NANO_IN_SEC));
+        }
+
+        if (\PHP_INT_SIZE === 4) {
+            // Floor removes rounding errors from floating point diff
+            return floor($msecs * self::NANO_IN_SEC) + ($secs * self::NANO_IN_SEC);
+        }
+
+        return (int) ($msecs * self::NANO_IN_SEC) + ($secs * self::NANO_IN_SEC);
     }
 
-    private static function microtimeNumbers()
+    private static function microtime()
     {
         $time = explode(' ', microtime());
 

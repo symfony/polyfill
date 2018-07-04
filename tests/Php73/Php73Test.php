@@ -43,6 +43,7 @@ class Php73Test extends TestCase
         $hrtime = hrtime(true);
         if (PHP_INT_SIZE === 4) {
             $this->assertTrue(is_float($hrtime));
+            $this->assertEquals(floor($hrtime), $hrtime);
         } else {
             $this->assertTrue(is_int($hrtime));
         }
