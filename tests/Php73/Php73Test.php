@@ -33,8 +33,58 @@ class Php73Test extends TestCase
      */
     public function testIsCountableForGenerator()
     {
-        require 'generator.php';
+        require_once 'generator.php';
 
         $this->assertFalse(is_countable(genOneToTen()));
+    }
+
+    public function testHardwareTimeAsNumType()
+    {
+        $hrtime = hrtime(true);
+        if (PHP_INT_SIZE === 4) {
+            $this->assertInternalType('float', $hrtime);
+            $this->assertEquals(floor($hrtime), $hrtime);
+        } else {
+            $this->assertInternalType('int', $hrtime);
+        }
+    }
+
+    public function testHardwareTimeAsNum()
+    {
+        $hrtime = hrtime(true);
+
+        usleep(1000000);
+        $hrtime2 = hrtime(true);
+
+        $this->assertGreaterThanOrEqual(1000000000, $hrtime2 - $hrtime);
+    }
+
+    public function testHardwareTimeAsArrayType()
+    {
+        $hrtime = hrtime();
+        $this->assertInternalType('array', $hrtime);
+        $this->assertCount(2, $hrtime);
+        $this->assertInternalType('int', $hrtime[0]);
+        $this->assertInternalType('int', $hrtime[1]);
+    }
+
+    public function testHardwareTimeAsArrayNanos()
+    {
+        $hrtime = hrtime();
+        usleep(1000);
+        $hrtime2 = hrtime();
+
+        $this->assertSame(0, $hrtime2[0] - $hrtime[0]);
+        $this->assertGreaterThanOrEqual(1000000, $hrtime2[1] - $hrtime[1]);
+    }
+
+    public function testHardwareTimeAsArraySeconds()
+    {
+        $hrtime = hrtime();
+        usleep(1000000);
+        $hrtime2 = hrtime();
+
+        $this->assertGreaterThanOrEqual(1, $hrtime2[0] - $hrtime[0]);
+        $this->assertGreaterThanOrEqual(0, $hrtime2[1] - $hrtime[1]);
     }
 }
