@@ -10,12 +10,13 @@ namespace Symfony\Polyfill\Php73;
  */
 final class Php73
 {
-    const NANO_IN_SEC = 1000000000.0;
+    const NANO_IN_SEC = 1e9;
+    const NANO_IN_MSEC = 1e3;
 
     /**
      * @param bool $asNum
      *
-     * @return array|float
+     * @return array|float|int
      */
     public static function hrtime($asNum = false)
     {
@@ -25,6 +26,6 @@ final class Php73
 
         $time = explode(' ', microtime());
 
-        return array((int) $time[1], (int) ($time[0] * self::NANO_IN_SEC));
+        return array((int) $time[1], (int) ($time[0] * self::NANO_IN_MSEC));
     }
 }

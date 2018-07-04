@@ -40,25 +40,27 @@ class Php73Test extends TestCase
 
     public function testHardwareTimeAsNum()
     {
-        $microtime = microtime(true);
         $hrtime = hrtime(true);
+        $this->assertTrue(is_float($hrtime) || is_int($hrtime));
+
         usleep(1000);
-        $d0 = (microtime(true) - $microtime) * 1000000000;
         $d1 = hrtime(true) - $hrtime;
 
         $this->assertEquals(10000000, $d1, '', 9e6);
-        $this->assertLessThan(0.05, abs($d0 - $d1) / $d1);
     }
 
     public function testHardwareTimeAsArray()
     {
-        $microtime = microtime(true);
         $hrtime = hrtime();
+        $this->assertInternalType('array', $hrtime);
+        $this->assertCount(2, $hrtime);
+        $this->assertInternalType('int', $hrtime[0]);
+        $this->assertInternalType('int', $hrtime[1]);
+
         usleep(1000);
-        $microDelta = (microtime(true) - $microtime) * 1000000000;
         $hrtime2 = hrtime();
 
         $this->assertSame(0, $hrtime2[0] - $hrtime[0]);
-        $this->assertEquals($microDelta, $hrtime2[1] - $hrtime[1], '', 1e5);
+        $this->assertEquals(1000000, $hrtime2[1] - $hrtime[1], '', 9e6);
     }
 }
