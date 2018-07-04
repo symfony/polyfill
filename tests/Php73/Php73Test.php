@@ -33,8 +33,32 @@ class Php73Test extends TestCase
      */
     public function testIsCountableForGenerator()
     {
-        require 'generator.php';
+        require_once 'generator.php';
 
         $this->assertFalse(is_countable(genOneToTen()));
+    }
+
+    public function testHardwareTimeAsNum()
+    {
+        $microtime = microtime(true);
+        $hrtime = hrtime(true);
+        usleep(1000);
+        $d0 = (microtime(true) - $microtime) * 1000000000;
+        $d1 = hrtime(true) - $hrtime;
+
+        $this->assertEquals(10000000, $d1, '', 9e6);
+        $this->assertLessThan(0.05, abs($d0 - $d1) / $d1);
+    }
+
+    public function testHardwareTimeAsArray()
+    {
+        $microtime = microtime(true);
+        $hrtime = hrtime();
+        usleep(1000);
+        $microDelta = (microtime(true) - $microtime) * 1000000000;
+        $hrtime2 = hrtime();
+
+        $this->assertSame(0, $hrtime2[0] - $hrtime[0]);
+        $this->assertEquals($microDelta, $hrtime2[1] - $hrtime[1], '', 1e5);
     }
 }
