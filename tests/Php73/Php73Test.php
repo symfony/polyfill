@@ -33,7 +33,7 @@ class Php73Test extends TestCase
      */
     public function testIsCountableForGenerator()
     {
-        require 'generator.php';
+        require_once 'generator.php';
 
         $this->assertFalse(is_countable(genOneToTen()));
     }
