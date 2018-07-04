@@ -24,24 +24,24 @@ final class Php73
     public static function hrtime($asNum = false)
     {
         if ($asNum) {
-            if (is_null(static::$startAt)) {
-                static::$startAt = microtime(true);
+            if (null === self::$startAt) {
+                self::$startAt = microtime(true);
             }
-            $nanos = (microtime(true) - static::$startAt) * self::NANO_IN_SEC;
+            $nanos = (microtime(true) - self::$startAt) * self::NANO_IN_SEC;
 
-            if (PHP_INT_SIZE === 4) {
+            if (\PHP_INT_SIZE === 4) {
                 return floor($nanos);
             }
 
             return (int) $nanos;
         }
 
-        if (is_null(static::$startAtArr)) {
-            static::$startAtArr = explode(' ', microtime());
+        if (null === self::$startAtArr) {
+            self::$startAtArr = explode(' ', microtime());
         }
 
         $time = explode(' ', microtime());
 
-        return array((int) $time[1] - static::$startAt[1], (int) (($time[0] - static::$startAt[0]) * self::NANO_IN_MSEC));
+        return array((int) $time[1] - self::$startAt[1], (int) (($time[0] - self::$startAt[0]) * self::NANO_IN_MSEC));
     }
 }
