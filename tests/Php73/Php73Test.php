@@ -53,9 +53,9 @@ class Php73Test extends TestCase
         $hrtime = hrtime(true);
 
         usleep(1000000);
-        $d1 = hrtime(true) - $hrtime;
+        $hrtime2 = hrtime(true);
 
-        $this->assertEquals(1000000000, $d1, '', 9e7);
+        $this->assertGreaterThanOrEqual(1000000000, $hrtime2 - $hrtime);
     }
 
     public function testHardwareTimeAsArrayType()
@@ -74,16 +74,16 @@ class Php73Test extends TestCase
         $hrtime2 = hrtime();
 
         $this->assertSame(0, $hrtime2[0] - $hrtime[0]);
-        $this->assertEquals(1000000, $hrtime2[1] - $hrtime[1], '', 9e6);
+        $this->assertGreaterThanOrEqual(1000000, $hrtime2[1] - $hrtime[1]);
     }
 
     public function testHardwareTimeAsArraySeconds()
     {
         $hrtime = hrtime();
-        usleep(1e6);
+        usleep(1000000);
         $hrtime2 = hrtime();
 
-        $this->assertSame(1, $hrtime2[0] - $hrtime[0]);
-        $this->assertEquals(0, $hrtime2[1] - $hrtime[1], '', 9e6);
+        $this->assertGreaterThanOrEqual(1, $hrtime2[0] - $hrtime[0]);
+        $this->assertGreaterThanOrEqual(0, $hrtime2[1] - $hrtime[1]);
     }
 }
