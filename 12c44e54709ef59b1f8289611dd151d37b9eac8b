@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by BackEndTea at 2018-07-10T08:39:14Z
+
+Should we do the same for our polyfills as well? e.g. have a version `9.99.99` that requires the extension/php version it is polyfilling, and adds nothing to the autoloader.
