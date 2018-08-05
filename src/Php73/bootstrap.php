@@ -20,4 +20,12 @@ if (PHP_VERSION_ID < 70300) {
         p\Php73::$startAt = (int) microtime(true);
         function hrtime($asNum = false) { return p\Php73::hrtime($asNum); }
     }
+
+    if (!function_exists('array_key_first')) {
+        function array_key_first(array $array) { foreach ($array as $key => $value) { return $key; } }
+    }
+
+    if (!function_exists('array_key_last')) {
+        function array_key_last(array $array) { $key = null; foreach ($array as $key => $value); return $key; }
+    }
 }
