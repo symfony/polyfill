@@ -19,5 +19,8 @@
         "php": ">=5.3.3",
         "ext-apcu": "*"
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "conflict": {
+        "ext-Zend Data Cache": "*"
+    }
 }

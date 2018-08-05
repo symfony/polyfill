@@ -49,5 +49,8 @@
     "autoload": {
       "psr-4": { "Symfony\\Polyfill\\": "src/" }
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "conflict": {
+        "ext-Zend Data Cache": "*"
+    }
 }
