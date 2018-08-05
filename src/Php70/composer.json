@@ -18,5 +18,8 @@
     "require": {
         "php": ">=7.0"
     },
+    "replace": {
+        "paragonie/random_compat": "~1.0|~2.0|~9.99"
+    },
     "minimum-stability": "dev"
 }

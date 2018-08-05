@@ -1,6 +1,6 @@
 {
     "name": "symfony/polyfill",
-    "type": "metapackage",
+    "type": "library",
     "description": "Symfony polyfills backporting features to lower PHP versions",
     "keywords": ["polyfill", "shim", "compat", "compatibility"],
     "homepage": "https://symfony.com",
@@ -42,7 +42,12 @@
         "symfony/polyfill-intl-normalizer": "self.version",
         "symfony/polyfill-mbstring": "self.version",
         "symfony/polyfill-util": "self.version",
-        "symfony/polyfill-xml": "self.version"
+        "symfony/polyfill-xml": "self.version",
+        "ircmaxell/password-compat": "~1.0",
+        "paragonie/random_compat": "~1.0|~2.0|~9.99"
+    },
+    "autoload": {
+      "psr-4": { "Symfony\\Polyfill\\": "src/" }
     },
     "minimum-stability": "dev"
 }

@@ -18,5 +18,8 @@
     "require": {
         "php": ">=5.5"
     },
+    "replace": {
+        "ircmaxell/password-compat": "~1.0"
+    },
     "minimum-stability": "dev"
 }
