@@ -58,10 +58,10 @@ class Php73Test extends TestCase
     {
         $hrtime = hrtime(true);
 
-        usleep(1000000);
+        usleep(100000);
         $hrtime2 = hrtime(true);
 
-        $this->assertGreaterThanOrEqual(1000000000, $hrtime2 - $hrtime);
+        $this->assertGreaterThanOrEqual(100000000, $hrtime2 - $hrtime);
     }
 
     public function testHardwareTimeAsArrayType()
