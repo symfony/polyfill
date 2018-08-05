@@ -1,6 +1,6 @@
 {
     "name": "symfony/polyfill-iconv",
-    "type": "library",
+    "type": "metapackage",
     "description": "Symfony polyfill for the Iconv extension",
     "keywords": ["polyfill", "shim", "compatibility", "portable", "iconv"],
     "homepage": "https://symfony.com",
@@ -19,12 +19,5 @@
         "php": ">=5.3.3",
         "ext-iconv": "*"
     },
-    "autoload": {
-    },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.8-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }

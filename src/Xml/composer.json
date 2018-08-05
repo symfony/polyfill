@@ -20,10 +20,5 @@
         "php": ">=5.3.3",
         "ext-xml": "*"
     },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.8-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }

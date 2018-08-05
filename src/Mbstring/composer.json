@@ -1,6 +1,6 @@
 {
     "name": "symfony/polyfill-mbstring",
-    "type": "library",
+    "type": "metapackage",
     "description": "Symfony polyfill for the Mbstring extension",
     "keywords": ["polyfill", "shim", "compatibility", "portable", "mbstring"],
     "homepage": "https://symfony.com",
@@ -19,12 +19,5 @@
         "php": ">=5.3.3",
         "ext-mbstring": "*"
     },
-    "autoload": {
-    },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.8-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }

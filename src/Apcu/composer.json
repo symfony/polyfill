@@ -1,6 +1,6 @@
 {
     "name": "symfony/polyfill-apcu",
-    "type": "library",
+    "type": "metapackage",
     "description": "Symfony polyfill backporting apcu_* functions to lower PHP versions",
     "keywords": ["polyfill", "shim", "compatibility", "portable", "apcu"],
     "homepage": "https://symfony.com",
@@ -19,12 +19,5 @@
         "php": ">=5.3.3",
         "ext-apcu": "*"
     },
-    "autoload": {
-    },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.8-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }

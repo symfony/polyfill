@@ -1,6 +1,6 @@
 {
     "name": "symfony/polyfill-intl-normalizer",
-    "type": "library",
+    "type": "metapackage",
     "description": "Symfony polyfill for intl's Normalizer class and related functions",
     "keywords": ["polyfill", "shim", "compatibility", "portable", "intl", "normalizer"],
     "homepage": "https://symfony.com",
@@ -19,12 +19,5 @@
         "php": ">=5.3.3",
         "ext-intl": "*"
     },
-    "autoload": {
-    },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.8-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }

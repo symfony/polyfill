@@ -1,6 +1,6 @@
 {
     "name": "symfony/polyfill-php56",
-    "type": "library",
+    "type": "metapackage",
     "description": "Symfony polyfill backporting some PHP 5.6+ features to lower PHP versions",
     "keywords": ["polyfill", "shim", "compatibility", "portable"],
     "homepage": "https://symfony.com",
@@ -18,12 +18,5 @@
     "require": {
         "php": ">=5.6"
     },
-    "autoload": {
-    },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.8-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }
