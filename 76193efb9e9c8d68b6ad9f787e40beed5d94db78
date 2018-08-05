@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by mcfedr at 2018-08-04T12:41:31Z
+
+Yea, I think its enough. I tried to avoid float calculations in the 64 bit version, but probably thats just adding complications as the accuracy gains are unlikely to make a difference
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-05T10:54:56Z
+
+Actually, I updated the implementation: the precision loss made tests fail on 32-bit. Ready now.
