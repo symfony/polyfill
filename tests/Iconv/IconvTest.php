@@ -37,6 +37,7 @@ class IconvTest extends TestCase
         $this->assertSame('deja noeud', p::iconv('UTF-8//ignore//IGNORE', 'US-ASCII//TRANSLIT//IGNORE//translit', 'déjà nœud'));
 
         $this->assertSame('4', iconv('UTF-8', 'UTF-8', 4));
+        $this->assertSame('aa', p::iconv('UTF-8', "ASCII//TRANSLIT//IGNORE", "a\xC2\x96a"));
     }
 
     /**

@@ -695,6 +695,10 @@ final class Iconv
                     } else {
                         return false;
                     }
+                } elseif ($ignore) {
+                    continue;
+                } else {
+                    return false;
                 }
 
                 $str = $uchr.substr($str, $i);
