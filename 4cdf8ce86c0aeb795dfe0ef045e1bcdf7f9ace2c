@@ -1,0 +1,82 @@
+---------------------------------------------------------------------------
+
+by BackEndTea at 2018-07-17T13:35:51Z
+
+How does this, and the php 7.3 implementation, behave on an object that isn't an array, but array accessible?
+
+What about a string, or something that isn't anything like an array?
+
+---------------------------------------------------------------------------
+
+by stof at 2018-07-17T13:36:44Z
+
+The usage of a reference should be removed:
+
+- it creates a different signature than the official function (making the polyfill buggy)
+- it can trigger 2 array copies on PHP 5.6 (once to pass the array by reference if it was already referenced twice, and once again to pass it to `array_slice` which does not expect a reference. Don't try to be smarter than PHP about avoiding copies.
+
+---------------------------------------------------------------------------
+
+by stof at 2018-07-17T13:38:10Z
+
+> How does this, and the php 7.3 implementation, behave on an object that isn't an array, but array accessible?
+>
+> What about a string, or something that isn't anything like an array?
+
+The array typehint would break, making it a TypeError (or the relevant error reporting on PHP 5.x).
+Btw, ArrayAccess does not enforce the object to be iterable, so there is no concept of *first* key (and it does not require being able to enumerate keys either)
+
+---------------------------------------------------------------------------
+
+by pierredup at 2018-07-17T13:40:44Z
+
+By not passing the array by reference, won't that anyway trigger a copy of the array? (since the values need to be copied to the function). If that is the case, then the original implementation can stay (using `reset` and `end`) since the performance hit would already be there
+
+---------------------------------------------------------------------------
+
+by stof at 2018-07-17T13:43:48Z
+
+@pierredup no. PHP performs copy-on-write. The usage of a reference argument for `reset` or `end` was the trigger for copying the memory, not passing the argument by value.
+
+---------------------------------------------------------------------------
+
+by pierredup at 2018-07-17T13:45:55Z
+
+Right, so how should we get the last key of the array then? The first key is easy with a foreach, but getting the last key will then have the performance hit (either copying the memory, or iterating through the entire array to get to the last key)
+
+---------------------------------------------------------------------------
+
+by stof at 2018-07-17T13:49:13Z
+
+@pierredup copying the array is `O(n)` in time as well. So we should rather be `O(n)` in time and `O(1)` in memory than `O(n)` for both
+
+---------------------------------------------------------------------------
+
+by pierredup at 2018-08-05T13:21:49Z
+
+`foreach` is much slower with large datasets (https://blackfire.io/profiles/compare/80799279-c743-433c-9ef8-74f5b41d52f6/graph)
+But I've pushed the change
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-05T13:30:56Z
+
+How about smaller arrays?
+
+---------------------------------------------------------------------------
+
+by pierredup at 2018-08-05T13:39:36Z
+
+Smaller arrays perform slightly better (https://blackfire.io/profiles/compare/604ecab6-1d23-4486-832d-216f27fc862c/graph)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-05T13:47:55Z
+
+you mean, even for smaller arrays foreach is always slower? let's always use array_slice then, and sorry for the extra work :)
+
+---------------------------------------------------------------------------
+
+by pierredup at 2018-08-05T13:56:26Z
+
+No, I mean for smaller arrays foreach is faster (I tested against 100 and 1000 items and foreach was faster in both cases). This would probably be more common in real-world scenarios than large arrays, so will keep the foreach
