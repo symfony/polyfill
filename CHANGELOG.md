@@ -1,6 +1,7 @@
 * v1.9.0
 
  * added polyfill for `hrtime()`
+ * added polyfills for `array_key_first()` and `array_key_last()`
 
 * v1.8.0
 
