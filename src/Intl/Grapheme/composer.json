@@ -16,14 +16,10 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.3.3",
+        "ext-intl": "*"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Intl\\Grapheme\\": "" },
-        "files": [ "bootstrap.php" ]
-    },
-    "suggest": {
-        "ext-intl": "For best performance"
     },
     "minimum-stability": "dev",
     "extra": {

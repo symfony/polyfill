@@ -17,13 +17,9 @@
     ],
     "require": {
         "php": ">=5.3.3",
-        "symfony/intl": "~2.3|~3.0|~4.0"
+        "ext-intl": "*"
     },
     "autoload": {
-        "files": [ "bootstrap.php" ]
-    },
-    "suggest": {
-        "ext-intl": "For best performance"
     },
     "minimum-stability": "dev",
     "extra": {

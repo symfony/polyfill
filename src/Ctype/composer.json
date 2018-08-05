@@ -16,14 +16,10 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.3.3",
+        "ext-ctype": ""
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Ctype\\": "" },
-        "files": [ "bootstrap.php" ]
-    },
-    "suggest": {
-        "ext-ctype": "For best performance"
     },
     "minimum-stability": "dev",
     "extra": {

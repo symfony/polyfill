@@ -16,14 +16,10 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.3.3",
+        "ext-iconv": "*"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Iconv\\": "" },
-        "files": [ "bootstrap.php" ]
-    },
-    "suggest": {
-        "ext-iconv": "For best performance"
     },
     "minimum-stability": "dev",
     "extra": {

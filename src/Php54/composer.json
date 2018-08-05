@@ -16,12 +16,9 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.4"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Php54\\": "" },
-        "files": [ "bootstrap.php" ],
-        "classmap": [ "Resources/stubs" ]
     },
     "minimum-stability": "dev",
     "extra": {

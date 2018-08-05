@@ -16,11 +16,10 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.3.3",
+        "ext-apcu": "*"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Apcu\\": "" },
-        "files": [ "bootstrap.php" ]
     },
     "minimum-stability": "dev",
     "extra": {

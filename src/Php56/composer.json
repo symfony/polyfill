@@ -16,12 +16,9 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3",
-        "symfony/polyfill-util": "~1.0"
+        "php": ">=5.6"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Php56\\": "" },
-        "files": [ "bootstrap.php" ]
     },
     "minimum-stability": "dev",
     "extra": {
