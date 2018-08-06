@@ -20,7 +20,7 @@ final class Php73
     public static function hrtime($asNum = false)
     {
         $ns = \microtime(false);
-        $s = \strstr($ns, ' ') - self::$startAt;
+        $s = \substr($ns, 11) - self::$startAt;
         $ns = 1E9 * (float) $ns;
 
         if ($asNum) {

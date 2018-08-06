@@ -57,11 +57,14 @@ class Php73Test extends TestCase
     public function testHardwareTimeAsNum()
     {
         $hrtime = hrtime(true);
-
         usleep(100000);
         $hrtime2 = hrtime(true);
 
-        $this->assertGreaterThanOrEqual(100000000, $hrtime2 - $hrtime);
+        if (PHP_INT_SIZE === 4) {
+            $this->assertGreaterThanOrEqual(90000000.0, $hrtime2 - $hrtime);
+        } else {
+            $this->assertGreaterThanOrEqual(100000000.0, $hrtime2 - $hrtime);
+        }
     }
 
     public function testHardwareTimeAsArrayType()
