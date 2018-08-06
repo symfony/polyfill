@@ -3,6 +3,7 @@
  * added polyfill for `hrtime()`
  * added polyfills for `array_key_first()` and `array_key_last()`
  * fixed infinite loop in `iconv()` polyfill when using translit mode
+ * fixed converting to title case with mbstring polyfill
 
 * v1.8.0
 

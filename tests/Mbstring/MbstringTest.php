@@ -200,6 +200,33 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_convert_case
+     */
+    public function testTitleCase()
+    {
+        for ($i = 1; $i < 127; ++$i) {
+            switch (chr($i)) {
+                case '!':
+                case '"':
+                case '#':
+                case '%':
+                case '&':
+                case '*':
+                case ',':
+                case '/':
+                case ';':
+                case '?':
+                case '@':
+                case '\\':
+                    if (\PHP_VERSION_ID < 70300) {
+                        continue 2;
+                    }
+            }
+            $this->assertSame(mb_convert_case('a'.chr($i).'b', MB_CASE_TITLE, 'UTF-8'), p::mb_convert_case('a'.chr($i).'b', MB_CASE_TITLE, 'UTF-8'), 'Title case for char 0x'.dechex($i));
+        }
+    }
+
+    /**
      * @covers Symfony\Polyfill\Mbstring\Mbstring::mb_strlen
      */
     public function testStrlen()
