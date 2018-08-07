@@ -1,6 +1,6 @@
 {
     "name": "symfony/polyfill-ctype",
-    "type": "library",
+    "type": "metapackage",
     "description": "Symfony polyfill for ctype functions",
     "keywords": ["polyfill", "compatibility", "portable", "ctype"],
     "homepage": "https://symfony.com",
@@ -16,19 +16,8 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=5.3.3",
+        "ext-ctype": ""
     },
-    "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Ctype\\": "" },
-        "files": [ "bootstrap.php" ]
-    },
-    "suggest": {
-        "ext-ctype": "For best performance"
-    },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.8-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }
