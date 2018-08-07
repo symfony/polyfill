@@ -85,6 +85,12 @@ needed during code execution.
 Polyfills are unit-tested alongside their native implementation so that
 feature and behavior parity can be proven and enforced in the long run.
 
+It is recommended to allow installation of  both the `1.*` and `9.*`versions of
+this package. The `9.*` versions are a special noop version that can only be
+installed if the extension, or PHP version required is present. These special
+versions do no populate the autoloader and do therefore not add any `require` 
+statements to the bootstrap process, resulting in 0 overhead during runtime.
+
 License
 =======
 
