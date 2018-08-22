@@ -40,56 +40,56 @@ if (class_exists('PHPUnit_Runner_Version') && version_compare(\PHPUnit_Runner_Ve
             $this->trait = new TestListenerTrait();
         }
 
-        public function startTestSuite(TestSuite $suite)
+        public function startTestSuite(TestSuite $suite): void
         {
             $this->trait->startTestSuite($suite);
         }
 
-        protected function setUp()
+        protected function setUp(): void
         {
             TestListenerTrait::$enabledPolyfills = $this->suite->getName();
         }
 
-        protected function tearDown()
+        protected function tearDown(): void
         {
             TestListenerTrait::$enabledPolyfills = false;
         }
 
-        public function addError(Test $test, \Exception $e, $time)
+        public function addError(Test $test, \Throwable $t, float $time): void
+        {
+            $this->trait->addError($test, $t, $time);
+        }
+
+        public function addWarning(Test $test, Warning $e, float $time): void
+        {
+        }
+
+        public function addFailure(Test $test, AssertionFailedError $e, float $time): void
         {
             $this->trait->addError($test, $e, $time);
         }
 
-        public function addWarning(Test $test, Warning $e, $time)
+        public function addIncompleteTest(Test $test, \Throwable $t, float $time): void
         {
         }
 
-        public function addFailure(Test $test, AssertionFailedError $e, $time)
-        {
-            $this->trait->addError($test, $e, $time);
-        }
-
-        public function addIncompleteTest(Test $test, \Exception $e, $time)
+        public function addRiskyTest(Test $test, \Throwable $t, float $time): void
         {
         }
 
-        public function addRiskyTest(Test $test, \Exception $e, $time)
+        public function addSkippedTest(Test $test, \Throwable $t, float $time): void
         {
         }
 
-        public function addSkippedTest(Test $test, \Exception $e, $time)
+        public function endTestSuite(TestSuite $suite): void
         {
         }
 
-        public function endTestSuite(TestSuite $suite)
+        public function startTest(Test $test): void
         {
         }
 
-        public function startTest(Test $test)
-        {
-        }
-
-        public function endTest(Test $test, $time)
+        public function endTest(Test $test, $time): void
         {
         }
     }
