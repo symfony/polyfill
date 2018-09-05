@@ -37,5 +37,8 @@ install:
     - if [[ $TRAVIS_BRANCH = master ]]; then export COMPOSER_ROOT_VERSION=dev-master; else export COMPOSER_ROOT_VERSION=$TRAVIS_BRANCH.x-dev; fi
     - composer --prefer-source install
 
+before_script:
+    - if find src -name "*.php" -print0 | xargs -0 -n 1 -P 8 php -l | grep -v "No syntax errors detected"; then exit 1; fi
+
 script:
     - ./vendor/bin/simple-phpunit
