@@ -1,5 +1,7 @@
 <?php
 
-class DivisionByZeroError extends Error
-{
+if (PHP_VERSION_ID < 70000) {
+    class DivisionByZeroError extends Error
+    {
+    }
 }
