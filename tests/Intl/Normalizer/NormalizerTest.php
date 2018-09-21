@@ -18,7 +18,7 @@ use Symfony\Polyfill\Intl\Normalizer\Normalizer as pn;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
- * @covers Symfony\Polyfill\Intl\Normalizer\Normalizer::<!public>
+ * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::<!public>
  * @requires extension intl
  */
 class NormalizerTest extends TestCase
@@ -38,7 +38,7 @@ class NormalizerTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Normalizer\Normalizer::isNormalized
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::isNormalized
      */
     public function testIsNormalized()
     {
@@ -60,7 +60,7 @@ class NormalizerTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
      */
     public function testNormalize()
     {
@@ -87,7 +87,7 @@ class NormalizerTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
      */
     public function testNormalizeConformance()
     {
@@ -98,7 +98,7 @@ class NormalizerTest extends TestCase
             $t = explode('#', $s);
             $t = explode(';', $t[0]);
 
-            if (6 === count($t)) {
+            if (6 === \count($t)) {
                 foreach ($t as $k => $s) {
                     $t = explode(' ', $s);
                     $t = array_map('hexdec', $t);
@@ -136,15 +136,15 @@ class NormalizerTest extends TestCase
     private static function chr($c)
     {
         if (0x80 > $c %= 0x200000) {
-            return chr($c);
+            return \chr($c);
         }
         if (0x800 > $c) {
-            return chr(0xC0 | $c >> 6).chr(0x80 | $c & 0x3F);
+            return \chr(0xC0 | $c >> 6).\chr(0x80 | $c & 0x3F);
         }
         if (0x10000 > $c) {
-            return chr(0xE0 | $c >> 12).chr(0x80 | $c >> 6 & 0x3F).chr(0x80 | $c & 0x3F);
+            return \chr(0xE0 | $c >> 12).\chr(0x80 | $c >> 6 & 0x3F).\chr(0x80 | $c & 0x3F);
         }
 
-        return chr(0xF0 | $c >> 18).chr(0x80 | $c >> 12 & 0x3F).chr(0x80 | $c >> 6 & 0x3F).chr(0x80 | $c & 0x3F);
+        return \chr(0xF0 | $c >> 18).\chr(0x80 | $c >> 12 & 0x3F).\chr(0x80 | $c >> 6 & 0x3F).\chr(0x80 | $c & 0x3F);
     }
 }

@@ -17,7 +17,7 @@ class Php70Test extends TestCase
 {
     public function testPhpIntMin()
     {
-        $this->assertTrue(defined('PHP_INT_MIN'));
+        $this->assertTrue(\defined('PHP_INT_MIN'));
         $this->assertSame(~PHP_INT_MAX, PHP_INT_MIN);
     }
 
@@ -61,8 +61,8 @@ class Php70Test extends TestCase
     {
         $this->assertSame('ddda', preg_replace_callback_array(
             array(
-                '/[^a]/' => function () {return 'a';},
-                '/a/' => function () {return 'd';},
+                '/[^a]/' => function () { return 'a'; },
+                '/a/' => function () { return 'd'; },
             ),
             'abca',
             3,

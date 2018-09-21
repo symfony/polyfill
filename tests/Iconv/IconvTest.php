@@ -17,18 +17,18 @@ use Symfony\Polyfill\Iconv\Iconv as p;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
- * @covers Symfony\Polyfill\Iconv\Iconv::<!public>
+ * @covers \Symfony\Polyfill\Iconv\Iconv::<!public>
  */
 class IconvTest extends TestCase
 {
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv
      */
     public function testIconv()
     {
         // Native iconv() behavior varies between versions and OS for these two tests
         // See e.g. https://bugs.php.net/52211
-        if (PHP_VERSION_ID >= 50610) {
+        if (\PHP_VERSION_ID >= 50610) {
             $this->assertFalse(@iconv('UTF-8', 'ISO-8859-1', 'nœud'));
             $this->assertSame('nud', iconv('UTF-8', 'ISO-8859-1//IGNORE', 'nœud'));
         }
@@ -37,13 +37,13 @@ class IconvTest extends TestCase
         $this->assertSame('deja noeud', p::iconv('UTF-8//ignore//IGNORE', 'US-ASCII//TRANSLIT//IGNORE//translit', 'déjà nœud'));
 
         $this->assertSame('4', iconv('UTF-8', 'UTF-8', 4));
-        $this->assertSame('aa', p::iconv('UTF-8', "ASCII//TRANSLIT//IGNORE", "a\xC2\x96a"));
+        $this->assertSame('aa', p::iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', "a\xC2\x96a"));
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_strlen
-     * @covers Symfony\Polyfill\Iconv\Iconv::strlen1
-     * @covers Symfony\Polyfill\Iconv\Iconv::strlen2
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_strlen
+     * @covers \Symfony\Polyfill\Iconv\Iconv::strlen1
+     * @covers \Symfony\Polyfill\Iconv\Iconv::strlen2
      */
     public function testIconvStrlen()
     {
@@ -55,8 +55,8 @@ class IconvTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_strpos
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_strrpos
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_strpos
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_strrpos
      */
     public function testIconvStrPos()
     {
@@ -67,7 +67,7 @@ class IconvTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_substr
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
      */
     public function testIconvSubstr()
     {
@@ -75,7 +75,7 @@ class IconvTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_mime_encode
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_encode
      */
     public function testIconvMimeEncode()
     {
@@ -94,31 +94,31 @@ class IconvTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode
      */
     public function testIconvMimeDecode()
     {
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?B?Kg==?= .'));
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .'));
-        if ('\\' !== DIRECTORY_SEPARATOR) {
+        if ('\\' !== \DIRECTORY_SEPARATOR) {
             $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
-            $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.chr(0xA1).'?= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
+            $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
         }
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode
      */
     public function testIconvMimeDecodeIllegal()
     {
         iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .');
         $this->setExpectedException('PHPUnit\Framework\Error\Notice', 'Detected an illegal character in input string');
-        iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.chr(0xA1).'?= .');
+        iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .');
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode_headers
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode_headers
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode
      */
     public function testIconvMimeDecodeHeaders()
     {
@@ -144,8 +144,8 @@ HEADERS;
     }
 
     /**
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_get_encoding
-     * @covers Symfony\Polyfill\Iconv\Iconv::iconv_set_encoding
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_get_encoding
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_set_encoding
      * @group legacy
      */
     public function testIconvGetEncoding()

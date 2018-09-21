@@ -90,7 +90,7 @@ class Php56Test extends TestCase
             array('foo=bar(baz)*', 'ao', null, '\66oo\3d\62a\72\28\62a\7a\29\2a'),
         );
 
-        if (PHP_VERSION_ID >= 70100) {
+        if (\PHP_VERSION_ID >= 70100) {
             $values[] = array(" foo=bar\r(baz)* ", null, p::LDAP_ESCAPE_DN, '\20foo\3dbar\0d(baz)*\20');
         }
 

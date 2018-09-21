@@ -142,12 +142,12 @@ class Php73Test extends TestCase
             array('a',   array('a' => 'aaa', 'A' => 'AAA', 'c' => 'ccc', 'd' => 'ddd', 'e' => 'eee')),
             array(1,     array('1' => 'one', '2' => 'two', '3' => 'three', '4' => 'four', '5' => 'five')),
             array(1,     array(1 => 'one', 2 => 'two', 3 => 7, 4 => 'four', 5 => 'five')),
-            array('f',   array('f' => 'fff', '1' => 'one', 4 => 6, '' => 'blank', 2.4 => 'float', 'F' => 'FFF', 'blank' => '', 3.7 => 3.7, 5.4 => 7, 6 => 8.6, '5' => 'Five', '4name' => 'jonny', 'a' => NULL, NULL => 3)),
+            array('f',   array('f' => 'fff', '1' => 'one', 4 => 6, '' => 'blank', 2.4 => 'float', 'F' => 'FFF', 'blank' => '', 3.7 => 3.7, 5.4 => 7, 6 => 8.6, '5' => 'Five', '4name' => 'jonny', 'a' => null, null => 3)),
             array(0,     array(12, 'name', 'age', '45')),
             array(0,     array(array('oNe', 'tWo', 4), array(10, 20, 30, 40, 50), array())),
             array('one', array('one' => 1, 'one' => 2, 'three' => 3, 3, 4, 3 => 33, 4 => 44, 5, 6, 5.4 => 54, 5.7 => 57, '5.4' => 554, '5.7' => 557)),
             array(0,     array('foo')),
-            array(1,     array(1 => '42'))
+            array(1,     array(1 => '42')),
         );
     }
 
@@ -161,12 +161,12 @@ class Php73Test extends TestCase
             array('e',   array('a' => 'aaa', 'A' => 'AAA', 'c' => 'ccc', 'd' => 'ddd', 'e' => 'eee')),
             array(5,     array('1' => 'one', '2' => 'two', '3' => 'three', '4' => 'four', '5' => 'five')),
             array(5,     array(1 => 'one', 2 => 'two', 3 => 7, 4 => 'four', 5 => 'five')),
-            array('a',   array('f' => 'fff', '1' => 'one', 4 => 6, '' => 'blank', 2.4 => 'float', 'F' => 'FFF', 'blank' => '', 3.7 => 3.7, 5.4 => 7, 6 => 8.6, '5' => 'Five', '4name' => 'jonny', 'a' => NULL, NULL => 3)),
+            array('a',   array('f' => 'fff', '1' => 'one', 4 => 6, '' => 'blank', 2.4 => 'float', 'F' => 'FFF', 'blank' => '', 3.7 => 3.7, 5.4 => 7, 6 => 8.6, '5' => 'Five', '4name' => 'jonny', 'a' => null, null => 3)),
             array(3,     array(12, 'name', 'age', '45')),
             array(2,     array(array('oNe', 'tWo', 4), array(10, 20, 30, 40, 50), array())),
             array('5.7', array('one' => 1, 'one' => 2, 'three' => 3, 3, 4, 3 => 33, 4 => 44, 5, 6, 5.4 => 54, 5.7 => 57, '5.4' => 554, '5.7' => 557)),
             array(0,     array('foo')),
-            array(1,     array(1 => '42'))
+            array(1,     array(1 => '42')),
         );
     }
 }

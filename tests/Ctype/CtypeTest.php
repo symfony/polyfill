@@ -116,7 +116,7 @@ class CtypeTest extends TestCase
             array('é'),
             array('1234'),
             array('13addfadsf2'),
-            array("\x00asd"), 
+            array("\x00asd"),
             array(280),
         );
     }
@@ -136,7 +136,7 @@ class CtypeTest extends TestCase
             array(127),
             array("\x00"),
             array("\x02"),
-            array(chr(127)),
+            array(\chr(127)),
         );
     }
 
@@ -170,7 +170,7 @@ class CtypeTest extends TestCase
             array('1234'),
             array('13addfadsf2'),
             array("\x00adf"),
-            array(chr(127) . 'adf'),
+            array(\chr(127).'adf'),
         );
     }
 
@@ -225,7 +225,7 @@ class CtypeTest extends TestCase
             array('1234B'),
             array('13addfadsf2'),
             array("\x00a"),
-            array(chr(127), '-3','3.5'),
+            array(\chr(127), '-3', '3.5'),
         );
     }
 

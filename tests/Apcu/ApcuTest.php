@@ -41,7 +41,7 @@ class ApcuTest extends TestCase
 
     public function testArrayCompatibility()
     {
-        $data = array (
+        $data = array(
             'key1' => 'value1',
             'key2' => 'value2',
         );
@@ -52,7 +52,7 @@ class ApcuTest extends TestCase
             $this->assertEquals($value, apcu_fetch($key));
         }
 
-        $data = array (
+        $data = array(
             'key1' => 'value2',
             'key2' => 'value3',
         );
@@ -63,7 +63,6 @@ class ApcuTest extends TestCase
 
         apcu_delete(array_keys($data));
         $this->assertSame(array(), apcu_exists(array_keys($data)));
-
     }
 
     public function testAPCUIterator()

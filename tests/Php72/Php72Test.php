@@ -17,13 +17,13 @@ use Symfony\Polyfill\Php72\Php72 as p;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
- * @covers Symfony\Polyfill\Php72\Php72::<!public>
+ * @covers \Symfony\Polyfill\Php72\Php72::<!public>
  */
 class Php72Test extends TestCase
 {
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::utf8_encode
-     * @covers Symfony\Polyfill\Php72\Php72::utf8_decode
+     * @covers \Symfony\Polyfill\Php72\Php72::utf8_encode
+     * @covers \Symfony\Polyfill\Php72\Php72::utf8_decode
      */
     public function testUtf8Encode()
     {
@@ -42,16 +42,16 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::php_os_family
+     * @covers \Symfony\Polyfill\Php72\Php72::php_os_family
      */
     public function testPhpOsFamily()
     {
-          $this->assertTrue(defined('PHP_OS_FAMILY'));
-          $this->assertSame(PHP_OS_FAMILY, p::php_os_family());
+        $this->assertTrue(\defined('PHP_OS_FAMILY'));
+        $this->assertSame(PHP_OS_FAMILY, p::php_os_family());
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::spl_object_id
+     * @covers \Symfony\Polyfill\Php72\Php72::spl_object_id
      */
     public function testSplObjectId()
     {
@@ -67,11 +67,11 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
+     * @covers \Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
      */
     public function testSapiWindowsVt100Support()
     {
-        if ('\\' !== DIRECTORY_SEPARATOR) {
+        if ('\\' !== \DIRECTORY_SEPARATOR) {
             $this->markTestSkipped('Windows only test');
         }
 
@@ -79,11 +79,11 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
+     * @covers \Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
      */
     public function testSapiWindowsVt100SupportWarnsOnInvalidInputType()
     {
-        if ('\\' !== DIRECTORY_SEPARATOR) {
+        if ('\\' !== \DIRECTORY_SEPARATOR) {
             $this->markTestSkipped('Windows only test');
         }
 
@@ -92,11 +92,11 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
+     * @covers \Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
      */
     public function testSapiWindowsVt100SupportWarnsOnInvalidStream()
     {
-        if ('\\' !== DIRECTORY_SEPARATOR) {
+        if ('\\' !== \DIRECTORY_SEPARATOR) {
             $this->markTestSkipped('Windows only test');
         }
 
@@ -105,7 +105,7 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::stream_isatty
+     * @covers \Symfony\Polyfill\Php72\Php72::stream_isatty
      */
     public function testStreamIsatty()
     {
@@ -115,7 +115,7 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::stream_isatty
+     * @covers \Symfony\Polyfill\Php72\Php72::stream_isatty
      */
     public function testStreamIsattyWarnsOnInvalidInputType()
     {
@@ -137,7 +137,7 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::mb_chr
+     * @covers \Symfony\Polyfill\Php72\Php72::mb_chr
      */
     public function testChr()
     {
@@ -146,7 +146,7 @@ class Php72Test extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Php72\Php72::mb_ord
+     * @covers \Symfony\Polyfill\Php72\Php72::mb_ord
      */
     public function testOrd()
     {

@@ -17,12 +17,12 @@ use Symfony\Polyfill\Intl\Grapheme\Grapheme as p;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
- * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::<!public>
+ * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::<!public>
  */
 class GraphemeTest extends TestCase
 {
     /**
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
      */
     public function testGraphemeExtractArrayError()
     {
@@ -32,13 +32,13 @@ class GraphemeTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
      */
     public function testGraphemeExtract()
     {
         $this->assertFalse(grapheme_extract('abc', 1, -1));
 
-        $this->assertSame(grapheme_extract('',    0), grapheme_extract('',    0));
+        $this->assertSame(grapheme_extract('', 0), grapheme_extract('', 0));
         $this->assertSame(grapheme_extract('abc', 0), grapheme_extract('abc', 0));
 
         $this->assertSame('국어', grapheme_extract('한국어', 2, GRAPHEME_EXTR_COUNT, 3, $next));
@@ -60,7 +60,7 @@ class GraphemeTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strlen
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strlen
      */
     public function testGraphemeStrlen()
     {
@@ -71,40 +71,40 @@ class GraphemeTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_substr
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_substr
      */
     public function testGraphemeSubstr()
     {
         $c = 'déjà';
 
-        if (PHP_VERSION_ID >= 50418 && PHP_VERSION_ID !== 50500) {
+        if (\PHP_VERSION_ID >= 50418 && \PHP_VERSION_ID !== 50500) {
             // See http://bugs.php.net/62759 and 55562
-            $this->assertSame('jà', grapheme_substr($c, -2,  3));
-            $this->assertSame('', grapheme_substr($c, -1,  0));
-            $this->assertFalse(grapheme_substr($c,  1, -4));
+            $this->assertSame('jà', grapheme_substr($c, -2, 3));
+            $this->assertSame('', grapheme_substr($c, -1, 0));
+            $this->assertFalse(grapheme_substr($c, 1, -4));
         }
 
-        $this->assertSame('jà', grapheme_substr($c,  2));
+        $this->assertSame('jà', grapheme_substr($c, 2));
         $this->assertSame('jà', grapheme_substr($c, -2));
         $this->assertSame('j', grapheme_substr($c, -2, -1));
         $this->assertSame('', grapheme_substr($c, -2, -2));
-        $this->assertFalse(grapheme_substr($c,  5,  0));
-        $this->assertFalse(grapheme_substr($c, -5,  0));
+        $this->assertFalse(grapheme_substr($c, 5, 0));
+        $this->assertFalse(grapheme_substr($c, -5, 0));
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strpos
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stripos
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrpos
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strripos
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_position
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_position
      */
     public function testGraphemeStrpos()
     {
         $this->assertFalse(grapheme_strpos('abc', ''));
         $this->assertFalse(grapheme_strpos('abc', 'd'));
         $this->assertFalse(grapheme_strpos('abc', 'a', 3));
-        if (PHP_VERSION_ID < 50535 || (50600 <= PHP_VERSION_ID && PHP_VERSION_ID < 50621) || (70000 <= PHP_VERSION_ID && PHP_VERSION_ID < 70006)) {
+        if (\PHP_VERSION_ID < 50535 || (50600 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 50621) || (70000 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 70006)) {
             $this->assertSame(0, grapheme_strpos('abc', 'a', -1));
         } else {
             $this->assertFalse(grapheme_strpos('abc', 'a', -1));
@@ -117,8 +117,8 @@ class GraphemeTest extends TestCase
     }
 
     /**
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strstr
-     * @covers Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stristr
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strstr
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stristr
      */
     public function testGraphemeStrstr()
     {
@@ -128,7 +128,7 @@ class GraphemeTest extends TestCase
 
     public function testGraphemeBugs()
     {
-        if (PHP_VERSION_ID < 50418 || PHP_VERSION_ID === 50500) {
+        if (\PHP_VERSION_ID < 50418 || \PHP_VERSION_ID === 50500) {
             // see https://bugs.php.net/61860
             $this->markTestSkipped('PHP 5.4.18 or 5.5.1 is required.');
         }
