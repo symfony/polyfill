@@ -109,7 +109,7 @@ class Php72Test extends TestCase
      */
     public function testStreamIsatty()
     {
-        $fp = fopen('php://temp', 'r+');
+        $fp = fopen('php://temp', 'r+b');
         $this->assertFalse(stream_isatty($fp));
         fclose($fp);
     }
