@@ -15,6 +15,7 @@ Polyfills are provided for:
 - the `Collator`, `NumberFormatter`, `Locale` and `IntlDateFormatter` classes;
 - the `intl_error_name`, `intl_get_error_code`, `intl_get_error_message` and
   `intl_is_failure` functions;
+- the `idn_to_ascii` and `idn_to_utf8` functions;
 - the `hex2bin` function, the `CallbackFilterIterator`,
   `RecursiveCallbackFilterIterator` and `SessionHandlerInterface` classes
   introduced in PHP 5.4;
@@ -65,6 +66,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php73` for using the PHP 7.3 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
+- `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,
 - `symfony/polyfill-intl-icu` for using the intl functions and classes,
 - `symfony/polyfill-intl-messageformatter` for using the intl messageformatter,
 - `symfony/polyfill-intl-normalizer` for using the intl normalizer,

@@ -44,8 +44,25 @@ class TestListenerTrait
             $warnings = array();
             $defLine = null;
 
+            foreach (new \RegexIterator($bootstrap, '/define\(\'/') as $defLine) {
+                preg_match('/define\(\'(?P<name>.+)\'/', $defLine, $matches);
+                if (\defined($matches['name'])) {
+                    continue;
+                }
+
+                try {
+                    eval($defLine);
+                } catch (\PHPUnit_Framework_Exception $ex){
+                    $warnings[] = $TestListener::warning($ex->getMessage());
+                } catch (\PHPUnit\Framework\Exception $ex) {
+                    $warnings[] = $TestListener::warning($ex->getMessage());
+                }
+            }
+
+            $bootstrap->rewind();
+
             foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
-                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\([^\)]*+\)) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
+                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
                     $warnings[] = $TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
                     continue;
                 }
