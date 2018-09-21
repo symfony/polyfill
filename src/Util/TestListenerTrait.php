@@ -40,7 +40,7 @@ class TestListenerTrait
                 continue;
             }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
-            $bootstrap = new \SplFileObject(dirname($testedClass->getFileName()).'/bootstrap.php');
+            $bootstrap = new \SplFileObject(\dirname($testedClass->getFileName()).'/bootstrap.php');
             $warnings = array();
             $defLine = null;
 
@@ -50,7 +50,7 @@ class TestListenerTrait
                     continue;
                 }
                 $testNamespace = substr($testClass, 0, strrpos($testClass, '\\'));
-                if (function_exists($testNamespace.'\\'.$f['name'])) {
+                if (\function_exists($testNamespace.'\\'.$f['name'])) {
                     continue;
                 }
 

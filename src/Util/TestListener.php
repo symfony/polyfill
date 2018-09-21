@@ -12,8 +12,8 @@
 namespace Symfony\Polyfill\Util;
 
 use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\TestListener as TestListenerInterface;
 use PHPUnit\Framework\Test;
+use PHPUnit\Framework\TestListener as TestListenerInterface;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Framework\Warning;
 

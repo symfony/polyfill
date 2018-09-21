@@ -1,6 +1,6 @@
 <?php
 
-static $data = array (
+return array(
   ' ' => ' ',
   '¨' => ' ̈',
   'ª' => 'a',
@@ -3679,8 +3679,3 @@ static $data = array (
   '🉐' => '得',
   '🉑' => '可',
 );
-
-$result =& $data;
-unset($data);
-
-return $result;

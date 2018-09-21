@@ -174,8 +174,8 @@ final class Iconv
             }
         } while ($loop);
 
-        if (isset(self::$alias[ $inCharset])) {
-            $inCharset = self::$alias[ $inCharset];
+        if (isset(self::$alias[$inCharset])) {
+            $inCharset = self::$alias[$inCharset];
         }
         if (isset(self::$alias[$outCharset])) {
             $outCharset = self::$alias[$outCharset];
@@ -292,7 +292,7 @@ final class Iconv
             if ((ICONV_MIME_DECODE_CONTINUE_ON_ERROR & $mode)
               && 'utf-8' !== $c
               && !isset(self::$alias[$c])
-              && !self::loadMap('from.', $c,  $d)) {
+              && !self::loadMap('from.', $c, $d)) {
                 $d = false;
             } elseif ('B' === strtoupper($str[$i + 1])) {
                 $d = base64_decode($str[$i + 2]);
@@ -433,7 +433,7 @@ final class Iconv
     {
         static $hasXml = null;
         if (null === $hasXml) {
-            $hasXml = extension_loaded('xml');
+            $hasXml = \extension_loaded('xml');
         }
 
         if ($hasXml) {

@@ -11,7 +11,7 @@
 
 namespace Symfony\Polyfill\Intl\Grapheme;
 
-define('SYMFONY_GRAPHEME_CLUSTER_RX', PCRE_VERSION >= '8.32' ? '\X' : Grapheme::GRAPHEME_CLUSTER_RX);
+\define('SYMFONY_GRAPHEME_CLUSTER_RX', PCRE_VERSION >= '8.32' ? '\X' : Grapheme::GRAPHEME_CLUSTER_RX);
 
 /**
  * Partial intl implementation in pure PHP.
@@ -41,7 +41,7 @@ final class Grapheme
     {
         if (!\is_scalar($s)) {
             $hasError = false;
-            set_error_handler(function () use (&$hasError) {$hasError = true;});
+            set_error_handler(function () use (&$hasError) { $hasError = true; });
             $next = substr($s, $start);
             restore_error_handler();
             if ($hasError) {
@@ -133,7 +133,7 @@ final class Grapheme
             $len = $rem;
         }
 
-        return implode('', array_slice($s[0], $start, $len));
+        return implode('', \array_slice($s[0], $start, $len));
     }
 
     public static function grapheme_strpos($s, $needle, $offset = 0)
@@ -179,7 +179,7 @@ final class Grapheme
         if ($offset > 0) {
             $s = self::grapheme_substr($s, $offset);
         } elseif ($offset < 0) {
-            if (PHP_VERSION_ID < 50535 || (50600 <= PHP_VERSION_ID && PHP_VERSION_ID < 50621) || (70000 <= PHP_VERSION_ID && PHP_VERSION_ID < 70006)) {
+            if (\PHP_VERSION_ID < 50535 || (50600 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 50621) || (70000 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 70006)) {
                 $offset = 0;
             } else {
                 return false;

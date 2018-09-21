@@ -145,7 +145,7 @@ class Normalizer
             $uchr = substr($s, $i, $ulen);
 
             if ($lastUchr < "\xE1\x84\x80" || "\xE1\x84\x92" < $lastUchr
-                ||   $uchr < "\xE1\x85\xA1" || "\xE1\x85\xB5" < $uchr
+                || $uchr < "\xE1\x85\xA1" || "\xE1\x85\xB5" < $uchr
                 || $lastUcls) {
                 // Table lookup and combining chars composition
 
