@@ -9,6 +9,7 @@ Polyfills are provided for:
 - the `apcu` extension when the legacy `apc` extension is installed;
 - the `ctype` extension when PHP is compiled without ctype;
 - the `mbstring` and `iconv` extensions;
+- the `MessageFormatter` class and the `msgfmt_format_message` functions;
 - the `Normalizer` class and the `grapheme_*` functions;
 - the `utf8_encode` and `utf8_decode` functions from the `xml` extension or PHP-7.2 core;
 - the `Collator`, `NumberFormatter`, `Locale` and `IntlDateFormatter` classes;
@@ -65,6 +66,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-icu` for using the intl functions and classes,
+- `symfony/polyfill-intl-messageformatter` for using the intl messageformatter,
 - `symfony/polyfill-intl-normalizer` for using the intl normalizer,
 - `symfony/polyfill-mbstring` for using the mbstring functions,
 - `symfony/polyfill-util` for using the polyfill utility helpers.
