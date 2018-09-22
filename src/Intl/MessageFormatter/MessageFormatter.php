@@ -64,6 +64,15 @@ class MessageFormatter
     private $errorCode = 0;
     private $errorMessage = '';
 
+    public function __construct($locale, $pattern)
+    {
+        $this->locale = (string) $locale;
+
+        if (!$this->setPattern($pattern)) {
+            throw new \IntlException('Message pattern is invalid.');
+        }
+    }
+
     public static function create($locale, $pattern)
     {
         $formatter = new static($locale, '-');
@@ -78,15 +87,6 @@ class MessageFormatter
         }
 
         return $formatter->format($args);
-    }
-
-    public function __construct($locale, $pattern)
-    {
-        $this->locale = (string) $locale;
-
-        if (!$this->setPattern($pattern)) {
-            throw new \IntlException('Message pattern is invalid.');
-        }
     }
 
     public function getLocale()
