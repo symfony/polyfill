@@ -1,8 +1,8 @@
 {
-    "name": "symfony/polyfill-intl-normalizer",
+    "name": "symfony/polyfill-intl-messageformatter",
     "type": "library",
-    "description": "Symfony polyfill for intl's Normalizer class and related functions",
-    "keywords": ["polyfill", "shim", "compatibility", "portable", "intl", "normalizer"],
+    "description": "Symfony polyfill for intl's MessageFormatter class and related functions",
+    "keywords": ["polyfill", "shim", "compatibility", "portable", "intl", "messageformatter"],
     "homepage": "https://symfony.com",
     "license": "MIT",
     "authors": [
@@ -19,7 +19,7 @@
         "php": ">=5.3.3"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Intl\\Normalizer\\": "" },
+        "psr-4": { "Symfony\\Polyfill\\Intl\\MessageFormatter\\": "" },
         "files": [ "bootstrap.php" ],
         "classmap": [ "Resources/stubs" ]
     },
