@@ -1,0 +1,62 @@
+---------------------------------------------------------------------------
+
+by BackEndTea at 2018-09-25T06:48:20Z
+
+~~`end` changes the internal pointer of the array. And the 'official' 7.3 `array_key_last` (and first), don't change the internal pointer.~~
+
+~~The `foreach` approach was taken to make sure that the polyfill behaves the same as the official version.~~
+
+I should learn how to read better 😅
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-09-25T06:50:51Z
+
+Actually it doesn't change the internal pointer, because the "end" operates on a copy of the array (argument is passed by value and not by reference to the function)
+
+---------------------------------------------------------------------------
+
+by stof at 2018-09-25T10:17:55Z
+
+but on PHP 5.x, the reference mismatch forces to create a copy of the array, and that's also not the behavior of the core method.
+
+---------------------------------------------------------------------------
+
+by stof at 2018-09-25T10:19:33Z
+
+your benchmark is checking time, but does not check memory
+
+---------------------------------------------------------------------------
+
+by h4kuna at 2018-09-26T09:19:56Z
+
+@stof you have right. Could you check if the benchmarks are relevant?
+
+Array size is 2000, on site is execute limit 3s for php.
+
+### Memory usage
+Here is [benchmark](http://sandbox.onlinephpfunctions.com/code/0fe160275c8dae5528a2c4d969d832c8603c26f8).
+
+#### php 5.6.29
+```
+Array size: 2000
+array_key_last_symfony: time: 1.5190160274506 s, memory: 80 B
+array_key_last: time: 0.70938301086426 s, memory: 112 B
+```
+
+#### php 7+ return this result
+```
+Array size: 2000
+array_key_last_symfony: time: 0.29880118370056 s, memory: 0 B
+array_key_last: time: 0.13791918754578 s, memory: 0 B
+```
+
+### Peak of memory
+
+[array_key_last](http://sandbox.onlinephpfunctions.com/code/a0854f92b5aa32ce9dcdf9e64dfbe7bc62d60a3b)
+- php 7.0.1: 140.03 kB
+- php 5.6.29: 468.34 kB
+
+[array_key_last_symfony](http://sandbox.onlinephpfunctions.com/code/b3461ccf3edb4d5f758de0cd4259e4af0235d64e)
+- php 7.0.1: 140.02 kB
+- php 5.6.29: 468.34 kB
