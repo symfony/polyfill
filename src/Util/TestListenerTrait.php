@@ -76,10 +76,12 @@ class TestListenerTrait
                     if ($r->isUserDefined()) {
                         throw new \ReflectionException();
                     }
-                    if (false !== strpos($f['signature'], '&')) {
+                    if ('idn_to_ascii' === $f['name'] || 'idn_to_utf8' === $f['name']) {
+                        $defLine = sprintf('return INTL_IDNA_VARIANT_2003 === $variant ? \\%s($domain, $options, $variant) : \\%1$s%s', $f['name'], $f['args']);
+                    } elseif (false !== strpos($f['signature'], '&') && 'idn_to_ascii' !== $f['name'] && 'idn_to_utf8' !== $f['name']) {
                         $defLine = sprintf('return \\%s%s', $f['name'], $f['args']);
                     } else {
-                        $defLine = sprintf("return \\call_user_func_array('%s', func_get_args())", $f['name']);
+                        $defLine = sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
                     }
                 } catch (\ReflectionException $e) {
                     $defLine = sprintf("throw new \\{$SkippedTestError}('Internal function not found: %s')", $f['name']);

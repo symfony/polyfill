@@ -39,6 +39,8 @@ use Symfony\Polyfill\Intl\Idn\Idn;
  * @author Laurent Bassin <laurent@bassin.info>
  *
  * @covers \Symfony\Polyfill\Intl\Idn\Idn::<!public>
+ *
+ * @requires PHP 5.4
  */
 class IdnTest extends TestCase
 {
@@ -48,25 +50,16 @@ class IdnTest extends TestCase
      */
     public function testEncode2003($decoded, $encoded)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('Function signature change before PHP 5.4');
-        }
-
         $result = @idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertEquals($encoded, $result);
+        $this->assertSame($encoded, $result);
     }
 
     /**
-     * @group legacy
-     * @dataProvider invalidUtf8DomainNames2003Provider
+     * @dataProvider invalidUtf8DomainNamesProvider
      */
-    public function testEncodeInvalid2003($decoded)
+    public function testEncodeInvalid($decoded)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('Function signature change before PHP 5.4');
-        }
-
-        $result = @idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
+        $result = idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
         $this->assertFalse($result);
     }
 
@@ -76,12 +69,8 @@ class IdnTest extends TestCase
      */
     public function testDecode2003($decoded, $encoded)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('Function signature change before PHP 5.4');
-        }
-
         $result = @idn_to_utf8($encoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertEquals($decoded, $result);
+        $this->assertSame($decoded, $result);
     }
 
     /**
@@ -90,12 +79,8 @@ class IdnTest extends TestCase
      */
     public function testDecodeInvalid2003($encoded, $expected)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('Function signature change before PHP 5.4');
-        }
-
         $result = @idn_to_utf8($encoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertEquals($expected, $result);
+        $this->assertSame($expected, $result);
     }
 
     /**
@@ -104,15 +89,11 @@ class IdnTest extends TestCase
      */
     public function testUppercase2003($decoded, $ascii, $encoded)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('Function signature change before PHP 5.4');
-        }
-
         $result = @idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertEquals($ascii, $result);
+        $this->assertSame($ascii, $result);
 
         $result = @idn_to_utf8($ascii, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertEquals($encoded, $result);
+        $this->assertSame($encoded, $result);
     }
 
     /**
@@ -120,12 +101,8 @@ class IdnTest extends TestCase
      */
     public function testEncodeUTS46($decoded, $encoded)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('UTS46 was added in PHP 5.4');
-        }
-
         $result = idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
-        $this->assertEquals($encoded, $result);
+        $this->assertSame($encoded, $result);
     }
 
     /**
@@ -133,12 +110,8 @@ class IdnTest extends TestCase
      */
     public function testDecodeUTS46($decoded, $encoded)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('UTS46 was added in PHP 5.4');
-        }
-
-        $result = @idn_to_utf8($encoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
-        $this->assertEquals($decoded, $result);
+        $result = idn_to_utf8($encoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+        $this->assertSame($decoded, $result);
     }
 
     /**
@@ -146,15 +119,27 @@ class IdnTest extends TestCase
      */
     public function testUppercaseUTS46($decoded, $ascii, $encoded)
     {
-        if (\PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('UTS46 was added in PHP 5.4');
-        }
+        $info = 123;
+        $result = idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame($ascii, $result);
 
-        $result = @idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
-        $this->assertEquals($ascii, $result);
+        $expected = array(
+            'result' => $result,
+            'isTransitionalDifferent' => false,
+            'errors' => 0,
+        );
+        $this->assertSame($expected, $info);
 
-        $result = @idn_to_utf8($ascii, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
-        $this->assertEquals($encoded, $result);
+        $info = 123;
+        $result = idn_to_utf8($ascii, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame($encoded, $result);
+
+        $expected = array(
+            'result' => $result,
+            'isTransitionalDifferent' => false,
+            'errors' => 0,
+        );
+        $this->assertSame($expected, $info);
     }
 
     /**
@@ -163,71 +148,8 @@ class IdnTest extends TestCase
      */
     public function testEncodePhp53($decoded, $encoded)
     {
-        if (\PHP_VERSION_ID >= 50400) {
-            $this->markTestSkipped('Function signature change after PHP 5.4');
-        }
-
-        $result = idn_to_ascii($decoded, IDNA_DEFAULT);
-        $this->assertEquals($encoded, $result);
-    }
-
-    /**
-     * @group legacy
-     * @dataProvider invalidUtf8DomainNames2003Provider
-     */
-    public function testEncodeInvalidPhp53($decoded)
-    {
-        if (\PHP_VERSION_ID >= 50400) {
-            $this->markTestSkipped('Function signature change before PHP 5.4');
-        }
-
-        $result = idn_to_ascii($decoded, IDNA_DEFAULT);
-        $this->assertFalse($result);
-    }
-
-    /**
-     * @group legacy
-     * @dataProvider domainNamesProvider
-     */
-    public function testDecodePhp53($decoded, $encoded)
-    {
-        if (\PHP_VERSION_ID >= 50400) {
-            $this->markTestSkipped('Function signature change after PHP 5.4');
-        }
-
-        $result = idn_to_utf8($encoded, IDNA_DEFAULT);
-        $this->assertEquals($decoded, $result);
-    }
-
-    /**
-     * @group legacy
-     * @dataProvider invalidAsciiDomainName2003Provider
-     */
-    public function testDecodeInvalidPhp53($encoded, $expected)
-    {
-        if (\PHP_VERSION_ID >= 50400) {
-            $this->markTestSkipped('Function signature change after PHP 5.4');
-        }
-
-        $result = idn_to_utf8($encoded, IDNA_DEFAULT);
-        $this->assertEquals($expected, $result);
-    }
-
-    /**
-     * @group legacy
-     * @dataProvider domainNamesUppercase2003Provider
-     */
-    public function testUppercasePHP53($decoded, $ascii, $encoded)
-    {
-        if (\PHP_VERSION_ID >= 50400) {
-            $this->markTestSkipped('Function signature change after PHP 5.4');
-        }
-
         $result = @idn_to_ascii($decoded, IDNA_DEFAULT);
-        $this->assertEquals($ascii, $result);
-
-        $result = @idn_to_utf8($ascii, IDNA_DEFAULT);
-        $this->assertEquals($encoded, $result);
+        $this->assertSame($encoded, $result);
     }
 
     public function domainNamesProvider()
@@ -360,7 +282,7 @@ class IdnTest extends TestCase
         );
     }
 
-    public function invalidUtf8DomainNames2003Provider()
+    public function invalidUtf8DomainNamesProvider()
     {
         return array(
             array(
