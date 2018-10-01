@@ -1,0 +1,75 @@
+---------------------------------------------------------------------------
+
+by stof at 2018-09-24T14:14:09Z
+
+Github says there is some conflicts in your branch, which also prevent the CI from running. Please rebase your branch (see https://symfony.com/doc/current/contributing/code/patches.html#step-3-submit-your-patch for documentation about that process if needed)
+
+---------------------------------------------------------------------------
+
+by stof at 2018-09-25T08:40:45Z
+
+As the `INTL_IDNA_VARIANT_UTS46` variant is the recommended one (`INTL_IDNA_VARIANT_2003` is deprecated as of PHP 7.2), I think it does not make sense to merge a polyfill supporting only `INTL_IDNA_VARIANT_2003`
+
+---------------------------------------------------------------------------
+
+by lbassin at 2018-09-27T10:06:35Z
+
+I am kind of stuck with the last error i got with php 5.3
+The problem is the function signature changed after php 5.3. There are only two arguments in 5.3...
+
+The way tests are running in Util/TestListenerTrait.php in line 100 doesn't allow us to change signature depending of the php version
+
+I have to find a way to fix that :confused: I'll continue to search a solution but if someone has an idea it would be great
+
+---------------------------------------------------------------------------
+
+by lbassin at 2018-09-28T12:34:53Z
+
+I think i fixed all the feedbacks :)
+
+Here a quick update for this PR :
+
+- The polyfill works perfectly with 2003 variant
+The IDNA_* flags and the last argument idna_info are used for UTS46 only
+
+- I made some research about UTS46 implementation :
+From what I understand, the algorithm is the same but the differences are on the characters the function is allowed to encode / decode
+A full explanation : https://unicode.org/reports/tr46/#Validity_Criteria
+Official test cases for UTS46 : https://www.unicode.org/Public/idna/6.0.0/IdnaTest.txt
+This repo may help: https://github.com/jcranmer/idna-uts46/blob/master/uts46.js (UTF46 implementation by in javascript. I didn't find php implementation for UTS46)
+
+In my opinion this PR is a good start, there is at least 2003 variant available and we may add UTS46 later
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-09-28T12:43:52Z
+
+> about UTS46 implementation: From what I understand, the algorithm is the same
+
+does this mean we could duplicate the test cases but use TS46 instead while still having them green?
+If yes, then let's do it! (don't forget removing the `@group legacy` annotation on them.)
+
+---------------------------------------------------------------------------
+
+by lbassin at 2018-09-28T15:14:26Z
+
+I just added the UTS46 tests (Same as 2003) and still green
+
+The next step would be to add some that only work with 2003 and others with UTS46
+
+---------------------------------------------------------------------------
+
+by stof at 2018-09-28T15:23:53Z
+
+yeah, there is probably some differences between the variants, otherwise PHP would not have introduced variants.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-09-30T17:05:00Z
+
+I push forced on your fork. The 1st commit is your work, the 2nd are some changes on top.
+This PR is ready for a first version.
+As far as polyfilling is concerned, this is a very basic implementation: it misses handling the option bitfield, misses properly populating $idna_info and misses proper stringprep (NFKC normalization, maybe more).
+But that's what forking https://github.com/true/php-punycode provides us for now and that's a good start.
+People could later contribute the missing bits.
+Thank you.
