@@ -16,6 +16,7 @@ use PHPUnit\Framework\Test;
 use PHPUnit\Framework\TestListener as TestListenerInterface;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Framework\Warning;
+use PHPUnit\Framework\WarningTestCase;
 
 if (class_exists('PHPUnit_Runner_Version') && version_compare(\PHPUnit_Runner_Version::id(), '6.0.0', '<')) {
     class_alias('Symfony\Polyfill\Util\LegacyTestListener', 'Symfony\Polyfill\Util\TestListener');
@@ -91,6 +92,11 @@ if (class_exists('PHPUnit_Runner_Version') && version_compare(\PHPUnit_Runner_Ve
 
         public function endTest(Test $test, $time)
         {
+        }
+
+        public static function warning($message)
+        {
+            return parent::warning($message);
         }
     }
 }

@@ -44,8 +44,25 @@ class TestListenerTrait
             $warnings = array();
             $defLine = null;
 
+            foreach (new \RegexIterator($bootstrap, '/define\(\'/') as $defLine) {
+                preg_match('/define\(\'(?P<name>.+)\'/', $defLine, $matches);
+                if (\defined($matches['name'])) {
+                    continue;
+                }
+
+                try {
+                    eval($defLine);
+                } catch (\PHPUnit_Framework_Exception $ex){
+                    $warnings[] = $TestListener::warning($ex->getMessage());
+                } catch (\PHPUnit\Framework\Exception $ex) {
+                    $warnings[] = $TestListener::warning($ex->getMessage());
+                }
+            }
+
+            $bootstrap->rewind();
+
             foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
-                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\([^\)]*+\)) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
+                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
                     $warnings[] = $TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
                     continue;
                 }
@@ -59,10 +76,12 @@ class TestListenerTrait
                     if ($r->isUserDefined()) {
                         throw new \ReflectionException();
                     }
-                    if (false !== strpos($f['signature'], '&')) {
+                    if ('idn_to_ascii' === $f['name'] || 'idn_to_utf8' === $f['name']) {
+                        $defLine = sprintf('return INTL_IDNA_VARIANT_2003 === $variant ? \\%s($domain, $options, $variant) : \\%1$s%s', $f['name'], $f['args']);
+                    } elseif (false !== strpos($f['signature'], '&') && 'idn_to_ascii' !== $f['name'] && 'idn_to_utf8' !== $f['name']) {
                         $defLine = sprintf('return \\%s%s', $f['name'], $f['args']);
                     } else {
-                        $defLine = sprintf("return \\call_user_func_array('%s', func_get_args())", $f['name']);
+                        $defLine = sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
                     }
                 } catch (\ReflectionException $e) {
                     $defLine = sprintf("throw new \\{$SkippedTestError}('Internal function not found: %s')", $f['name']);
