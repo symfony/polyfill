@@ -36,7 +36,9 @@ Polyfills are provided for:
 - the `spl_object_id` and `stream_isatty` functions introduced in PHP 7.2;
 - the `sapi_windows_vt100_support` function (Windows only) introduced in PHP 7.2;
 - the `PHP_OS_FAMILY` constant introduced in PHP 7.2;
-- the `is_countable` function introduced in PHP 7.3.
+- the `is_countable` function introduced in PHP 7.3;
+- the `array_key_first` and `array_key_last` functions introduced in PHP 7.3;
+- the `hrtime` function introduced in PHP 7.3.
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
