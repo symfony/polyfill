@@ -88,6 +88,27 @@ It adds only a few lightweight `require` statements to the bootstrap process
 to support all polyfills. Implementations are then loaded on-demand when
 needed during code execution.
 
+If your project requires a minimum PHP version it is advisable to add polyfills
+for lower PHP versions to the `replace` section of your `composer.json`. 
+This removes any overhead from these polyfills as they are no longer part of your project.
+The same can be done for polyfills for extensions that you require.
+
+If your project requires php 7.0, and needs the mb extension, the replace section would look
+something like this.
+
+```json
+{
+    "replace": {
+        "symfony/polyfill-php54": "1.99",
+        "symfony/polyfill-php55": "1.99",
+        "symfony/polyfill-php56": "1.99",
+        "symfony/polyfill-php70": "1.99",
+        "symfony/polyfill-mbstring": "1.99"
+    }
+}
+
+```
+
 Polyfills are unit-tested alongside their native implementation so that
 feature and behavior parity can be proven and enforced in the long run.
 
