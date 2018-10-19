@@ -94,7 +94,7 @@ This removes any overhead from these polyfills as they are no longer part of you
 The same can be done for polyfills for extensions that you require.
 
 If your project requires php 7.0, and needs the mb extension, the replace section would look
-something like this.
+something like this:
 
 ```json
 {
@@ -106,7 +106,6 @@ something like this.
         "symfony/polyfill-mbstring": "1.99"
     }
 }
-
 ```
 
 Polyfills are unit-tested alongside their native implementation so that
