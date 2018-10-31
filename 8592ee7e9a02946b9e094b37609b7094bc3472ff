@@ -1,0 +1,81 @@
+---------------------------------------------------------------------------
+
+by paragonie-scott at 2018-10-11T18:19:23Z
+
+Note: this is actually the *correct* fix for **CVE-2013-5958**.
+
+---------------------------------------------------------------------------
+
+by paragonie-scott at 2018-10-12T00:23:33Z
+
+Huh. I just discovered that there aren't any unit tests for this function to begin with.
+
+---------------------------------------------------------------------------
+
+by paragonie-scott at 2018-10-12T00:37:39Z
+
+I submitted a unit test in #156; it should pass before and after this is merged.
+
+---------------------------------------------------------------------------
+
+by Sc00bz at 2018-10-12T06:27:16Z
+
+This generates wrong results see https://gist.github.com/paragonie-scott/0fe50b71d902f2cdaf88a565888e5801#gistcomment-2730452
+
+TL;DR
+
+Test `$pw = str_repeat('a', 33);` with SHA256. It's comparing password length to hash length instead of block length.
+
+`$blockLength = mhash_get_block_size(constant('MHASH_' . strtoupper($algorithm)));`
+
+or make a custom version of `mhash_get_block_size()` because it doesn't exist anymore
+
+or use `hash_init()`, `hash_copy()`, `hash_update()`, and `hash_final()` which is the correct way and gets a "2x" speed increase (it's less because PHP is slow at function calls). But PHP 5 >= 5.3.0 vs PHP 5 >= 5.1.2 with `hash_hmac()`.
+
+---------------------------------------------------------------------------
+
+by paragonie-scott at 2018-10-12T07:37:21Z
+
+Testing all of the [MHASH constants](https://secure.php.net/manual/fa/mhash.constants.php) reveals that SHA2 is the oddity where block_size != hash_length.
+
+The latest commit takes this into consideration.
+
+---------------------------------------------------------------------------
+
+by Sc00bz at 2018-10-12T08:00:31Z
+
+I fail and I was hoping to get in before another fix :(... This does mean you need to hash a really long password twice which is not ideal but it will work without knowing the hash's block size.
+```
+$passwordHash = hash($algorithm, $password, true);
+if (hash_hmac($algorithm, '', $password, true) === hash_hmac($algorithm, '', $passwordHash, true))
+{
+    $password = $passwordHash;
+}
+```
+
+---------------------------------------------------------------------------
+
+by Sc00bz at 2018-10-12T08:12:45Z
+
+Oh well there's always this to avoid hashing a really long password twice. This should always work because there probably won't ever be a hash function with a block size near 8192 bits:
+```
+if (strlen($password) > 1024 || hash_hmac($...
+```
+
+---------------------------------------------------------------------------
+
+by paragonie-scott at 2018-10-12T08:14:45Z
+
+I finally got tired of Github's editor and tested this code locally. This was *supposed* to be a one-off in response to a Twitter argument, not an in-depth rigorously-tested commitment. Alas.
+
+---------------------------------------------------------------------------
+
+by paragonie-scott at 2018-10-12T08:18:50Z
+
+The unit test failure appears to be PHP 7.3-specific, unrelated to anything I changed.
+
+---------------------------------------------------------------------------
+
+by paragonie-scott at 2018-10-19T17:36:44Z
+
+@Sc00bz does the current iteration of this pull request look sane? I've tested all the corner cases you outlined in your gist comment and they're producing the expected result now.
