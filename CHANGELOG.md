@@ -1,3 +1,10 @@
+* v1.10.0
+
+ * added polyfill for `idn_to_ascii()` and `idn_to_utf8()`
+ * added polyfill for intl's `MessageFormatter`
+ * prevented DoS via long passwords when using `hash_pbkdf2()` polyfill
+ * duplicated `mb_ord()`, `mb_chr()` and `mb_scrub()` polyfills in the `php72` one
+
 * v1.9.0
 
  * added polyfill for `hrtime()`
