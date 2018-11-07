@@ -25,7 +25,6 @@ class TestListenerTrait
         }
         self::$enabledPolyfills = false;
         $SkippedTestError = class_exists('PHPUnit\Framework\SkippedTestError') ? 'PHPUnit\Framework\SkippedTestError' : 'PHPUnit_Framework_SkippedTestError';
-        $TestListener = class_exists('Symfony\Polyfill\Util\TestListener', false) ? 'Symfony\Polyfill\Util\TestListener' : 'Symfony\Polyfill\Util\LegacyTestListener';
 
         foreach ($mainSuite->tests() as $suite) {
             $testClass = $suite->getName();
@@ -33,7 +32,7 @@ class TestListenerTrait
                 continue;
             }
             if (!preg_match('/^(.+)\\\\Tests(\\\\.*)Test$/', $testClass, $m)) {
-                $mainSuite->addTest($TestListener::warning('Unknown naming convention for '.$testClass));
+                $mainSuite->addTest(TestListener::warning('Unknown naming convention for '.$testClass));
                 continue;
             }
             if (!class_exists($m[1].$m[2])) {
@@ -53,9 +52,9 @@ class TestListenerTrait
                 try {
                     eval($defLine);
                 } catch (\PHPUnit_Framework_Exception $ex){
-                    $warnings[] = $TestListener::warning($ex->getMessage());
+                    $warnings[] = TestListener::warning($ex->getMessage());
                 } catch (\PHPUnit\Framework\Exception $ex) {
-                    $warnings[] = $TestListener::warning($ex->getMessage());
+                    $warnings[] = TestListener::warning($ex->getMessage());
                 }
             }
 
@@ -63,7 +62,7 @@ class TestListenerTrait
 
             foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
                 if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
-                    $warnings[] = $TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
+                    $warnings[] = TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
                     continue;
                 }
                 $testNamespace = substr($testClass, 0, strrpos($testClass, '\\'));
@@ -107,7 +106,7 @@ EOPHP
             if (!$warnings && null === $defLine) {
                 $warnings[] = new $SkippedTestError('No Polyfills found in bootstrap.php for '.$testClass);
             } else {
-                $mainSuite->addTest(new $TestListener($suite));
+                $mainSuite->addTest(new TestListener($suite));
             }
         }
         foreach ($warnings as $w) {

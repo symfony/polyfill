@@ -14,7 +14,7 @@ namespace Symfony\Polyfill\Util;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
-class LegacyTestListener extends \PHPUnit_Framework_TestSuite implements \PHPUnit_Framework_TestListener
+class TestListenerForV5 extends \PHPUnit_Framework_TestSuite implements \PHPUnit_Framework_TestListener
 {
     private $suite;
     private $trait;
@@ -32,16 +32,6 @@ class LegacyTestListener extends \PHPUnit_Framework_TestSuite implements \PHPUni
     public function startTestSuite(\PHPUnit_Framework_TestSuite $suite)
     {
         $this->trait->startTestSuite($suite);
-    }
-
-    protected function setUp()
-    {
-        TestListenerTrait::$enabledPolyfills = $this->suite->getName();
-    }
-
-    protected function tearDown()
-    {
-        TestListenerTrait::$enabledPolyfills = false;
     }
 
     public function addError(\PHPUnit_Framework_Test $test, \Exception $e, $time)
@@ -85,5 +75,15 @@ class LegacyTestListener extends \PHPUnit_Framework_TestSuite implements \PHPUni
     public static function warning($message)
     {
         return parent::warning($message);
+    }
+
+    protected function setUp()
+    {
+        TestListenerTrait::$enabledPolyfills = $this->suite->getName();
+    }
+
+    protected function tearDown()
+    {
+        TestListenerTrait::$enabledPolyfills = false;
     }
 }
