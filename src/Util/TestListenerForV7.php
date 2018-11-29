@@ -43,7 +43,7 @@ class TestListenerForV7 extends TestSuite implements TestListenerInterface
 
     public function addError(Test $test, \Throwable $t, float $time): void
     {
-        $this->trait->addError($test, $e, $time);
+        $this->trait->addError($test, $t, $time);
     }
 
     public function addWarning(Test $test, Warning $e, float $time): void
