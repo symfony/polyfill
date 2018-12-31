@@ -41,6 +41,20 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         $this->assertEquals(date_default_timezone_get(), $formatter->getTimeZoneId());
     }
 
+    public function testConstructorWithoutDateType()
+    {
+        $formatter = new IntlDateFormatter('en', null, IntlDateFormatter::SHORT, 'UTC', IntlDateFormatter::GREGORIAN);
+
+        $this->assertSame('EEEE, LLLL d, y, h:mm a', $formatter->getPattern());
+    }
+
+    public function testConstructorWithoutTimeType()
+    {
+        $formatter = new IntlDateFormatter('en', IntlDateFormatter::SHORT, null, 'UTC', IntlDateFormatter::GREGORIAN);
+
+        $this->assertSame('M/d/yy, h:mm:ss a zzzz', $formatter->getPattern());
+    }
+
     /**
      * @dataProvider formatProvider
      */
