@@ -325,7 +325,7 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
 
     public function formatTimezoneProvider()
     {
-        $cases = [
+        return [
             ['z', 'GMT', 'GMT'],
             ['zz', 'GMT', 'GMT'],
             ['zzz', 'GMT', 'GMT'],
@@ -371,8 +371,6 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
             ['zzzz', 'GMT+03:00', 'GMT+03:00'],
             ['zzzzz', 'GMT+03:00', 'GMT+03:00'],
         ];
-
-        return $cases;
     }
 
     public function testFormatWithGmtTimezone()
