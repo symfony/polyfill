@@ -127,67 +127,67 @@ class MessageFormatterTest extends TestCase
                 ),
             ),
 
-            // This one was provided by Aura.Intl. Thanks!
             array(<<<'_MSG_'
-{gender_of_host, select,
-  female {{num_guests, plural, offset:1
-      =0 {{host} does not give a party.}
-      =1 {{host} invites {guest} to her party.}
-      =2 {{host} invites {guest} and one other person to her party.}
-     other {{host} invites {guest} and # other people to her party.}}}
-  male {{num_guests, plural, offset:1
-      =0 {{host} does not give a party.}
-      =1 {{host} invites {guest} to his party.}
-      =2 {{host} invites {guest} and one other person to his party.}
-     other {{host} invites {guest} and # other people to his party.}}}
+{eye_color_of_host, select,
+  brown {{num_guests, plural, offset:1
+      =0 {{host} has brown eyes and does not give a party.}
+      =1 {{host} has brown eyes and invites {guest} to their party.}
+      =2 {{host} has brown eyes and invites {guest} and one other person to their party.}
+     other {{host} has brown eyes and invites {guest} and # other people to their party.}}}
+  green {{num_guests, plural, offset:1
+      =0 {{host} has green eyes and does not give a party.}
+      =1 {{host} has green eyes and invites {guest} to their party.}
+      =2 {{host} has green eyes and invites {guest} and one other person to their party.}
+     other {{host} has green eyes and invites {guest} and # other people to their party.}}}
   other {{num_guests, plural, offset:1
-      =0 {{host} does not give a party.}
-      =1 {{host} invites {guest} to their party.}
-      =2 {{host} invites {guest} and one other person to their party.}
-      other {{host} invites {guest} and # other people to their party.}}}}
+      =0 {{host} has pretty eyes and does not give a party.}
+      =1 {{host} has pretty eyes and invites {guest} to their party.}
+      =2 {{host} has pretty eyes and invites {guest} and one other person to their party.}
+      other {{host} has pretty eyes and invites {guest} and # other people to their party.}}}}
 _MSG_
                 ,
-                'ralph invites beep and 3 other people to his party.',
+                'Alex has brown eyes and invites Riley and 3 other people to their party.',
                 array(
-                    'gender_of_host' => 'male',
+                    'eye_color_of_host' => 'brown',
                     'num_guests' => 4,
-                    'host' => 'ralph',
-                    'guest' => 'beep',
+                    'host' => 'Alex',
+                    'guest' => 'Riley',
                 ),
             ),
 
             array(
-                '{name} is {gender} and {gender, select, female{she} male{he} other{it}} loves Yii!',
-                'Alexander is male and he loves Yii!',
+                '{name} has {eye_color} eyes like {eye_color, select, brown{wood} green{grass} other{a bird}}!',
+                'Alex has brown eyes like wood!',
                 array(
-                    'name' => 'Alexander',
-                    'gender' => 'male',
+                    'name' => 'Alex',
+                    'eye_color' => 'brown',
                 ),
             ),
 
             // verify pattern in select does not get replaced
             array(
-                '{name} is {gender} and {gender, select, female{she} male{he} other{it}} loves Yii!',
-                'Alexander is male and he loves Yii!',
+                '{name} has {eye_color} eyes like {eye_color, select, brown{wood} green{grass} other{a bird}}!',
+                'Alex has blue eyes like a bird!',
                 array(
-                    'name' => 'Alexander',
-                    'gender' => 'male',
+                    'name' => 'Alex',
+                    'eye_color' => 'blue',
                     // following should not be replaced
-                    'he' => 'wtf',
-                    'she' => 'wtf',
-                    'it' => 'wtf',
+                    'wood' => 'nothing',
+                    'grass' => 'nothing',
+                    'a bird' => 'nothing',
                 ),
             ),
 
             // verify pattern in select message gets replaced
             array(
-                '{name} is {gender} and {gender, select, female{she} male{{he}} other{it}} loves Yii!',
-                'Alexander is male and wtf loves Yii!',
+                '{name} has {eye_color} eyes like {eye_color, select, brown{{wood}} green{grass} other{a bird}}!',
+                'Alex has brown eyes like bears!',
                 array(
-                    'name' => 'Alexander',
-                    'gender' => 'male',
-                    'he' => 'wtf',
-                    'she' => 'wtf',
+                    'name' => 'Alex',
+                    'eye_color' => 'brown',
+                    'wood' => 'bears',
+                    'grass' => 'plants',
+                    'a bird' => 'the sea',
                 ),
             ),
 
@@ -200,13 +200,13 @@ _MSG_
 
             // some parser specific verifications
             array(
-                '{gender} and {gender, select, female{she} male{{he}} other{it}} loves {nr} is {gender}!',
-                'male and wtf loves 42 is male!',
+                'Alex has {eye_color} eyes like {eye_color, select, brown{{wood}} other{a bird}} and loves {number}!',
+                'Alex has brown eyes like bears and loves 42!',
                 array(
-                    'nr' => 42,
-                    'gender' => 'male',
-                    'he' => 'wtf',
-                    'she' => 'wtf',
+                    'number' => 42,
+                    'eye_color' => 'brown',
+                    'wood' => 'bears',
+                    'grass' => 'plants',
                 ),
             ),
         );
