@@ -1,3 +1,7 @@
+* v1.11.0
+
+ * added missing polyfill for `JsonException`
+
 * v1.10.0
 
  * added polyfill for `idn_to_ascii()` and `idn_to_utf8()`
