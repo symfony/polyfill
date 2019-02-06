@@ -28,4 +28,8 @@ if (PHP_VERSION_ID < 70300) {
     if (!function_exists('array_key_last')) {
         function array_key_last(array $array) { end($array); return key($array); }
     }
+    
+    if (!defined('JSON_THROW_ON_ERROR')) {
+        define('JSON_THROW_ON_ERROR', 4194304);
+    }
 }
