@@ -1,0 +1,78 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-01-30T10:27:48Z
+
+What about polyfilling only the missing constant instead?
+
+---------------------------------------------------------------------------
+
+by derrabus at 2019-01-30T10:45:49Z
+
+I don't know, if anyone checks for the availability of the constants for feature detection, but if someone did, we would break that code.
+
+The problem is that in my scenario, the extension already provided a `idn_to_ascii` function with a reduced feature set that the polyfill cannot replace. Meaning that this code would right now fail with an error about an undefined constant.
+
+```php
+idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+```
+
+If we defined the constant, that code above would be executed, but do unexpected things because the the native `idn_to_ascii` ignores the third parameter and does not implement the UTF46 variant yet.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-01-30T10:55:51Z
+
+and so, how do you plan to use the polyfill?
+
+---------------------------------------------------------------------------
+
+by derrabus at 2019-01-30T12:07:51Z
+
+I would call the static class method directly.
+
+```php
+Idn::idn_to_ascii($domain, Idn::IDNA_DEFAULT, Idn::INTL_IDNA_VARIANT_UTS46);
+```
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-01-30T12:46:44Z
+
+OK, that's `@internal` so you're on your own :)
+I'd suggest to seek for the minimum viable patch that would allow what you want.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2019-01-30T13:56:58Z
+
+> OK, that's `@internal` so you're on your own :)
+
+I am aware of that.
+
+> I'd suggest to seek for the minimum viable patch that would allow what you want.
+
+I could reduce the list of class constants to only the two `INTL_IDNA_VARIANT_*` constants because the current implementation of the polyfill does not make use of any of the other constants.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2019-01-30T14:11:43Z
+
+Done. The class now only defines the constants it actually uses.
+
+---------------------------------------------------------------------------
+
+by stof at 2019-01-30T16:59:32Z
+
+this might be OK for me, even though it only fixes things for people using internal APIs (as we cannot replace an existing implementation with a more complete polyfill)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-02-07T10:17:10Z
+
+Given #168, I think we should polyfill the const actually.
+
+---------------------------------------------------------------------------
+
+by stof at 2019-02-07T17:00:45Z
+
+@nicolas-grekas I would vote against it for the same reason that in #168 actually.
