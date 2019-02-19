@@ -64,9 +64,6 @@ class NormalizerTest extends TestCase
      */
     public function testNormalize()
     {
-        $c = in::normalize('déjà', pn::NFC).in::normalize('훈쇼™', pn::NFD);
-        $this->assertSame($c, normalizer_normalize($c, pn::NONE));
-
         $c = 'déjà 훈쇼™';
         $d = in::normalize($c, pn::NFD);
         $kc = in::normalize($c, pn::NFKC);
@@ -99,8 +96,8 @@ class NormalizerTest extends TestCase
             $t = explode(';', $t[0]);
 
             if (6 === \count($t)) {
-                foreach ($t as $k => $s) {
-                    $t = explode(' ', $s);
+                foreach ($t as $k => $ss) {
+                    $t = explode(' ', $ss);
                     $t = array_map('hexdec', $t);
                     $t = array_map(__CLASS__.'::chr', $t);
                     $c[$k] = implode('', $t);
