@@ -38,7 +38,8 @@ Polyfills are provided for:
 - the `PHP_OS_FAMILY` constant introduced in PHP 7.2;
 - the `is_countable` function introduced in PHP 7.3;
 - the `array_key_first` and `array_key_last` functions introduced in PHP 7.3;
-- the `hrtime` function introduced in PHP 7.3.
+- the `hrtime` function introduced in PHP 7.3;
+- the `JsonException` class introduced in PHP 7.3.
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
