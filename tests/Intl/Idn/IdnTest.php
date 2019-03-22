@@ -155,6 +155,10 @@ class IdnTest extends TestCase
     public function domainNamesProvider()
     {
         return array(
+            array(
+                'foo.example.',
+                'foo.example.',
+            ),
             // https://en.wikipedia.org/wiki/IDN_Test_TLDs
             array(
                 'مثال.إختبار',

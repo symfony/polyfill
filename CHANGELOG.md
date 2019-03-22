@@ -1,3 +1,7 @@
+* v1.11.1
+
+ * fixed support for IDN with trailing dot
+
 * v1.11.0
 
  * added missing polyfill for `JsonException`
