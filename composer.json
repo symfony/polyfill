@@ -19,7 +19,7 @@
         "php": ">=5.3.3",
         "ircmaxell/password-compat": "~1.0",
         "paragonie/random_compat": "~1.0|~2.0|~9.99",
-        "symfony/intl": "~2.3|~3.0|~4.0"
+        "symfony/intl": "~2.3|~3.0|~4.0|~5.0"
     },
     "require-dev": {
         "symfony/phpunit-bridge": "~3.2"
