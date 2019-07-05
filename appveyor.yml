@@ -16,8 +16,8 @@ install:
     - cinst wget
     - IF EXIST c:\php (SET PHP=0) ELSE (mkdir c:\php)
     - cd c:\php
-    - IF %PHP%==1 appveyor DownloadFile https://github.com/symfony/binary-utils/releases/download/v0.1/php-5.3.3-nts-Win32-VC9-x86.zip
-    - IF %PHP%==1 7z x php-5.3.3-nts-Win32-VC9-x86.zip -y >nul
+    - IF %PHP%==1 appveyor DownloadFile https://github.com/symfony/binary-utils/releases/download/v0.1/php-5.3.9-nts-Win32-VC9-x86.zip
+    - IF %PHP%==1 7z x php-5.3.9-nts-Win32-VC9-x86.zip -y >nul
     - IF %PHP%==1 appveyor DownloadFile https://raw.githubusercontent.com/symfony/binary-utils/master/ICU-51.2-dlls.zip
     - IF %PHP%==1 7z x ICU-51.2-dlls.zip -y >nul
     - IF %PHP%==1 del /Q *.zip
