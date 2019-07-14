@@ -19,6 +19,8 @@ matrix:
         - php: 7.2
         - php: 7.3
           env: SYMFONY_PHPUNIT_VERSION=7.2
+        - php: 7.4snapshot
+          env: SYMFONY_PHPUNIT_VERSION=7.2
         - php: nightly
     allow_failures:
         - php: nightly
