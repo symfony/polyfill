@@ -39,7 +39,9 @@ Polyfills are provided for:
 - the `is_countable` function introduced in PHP 7.3;
 - the `array_key_first` and `array_key_last` functions introduced in PHP 7.3;
 - the `hrtime` function introduced in PHP 7.3;
-- the `JsonException` class introduced in PHP 7.3.
+- the `JsonException` class introduced in PHP 7.3;
+- the `get_mangled_object_vars`, `mb_str_split` and `password_algos` functions
+  introduced in PHP 7.4;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
@@ -67,6 +69,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php71` for using the PHP 7.1 functions,
 - `symfony/polyfill-php72` for using the PHP 7.2 functions,
 - `symfony/polyfill-php73` for using the PHP 7.3 functions,
+- `symfony/polyfill-php74` for using the PHP 7.4 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,

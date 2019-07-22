@@ -34,6 +34,7 @@
         "symfony/polyfill-php71": "self.version",
         "symfony/polyfill-php72": "self.version",
         "symfony/polyfill-php73": "self.version",
+        "symfony/polyfill-php74": "self.version",
         "symfony/polyfill-iconv": "self.version",
         "symfony/polyfill-intl-grapheme": "self.version",
         "symfony/polyfill-intl-icu": "self.version",
@@ -56,6 +57,7 @@
             "src/Php71/bootstrap.php",
             "src/Php72/bootstrap.php",
             "src/Php73/bootstrap.php",
+            "src/Php74/bootstrap.php",
             "src/Iconv/bootstrap.php",
             "src/Intl/Grapheme/bootstrap.php",
             "src/Intl/Idn/bootstrap.php",
@@ -75,7 +77,7 @@
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "1.11-dev"
+            "dev-master": "1.12-dev"
         }
     }
 }

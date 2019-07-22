@@ -309,6 +309,23 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_str_split
+     */
+    public function testStrSplit()
+    {
+        $this->assertSame(array('한', '국', '어'), mb_str_split('한국어'));
+        $this->assertSame(array('по', 'бе', 'да'), mb_str_split('победа', 2));
+        $this->assertSame(array('źre', 'bię'), mb_str_split('źrebię', 3));
+        $this->assertSame(array('źr', 'ebi', 'ę'), mb_str_split('źrebię', 3, 'ASCII'));
+        $this->assertSame(array('alpha', 'bet'), mb_str_split('alphabet', 5));
+        $this->assertFalse(@mb_str_split('победа', 0));
+        $this->assertNull(@mb_str_split(array(), 0));
+
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero');
+        mb_str_split('победа', 0);
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strstr
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stristr
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrchr
