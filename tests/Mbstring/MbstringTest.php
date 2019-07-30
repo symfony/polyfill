@@ -257,9 +257,13 @@ class MbstringTest extends TestCase
         $this->assertSame("\xFF", mb_substr("\x00\xFF", -1, 1, 'ASCII'));
         $this->assertSame("\x00", mb_substr("\x00\xFF", 0, 1, 'ASCII'));
         $this->assertSame("\x00\xFF", mb_substr("\x00\xFF", 0, 2, 'ASCII'));
+        $this->assertSame('', mb_substr("\x00\xFF", 2, 1, 'ASCII'));
+        $this->assertSame('', mb_substr("\x00\xFF", 3, 1, 'ASCII'));
         $this->assertSame("\xFF", mb_substr("\x00\xFF", -1, 1, 'CP850'));
         $this->assertSame("\x00", mb_substr("\x00\xFF", 0, 1, 'CP850'));
         $this->assertSame("\x00\xFF", mb_substr("\x00\xFF", 0, 2, 'CP850'));
+        $this->assertSame('', mb_substr("\x00\xFF", 2, 1, 'CP850'));
+        $this->assertSame('', mb_substr("\x00\xFF", 3, 1, 'CP850'));
     }
 
     /**
