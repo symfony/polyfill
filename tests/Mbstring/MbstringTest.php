@@ -245,6 +245,9 @@ class MbstringTest extends TestCase
         $c = 'déjà';
 
         $this->assertSame('jà', mb_substr($c, 2));
+        $this->assertSame('à', mb_substr($c, 3));
+        $this->assertSame('', mb_substr($c, 4));
+        $this->assertSame('', mb_substr($c, 5));
         $this->assertSame('jà', mb_substr($c, -2));
         $this->assertSame('jà', mb_substr($c, -2, 3));
         $this->assertSame('', mb_substr($c, -1, 0));
