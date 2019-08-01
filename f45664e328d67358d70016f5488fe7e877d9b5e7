@@ -1,0 +1,26 @@
+---------------------------------------------------------------------------
+
+by orklah at 2019-07-30T18:28:07Z
+
+So, contrary to what I thought when I created #182 , substr can also return false on newer versions of PHP7. The doc only explain that when $start is EQUAL to string length, PHP5 returned false and PHP7 return empty string. When $start is superior, substr continue to return false.
+
+This is not the way mb_substr works. mb_substr always return an empty string when $start is equal or superior to string length
+
+I added two tests to each encoding that happen to call substr internally (ASCII and CP850).
+Every test should fail on PHP5. On PHP7, only the tests with $start longer than the string should fail.
+
+Here is the 3v4l.org link which I used to display my results
+https://3v4l.org/QKdXP
+(CP850 seems to be missing before PHP5.2.17, but given that this package minimum required version is 5.3.3, I ignored this issue)
+
+I will now begin to modify the mb_substr method to pass the tests
+
+---------------------------------------------------------------------------
+
+by orklah at 2019-07-30T18:51:33Z
+
+The test are passing.
+
+Please tell me if there is something left to do or if there's something I did wrong. This is one of my first PR so I may have made mistakes.
+
+Thanks
