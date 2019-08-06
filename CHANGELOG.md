@@ -1,3 +1,7 @@
+* v1.12.0
+
+ * added PHP 7.4 polyfill
+
 * v1.11.0
 
  * fixed support for IDN with trailing dot
