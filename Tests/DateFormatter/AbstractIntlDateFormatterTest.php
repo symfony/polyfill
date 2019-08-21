@@ -959,10 +959,7 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
      */
     abstract protected function getDateFormatter($locale, $datetype, $timetype, $timezone = null, $calendar = IntlDateFormatter::GREGORIAN, $pattern = null);
 
-    /**
-     * @return string
-     */
-    abstract protected function getIntlErrorMessage();
+    abstract protected function getIntlErrorMessage(): string;
 
     /**
      * @return int
@@ -971,8 +968,6 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
 
     /**
      * @param int $errorCode
-     *
-     * @return bool
      */
-    abstract protected function isIntlFailure($errorCode);
+    abstract protected function isIntlFailure($errorCode): bool;
 }
