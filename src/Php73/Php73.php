@@ -21,6 +21,8 @@ final class Php73
 {
     public static $startAt = 1533462603;
 
+    private static $previousValue = '0';
+
     /**
      * @param bool $asNum
      *
@@ -28,9 +30,19 @@ final class Php73
      */
     public static function hrtime($asNum = false)
     {
-        $ns = microtime(false);
-        $s = substr($ns, 11) - self::$startAt;
-        $ns = 1E9 * (float) $ns;
+        $microtime = microtime(false);
+        $current = 1E9 * (float) $microtime;
+        $previous = 1E9 * (float) self::$previousValue;
+
+        if ($current >= $previous) {
+            $ns = $current;
+            self::$previousValue = $microtime;
+        } else {
+            $ns = $previous;
+            $microtime = self::$previousValue;
+        }
+
+        $s = substr($microtime, 11) - self::$startAt;
 
         if ($asNum) {
             $ns += $s * 1E9;
