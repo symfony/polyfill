@@ -23,15 +23,15 @@ namespace Symfony\Polyfill\Intl\Normalizer;
  */
 class Normalizer
 {
-    const NONE = 1;
-    const FORM_D = 2;
-    const FORM_KD = 3;
-    const FORM_C = 4;
-    const FORM_KC = 5;
-    const NFD = 2;
-    const NFKD = 3;
-    const NFC = 4;
-    const NFKC = 5;
+    const NONE = \Normalizer::NONE;
+    const FORM_D = \Normalizer::FORM_D;
+    const FORM_KD = \Normalizer::FORM_KD;
+    const FORM_C = \Normalizer::FORM_C;
+    const FORM_KC = \Normalizer::FORM_KC;
+    const NFD = \Normalizer::NFD;
+    const NFKD = \Normalizer::NFKD;
+    const NFC = \Normalizer::NFC;
+    const NFKC = \Normalizer::NFKC;
 
     private static $C;
     private static $D;

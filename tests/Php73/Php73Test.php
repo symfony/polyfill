@@ -28,7 +28,7 @@ class Php73Test extends TestCase
         $this->assertFalse(is_countable(new \stdClass()));
 
         $endianBytes = unpack('S', "\x01\x00");
-        if (1 === $endianBytes[1]) { // skip on big endian systems: the fixture is only for little endian ones
+        if (1 === $endianBytes[1] && class_exists('ResourceBundle')) { // skip on big endian systems: the fixture is only for little endian ones
             $this->assertTrue(is_countable(\ResourceBundle::create('en', __DIR__.'/fixtures')));
         }
     }

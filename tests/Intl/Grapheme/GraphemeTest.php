@@ -117,6 +117,29 @@ class GraphemeTest extends TestCase
     }
 
     /**
+     * @requires PHP 7.1
+     *
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_position
+     */
+    public function testGraphemeStrposWithNegativeOffset()
+    {
+        $this->assertSame(3, grapheme_strpos('abca', 'a', -1));
+        $this->assertSame(3, grapheme_stripos('abca', 'A', -1));
+
+        $this->assertSame(4, grapheme_strripos('DEJAA', 'a'));
+        $this->assertSame(3, grapheme_strripos('DEJAA', 'a', -2));
+        $this->assertFalse(grapheme_strripos('DEJAA', 'a', -3));
+
+        $this->assertSame(4, grapheme_strrpos('DEJAA', 'A'));
+        $this->assertSame(3, grapheme_strrpos('DEJAA', 'A', -2));
+        $this->assertFalse(grapheme_strrpos('DEJAA', 'A', -3));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strstr
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stristr
      */
