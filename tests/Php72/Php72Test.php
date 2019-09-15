@@ -61,7 +61,7 @@ class Php72Test extends TestCase
         var_dump($obj);
         $dump = ob_get_clean();
 
-        $this->assertStringStartsWith("object(stdClass)#$id ", $dump);
+        $this->assertContains("#$id ", $dump);
 
         $this->assertNull(@spl_object_id(123));
     }
