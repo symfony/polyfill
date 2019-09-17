@@ -286,6 +286,7 @@ class MbstringTest extends TestCase
         $this->assertSame(1, mb_stripos('aςσb', 'ΣΣ'));
         $this->assertSame(1, mb_strripos('aςσb', 'ΣΣ'));
         $this->assertSame(3, mb_strrpos('ababab', 'b', -2));
+        $this->assertSame(3, mb_strrpos('ababab', 'b', -3));
     }
 
     /**

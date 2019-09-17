@@ -31,6 +31,8 @@ class NormalizerTest extends TestCase
         $rpn = $rpn->getConstants();
         $rin = $rin->getConstants();
 
+        unset($rin['FORM_KC_CF'], $rin['NFKC_CF']);
+
         ksort($rpn);
         ksort($rin);
 
