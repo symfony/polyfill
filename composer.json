@@ -64,6 +64,7 @@
             "src/Intl/Icu/bootstrap.php",
             "src/Intl/MessageFormatter/bootstrap.php",
             "src/Intl/Normalizer/bootstrap.php",
+            "src/Intl/Transliterator/bootstrap.php",
             "src/Mbstring/bootstrap.php"
         ],
         "classmap": [
