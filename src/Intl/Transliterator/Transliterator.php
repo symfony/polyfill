@@ -106,7 +106,7 @@ final class Transliterator
         return $transliterator;
     }
 
-    public function createInverse() {
+    public static function createInverse() {
         $transliterator = new self();
 
         $transliterator->direction = self::REVERSE;
