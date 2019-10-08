@@ -126,14 +126,11 @@ final class Transliterator
             $str = $subject;
         }
 
-        // TODO: add more stuff here
         foreach (explode(';', $this->id) as $rule) {
             $rule = str_replace('/BGN', '', $rule);
 
             if (stripos($rule, 'Latin-ASCII') !== false) {
                 $str = self::to_ascii($str);
-            } elseif (stripos($rule, 'Any-Latin') !== false) {
-                // $str = self::to_transliterate($str);
             } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
                 $str = self::to_ascii($str, $lang);
             } elseif (

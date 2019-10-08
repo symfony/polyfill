@@ -1,5 +1,5 @@
 {
-    "name": "symfony/polyfill-intl-grapheme",
+    "name": "symfony/polyfill-intl-transliterator",
     "type": "library",
     "description": "Symfony polyfill for intl's Transliterator class",
     "keywords": ["polyfill", "shim", "compatibility", "portable", "intl", "transliterator"],
@@ -19,7 +19,7 @@
         "php": ">=5.3.3"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Intl\\Grapheme\\": "" },
+        "psr-4": { "Symfony\\Polyfill\\Intl\\Transliterator\\": "" },
         "files": [ "bootstrap.php" ]
     },
     "suggest": {

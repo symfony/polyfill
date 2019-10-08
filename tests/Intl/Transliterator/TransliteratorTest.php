@@ -49,7 +49,7 @@ class TransliteratorTest extends TestCase
         }
 
         $rules = 'NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Latin; Latin-ASCII;';
-        $str = 'ŤÉŚŢ - öäü - 123 - abc';
+        $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
@@ -61,7 +61,7 @@ class TransliteratorTest extends TestCase
     /**
      * @covers \Symfony\Polyfill\Intl\Transliterator\Transliterator::transliterate
      */
-    public function testTransliteratorTransliterateForDeAscii()
+    public function testTransliteratorTransliterateForGermanLanguage()
     {
         $intl_support = \extension_loaded('intl');
         if ($intl_support === false) {
@@ -69,13 +69,13 @@ class TransliteratorTest extends TestCase
         }
 
         $rules = 'NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Latin; de-ascii;';
-        $str = 'ŤÉŚŢ - öäü - 123 - abc';
+        $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
         $p_orig = \Transliterator::create($rules);
 
-        $this->assertSame('TEST - oeaeue - 123 - abc', $p->transliterate($str));
+        $this->assertSame('TEST - oeaeue - 123 - abc - ...', $p->transliterate($str));
         $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
     }
 
@@ -89,16 +89,14 @@ class TransliteratorTest extends TestCase
             $this->markTestSkipped('intl is not installed');
         }
 
-        //exit(print_r(transliterator_list_ids()));
-
-        $rules = 'NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Latin; Latin-ASCII;';
-        $str = 'ŤÉŚŢ - öäü - 123 - abc';
+        $rules = 'Turkmen-Latin/BGN; Latin-ASCII;';
+        $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
         $p_orig = \Transliterator::create($rules);
 
-        $this->assertSame('TEST - oau - 123 - abc', $p->transliterate($str));
+        $this->assertSame('TEST - oau - 123 - abc - ...', $p->transliterate($str));
         $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
     }
 }
