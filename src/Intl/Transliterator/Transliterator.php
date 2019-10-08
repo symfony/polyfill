@@ -54,7 +54,7 @@ final class Transliterator
     );
 
     /**
-     * @var null|string
+     * @var string|null
      */
     public $id;
 
@@ -64,11 +64,11 @@ final class Transliterator
     private $direction = self::FORWARD;
 
     /**
-     * Private constructor to deny instantiation
-     * @link https://php.net/manual/en/transliterator.construct.php
+     * Private constructor to deny instantiation.
+     *
+     * @see https://php.net/manual/en/transliterator.construct.php
      */
-    final private function __construct() {
-
+    private function __construct() {
     }
 
     public static function create($id, $direction = null) {
@@ -76,19 +76,19 @@ final class Transliterator
 
         $transliterator->id = self::clean_id($id);
 
-        if ($direction !== null) {
-            $transliterator->direction = $direction;
+        if (null !== $direction) {
+            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
         }
 
         return $transliterator;
     }
 
-    private static function clean_id($str) {
+    private static function clean_id($s) {
         return rtrim(
             str_replace(
                 array(' ', ':]', 'NonspacingMark'),
                 array('', ':] ', 'Nonspacing Mark'),
-                $str
+                $s
             ),
             ';'
         );
@@ -99,19 +99,15 @@ final class Transliterator
 
         $transliterator->id = self::clean_id($rules);
 
-        if ($direction !== null) {
-            $transliterator->direction = $direction;
+        if (null !== $direction) {
+            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
         }
 
         return $transliterator;
     }
 
     public static function createInverse() {
-        $transliterator = new self();
-
-        $transliterator->direction = self::REVERSE;
-
-        return $transliterator;
+        throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator::createInverse".'));
     }
 
     public static function listIDs() {
@@ -119,30 +115,48 @@ final class Transliterator
     }
 
     public function transliterate($subject, $start = null, $end = null) {
-
-        if ($start !== null) {
-            $str = mb_substr($subject, $start, $end);
+        if (null !== $start) {
+            $s = mb_substr($subject, $start, $end);
         } else {
-            $str = $subject;
+            $s = $subject;
         }
 
         foreach (explode(';', $this->id) as $rule) {
-            $rule = str_replace('/BGN', '', $rule);
+            $rule = str_replace(array('/BGN', 'ANY-'), '', strtoupper($rule));
 
-            if (stripos($rule, 'Latin-ASCII') !== false) {
-                $str = self::to_ascii($str);
+            // DEBUG
+            //var_dump($rule);
+
+            if ('NFC' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_C) ?: $s = normalizer_normalize($s, \Normalizer::NFC);
+            } elseif ('NFD' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_D) ?: $s = normalizer_normalize($s, \Normalizer::NFD);
+            } elseif ('NFKD' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_KD) ?: $s = normalizer_normalize($s, \Normalizer::NFKD);
+            } elseif ('NFKC' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
+            } elseif ('[:NONSPACING MARK:] REMOVE' === $rule) {
+                $s = preg_replace('/\p{Mn}++/u', '', $s);
+            } elseif (false !== strpos($rule, 'LATIN-ASCII')) {
+                $s = self::to_ascii($s);
+            } elseif (false !== strpos($rule, 'UPPER')) {
+                $s = mb_strtoupper($s);
+            } elseif (false !== strpos($rule, 'LOWER')) {
+                $s = mb_strtolower($s);
+            } elseif (false !== strpos($rule, 'LATIN')) {
+                $s = self::normalize_latin_symbols($s);
             } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
-                $str = self::to_ascii($str, $lang);
+                $s = self::to_ascii($s, $lang);
             } elseif (
-                stripos($rule, '-ASCII') !== false
+                false !== strpos($rule, '-ASCII')
                 &&
-                $lang = str_ireplace('-ASCII', '', $rule)
+                $lang = str_replace('-ASCII', '', $rule)
             ) {
-                $str = self::to_ascii($str, $lang);
+                $s = self::to_ascii($s, $lang);
             }
         }
 
-        return $str . ($start !== null ? mb_substr($subject, $end) : '');
+        return $s.(null !== $start ? mb_substr($subject, $end) : '');
     }
 
     public function getErrorCode() {
@@ -306,7 +320,7 @@ final class Transliterator
             }
         }
 
-        $CHARS_ARRAY[$cacheKey] = call_user_func_array('array_merge', $CHARS_ARRAY[$cacheKey] + array());
+        $CHARS_ARRAY[$cacheKey] = \call_user_func_array('array_merge', $CHARS_ARRAY[$cacheKey] + array());
 
         $CHARS_ARRAY[$cacheKey] = array(
             'orig' => array_keys($CHARS_ARRAY[$cacheKey]),
@@ -319,12 +333,12 @@ final class Transliterator
     /**
      * Accepts a string and removes all non-UTF-8 characters from it + extras if needed.
      *
-     * @param string $str <p>The string to be sanitized.</p>
+     * @param string $s <p>The string to be sanitized.</p>
      *
      * @return string
      *                <p>A clean UTF-8 string.</p>
      */
-    private static function clean($str) {
+    private static function clean($s) {
         // http://stackoverflow.com/questions/1401317/remove-non-utf8-characters-from-string
         // caused connection reset problem on larger strings
 
@@ -339,21 +353,19 @@ final class Transliterator
         | ( [\x80-\xBF] )                 # invalid byte in range 10000000 - 10111111
         | ( [\xC0-\xFF] )                 # invalid byte in range 11000000 - 11111111
         /x';
-        $str = (string) preg_replace($regex, '$1', $str);
+        $s = (string) preg_replace($regex, '$1', $s);
 
-        $str = self::normalize_whitespace($str);
+        $s = self::normalize_whitespace($s);
 
-        $str = self::normalize_msword($str);
+        $s = self::remove_invisible_characters($s);
 
-        $str = self::remove_invisible_characters($str);
-
-        return $str;
+        return $s;
     }
 
     /**
      * Checks if a string is 7 bit ASCII.
      *
-     * @param string $str <p>The string to check.</p>
+     * @param string $s <p>The string to check.</p>
      *
      * @return bool
      *              <p>
@@ -361,13 +373,13 @@ final class Transliterator
      *              <strong>false</strong> otherwise
      *              </p>
      */
-    private static function is_ascii($str)
+    private static function is_ascii($s)
     {
-        if ('' === $str) {
+        if ('' === $s) {
             return true;
         }
 
-        return !preg_match(self::$REGEX_ASCII, $str);
+        return !preg_match(self::$REGEX_ASCII, $s);
     }
 
     /**
@@ -375,14 +387,14 @@ final class Transliterator
      * Windows-1252 (commonly used in Word documents) replaced by their ASCII
      * equivalents.
      *
-     * @param string $str <p>The string to be normalized.</p>
+     * @param string $s <p>The string to be normalized.</p>
      *
      * @return string
      *                <p>A string with normalized characters for commonly used chars in Word documents.</p>
      */
-    private static function normalize_msword($str)
+    private static function normalize_latin_symbols($s)
     {
-        if ('' === $str) {
+        if ('' === $s) {
             return '';
         }
 
@@ -390,14 +402,14 @@ final class Transliterator
         static $MSWORD_CACHE = array();
 
         if (!isset($MSWORD_CACHE['orig'])) {
-            self::prepareAsciiMaps();
+            self::prepareAsciiAndExtrasMaps();
 
             /**
              * @psalm-suppress PossiblyNullArrayAccess - we use the prepare* methods here, so we don't get NULL here
              *
              * @var array
              */
-            $map = self::$ASCII_MAPS['msword'];
+            $map = self::$ASCII_MAPS_AND_EXTRAS['latin_symbols'];
 
             $MSWORD_CACHE = array(
                 'orig' => array_keys($map),
@@ -405,38 +417,38 @@ final class Transliterator
             );
         }
 
-        return str_replace($MSWORD_CACHE['orig'], $MSWORD_CACHE['replace'], $str);
+        return str_replace($MSWORD_CACHE['orig'], $MSWORD_CACHE['replace'], $s);
     }
 
     /**
      * Normalize the whitespace.
      *
-     * @param string $str <p>The string to be normalized.</p>
+     * @param string $s <p>The string to be normalized.</p>
      *
      * @return string
      *                <p>A string with normalized whitespace.</p>
      */
-    private static function normalize_whitespace($str) {
-        if ('' === $str) {
+    private static function normalize_whitespace($s) {
+        if ('' === $s) {
             return '';
         }
 
         static $WHITESPACE_CACHE = null;
-        if ($WHITESPACE_CACHE === null) {
+        if (null === $WHITESPACE_CACHE) {
             self::prepareAsciiMaps();
 
             /* @psalm-suppress PossiblyNullArrayAccess - we use the prepare* methods here, so we don't get NULL here */
             $WHITESPACE_CACHE = array_keys(self::$ASCII_MAPS[' ']);
         }
-        $str = str_replace($WHITESPACE_CACHE, ' ', $str);
+        $s = str_replace($WHITESPACE_CACHE, ' ', $s);
 
         static $BIDI_UNICODE_CONTROLS_CACHE = null;
         if (null === $BIDI_UNICODE_CONTROLS_CACHE) {
             $BIDI_UNICODE_CONTROLS_CACHE = array_values(self::$BIDI_UNI_CODE_CONTROLS_TABLE);
         }
-        $str = str_replace($BIDI_UNICODE_CONTROLS_CACHE, '', $str);
+        $s = str_replace($BIDI_UNICODE_CONTROLS_CACHE, '', $s);
 
-        return $str;
+        return $s;
     }
 
     /**
@@ -446,14 +458,14 @@ final class Transliterator
      *
      * copy&past from https://github.com/bcit-ci/CodeIgniter/blob/develop/system/core/Common.php
      *
-     * @param string $str
+     * @param string $s
      * @param bool   $url_encoded
      * @param string $replacement
      *
      * @return string
      */
     private static function remove_invisible_characters(
-        $str,
+        $s,
         $url_encoded = true,
         $replacement = ''
     ) {
@@ -470,10 +482,10 @@ final class Transliterator
         $non_displayables[] = '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+/S'; // 00-08, 11, 12, 14-31, 127
 
         do {
-            $str = (string) preg_replace($non_displayables, $replacement, $str, -1, $count);
+            $s = (string) preg_replace($non_displayables, $replacement, $s, -1, $count);
         } while (0 !== $count);
 
-        return $str;
+        return $s;
     }
 
     /**
@@ -484,7 +496,7 @@ final class Transliterator
      * en, en_GB, or en-GB. For example, passing "de" results in "äöü" mapping
      * to "aeoeue" rather than "aou" as in other languages.
      *
-     * @param string $str                      <p>The input string.</p>
+     * @param string $s                        <p>The input string.</p>
      * @param string $language                 [optional] <p>Language of the source string.
      *                                         (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
      * @param bool   $remove_unsupported_chars [optional] <p>Whether or not to remove the
@@ -496,23 +508,23 @@ final class Transliterator
      *                <p>A string that contains only ASCII characters.</p>
      */
     private static function to_ascii(
-        $str,
+        $s,
         $language = 'en',
         $remove_unsupported_chars = true,
         $replace_extra_symbols = false,
         $use_transliterate = false
     ) {
-        if ('' === $str) {
+        if ('' === $s) {
             return '';
         }
 
         $language_specific_chars = self::charsArrayWithOneLanguage($language, $replace_extra_symbols);
         if (!empty($language_specific_chars['orig'])) {
-            $str = str_replace($language_specific_chars['orig'], $language_specific_chars['replace'], $str);
+            $s = str_replace($language_specific_chars['orig'], $language_specific_chars['replace'], $s);
         }
 
         $language_all_chars = self::charsArrayWithSingleLanguageValues($replace_extra_symbols);
-        $str = str_replace($language_all_chars['orig'], $language_all_chars['replace'], $str);
+        $s = str_replace($language_all_chars['orig'], $language_all_chars['replace'], $s);
 
         /* @psalm-suppress PossiblyNullOperand - we use the prepare* methods here, so we don't get NULL here */
         if (!isset(self::$ASCII_MAPS[$language])) {
@@ -520,15 +532,15 @@ final class Transliterator
         }
 
         if (true === $use_transliterate) {
-            $str = self::to_transliterate($str, null);
+            $s = self::to_transliterate($s, null);
         }
 
         if (true === $remove_unsupported_chars) {
-            $str = (string) str_replace(array("\n\r", "\n", "\r", "\t"), ' ', $str);
-            $str = (string) preg_replace(self::$REGEX_ASCII, '', $str);
+            $s = (string) str_replace(array("\n\r", "\n", "\r", "\t"), ' ', $s);
+            $s = (string) preg_replace(self::$REGEX_ASCII, '', $s);
         }
 
-        return $str;
+        return $s;
     }
 
     /**
@@ -536,7 +548,7 @@ final class Transliterator
      * replaced with their closest ASCII counterparts, and the rest are removed
      * unless instructed otherwise.
      *
-     * @param string      $str     <p>The input string.</p>
+     * @param string      $s       <p>The input string.</p>
      * @param string|null $unknown [optional] <p>Character use if character unknown. (default is '?')
      *                             But you can also use NULL to keep the unknown chars.</p>
      *
@@ -544,46 +556,46 @@ final class Transliterator
      *                <p>A String that contains only ASCII characters.</p>
      */
     private static function to_transliterate(
-        $str,
+        $s,
         $unknown = '?'
     ) {
         static $UTF8_TO_TRANSLIT = null;
         static $TRANSLITERATOR = null;
 
-        if ('' === $str) {
+        if ('' === $s) {
             return '';
         }
 
         // check if we only have ASCII, first (better performance)
-        $str_tmp = $str;
-        if (true === self::is_ascii($str)) {
-            return $str;
+        $s_tmp = $s;
+        if (true === self::is_ascii($s)) {
+            return $s;
         }
 
-        $str = self::clean($str);
+        $s = self::clean($s);
 
         // check again, if we only have ASCII, now ...
         if (
-            $str_tmp !== $str
+            $s_tmp !== $s
             &&
-            true === self::is_ascii($str)
+            true === self::is_ascii($s)
         ) {
-            return $str;
+            return $s;
         }
 
         if (null === self::$ORD) {
             self::$ORD = self::getData('ascii_ord');
         }
 
-        preg_match_all('/.|[^\x00]$/us', $str, $array_tmp);
+        preg_match_all('/.|[^\x00]$/us', $s, $array_tmp);
         $chars = $array_tmp[0];
         $ord = null;
-        $str_tmp = '';
+        $s_tmp = '';
         foreach ($chars as &$c) {
             $ordC0 = self::$ORD[$c[0]];
 
             if ($ordC0 >= 0 && $ordC0 <= 127) {
-                $str_tmp .= $c;
+                $s_tmp .= $c;
 
                 continue;
             }
@@ -634,7 +646,7 @@ final class Transliterator
                 ||
                 null === $ord
             ) {
-                $str_tmp .= $unknown === null ? $c : $unknown;
+                $s_tmp .= null === $unknown ? $c : $unknown;
 
                 continue;
             }
@@ -662,9 +674,9 @@ final class Transliterator
                  */
 
                 if (null === $unknown && '' === $UTF8_TO_TRANSLIT[$bank][$new_char]) {
-                    $c = $unknown === null ? $c : $unknown;
+                    $c = null === $unknown ? $c : $unknown;
                 } elseif ('[?]' === $UTF8_TO_TRANSLIT[$bank][$new_char]) {
-                    $c = $unknown === null ? $c : $unknown;
+                    $c = null === $unknown ? $c : $unknown;
                 } else {
                     $c = $UTF8_TO_TRANSLIT[$bank][$new_char];
                 }
@@ -679,13 +691,13 @@ final class Transliterator
                 echo "bank:" . $bank . "\n\n";
                  */
 
-                $c = $unknown === null ? $c : $unknown;
+                $c = null === $unknown ? $c : $unknown;
             }
 
-            $str_tmp .= $c;
+            $s_tmp .= $c;
         }
 
-        return $str_tmp;
+        return $s_tmp;
     }
 
     /**
