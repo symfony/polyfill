@@ -114,12 +114,16 @@ final class Transliterator
         return array_values(self::$LOCALE_TO_TRANSLITERATOR_ID);
     }
 
-    public function transliterate($subject, $start = null, $end = null) {
-        if (null !== $start) {
-            $s = mb_substr($subject, $start, $end);
-        } else {
-            $s = $subject;
+    public function transliterate($s, $start = null, $end = null) {
+        if ('' === $s) {
+            return '';
         }
+
+        if (null !== $start) {
+            $s = mb_substr($s, $start, $end);
+        }
+
+        $s = self::clean($s);
 
         foreach (explode(';', $this->id) as $rule) {
             $rule = str_replace(array('/BGN', 'ANY-'), '', strtoupper($rule));
@@ -137,6 +141,8 @@ final class Transliterator
                 normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
             } elseif ('[:NONSPACING MARK:] REMOVE' === $rule) {
                 $s = preg_replace('/\p{Mn}++/u', '', $s);
+            } elseif (false !== strpos($rule, 'REMOVE')) {
+                $s = preg_replace(self::$REGEX_ASCII, '', $s);
             } elseif (false !== strpos($rule, 'LATIN-ASCII')) {
                 $s = self::to_ascii($s);
             } elseif (false !== strpos($rule, 'UPPER')) {
@@ -144,7 +150,7 @@ final class Transliterator
             } elseif (false !== strpos($rule, 'LOWER')) {
                 $s = mb_strtolower($s);
             } elseif (false !== strpos($rule, 'LATIN')) {
-                $s = self::normalize_latin_symbols($s);
+                $s = self::to_translit($s);
             } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
                 $s = self::to_ascii($s, $lang);
             } elseif (
@@ -156,7 +162,20 @@ final class Transliterator
             }
         }
 
-        return $s.(null !== $start ? mb_substr($subject, $end) : '');
+        return $s.(null !== $start ? mb_substr($s, $end) : '');
+    }
+    
+    private static function to_translit($s) {
+        if (null === self::$TRANSLIT) {
+            $array = self::getData('translit');
+
+            self::$TRANSLIT = array(
+                'orig' => array_keys($array),
+                'replace' => array_values($array),
+            );
+        }
+        
+        return str_replace(self::$TRANSLIT['orig'], self::$TRANSLIT['replace'], $s);
     }
 
     public function getErrorCode() {
@@ -168,14 +187,14 @@ final class Transliterator
     }
 
     /**
-     * @var array<string, array<string, string>>|null
+     * @var array|null
      */
-    private static $ASCII_MAPS;
+    private static $TRANSLIT;
 
     /**
      * @var array<string, array<string, string>>|null
      */
-    private static $ASCII_MAPS_AND_EXTRAS;
+    private static $ASCII_MAPS;
 
     /**
      * @var array<string, int>|null
@@ -225,113 +244,77 @@ final class Transliterator
      *
      * @psalm-suppress InvalidNullableReturnType - we use the prepare* methods here, so we don't get NULL here
      *
-     * @param string $language              [optional] <p>Language of the source string e.g.: en, de_at, or de-ch.
-     *                                      (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
-     * @param bool   $replace_extra_symbols [optional] <p>Add some more replacements e.g. "£" with " pound ".</p>
+     * @param string $language [optional] <p>Language of the source string e.g.: en, de_at, or de-ch.
+     *                         (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
      *
      * @return array{orig: string[], replace: string[]}
      *                     <p>An array of replacements.</p>
      */
-    private static function charsArrayWithOneLanguage(
-        $language = 'en',
-        $replace_extra_symbols = false
-    ) {
+    private static function charsArrayWithOneLanguage($language = 'en') {
         $language = self::get_language($language);
 
         // init
         static $CHARS_ARRAY = array();
-        $cacheKey = ''.$replace_extra_symbols;
 
         // check static cache
-        if (isset($CHARS_ARRAY[$cacheKey][$language])) {
-            return $CHARS_ARRAY[$cacheKey][$language];
+        if (isset($CHARS_ARRAY[$language])) {
+            return $CHARS_ARRAY[$language];
         }
 
-        if ($replace_extra_symbols) {
-            self::prepareAsciiAndExtrasMaps();
+        self::prepareAsciiMaps();
 
-            if (isset(self::$ASCII_MAPS_AND_EXTRAS[$language])) {
-                $tmpArray = self::$ASCII_MAPS_AND_EXTRAS[$language];
+        if (isset(self::$ASCII_MAPS[$language])) {
+            $tmpArray = self::$ASCII_MAPS[$language];
 
-                $CHARS_ARRAY[$cacheKey][$language] = array(
-                    'orig' => array_keys($tmpArray),
-                    'replace' => array_values($tmpArray),
-                );
-            } else {
-                $CHARS_ARRAY[$cacheKey][$language] = array(
-                    'orig' => array(),
-                    'replace' => array(),
-                );
-            }
+            $CHARS_ARRAY[$language] = array(
+                'orig' => array_keys($tmpArray),
+                'replace' => array_values($tmpArray),
+            );
         } else {
-            self::prepareAsciiMaps();
-
-            if (isset(self::$ASCII_MAPS[$language])) {
-                $tmpArray = self::$ASCII_MAPS[$language];
-
-                $CHARS_ARRAY[$cacheKey][$language] = array(
-                    'orig' => array_keys($tmpArray),
-                    'replace' => array_values($tmpArray),
-                );
-            } else {
-                $CHARS_ARRAY[$cacheKey][$language] = array(
-                    'orig' => array(),
-                    'replace' => array(),
-                );
-            }
+            $CHARS_ARRAY[$language] = array(
+                'orig' => array(),
+                'replace' => array(),
+            );
         }
 
-        return $CHARS_ARRAY[$cacheKey][$language];
+        return $CHARS_ARRAY[$language];
     }
 
     /**
      * Returns an replacement array for ASCII methods with multiple languages.
      *
-     * @param bool $replace_extra_symbols [optional] <p>Add some more replacements e.g. "£" with " pound ".</p>
-     *
      * @return array{orig: string[], replace: string[]}
      *                     <p>An array of replacements.</p>
      */
-    private static function charsArrayWithSingleLanguageValues($replace_extra_symbols = false)
+    private static function charsArrayWithSingleLanguageValues()
     {
         // init
-        static $CHARS_ARRAY = array();
-        $cacheKey = ''.$replace_extra_symbols;
+        static $CHARS_ARRAY = null;
 
-        if (isset($CHARS_ARRAY[$cacheKey])) {
-            return $CHARS_ARRAY[$cacheKey];
+        if (isset($CHARS_ARRAY)) {
+            return $CHARS_ARRAY;
         }
 
-        if ($replace_extra_symbols) {
-            self::prepareAsciiAndExtrasMaps();
+        self::prepareAsciiMaps();
 
-            /* @noinspection AlterInForeachInspection */
-            /* @psalm-suppress PossiblyNullIterator - we use the prepare* methods here, so we don't get NULL here */
-            foreach (self::$ASCII_MAPS_AND_EXTRAS as &$map) {
-                $CHARS_ARRAY[$cacheKey][] = $map;
-            }
-        } else {
-            self::prepareAsciiMaps();
-
-            /* @noinspection AlterInForeachInspection */
-            /* @psalm-suppress PossiblyNullIterator - we use the prepare* methods here, so we don't get NULL here */
-            foreach (self::$ASCII_MAPS as &$map) {
-                $CHARS_ARRAY[$cacheKey][] = $map;
-            }
+        /* @noinspection AlterInForeachInspection */
+        /* @psalm-suppress PossiblyNullIterator - we use the prepare* methods here, so we don't get NULL here */
+        foreach (self::$ASCII_MAPS as &$map) {
+            $CHARS_ARRAY[] = $map;
         }
 
-        $CHARS_ARRAY[$cacheKey] = \call_user_func_array('array_merge', $CHARS_ARRAY[$cacheKey] + array());
+        $CHARS_ARRAY = \call_user_func_array('array_merge', $CHARS_ARRAY + array());
 
-        $CHARS_ARRAY[$cacheKey] = array(
-            'orig' => array_keys($CHARS_ARRAY[$cacheKey]),
-            'replace' => array_values($CHARS_ARRAY[$cacheKey]),
+        $CHARS_ARRAY = array(
+            'orig' => array_keys($CHARS_ARRAY),
+            'replace' => array_values($CHARS_ARRAY),
         );
 
-        return $CHARS_ARRAY[$cacheKey];
+        return $CHARS_ARRAY;
     }
 
     /**
-     * Accepts a string and removes all non-UTF-8 characters from it + extras if needed.
+     * Accepts a string and removes all non-UTF-8 characters from it + extras.
      *
      * @param string $s <p>The string to be sanitized.</p>
      *
@@ -380,44 +363,6 @@ final class Transliterator
         }
 
         return !preg_match(self::$REGEX_ASCII, $s);
-    }
-
-    /**
-     * Returns a string with smart quotes, ellipsis characters, and dashes from
-     * Windows-1252 (commonly used in Word documents) replaced by their ASCII
-     * equivalents.
-     *
-     * @param string $s <p>The string to be normalized.</p>
-     *
-     * @return string
-     *                <p>A string with normalized characters for commonly used chars in Word documents.</p>
-     */
-    private static function normalize_latin_symbols($s)
-    {
-        if ('' === $s) {
-            return '';
-        }
-
-        // init
-        static $MSWORD_CACHE = array();
-
-        if (!isset($MSWORD_CACHE['orig'])) {
-            self::prepareAsciiAndExtrasMaps();
-
-            /**
-             * @psalm-suppress PossiblyNullArrayAccess - we use the prepare* methods here, so we don't get NULL here
-             *
-             * @var array
-             */
-            $map = self::$ASCII_MAPS_AND_EXTRAS['latin_symbols'];
-
-            $MSWORD_CACHE = array(
-                'orig' => array_keys($map),
-                'replace' => array_values($map),
-            );
-        }
-
-        return str_replace($MSWORD_CACHE['orig'], $MSWORD_CACHE['replace'], $s);
     }
 
     /**
@@ -496,48 +441,35 @@ final class Transliterator
      * en, en_GB, or en-GB. For example, passing "de" results in "äöü" mapping
      * to "aeoeue" rather than "aou" as in other languages.
      *
-     * @param string $s                        <p>The input string.</p>
-     * @param string $language                 [optional] <p>Language of the source string.
-     *                                         (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
-     * @param bool   $remove_unsupported_chars [optional] <p>Whether or not to remove the
-     *                                         unsupported characters.</p>
-     * @param bool   $replace_extra_symbols    [optional]  <p>Add some more replacements e.g. "£" with " pound ".</p>
-     * @param bool   $use_transliterate        [optional]  <p>Use ASCII::to_transliterate() for unknown chars.</p>
+     * @param string $s        <p>The input string.</p>
+     * @param string $language [optional] <p>Language of the source string.
+     *                         (default is 'XXX') | ASCII::*_LANGUAGE_CODE</p>
      *
      * @return string
      *                <p>A string that contains only ASCII characters.</p>
      */
-    private static function to_ascii(
-        $s,
-        $language = 'en',
-        $remove_unsupported_chars = true,
-        $replace_extra_symbols = false,
-        $use_transliterate = false
-    ) {
+    private static function to_ascii($s, $language = 'XXX') {
         if ('' === $s) {
             return '';
         }
 
-        $language_specific_chars = self::charsArrayWithOneLanguage($language, $replace_extra_symbols);
+        $language_specific_chars = self::charsArrayWithOneLanguage($language);
         if (!empty($language_specific_chars['orig'])) {
             $s = str_replace($language_specific_chars['orig'], $language_specific_chars['replace'], $s);
         }
 
-        $language_all_chars = self::charsArrayWithSingleLanguageValues($replace_extra_symbols);
+        $language_all_chars = self::charsArrayWithSingleLanguageValues();
         $s = str_replace($language_all_chars['orig'], $language_all_chars['replace'], $s);
 
         /* @psalm-suppress PossiblyNullOperand - we use the prepare* methods here, so we don't get NULL here */
         if (!isset(self::$ASCII_MAPS[$language])) {
             $use_transliterate = true;
+        } else {
+            $use_transliterate = false;
         }
 
         if (true === $use_transliterate) {
             $s = self::to_transliterate($s, null);
-        }
-
-        if (true === $remove_unsupported_chars) {
-            $s = (string) str_replace(array("\n\r", "\n", "\r", "\t"), ' ', $s);
-            $s = (string) preg_replace(self::$REGEX_ASCII, '', $s);
         }
 
         return $s;
@@ -567,19 +499,7 @@ final class Transliterator
         }
 
         // check if we only have ASCII, first (better performance)
-        $s_tmp = $s;
         if (true === self::is_ascii($s)) {
-            return $s;
-        }
-
-        $s = self::clean($s);
-
-        // check again, if we only have ASCII, now ...
-        if (
-            $s_tmp !== $s
-            &&
-            true === self::is_ascii($s)
-        ) {
             return $s;
         }
 
@@ -619,22 +539,6 @@ final class Transliterator
 
                     if ($ordC0 <= 247) {
                         $ord = ($ordC0 - 240) * 262144 + ($ordC1 - 128) * 4096 + ($ordC2 - 128) * 64 + ($ordC3 - 128);
-                    }
-
-                    if ($ordC0 >= 248) {
-                        $ordC4 = self::$ORD[$c[4]];
-
-                        if ($ordC0 <= 251) {
-                            $ord = ($ordC0 - 248) * 16777216 + ($ordC1 - 128) * 262144 + ($ordC2 - 128) * 4096 + ($ordC3 - 128) * 64 + ($ordC4 - 128);
-                        }
-
-                        if ($ordC0 >= 252) {
-                            $ordC5 = self::$ORD[$c[5]];
-
-                            if ($ordC0 <= 253) {
-                                $ord = ($ordC0 - 252) * 1073741824 + ($ordC1 - 128) * 16777216 + ($ordC2 - 128) * 262144 + ($ordC3 - 128) * 4096 + ($ordC4 - 128) * 64 + ($ordC5 - 128);
-                            }
-                        }
                     }
                 }
             }
@@ -758,22 +662,6 @@ final class Transliterator
         }
 
         return false;
-    }
-
-    /**
-     * @psalm-suppress MissingReturnType
-     */
-    private static function prepareAsciiAndExtrasMaps()
-    {
-        if (null === self::$ASCII_MAPS_AND_EXTRAS) {
-            self::prepareAsciiMaps();
-
-            /* @psalm-suppress PossiblyNullArgument - we use the prepare* methods here, so we don't get NULL here */
-            self::$ASCII_MAPS_AND_EXTRAS = array_merge_recursive(
-                (array) self::$ASCII_MAPS,
-                (array) self::getData('ascii_extras_by_languages')
-            );
-        }
     }
 
     /**
