@@ -60,6 +60,18 @@ class GraphemeTest extends TestCase
     }
 
     /**
+     * @requires PHP 7.1
+     *
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     */
+    public function testGraphemeExtractWithNegativeStart()
+    {
+        $this->assertSame('j', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXBYTES, -3, $next));
+        $this->assertSame(4, $next);
+        $this->assertSame('jà', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXCHARS, -3));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strlen
      */
     public function testGraphemeStrlen()

@@ -39,6 +39,10 @@ final class Grapheme
 
     public static function grapheme_extract($s, $size, $type = GRAPHEME_EXTR_COUNT, $start = 0, &$next = 0)
     {
+        if (\PHP_VERSION_ID >= 70100 && 0 > $start) {
+            $start = \strlen($s) + $start;
+        }
+
         if (!\is_scalar($s)) {
             $hasError = false;
             set_error_handler(function () use (&$hasError) { $hasError = true; });
