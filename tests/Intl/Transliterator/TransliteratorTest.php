@@ -59,6 +59,53 @@ class TransliteratorTest extends TestCase
 
         $this->assertSame('<TEST> - OAU - 123 - ABC - ...', $p->transliterate($str));
         $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        // ---
+
+        $rules = 'Any-Latin; NFD; [:Nonspacing Mark:] Remove; NFC; [:Punctuation:] Remove (); Lower();';
+        $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
+
+        $p = p::create($rules);
+
+        $p_orig = \Transliterator::create($rules);
+
+        $this->assertSame('test  oau  123  abc  ', $p->transliterate($str));
+        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Transliterator\Transliterator::transliterate
+     */
+    public function testTransliteratorTransliterateAndRemove()
+    {
+        $intl_support = \extension_loaded('intl');
+        if (false === $intl_support) {
+            $this->markTestSkipped('intl is not installed');
+        }
+
+        // https://unicode.org/cldr/utility/transform.jsp?a=Any-Upper%3B+%5B%5E%5Cx20%5Cx65%5Cx69%5Cx61%5Cx73%5Cx6E%5Cx74%5Cx72%5Cx6F%5Cx6C%5Cx75%5Cx64%5Cx5D%5Cx5B%5Cx63%5Cx6D%5Cx70%5Cx27%5Cx0A%5Cx67%5Cx7C%5Cx68%5Cx76%5Cx2E%5Cx66%5Cx62%5Cx2C%5Cx3A%5Cx3D%5Cx2D%5Cx71%5Cx31%5Cx30%5Cx43%5Cx32%5Cx2A%5Cx79%5Cx78%5Cx29%5Cx28%5Cx4C%5Cx39%5Cx41%5Cx53%5Cx2F%5Cx50%5Cx22%5Cx45%5Cx6A%5Cx4D%5Cx49%5Cx6B%5Cx33%5Cx3E%5Cx35%5Cx54%5Cx3C%5Cx44%5Cx34%5Cx7D%5Cx42%5Cx7B%5Cx38%5Cx46%5Cx77%5Cx52%5Cx36%5Cx37%5Cx55%5Cx47%5Cx4E%5Cx3B%5Cx4A%5Cx7A%5Cx56%5Cx23%5Cx48%5Cx4F%5Cx57%5Cx5F%5Cx26%5Cx21%5Cx4B%5Cx3F%5Cx58%5Cx51%5Cx25%5Cx59%5Cx5C%5Cx09%5Cx5A%5Cx2B%5Cx7E%5Cx5E%5Cx24%5Cx40%5Cx60%5Cx7F%5Cx00%5Cx01%5Cx02%5Cx03%5Cx04%5Cx05%5Cx06%5Cx07%5Cx08%5Cx0B%5Cx0C%5Cx0D%5Cx0E%5Cx0F%5Cx10%5Cx11%5Cx12%5Cx13%5Cx14%5Cx15%5Cx16%5Cx17%5Cx18%5Cx19%5Cx1A%5Cx1B%5Cx1C%5Cx1D%5Cx1E%5Cx1F%5D+Remove%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
+        $rules = 'Any-Upper; [^\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F] Remove;';
+        $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
+
+        $p = p::create($rules);
+
+        $p_orig = \Transliterator::create($rules);
+
+        $this->assertSame(' -  - 123 - ABC - ', $p->transliterate($str));
+        $this->assertSame(trim($p_orig->transliterate($str)), trim($p->transliterate($str)));
+
+        // ---
+
+        // regex without "^"
+        $rules = 'Any-Upper; [\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F] Remove;';
+        $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
+
+        $p = p::create($rules);
+
+        $p_orig = \Transliterator::create($rules);
+
+        $this->assertSame('‹ŤÉŚŢ›ÖÄÜ…', $p->transliterate($str));
+        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
     }
 
     /**
@@ -71,17 +118,16 @@ class TransliteratorTest extends TestCase
             $this->markTestSkipped('intl is not installed');
         }
 
-        // https://unicode.org/cldr/utility/transform.jsp?a=NFC%3B+%5B%3ANonspacing+Mark%3A%5D+Remove%3B+NFC%3B+Any-Lower%3B+Any-Latin%3B+de-ascii%3B&b=%C5%A4%C3%89%C5%9A%C5%A2+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
-        $rules = 'NFC; [:Nonspacing Mark:] Remove; NFC; Any-Lower; Any-Latin; de-ascii;';
+        // https://unicode.org/cldr/utility/transform.jsp?a=Any-Lower%3B+de-ASCII%3B&b=%C5%A4%C3%89%C5%9A%C5%A2+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
+        $rules = 'Any-Lower; de-ASCII;';
         $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
-        //$p_orig = (\Transliterator::create($rules));
+        $p_orig = (\Transliterator::create($rules));
 
         $this->assertSame('test - oeaeue - 123 - abc - ...', $p->transliterate($str));
-        // TODO? -> this is not working on travis-ci -> missing language stuff ??
-        //$this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
     }
 
     /**

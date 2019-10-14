@@ -41,6 +41,7 @@
         "symfony/polyfill-intl-messageformatter": "self.version",
         "symfony/polyfill-intl-idn": "self.version",
         "symfony/polyfill-intl-normalizer": "self.version",
+        "symfony/polyfill-intl-transliterator": "self.version",
         "symfony/polyfill-mbstring": "self.version",
         "symfony/polyfill-util": "self.version",
         "symfony/polyfill-xml": "self.version"

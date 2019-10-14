@@ -15,6 +15,8 @@ namespace Symfony\Polyfill\Intl\Transliterator;
  * Partial intl implementation in pure PHP.
  *
  * Implemented:
+ * - create        - Opens a Transliterator by id. (WARNING: Transliterator::REVERSE is not implemented)
+ * - transliterate - Transforms a string or part thereof using an ICU transliterator.
  *
  * @author Lars Moelleken <lars@moelleken.org>
  *
@@ -79,44 +81,9 @@ class Transliterator
     private static $ORD;
 
     /**
-     * url: https://en.wikipedia.org/wiki/Wikipedia:ASCII#ASCII_printable_characters.
-     *
-     * @var string
-     */
-    private static $REGEX_ASCII = '/[^\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F]/';
-
-    /**
      * @var string
      */
     private static $ASCII = "\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
-
-    /**
-     * bidirectional text chars.
-     *
-     * url: https://www.w3.org/International/questions/qa-bidi-unicode-controls
-     *
-     * @var array<int, string>
-     */
-    private static $BIDI_UNI_CODE_CONTROLS_TABLE = array(
-        // LEFT-TO-RIGHT EMBEDDING (use -> dir = "ltr")
-        8234 => "\xE2\x80\xAA",
-        // RIGHT-TO-LEFT EMBEDDING (use -> dir = "rtl")
-        8235 => "\xE2\x80\xAB",
-        // POP DIRECTIONAL FORMATTING // (use -> </bdo>)
-        8236 => "\xE2\x80\xAC",
-        // LEFT-TO-RIGHT OVERRIDE // (use -> <bdo dir = "ltr">)
-        8237 => "\xE2\x80\xAD",
-        // RIGHT-TO-LEFT OVERRIDE // (use -> <bdo dir = "rtl">)
-        8238 => "\xE2\x80\xAE",
-        // LEFT-TO-RIGHT ISOLATE // (use -> dir = "ltr")
-        8294 => "\xE2\x81\xA6",
-        // RIGHT-TO-LEFT ISOLATE // (use -> dir = "rtl")
-        8295 => "\xE2\x81\xA7",
-        // FIRST STRONG ISOLATE // (use -> dir = "auto")
-        8296 => "\xE2\x81\xA8",
-        // POP DIRECTIONAL ISOLATE
-        8297 => "\xE2\x81\xA9",
-    );
 
     private function __construct()
     {
@@ -149,15 +116,7 @@ class Transliterator
 
     public static function createFromRules($rules, $direction = \Transliterator::FORWARD)
     {
-        $transliterator = new self();
-
-        $transliterator->id = self::clean_id($rules);
-
-        if (\Transliterator::FORWARD !== $direction && null !== $direction) {
-            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
-        }
-
-        return $transliterator;
+        return self::create($rules, $direction);
     }
 
     public static function createInverse()
@@ -210,10 +169,17 @@ class Transliterator
         }
 
         // DEBUG
-        var_dump($s_start, $s_end, $s, "\n");
+        //var_dump($s_start, $s_end, $s, "\n");
 
         foreach (explode(';', $this->id) as $rule) {
-            $rule = str_replace(array('/BGN', 'ANY-'), '', strtoupper($rule));
+            $rule_orig_trim = trim(rtrim($rule, ' ()'));
+            $rule = trim(
+                str_replace(
+                    array('/BGN', 'ANY-'),
+                    '',
+                    strtoupper($rule_orig_trim)
+                )
+            );
 
             // DEBUG
             //var_dump($rule);
@@ -228,8 +194,19 @@ class Transliterator
                 normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
             } elseif ('[:NONSPACING MARK:] REMOVE' === $rule) {
                 $s = preg_replace('/\p{Mn}++/u', '', $s);
-            } elseif (false !== strpos($rule, 'REMOVE')) {
-                $s = preg_replace(self::$REGEX_ASCII, '', $s);
+            } elseif ('[:PUNCTUATION:] REMOVE' === $rule) {
+                $s = preg_replace('/[[:punct:]]+/u', '', $s);
+            } elseif (
+                false !== strpos($rule, 'REMOVE')
+                &&
+                false !== strpos($rule, '[')
+                &&
+                false !== strpos($rule, ']')
+            ) {
+                $rule_regex = \mb_substr($rule_orig_trim, 0, (int) \mb_strlen($rule) - (int) \mb_strlen('REMOVE'));
+                $s = preg_replace('/' . $rule_regex . '/', '', $s);
+            } elseif ('DE-ASCII' === $rule) {
+                $s = self::to_ascii($s, 'de');
             } elseif ('LATIN-ASCII' === $rule) {
                 $s = self::to_ascii($s);
             } elseif (false !== strpos($rule, 'UPPER')) {
