@@ -20,7 +20,8 @@
     },
     "autoload": {
         "psr-4": { "Symfony\\Polyfill\\Intl\\Transliterator\\": "" },
-        "files": [ "bootstrap.php" ]
+        "files": [ "bootstrap.php" ],
+        "classmap": [ "Resources/stubs" ]
     },
     "suggest": {
         "ext-intl": "For best performance"

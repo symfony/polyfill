@@ -20,7 +20,7 @@ namespace Symfony\Polyfill\Intl\Transliterator;
  *
  * @internal
  */
-final class Transliterator
+class Transliterator
 {
     const FORWARD = 0;
     const REVERSE = 1;
@@ -334,75 +334,6 @@ final class Transliterator
     }
 
     /**
-     * Normalize the whitespace.
-     *
-     * @param string $s <p>The string to be normalized.</p>
-     *
-     * @return string
-     *                <p>A string with normalized whitespace.</p>
-     */
-    private static function normalize_whitespace($s)
-    {
-        if ('' === $s) {
-            return '';
-        }
-
-        static $WHITESPACE_CACHE = null;
-        if (null === $WHITESPACE_CACHE) {
-            self::prepareAsciiMaps();
-
-            /* @psalm-suppress PossiblyNullArrayAccess - we use the prepare* methods here, so we don't get NULL here */
-            $WHITESPACE_CACHE = array_keys(self::$ASCII_MAPS[' ']);
-        }
-        $s = str_replace($WHITESPACE_CACHE, ' ', $s);
-
-        static $BIDI_UNICODE_CONTROLS_CACHE = null;
-        if (null === $BIDI_UNICODE_CONTROLS_CACHE) {
-            $BIDI_UNICODE_CONTROLS_CACHE = array_values(self::$BIDI_UNI_CODE_CONTROLS_TABLE);
-        }
-        $s = str_replace($BIDI_UNICODE_CONTROLS_CACHE, '', $s);
-
-        return $s;
-    }
-
-    /**
-     * Remove invisible characters from a string.
-     *
-     * e.g.: This prevents sandwiching null characters between ascii characters, like Java\0script.
-     *
-     * copy&past from https://github.com/bcit-ci/CodeIgniter/blob/develop/system/core/Common.php
-     *
-     * @param string $s
-     * @param bool   $url_encoded
-     * @param string $replacement
-     *
-     * @return string
-     */
-    private static function remove_invisible_characters(
-        $s,
-        $url_encoded = true,
-        $replacement = ''
-    ) {
-        // init
-        $non_displayables = array();
-
-        // every control character except newline (dec 10),
-        // carriage return (dec 13) and horizontal tab (dec 09)
-        if ($url_encoded) {
-            $non_displayables[] = '/%0[0-8bcefBCEF]/'; // url encoded 00-08, 11, 12, 14, 15
-            $non_displayables[] = '/%1[0-9a-fA-F]/'; // url encoded 16-31
-        }
-
-        $non_displayables[] = '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+/S'; // 00-08, 11, 12, 14-31, 127
-
-        do {
-            $s = (string) preg_replace($non_displayables, $replacement, $s, -1, $count);
-        } while (0 !== $count);
-
-        return $s;
-    }
-
-    /**
      * Returns an ASCII version of the string. A set of non-ASCII characters are
      * replaced with their closest ASCII counterparts, and the rest are removed
      * by default. The language or locale of the source string can be supplied
@@ -625,7 +556,7 @@ final class Transliterator
         /* @noinspection PhpIncludeInspection */
         /* @noinspection UsingInclusionReturnValueInspection */
         /* @psalm-suppress UnresolvableInclude */
-        return include __DIR__.'/data/'.$file.'.php';
+        return include __DIR__ . '/Resources/unidata/' . $file . '.php';
     }
 
     /**
@@ -638,7 +569,7 @@ final class Transliterator
      */
     private static function getDataIfExists($file)
     {
-        $file = __DIR__.'/data/'.$file.'.php';
+        $file = __DIR__ . '/Resources/unidata/' . $file . '.php';
         if (file_exists($file)) {
             /* @noinspection PhpIncludeInspection */
             /* @noinspection UsingInclusionReturnValueInspection */
