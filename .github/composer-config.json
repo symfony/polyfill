@@ -1,0 +1,15 @@
+{
+    "config": {
+        "disable-tls": true,
+        "secure-http": false
+    },
+    "repositories": [
+        {
+            "packagist": false
+        },
+        {
+            "type": "composer",
+            "url": "http://repo.packagist.org"
+        }
+    ]
+}
