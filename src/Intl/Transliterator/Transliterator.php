@@ -64,129 +64,6 @@ final class Transliterator
     private $direction = self::FORWARD;
 
     /**
-     * Private constructor to deny instantiation.
-     *
-     * @see https://php.net/manual/en/transliterator.construct.php
-     */
-    private function __construct() {
-    }
-
-    public static function create($id, $direction = null) {
-        $transliterator = new self();
-
-        $transliterator->id = self::clean_id($id);
-
-        if (null !== $direction) {
-            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
-        }
-
-        return $transliterator;
-    }
-
-    private static function clean_id($s) {
-        return rtrim(
-            str_replace(
-                array(' ', ':]', 'NonspacingMark'),
-                array('', ':] ', 'Nonspacing Mark'),
-                $s
-            ),
-            ';'
-        );
-    }
-
-    public static function createFromRules($rules, $direction = null) {
-        $transliterator = new self();
-
-        $transliterator->id = self::clean_id($rules);
-
-        if (null !== $direction) {
-            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
-        }
-
-        return $transliterator;
-    }
-
-    public static function createInverse() {
-        throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator::createInverse".'));
-    }
-
-    public static function listIDs() {
-        return array_values(self::$LOCALE_TO_TRANSLITERATOR_ID);
-    }
-
-    public function transliterate($s, $start = null, $end = null) {
-        if ('' === $s) {
-            return '';
-        }
-
-        if (null !== $start) {
-            $s = mb_substr($s, $start, $end);
-        }
-
-        $s = self::clean($s);
-
-        foreach (explode(';', $this->id) as $rule) {
-            $rule = str_replace(array('/BGN', 'ANY-'), '', strtoupper($rule));
-
-            // DEBUG
-            //var_dump($rule);
-
-            if ('NFC' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_C) ?: $s = normalizer_normalize($s, \Normalizer::NFC);
-            } elseif ('NFD' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_D) ?: $s = normalizer_normalize($s, \Normalizer::NFD);
-            } elseif ('NFKD' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_KD) ?: $s = normalizer_normalize($s, \Normalizer::NFKD);
-            } elseif ('NFKC' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
-            } elseif ('[:NONSPACING MARK:] REMOVE' === $rule) {
-                $s = preg_replace('/\p{Mn}++/u', '', $s);
-            } elseif (false !== strpos($rule, 'REMOVE')) {
-                $s = preg_replace(self::$REGEX_ASCII, '', $s);
-            } elseif (false !== strpos($rule, 'LATIN-ASCII')) {
-                $s = self::to_ascii($s);
-            } elseif (false !== strpos($rule, 'UPPER')) {
-                $s = mb_strtoupper($s);
-            } elseif (false !== strpos($rule, 'LOWER')) {
-                $s = mb_strtolower($s);
-            } elseif (false !== strpos($rule, 'LATIN')) {
-                $s = self::to_translit($s);
-            } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
-                $s = self::to_ascii($s, $lang);
-            } elseif (
-                false !== strpos($rule, '-ASCII')
-                &&
-                $lang = str_replace('-ASCII', '', $rule)
-            ) {
-                $s = self::to_ascii($s, $lang);
-            }
-        }
-
-        return $s.(null !== $start ? mb_substr($s, $end) : '');
-    }
-    
-    private static function to_translit($s) {
-        if (null === self::$TRANSLIT) {
-            $array = self::getData('translit');
-
-            self::$TRANSLIT = array(
-                'orig' => array_keys($array),
-                'replace' => array_values($array),
-            );
-        }
-        
-        return str_replace(self::$TRANSLIT['orig'], self::$TRANSLIT['replace'], $s);
-    }
-
-    public function getErrorCode() {
-        return 0;
-    }
-
-    public function getErrorMessage() {
-        return '';
-    }
-
-    /**
      * @var array|null
      */
     private static $TRANSLIT;
@@ -207,6 +84,11 @@ final class Transliterator
      * @var string
      */
     private static $REGEX_ASCII = '/[^\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F]/';
+
+    /**
+     * @var string
+     */
+    private static $ASCII = "\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
 
     /**
      * bidirectional text chars.
@@ -236,6 +118,143 @@ final class Transliterator
         8297 => "\xE2\x81\xA9",
     );
 
+    private function __construct()
+    {
+    }
+
+    public static function create($id, $direction = self::FORWARD)
+    {
+        $transliterator = new self();
+
+        $transliterator->id = self::clean_id($id);
+
+        if (self::FORWARD !== $direction && null !== $direction) {
+            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
+        }
+
+        return $transliterator;
+    }
+
+    private static function clean_id($s)
+    {
+        return rtrim(
+            str_replace(
+                array(' ', ':]', 'NonspacingMark'),
+                array('', ':] ', 'Nonspacing Mark'),
+                $s
+            ),
+            ';'
+        );
+    }
+
+    public static function createFromRules($rules, $direction = self::FORWARD)
+    {
+        $transliterator = new self();
+
+        $transliterator->id = self::clean_id($rules);
+
+        if (self::FORWARD !== $direction && null !== $direction) {
+            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
+        }
+
+        return $transliterator;
+    }
+
+    public static function createInverse()
+    {
+        throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator::createInverse".'));
+    }
+
+    public static function listIDs()
+    {
+        return array_values(self::$LOCALE_TO_TRANSLITERATOR_ID);
+    }
+
+    public function transliterate($s, $start = null, $end = null)
+    {
+        if ('' === $s) {
+            return '';
+        }
+
+        $s_start = '';
+        $s_end = '';
+        if (null !== $start || null !== $end) {
+            if (null !== $start) {
+                $s_start = mb_substr($s, null, $start);
+            } else {
+                $s_start = '';
+            }
+
+            if (null !== $end) {
+                $s_end = mb_substr($s, -$end, null);
+                $s = mb_substr($s, $start, $end + 1);
+            } else {
+                $s = mb_substr($s, $start, $end);
+            }
+        }
+
+        // DEBUG
+        //var_dump($s_start, $s_end, $s, "\n");
+
+        foreach (explode(';', $this->id) as $rule) {
+            $rule = str_replace(array('/BGN', 'ANY-'), '', strtoupper($rule));
+
+            // DEBUG
+            //var_dump($rule);
+
+            if ('NFC' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_C) ?: $s = normalizer_normalize($s, \Normalizer::NFC);
+            } elseif ('NFD' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_D) ?: $s = normalizer_normalize($s, \Normalizer::NFD);
+            } elseif ('NFKD' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_KD) ?: $s = normalizer_normalize($s, \Normalizer::NFKD);
+            } elseif ('NFKC' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
+            } elseif ('[:NONSPACING MARK:] REMOVE' === $rule) {
+                $s = preg_replace('/\p{Mn}++/u', '', $s);
+            } elseif (false !== strpos($rule, 'REMOVE')) {
+                $s = preg_replace(self::$REGEX_ASCII, '', $s);
+            } elseif ('LATIN-ASCII' === $rule) {
+                $s = self::to_ascii($s);
+            } elseif (false !== strpos($rule, 'UPPER')) {
+                $s = mb_strtoupper($s);
+            } elseif (false !== strpos($rule, 'LOWER')) {
+                $s = mb_strtolower($s);
+            } elseif (false !== strpos($rule, 'LATIN')) {
+                $s = self::to_translit($s);
+            } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
+                $s = self::to_ascii($s, $lang);
+            } elseif (
+                false !== strpos($rule, '-ASCII')
+                &&
+                $lang = str_replace('-ASCII', '', $rule)
+            ) {
+                $s = self::to_ascii($s, $lang);
+            }
+        }
+
+        return $s_start . $s . $s_end;
+    }
+
+    private static function to_translit($s)
+    {
+        if (self::$TRANSLIT === null) {
+            self::$TRANSLIT = self::getData('translit');
+        }
+
+        return str_replace(self::$TRANSLIT['orig'], self::$TRANSLIT['replace'], $s);
+    }
+
+    public function getErrorCode()
+    {
+        return 0;
+    }
+
+    public function getErrorMessage()
+    {
+        return '';
+    }
+
     /**
      * Returns an replacement array for ASCII methods with one language.
      *
@@ -250,7 +269,8 @@ final class Transliterator
      * @return array{orig: string[], replace: string[]}
      *                     <p>An array of replacements.</p>
      */
-    private static function charsArrayWithOneLanguage($language = 'en') {
+    private static function charsArrayWithOneLanguage($language = 'en')
+    {
         $language = self::get_language($language);
 
         // init
@@ -314,58 +334,6 @@ final class Transliterator
     }
 
     /**
-     * Accepts a string and removes all non-UTF-8 characters from it + extras.
-     *
-     * @param string $s <p>The string to be sanitized.</p>
-     *
-     * @return string
-     *                <p>A clean UTF-8 string.</p>
-     */
-    private static function clean($s) {
-        // http://stackoverflow.com/questions/1401317/remove-non-utf8-characters-from-string
-        // caused connection reset problem on larger strings
-
-        $regex = '/
-          (
-            (?: [\x00-\x7F]               # single-byte sequences   0xxxxxxx
-            |   [\xC0-\xDF][\x80-\xBF]    # double-byte sequences   110xxxxx 10xxxxxx
-            |   [\xE0-\xEF][\x80-\xBF]{2} # triple-byte sequences   1110xxxx 10xxxxxx * 2
-            |   [\xF0-\xF7][\x80-\xBF]{3} # quadruple-byte sequence 11110xxx 10xxxxxx * 3
-            ){1,100}                      # ...one or more times
-          )
-        | ( [\x80-\xBF] )                 # invalid byte in range 10000000 - 10111111
-        | ( [\xC0-\xFF] )                 # invalid byte in range 11000000 - 11111111
-        /x';
-        $s = (string) preg_replace($regex, '$1', $s);
-
-        $s = self::normalize_whitespace($s);
-
-        $s = self::remove_invisible_characters($s);
-
-        return $s;
-    }
-
-    /**
-     * Checks if a string is 7 bit ASCII.
-     *
-     * @param string $s <p>The string to check.</p>
-     *
-     * @return bool
-     *              <p>
-     *              <strong>true</strong> if it is ASCII<br>
-     *              <strong>false</strong> otherwise
-     *              </p>
-     */
-    private static function is_ascii($s)
-    {
-        if ('' === $s) {
-            return true;
-        }
-
-        return !preg_match(self::$REGEX_ASCII, $s);
-    }
-
-    /**
      * Normalize the whitespace.
      *
      * @param string $s <p>The string to be normalized.</p>
@@ -373,7 +341,8 @@ final class Transliterator
      * @return string
      *                <p>A string with normalized whitespace.</p>
      */
-    private static function normalize_whitespace($s) {
+    private static function normalize_whitespace($s)
+    {
         if ('' === $s) {
             return '';
         }
@@ -448,10 +417,13 @@ final class Transliterator
      * @return string
      *                <p>A string that contains only ASCII characters.</p>
      */
-    private static function to_ascii($s, $language = 'XXX') {
+    private static function to_ascii($s, $language = 'XXX')
+    {
         if ('' === $s) {
             return '';
         }
+
+        $language = self::get_language($language);
 
         $language_specific_chars = self::charsArrayWithOneLanguage($language);
         if (!empty($language_specific_chars['orig'])) {
@@ -499,7 +471,7 @@ final class Transliterator
         }
 
         // check if we only have ASCII, first (better performance)
-        if (true === self::is_ascii($s)) {
+        if (\strlen($s) === strspn($s, self::$ASCII)) {
             return $s;
         }
 
@@ -618,6 +590,18 @@ final class Transliterator
      */
     private static function get_language($language)
     {
+        if ('' === $language) {
+            return '';
+        }
+
+        if (
+            false === strpos($language, '_')
+            &&
+            false === strpos($language, '-')
+        ) {
+            return strtolower($language);
+        }
+
         $regex = '/(?<first>[a-z]+)[\-_]\g{first}/i';
 
         return str_replace(

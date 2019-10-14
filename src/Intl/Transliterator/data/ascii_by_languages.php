@@ -2,7 +2,7 @@
 
 // https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 
-static $data = array (
+static $data = array(
     // Dutch (Flemish)
     'nl' => array(
         'Á' => 'A',
@@ -607,7 +607,7 @@ static $data = array (
         'İ' => 'I',
         'ç' => 'c',
         'Ç' => 'C',
-        'ä' => 'A',
+        'ä' => 'a',
         'Ä' => 'A',
         'ü' => 'u',
         'Ü' => 'U',
@@ -2663,8 +2663,7 @@ static $data = array (
     ),
 );
 
-$result =& $data;
+$result = &$data;
 unset($data);
 
 return $result;
-
