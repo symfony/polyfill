@@ -97,6 +97,7 @@ class TransliteratorTest extends TestCase
         // https://unicode.org/cldr/utility/transform.jsp?a=Turkmen-Latin%2FBGN%3B+Latin-ASCII%3B&b=%C5%A4%C3%89%C5%9A%C5%A2+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = 'Turkmen-Latin/BGN; Latin-ASCII;';
         $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
+        $str_len = mb_strlen($str);
 
         $p = p::create($rules);
 
@@ -111,8 +112,38 @@ class TransliteratorTest extends TestCase
         $this->assertSame('ŤÉŚŢ - oau - 123 - abc - …', $p->transliterate($str, 5, 10));
         $this->assertSame($p_orig->transliterate($str, 5, 10), $p->transliterate($str, 5, 10));
 
-        $this->assertSame('TEST - oau  - abc - …', $p->transliterate($str, null, 10));
-        //$this->assertSame($p_orig->transliterate($str, null, 10), $p->transliterate($str, null, 10)); // TODO? -> error from "transliterate" itself?
+        $this->assertSame('TEST - oau - 123 - abc - ...', $p->transliterate($str, 0));
+        $this->assertSame($p_orig->transliterate($str, 0), $p->transliterate($str, 0));
+
+        $this->assertSame(false, $p->transliterate($str, $str_len + 1));
+        $this->assertSame($p_orig->transliterate($str, $str_len + 1), $p->transliterate($str, $str_len + 1));
+
+        $this->assertSame('ŤÉŚŢ - öäü - 123 - abc - …', $p->transliterate($str, $str_len, $str_len));
+        $this->assertSame($p_orig->transliterate($str, $str_len, $str_len), $p->transliterate($str, $str_len, $str_len));
+
+        $this->assertSame('ŤÉŚŢ - öäü - 123 - abc - …', $p->transliterate($str, $str_len, $str_len));
+        $this->assertSame($p_orig->transliterate($str, $str_len, $str_len), $p->transliterate($str, $str_len, $str_len));
+        
+        $this->assertSame(false, $p->transliterate($str, 2, -2));
+        $this->assertSame($p_orig->transliterate($str, 2, -2), $p->transliterate($str, 2, -2));
+
+        $this->assertSame(false, $p->transliterate($str, -2, 2));
+        $this->assertSame($p_orig->transliterate($str, -2, 2), $p->transliterate($str, -2, 2));
+
+        $this->assertSame('TEST - oau - 123 - abc - …', $p->transliterate($str, null, 10));
+        $this->assertSame($p_orig->transliterate($str, null, 10), $p->transliterate($str, null, 10));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Transliterator\Transliterator::get_language
+     */
+    public function testTransliteratorGetLanguage()
+    {
+        $id_array_orig = transliterator_list_ids();
+        $this->assertTrue(is_array($id_array_orig) && count($id_array_orig) > 1);
+
+        $id_array = p::listIDs();
+        $this->assertTrue(is_array($id_array) && count($id_array) > 1);
     }
 
     public function stringProvider()

@@ -180,21 +180,37 @@ class Transliterator
         $s_end = '';
         if (null !== $start || null !== $end) {
             if (null !== $start) {
+                if ($start < 0) {
+                    return false;
+                }
+
+                $s_len = mb_strlen($s);
+                if ($start > $s_len) {
+                    return false;
+                }
+                if ($start === $s_len) {
+                    $end = null;
+                }
+
                 $s_start = mb_substr($s, null, $start);
             } else {
                 $s_start = '';
             }
 
             if (null !== $end) {
-                $s_end = mb_substr($s, -$end, null);
-                $s = mb_substr($s, $start, $end + 1);
+                if ($end < 0) {
+                    return false;
+                }
+
+                $s_end = mb_substr($s, -$end);
+                $s = mb_substr($s, $start, -$end);
             } else {
-                $s = mb_substr($s, $start, $end);
+                $s = mb_substr($s, $start);
             }
         }
 
         // DEBUG
-        //var_dump($s_start, $s_end, $s, "\n");
+        var_dump($s_start, $s_end, $s, "\n");
 
         foreach (explode(';', $this->id) as $rule) {
             $rule = str_replace(array('/BGN', 'ANY-'), '', strtoupper($rule));
