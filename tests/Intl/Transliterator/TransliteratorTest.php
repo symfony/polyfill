@@ -24,6 +24,9 @@ class TransliteratorTest extends TestCase
      */
     public function testTransliteratorCreate()
     {
+        // TODO: create() can't handle rules instead of createFromRules(): e.g. <>, >, ::
+        // -> http://userguide.icu-project.org/transforms/general/rules
+
         $intl_support = \extension_loaded('intl');
         if (false === $intl_support) {
             $this->markTestSkipped('intl is not installed');
@@ -36,7 +39,10 @@ class TransliteratorTest extends TestCase
 
         $p_orig = \Transliterator::create($rules);
 
-        $this->assertSame($p_orig->id, $p->id);
+        $this->assertSame(
+            str_replace(' ', '', $p_orig->id),
+            str_replace(' ', '', $p->id)
+        );
     }
 
     /**
@@ -106,6 +112,63 @@ class TransliteratorTest extends TestCase
 
         $this->assertSame('‹ŤÉŚŢ›ÖÄÜ…', $p->transliterate($str));
         $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Transliterator\Transliterator::createFromRules
+     */
+    public function testTransliteratorTransliterateCreateFromRules()
+    {
+        // https://unicode.org/cldr/utility/transform.jsp?a=%5B%5B%3APunctuation%3A%5D%5B%3ASpace%3A%5D%5D%2B+%3E+%27+%27%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
+        $rules = '[[:Punctuation:][:Space:]]+ > \' \';';
+        $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
+
+        $p = p::createFromRules($rules);
+
+        $p_orig = \Transliterator::createFromRules($rules);
+
+        $this->assertSame(' ŤÉŚŢ öäü 123 abc ', $p->transliterate($str));
+        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        // ---
+
+        // https://unicode.org/cldr/utility/transform.jsp?a=%3A%3A+NFD+%28NFC%29+%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
+        $rules = 'ä <>f;'; // http://userguide.icu-project.org/transforms/general/rules
+        $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
+
+        $p = p::createFromRules($rules);
+
+        $p_orig = \Transliterator::createFromRules($rules);
+
+        $this->assertSame('‹ŤÉŚŢ› - öfü - 123 - abc - …', $p->transliterate($str));
+        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        // ---
+
+        $rules = 'ä <>;'; // http://userguide.icu-project.org/transforms/general/rules
+        $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
+
+        $p = p::createFromRules($rules);
+
+        $p_orig = \Transliterator::createFromRules($rules);
+
+        $this->assertSame('‹ŤÉŚŢ› - öü - 123 - abc - …', $p->transliterate($str));
+        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        // ---
+
+        // TODO
+        /*
+        $rules = ':: [ŤÄ] lower();'; // http://userguide.icu-project.org/transforms/general/rules
+        $str = '‹ŤÉŚŢ› - ÖÄÜ - 123 - abc - …';
+
+        $p = p::createFromRules($rules);
+
+        $p_orig = \Transliterator::createFromRules($rules);
+
+        $this->assertSame('‹ťÉŚŢ› - ÖäÜ - 123 - abc - …', $p->transliterate($str));
+        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        */
     }
 
     /**

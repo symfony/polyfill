@@ -104,14 +104,7 @@ class Transliterator
 
     private static function clean_id($s)
     {
-        return rtrim(
-            str_replace(
-                array(' ', ':]', 'NonspacingMark'),
-                array('', ':] ', 'Nonspacing Mark'),
-                $s
-            ),
-            ';'
-        );
+        return rtrim($s, ';');
     }
 
     public static function createFromRules($rules, $direction = \Transliterator::FORWARD)
@@ -172,10 +165,17 @@ class Transliterator
         //var_dump($s_start, $s_end, $s, "\n");
 
         foreach (explode(';', $this->id) as $rule) {
-            $rule_orig_trim = trim(rtrim($rule, ' ()'));
+            $rule_orig_trim = trim(
+                str_ireplace(
+                    array('Nonspacing Mark'),
+                    array('NonspacingMark'),
+                    rtrim($rule, ' ()')
+                )
+
+            );
             $rule = trim(
-                str_replace(
-                    array('/BGN', 'ANY-'),
+                str_ireplace(
+                    array('/BGN', 'ANY-', ' '),
                     '',
                     strtoupper($rule_orig_trim)
                 )
@@ -192,19 +192,6 @@ class Transliterator
                 normalizer_is_normalized($s, \Normalizer::FORM_KD) ?: $s = normalizer_normalize($s, \Normalizer::NFKD);
             } elseif ('NFKC' === $rule) {
                 normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
-            } elseif ('[:NONSPACING MARK:] REMOVE' === $rule) {
-                $s = preg_replace('/\p{Mn}++/u', '', $s);
-            } elseif ('[:PUNCTUATION:] REMOVE' === $rule) {
-                $s = preg_replace('/[[:punct:]]+/u', '', $s);
-            } elseif (
-                false !== strpos($rule, 'REMOVE')
-                &&
-                false !== strpos($rule, '[')
-                &&
-                false !== strpos($rule, ']')
-            ) {
-                $rule_regex = \mb_substr($rule_orig_trim, 0, (int) \mb_strlen($rule) - (int) \mb_strlen('REMOVE'));
-                $s = preg_replace('/' . $rule_regex . '/', '', $s);
             } elseif ('DE-ASCII' === $rule) {
                 $s = self::to_ascii($s, 'de');
             } elseif ('LATIN-ASCII' === $rule) {
@@ -223,6 +210,106 @@ class Transliterator
                 $lang = str_replace('-ASCII', '', $rule)
             ) {
                 $s = self::to_ascii($s, $lang);
+            }
+
+            if (
+                false !== strpos($rule, '[')
+                &&
+                false !== strpos($rule, ']')
+            ) {
+                $rule_regex_orig_trim_tmp = $rule_orig_trim;
+                $rule_regex_extra_helper = array();
+                preg_match('/[^]+]+$/', $rule_orig_trim, $rule_regex_extra_helper);
+                $rule_regex_extra = isset($rule_regex_extra_helper[0]) ? $rule_regex_extra_helper[0] : '';
+
+                if (stripos($rule_regex_orig_trim_tmp, '[:NONSPACINGMARK:]') !== false) {
+                    $rule_regex_orig_trim_tmp = str_ireplace('[:NONSPACINGMARK:]', '\p{Mn}+', $rule);
+                }
+
+                $space_regex_found = false;
+                if (stripos($rule_regex_orig_trim_tmp, '[[:SPACE:]]') !== false) {
+                    $space_regex_found = true;
+                    $rule_regex_orig_trim_tmp = str_ireplace('[[:SPACE:]]', '[[:space:]]', $rule_regex_orig_trim_tmp);
+                }
+                if (stripos($rule_regex_orig_trim_tmp, '][:SPACE:]') !== false) {
+                    $space_regex_found = true;
+                    $rule_regex_orig_trim_tmp = str_ireplace('][:SPACE:]', '][:space:]', $rule_regex_orig_trim_tmp);
+                }
+                if (stripos($rule_regex_orig_trim_tmp, '[:SPACE:][') !== false) {
+                    $space_regex_found = true;
+                    $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:][', '[:space:][', $rule_regex_orig_trim_tmp);
+                }
+                if (
+                    $space_regex_found === false
+                    &&
+                    stripos($rule_regex_orig_trim_tmp, '[:SPACE:]') !== false
+                ) {
+                    $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:]', '[[:space:]]', $rule_regex_orig_trim_tmp);
+                }
+
+                $punct_regex_found = false;
+                if (stripos($rule_regex_orig_trim_tmp, '[[:PUNCTUATION:]]') !== false) {
+                    $punct_regex_found = true;
+                    $rule_regex_orig_trim_tmp = str_ireplace('[[:PUNCTUATION:]]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
+                }
+                if (stripos($rule_regex_orig_trim_tmp, '][:PUNCTUATION:]') !== false) {
+                    $punct_regex_found = true;
+                    $rule_regex_orig_trim_tmp = str_ireplace('][:PUNCTUATION:]', '][:punct:]', $rule_regex_orig_trim_tmp);
+                }
+                if (stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:][') !== false) {
+                    $punct_regex_found = true;
+                    $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:][', '[:punct:][', $rule_regex_orig_trim_tmp);
+                }
+                if (
+                    $punct_regex_found === false
+                    &&
+                    stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:]') !== false
+                ) {
+                    $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
+                }
+
+                if (
+                    false !== strpos($rule_regex_orig_trim_tmp, '[')
+                    &&
+                    false !== strpos($rule_regex_orig_trim_tmp, ']')
+                ) {
+                    $rule_regex = preg_replace('/[^]+]+$/', '', $rule_regex_orig_trim_tmp);
+                } elseif (false !== stripos($rule_regex_orig_trim_tmp, 'REMOVE')) {
+                    $rule_regex = str_ireplace('REMOVE', '', $rule_regex_orig_trim_tmp);
+                } else {
+                    $rule_regex = '';
+                }
+
+                // DEBUG
+                //var_dump($rule_regex);
+
+                if (
+                    $rule_regex
+                    &&
+                    preg_match('/' . $rule_regex . '/u', $s)
+                ) {
+                    if (stripos($rule_regex_extra, 'REMOVE') !== false) {
+                        $s = preg_replace('/' . $rule_regex . '/u', '', $s);
+                    } elseif (strpos($rule_regex_extra, '>') !== false) {
+                        $rule_regex_extra = str_replace('>', '', $rule_regex_extra);
+                        $rule_regex_extra_replacement_helper = array();
+                        preg_match('/\'(?<replacement>.*?)\'/', $rule_regex_extra, $rule_regex_extra_replacement_helper);
+                        $rule_regex_extra_replacement = isset($rule_regex_extra_replacement_helper['replacement']) ? $rule_regex_extra_replacement_helper['replacement'] : '';
+                        
+                        $s = preg_replace('/' . $rule_regex . '/u', $rule_regex_extra_replacement, $s);
+                    }
+                }
+            } elseif (strpos($rule, '<>') !== false) {
+                $rule_replacer_helper = array();
+                preg_match('/(?<search>.*)\s*<>\s*(?<replace>.*)/', $rule_orig_trim, $rule_replacer_helper);
+
+                if (isset($rule_replacer_helper['search'])) {
+                    $s = str_replace(
+                        trim($rule_replacer_helper['search']),
+                        isset($rule_replacer_helper['replace']) ? trim($rule_replacer_helper['replace']) : '',
+                        $s
+                    );
+                }
             }
         }
 
