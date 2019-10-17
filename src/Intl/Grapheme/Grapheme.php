@@ -39,6 +39,10 @@ final class Grapheme
 
     public static function grapheme_extract($s, $size, $type = GRAPHEME_EXTR_COUNT, $start = 0, &$next = 0)
     {
+        if (\PHP_VERSION_ID >= 70100 && 0 > $start) {
+            $start = \strlen($s) + $start;
+        }
+
         if (!\is_scalar($s)) {
             $hasError = false;
             set_error_handler(function () use (&$hasError) { $hasError = true; });
@@ -179,7 +183,9 @@ final class Grapheme
         if ($offset > 0) {
             $s = self::grapheme_substr($s, $offset);
         } elseif ($offset < 0) {
-            if (2 > $mode) {
+            if (\PHP_VERSION_ID < 50535 || (50600 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 50621) || (70000 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 70006)) {
+                $offset = 0;
+            } elseif (2 > $mode) {
                 $offset += self::grapheme_strlen($s);
                 $s = self::grapheme_substr($s, $offset);
                 if (0 > $offset) {
