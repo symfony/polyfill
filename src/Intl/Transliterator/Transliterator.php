@@ -21,6 +21,8 @@ namespace Symfony\Polyfill\Intl\Transliterator;
  * @author Lars Moelleken <lars@moelleken.org>
  *
  * @internal
+ *
+ * @property-read string $id
  */
 class Transliterator
 {
@@ -56,16 +58,6 @@ class Transliterator
     );
 
     /**
-     * @var string|null
-     */
-    public $id;
-
-    /**
-     * @var int
-     */
-    private $direction = \Transliterator::FORWARD;
-
-    /**
      * @var array|null
      */
     private static $TRANSLIT;
@@ -85,254 +77,49 @@ class Transliterator
      */
     private static $ASCII = "\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
 
+    /**
+     * @var string|null
+     */
+    private $id;
+
+    /**
+     * @var int
+     */
+    private $direction = \Transliterator::FORWARD;
+
     private function __construct()
     {
     }
 
-    public static function create($id, $direction = \Transliterator::FORWARD)
+    public function __get($name)
     {
-        $transliterator = new self();
-
-        $transliterator->id = self::clean_id($id);
-
-        if (\Transliterator::FORWARD !== $direction && null !== $direction) {
-            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
+        if ('id' === $name) {
+            return $this->id;
         }
 
-        return $transliterator;
+        return null;
     }
 
-    private static function clean_id($s)
+    public function __isset($name)
     {
-        return rtrim($s, ';');
-    }
-
-    public static function createFromRules($rules, $direction = \Transliterator::FORWARD)
-    {
-        return self::create($rules, $direction);
-    }
-
-    public static function createInverse()
-    {
-        throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator::createInverse".'));
-    }
-
-    public static function listIDs()
-    {
-        return array_values(self::$LOCALE_TO_TRANSLITERATOR_ID);
-    }
-
-    public function transliterate($s, $start = null, $end = null)
-    {
-        if ('' === $s) {
-            return '';
+        if ('id' === $name) {
+            return isset($this->id);
         }
 
-        $s_start = '';
-        $s_end = '';
-        if (null !== $start || null !== $end) {
-            if (null !== $start) {
-                if ($start < 0) {
-                    return false;
-                }
-
-                $s_len = mb_strlen($s);
-                if ($start > $s_len) {
-                    return false;
-                }
-                if ($start === $s_len) {
-                    $end = null;
-                }
-
-                $s_start = mb_substr($s, null, $start);
-            } else {
-                $s_start = '';
-            }
-
-            if (null !== $end) {
-                if ($end < 0) {
-                    return false;
-                }
-
-                $s_end = mb_substr($s, -$end);
-                $s = mb_substr($s, $start, -$end);
-            } else {
-                $s = mb_substr($s, $start);
-            }
-        }
-
-        // DEBUG
-        //var_dump($s_start, $s_end, $s, "\n");
-
-        foreach (explode(';', $this->id) as $rule) {
-            $rule_orig_trim = trim(
-                str_ireplace(
-                    array('Nonspacing Mark'),
-                    array('NonspacingMark'),
-                    rtrim($rule, ' ()')
-                )
-
-            );
-            $rule = trim(
-                str_ireplace(
-                    array('/BGN', 'ANY-', ' '),
-                    '',
-                    strtoupper($rule_orig_trim)
-                )
-            );
-
-            // DEBUG
-            //var_dump($rule);
-
-            if ('NFC' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_C) ?: $s = normalizer_normalize($s, \Normalizer::NFC);
-            } elseif ('NFD' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_D) ?: $s = normalizer_normalize($s, \Normalizer::NFD);
-            } elseif ('NFKD' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_KD) ?: $s = normalizer_normalize($s, \Normalizer::NFKD);
-            } elseif ('NFKC' === $rule) {
-                normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
-            } elseif ('DE-ASCII' === $rule) {
-                $s = self::to_ascii($s, 'de');
-            } elseif ('LATIN-ASCII' === $rule) {
-                $s = self::to_ascii($s);
-            } elseif (false !== strpos($rule, 'UPPER')) {
-                $s = mb_strtoupper($s);
-            } elseif (false !== strpos($rule, 'LOWER')) {
-                $s = mb_strtolower($s);
-            } elseif (false !== strpos($rule, 'LATIN')) {
-                $s = self::to_translit($s);
-            } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
-                $s = self::to_ascii($s, $lang);
-            } elseif (
-                false !== strpos($rule, '-ASCII')
-                &&
-                $lang = str_replace('-ASCII', '', $rule)
-            ) {
-                $s = self::to_ascii($s, $lang);
-            }
-
-            if (
-                false !== strpos($rule, '[')
-                &&
-                false !== strpos($rule, ']')
-            ) {
-                $rule_regex_orig_trim_tmp = $rule_orig_trim;
-                $rule_regex_extra_helper = array();
-                preg_match('/[^]+]+$/', $rule_orig_trim, $rule_regex_extra_helper);
-                $rule_regex_extra = isset($rule_regex_extra_helper[0]) ? $rule_regex_extra_helper[0] : '';
-
-                if (stripos($rule_regex_orig_trim_tmp, '[:NONSPACINGMARK:]') !== false) {
-                    $rule_regex_orig_trim_tmp = str_ireplace('[:NONSPACINGMARK:]', '\p{Mn}+', $rule);
-                }
-
-                $space_regex_found = false;
-                if (stripos($rule_regex_orig_trim_tmp, '[[:SPACE:]]') !== false) {
-                    $space_regex_found = true;
-                    $rule_regex_orig_trim_tmp = str_ireplace('[[:SPACE:]]', '[[:space:]]', $rule_regex_orig_trim_tmp);
-                }
-                if (stripos($rule_regex_orig_trim_tmp, '][:SPACE:]') !== false) {
-                    $space_regex_found = true;
-                    $rule_regex_orig_trim_tmp = str_ireplace('][:SPACE:]', '][:space:]', $rule_regex_orig_trim_tmp);
-                }
-                if (stripos($rule_regex_orig_trim_tmp, '[:SPACE:][') !== false) {
-                    $space_regex_found = true;
-                    $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:][', '[:space:][', $rule_regex_orig_trim_tmp);
-                }
-                if (
-                    $space_regex_found === false
-                    &&
-                    stripos($rule_regex_orig_trim_tmp, '[:SPACE:]') !== false
-                ) {
-                    $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:]', '[[:space:]]', $rule_regex_orig_trim_tmp);
-                }
-
-                $punct_regex_found = false;
-                if (stripos($rule_regex_orig_trim_tmp, '[[:PUNCTUATION:]]') !== false) {
-                    $punct_regex_found = true;
-                    $rule_regex_orig_trim_tmp = str_ireplace('[[:PUNCTUATION:]]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
-                }
-                if (stripos($rule_regex_orig_trim_tmp, '][:PUNCTUATION:]') !== false) {
-                    $punct_regex_found = true;
-                    $rule_regex_orig_trim_tmp = str_ireplace('][:PUNCTUATION:]', '][:punct:]', $rule_regex_orig_trim_tmp);
-                }
-                if (stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:][') !== false) {
-                    $punct_regex_found = true;
-                    $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:][', '[:punct:][', $rule_regex_orig_trim_tmp);
-                }
-                if (
-                    $punct_regex_found === false
-                    &&
-                    stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:]') !== false
-                ) {
-                    $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
-                }
-
-                if (
-                    false !== strpos($rule_regex_orig_trim_tmp, '[')
-                    &&
-                    false !== strpos($rule_regex_orig_trim_tmp, ']')
-                ) {
-                    $rule_regex = preg_replace('/[^]+]+$/', '', $rule_regex_orig_trim_tmp);
-                } elseif (false !== stripos($rule_regex_orig_trim_tmp, 'REMOVE')) {
-                    $rule_regex = str_ireplace('REMOVE', '', $rule_regex_orig_trim_tmp);
-                } else {
-                    $rule_regex = '';
-                }
-
-                // DEBUG
-                //var_dump($rule_regex);
-
-                if (
-                    $rule_regex
-                    &&
-                    preg_match('/' . $rule_regex . '/u', $s)
-                ) {
-                    if (stripos($rule_regex_extra, 'REMOVE') !== false) {
-                        $s = preg_replace('/' . $rule_regex . '/u', '', $s);
-                    } elseif (strpos($rule_regex_extra, '>') !== false) {
-                        $rule_regex_extra = str_replace('>', '', $rule_regex_extra);
-                        $rule_regex_extra_replacement_helper = array();
-                        preg_match('/\'(?<replacement>.*?)\'/', $rule_regex_extra, $rule_regex_extra_replacement_helper);
-                        $rule_regex_extra_replacement = isset($rule_regex_extra_replacement_helper['replacement']) ? $rule_regex_extra_replacement_helper['replacement'] : '';
-                        
-                        $s = preg_replace('/' . $rule_regex . '/u', $rule_regex_extra_replacement, $s);
-                    }
-                }
-            } elseif (strpos($rule, '<>') !== false) {
-                $rule_replacer_helper = array();
-                preg_match('/(?<search>.*)\s*<>\s*(?<replace>.*)/', $rule_orig_trim, $rule_replacer_helper);
-
-                if (isset($rule_replacer_helper['search'])) {
-                    $s = str_replace(
-                        trim($rule_replacer_helper['search']),
-                        isset($rule_replacer_helper['replace']) ? trim($rule_replacer_helper['replace']) : '',
-                        $s
-                    );
-                }
-            }
-        }
-
-        return $s_start . $s . $s_end;
+        return false;
     }
 
-    private static function to_translit($s)
+    public function __set($name, $value)
     {
-        if (self::$TRANSLIT === null) {
-            self::$TRANSLIT = self::getData('translit');
+        if ('id' === $name) {
+            trigger_error('The property "id" is read-only', E_USER_WARNING);
+
+            return;
         }
 
-        return str_replace(self::$TRANSLIT['orig'], self::$TRANSLIT['replace'], $s);
-    }
-
-    public function getErrorCode()
-    {
-        return 0;
-    }
-
-    public function getErrorMessage()
-    {
-        return '';
+        if ('id_intern' === $name) {
+            $this->id = $value;
+        }
     }
 
     /**
@@ -413,6 +200,210 @@ class Transliterator
         return $CHARS_ARRAY;
     }
 
+    private static function clean_id($s)
+    {
+        return rtrim($s, ';');
+    }
+
+    public static function create($id, $direction = \Transliterator::FORWARD)
+    {
+        if (
+            false !== strpos($id, '<')
+            ||
+            false !== strpos($id, '>')
+            ||
+            false !== strpos($id, '::')
+        ) {
+            return null;
+        }
+
+        $transliterator = new self();
+
+        $transliterator->id_intern = self::clean_id($id);
+
+        if (\Transliterator::FORWARD !== $direction && null !== $direction) {
+            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
+        }
+
+        return $transliterator;
+    }
+
+    public static function createFromRules($rules, $direction = \Transliterator::FORWARD)
+    {
+        if (
+            false === strpos($rules, '<')
+            &&
+            false === strpos($rules, '>')
+            &&
+            false === strpos($rules, '::')
+        ) {
+            return null;
+        }
+
+        $transliterator = new self();
+
+        $transliterator->id_intern = self::clean_id($rules);
+
+        if (\Transliterator::FORWARD !== $direction && null !== $direction) {
+            throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
+        }
+
+        return $transliterator;
+    }
+
+    public static function createInverse()
+    {
+        throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator::createInverse".'));
+    }
+
+    /**
+     * Get data from "/data/*.php".
+     *
+     * @param string $file
+     *
+     * @return array
+     */
+    private static function getData($file)
+    {
+        /* @noinspection PhpIncludeInspection */
+        /* @noinspection UsingInclusionReturnValueInspection */
+        /* @psalm-suppress UnresolvableInclude */
+        return include __DIR__.'/Resources/unidata/'.$file.'.php';
+    }
+
+    /**
+     * Get data from "/data/*.php".
+     *
+     * @param string $file
+     *
+     * @return array|false
+     *                     <p>Will return <strong>false</strong> on error.</p>
+     */
+    private static function getDataIfExists($file)
+    {
+        $file = __DIR__.'/Resources/unidata/'.$file.'.php';
+        if (file_exists($file)) {
+            /* @noinspection PhpIncludeInspection */
+            /* @noinspection UsingInclusionReturnValueInspection */
+            return include $file;
+        }
+
+        return false;
+    }
+
+    public function getErrorCode()
+    {
+        return 0;
+    }
+
+    public function getErrorMessage()
+    {
+        return '';
+    }
+
+    /**
+     * Get the language from a string.
+     *
+     * e.g.: de_at -> de_at
+     *       de_DE -> de
+     *       DE_DE -> de
+     *       de-de -> de
+     *
+     * @param string $language
+     *
+     * @return string
+     */
+    private static function get_language($language)
+    {
+        if ('' === $language) {
+            return '';
+        }
+
+        if (
+            false === strpos($language, '_')
+            &&
+            false === strpos($language, '-')
+        ) {
+            return strtolower($language);
+        }
+
+        $regex = '/(?<first>[a-z]+)[\-_]\g{first}/i';
+
+        return str_replace(
+            '-',
+            '_',
+            strtolower(
+                (string) preg_replace($regex, '$1', $language)
+            )
+        );
+    }
+
+    public static function listIDs()
+    {
+        return array_values(self::$LOCALE_TO_TRANSLITERATOR_ID);
+    }
+
+    private function normalize_regex_helper($rule_regex_orig_trim_tmp, $rule)
+    {
+        if (false !== stripos($rule_regex_orig_trim_tmp, '[:NONSPACINGMARK:]')) {
+            $rule_regex_orig_trim_tmp = str_ireplace('[:NONSPACINGMARK:]', '\p{Mn}+', $rule);
+        }
+
+        $space_regex_found = false;
+        if (false !== stripos($rule_regex_orig_trim_tmp, '[[:SPACE:]]')) {
+            $space_regex_found = true;
+            $rule_regex_orig_trim_tmp = str_ireplace('[[:SPACE:]]', '[[:space:]]', $rule_regex_orig_trim_tmp);
+        }
+        if (false !== stripos($rule_regex_orig_trim_tmp, '][:SPACE:]')) {
+            $space_regex_found = true;
+            $rule_regex_orig_trim_tmp = str_ireplace('][:SPACE:]', '][:space:]', $rule_regex_orig_trim_tmp);
+        }
+        if (false !== stripos($rule_regex_orig_trim_tmp, '[:SPACE:][')) {
+            $space_regex_found = true;
+            $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:][', '[:space:][', $rule_regex_orig_trim_tmp);
+        }
+        if (
+            false === $space_regex_found
+            &&
+            false !== stripos($rule_regex_orig_trim_tmp, '[:SPACE:]')
+        ) {
+            $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:]', '[[:space:]]', $rule_regex_orig_trim_tmp);
+        }
+
+        $punct_regex_found = false;
+        if (false !== stripos($rule_regex_orig_trim_tmp, '[[:PUNCTUATION:]]')) {
+            $punct_regex_found = true;
+            $rule_regex_orig_trim_tmp = str_ireplace('[[:PUNCTUATION:]]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
+        }
+        if (false !== stripos($rule_regex_orig_trim_tmp, '][:PUNCTUATION:]')) {
+            $punct_regex_found = true;
+            $rule_regex_orig_trim_tmp = str_ireplace('][:PUNCTUATION:]', '][:punct:]', $rule_regex_orig_trim_tmp);
+        }
+        if (false !== stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:][')) {
+            $punct_regex_found = true;
+            $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:][', '[:punct:][', $rule_regex_orig_trim_tmp);
+        }
+        if (
+            false === $punct_regex_found
+            &&
+            false !== stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:]')
+        ) {
+            $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
+        }
+
+        return $rule_regex_orig_trim_tmp;
+    }
+
+    /**
+     * @psalm-suppress MissingReturnType
+     */
+    private static function prepareAsciiMaps()
+    {
+        if (null === self::$ASCII_MAPS) {
+            self::$ASCII_MAPS = self::getData('ascii_by_languages');
+        }
+    }
+
     /**
      * Returns an ASCII version of the string. A set of non-ASCII characters are
      * replaced with their closest ASCII counterparts, and the rest are removed
@@ -458,6 +449,15 @@ class Transliterator
         return $s;
     }
 
+    private static function to_translit($s)
+    {
+        if (null === self::$TRANSLIT) {
+            self::$TRANSLIT = self::getData('translit');
+        }
+
+        return str_replace(self::$TRANSLIT['orig'], self::$TRANSLIT['replace'], $s);
+    }
+
     /**
      * Returns an ASCII version of the string. A set of non-ASCII characters are
      * replaced with their closest ASCII counterparts, and the rest are removed
@@ -470,10 +470,8 @@ class Transliterator
      * @return string
      *                <p>A String that contains only ASCII characters.</p>
      */
-    private static function to_transliterate(
-        $s,
-        $unknown = '?'
-    ) {
+    private static function to_transliterate($s, $unknown = '?')
+    {
         static $UTF8_TO_TRANSLIT = null;
         static $TRANSLITERATOR = null;
 
@@ -587,85 +585,167 @@ class Transliterator
         return $s_tmp;
     }
 
-    /**
-     * Get the language from a string.
-     *
-     * e.g.: de_at -> de_at
-     *       de_DE -> de
-     *       DE_DE -> de
-     *       de-de -> de
-     *
-     * @param string $language
-     *
-     * @return string
-     */
-    private static function get_language($language)
+    public function transliterate($s, $start = null, $end = null)
     {
-        if ('' === $language) {
+        if ('' === $s) {
             return '';
         }
 
-        if (
-            false === strpos($language, '_')
-            &&
-            false === strpos($language, '-')
-        ) {
-            return strtolower($language);
+        $s_start = '';
+        $s_end = '';
+        if (null !== $start || null !== $end) {
+            if (null !== $start) {
+                if ($start < 0) {
+                    return false;
+                }
+
+                $s_len = mb_strlen($s);
+                if ($start > $s_len) {
+                    return false;
+                }
+                if ($start === $s_len) {
+                    $end = null;
+                }
+
+                $s_start = mb_substr($s, null, $start);
+            } else {
+                $s_start = '';
+            }
+
+            if (null !== $end) {
+                if ($end < 0) {
+                    return false;
+                }
+
+                $s_end = mb_substr($s, -$end);
+                $s = mb_substr($s, $start, -$end);
+            } else {
+                $s = mb_substr($s, $start);
+            }
         }
 
-        $regex = '/(?<first>[a-z]+)[\-_]\g{first}/i';
+        // DEBUG
+        //var_dump($s_start, $s_end, $s, "\n");
 
-        return str_replace(
-            '-',
-            '_',
-            strtolower(
-                (string) preg_replace($regex, '$1', $language)
-            )
-        );
-    }
+        foreach (explode(';', $this->id) as $rule) {
+            $rule_orig_trim = trim(
+                str_ireplace(
+                    array('Nonspacing Mark'),
+                    array('NonspacingMark'),
+                    rtrim($rule, ' ()')
+                )
+            );
+            $rule = trim(
+                str_ireplace(
+                    array('/BGN', 'ANY-', ' '),
+                    '',
+                    strtoupper($rule_orig_trim)
+                )
+            );
 
-    /**
-     * Get data from "/data/*.php".
-     *
-     * @param string $file
-     *
-     * @return array
-     */
-    private static function getData($file)
-    {
-        /* @noinspection PhpIncludeInspection */
-        /* @noinspection UsingInclusionReturnValueInspection */
-        /* @psalm-suppress UnresolvableInclude */
-        return include __DIR__ . '/Resources/unidata/' . $file . '.php';
-    }
+            // DEBUG
+            //var_dump($rule);
 
-    /**
-     * Get data from "/data/*.php".
-     *
-     * @param string $file
-     *
-     * @return array|false
-     *                     <p>Will return <strong>false</strong> on error.</p>
-     */
-    private static function getDataIfExists($file)
-    {
-        $file = __DIR__ . '/Resources/unidata/' . $file . '.php';
-        if (file_exists($file)) {
-            /* @noinspection PhpIncludeInspection */
-            /* @noinspection UsingInclusionReturnValueInspection */
-            return include $file;
+            // reset
+            $use_callback_for_rule = false;
+
+            if (0 === strpos($rule, '::')) {
+                $use_callback_for_rule = true;
+            } elseif ('NFC' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_C) ?: $s = normalizer_normalize($s, \Normalizer::NFC);
+            } elseif ('NFD' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_D) ?: $s = normalizer_normalize($s, \Normalizer::NFD);
+            } elseif ('NFKD' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_KD) ?: $s = normalizer_normalize($s, \Normalizer::NFKD);
+            } elseif ('NFKC' === $rule) {
+                normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
+            } elseif ('DE-ASCII' === $rule) {
+                $s = self::to_ascii($s, 'de');
+            } elseif ('LATIN-ASCII' === $rule) {
+                $s = self::to_ascii($s);
+            } elseif (false !== strpos($rule, 'UPPER')) {
+                $s = mb_strtoupper($s);
+            } elseif (false !== strpos($rule, 'LOWER')) {
+                $s = mb_strtolower($s);
+            } elseif (false !== strpos($rule, 'LATIN')) {
+                $s = self::to_translit($s);
+            } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
+                $s = self::to_ascii($s, $lang);
+            } elseif (
+                false !== strpos($rule, '-ASCII')
+                &&
+                $lang = str_replace('-ASCII', '', $rule)
+            ) {
+                $s = self::to_ascii($s, $lang);
+            }
+
+            if (
+                false !== strpos($rule, '[')
+                &&
+                false !== strpos($rule, ']')
+            ) {
+                $rule_regex_extra_helper = array();
+                preg_match('/[^]+]+$/', $rule_orig_trim, $rule_regex_extra_helper);
+                $rule_regex_extra = isset($rule_regex_extra_helper[0]) ? $rule_regex_extra_helper[0] : '';
+
+                $rule_orig_trim_regex = $this->normalize_regex_helper($rule_orig_trim, $rule);
+
+                if (
+                    false !== strpos($rule_orig_trim_regex, '[')
+                    &&
+                    false !== strpos($rule_orig_trim_regex, ']')
+                ) {
+                    $rule_regex = preg_replace('/[^]+]+$/', '', $rule_orig_trim_regex);
+                } elseif (false !== stripos($rule_orig_trim_regex, 'REMOVE')) {
+                    $rule_regex = str_ireplace('REMOVE', '', $rule_orig_trim_regex);
+                } else {
+                    $rule_regex = '';
+                }
+
+                // DEBUG
+                //var_dump($rule_regex);
+
+                if ($rule_regex) {
+                    if (true === $use_callback_for_rule) {
+                        $rule_regex = ltrim($rule_regex, ': ');
+                        $that = clone $this;
+                        $that->id_intern = $rule_regex_extra;
+                        $s = preg_replace_callback(
+                            '/'.$rule_regex.'/u',
+                            function ($callback_matches) use ($that) {
+                                return $that->transliterate($callback_matches[0]);
+                            },
+                            $s
+                        );
+                        unset($that);
+                    } elseif (false !== stripos($rule_regex_extra, 'REMOVE')) {
+                        $s = preg_replace('/'.$rule_regex.'/u', '', $s);
+                    } elseif (false !== strpos($rule_regex_extra, '>')) {
+                        $rule_regex_extra = str_replace('>', '', $rule_regex_extra);
+                        $rule_regex_extra_replacement_helper = array();
+                        preg_match('/\'(?<replacement>.*?)\'/', $rule_regex_extra, $rule_regex_extra_replacement_helper);
+                        $rule_regex_extra_replacement = isset($rule_regex_extra_replacement_helper['replacement']) ? $rule_regex_extra_replacement_helper['replacement'] : '';
+
+                        $s = preg_replace('/'.$rule_regex.'/u', $rule_regex_extra_replacement, $s);
+                    }
+                }
+            } elseif (false !== strpos($rule, '>')) {
+                $rule_replacer_helper = array();
+                preg_match('/(?<search>.*)\s*<>\s*(?<replace>.*)/', $rule_orig_trim, $rule_replacer_helper);
+                if ($rule_replacer_helper === array()) {
+                    preg_match('/(?<search>.*)\s*>\s*(?<replace>.*)/', $rule_orig_trim, $rule_replacer_helper);
+                }
+
+                if (isset($rule_replacer_helper['search'])) {
+                    $s = str_replace(
+                        trim($rule_replacer_helper['search']),
+                        isset($rule_replacer_helper['replace']) ? trim($rule_replacer_helper['replace']) : '',
+                        $s
+                    );
+                }
+            }
         }
 
-        return false;
-    }
-
-    /**
-     * @psalm-suppress MissingReturnType
-     */
-    private static function prepareAsciiMaps()
-    {
-        if (null === self::$ASCII_MAPS) {
-            self::$ASCII_MAPS = self::getData('ascii_by_languages');
-        }
+        return $s_start.$s.$s_end;
     }
 }
