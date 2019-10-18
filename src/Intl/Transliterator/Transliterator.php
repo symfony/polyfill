@@ -343,55 +343,59 @@ class Transliterator
         return array_values(self::$LOCALE_TO_TRANSLITERATOR_ID);
     }
 
-    private function normalize_regex_helper($rule_regex_orig_trim_tmp, $rule)
+    private function normalize_regex_helper($rule)
     {
-        if (false !== stripos($rule_regex_orig_trim_tmp, '[:NONSPACINGMARK:]')) {
-            $rule_regex_orig_trim_tmp = str_ireplace('[:NONSPACINGMARK:]', '\p{Mn}+', $rule);
+        if (false !== stripos($rule, '[:NONSPACINGMARK:]')) {
+            $rule = str_ireplace('[:NONSPACINGMARK:]', '\p{Mn}+', $rule);
+        }
+
+        if (false !== stripos($rule, '[:SPACESEPARATOR:]')) {
+            $rule = str_ireplace('[:SPACESEPARATOR:]', '\s+', $rule);
         }
 
         $space_regex_found = false;
-        if (false !== stripos($rule_regex_orig_trim_tmp, '[[:SPACE:]]')) {
+        if (false !== stripos($rule, '[[:SPACE:]]')) {
             $space_regex_found = true;
-            $rule_regex_orig_trim_tmp = str_ireplace('[[:SPACE:]]', '[[:space:]]', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('[[:SPACE:]]', '[[:space:]]', $rule);
         }
-        if (false !== stripos($rule_regex_orig_trim_tmp, '][:SPACE:]')) {
+        if (false !== stripos($rule, '][:SPACE:]')) {
             $space_regex_found = true;
-            $rule_regex_orig_trim_tmp = str_ireplace('][:SPACE:]', '][:space:]', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('][:SPACE:]', '][:space:]', $rule);
         }
-        if (false !== stripos($rule_regex_orig_trim_tmp, '[:SPACE:][')) {
+        if (false !== stripos($rule, '[:SPACE:][')) {
             $space_regex_found = true;
-            $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:][', '[:space:][', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('[:SPACE:][', '[:space:][', $rule);
         }
         if (
             false === $space_regex_found
             &&
-            false !== stripos($rule_regex_orig_trim_tmp, '[:SPACE:]')
+            false !== stripos($rule, '[:SPACE:]')
         ) {
-            $rule_regex_orig_trim_tmp = str_ireplace('[:SPACE:]', '[[:space:]]', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('[:SPACE:]', '[[:space:]]', $rule);
         }
 
         $punct_regex_found = false;
-        if (false !== stripos($rule_regex_orig_trim_tmp, '[[:PUNCTUATION:]]')) {
+        if (false !== stripos($rule, '[[:PUNCTUATION:]]')) {
             $punct_regex_found = true;
-            $rule_regex_orig_trim_tmp = str_ireplace('[[:PUNCTUATION:]]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('[[:PUNCTUATION:]]', '[[:punct:]]', $rule);
         }
-        if (false !== stripos($rule_regex_orig_trim_tmp, '][:PUNCTUATION:]')) {
+        if (false !== stripos($rule, '][:PUNCTUATION:]')) {
             $punct_regex_found = true;
-            $rule_regex_orig_trim_tmp = str_ireplace('][:PUNCTUATION:]', '][:punct:]', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('][:PUNCTUATION:]', '][:punct:]', $rule);
         }
-        if (false !== stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:][')) {
+        if (false !== stripos($rule, '[:PUNCTUATION:][')) {
             $punct_regex_found = true;
-            $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:][', '[:punct:][', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('[:PUNCTUATION:][', '[:punct:][', $rule);
         }
         if (
             false === $punct_regex_found
             &&
-            false !== stripos($rule_regex_orig_trim_tmp, '[:PUNCTUATION:]')
+            false !== stripos($rule, '[:PUNCTUATION:]')
         ) {
-            $rule_regex_orig_trim_tmp = str_ireplace('[:PUNCTUATION:]', '[[:punct:]]', $rule_regex_orig_trim_tmp);
+            $rule = str_ireplace('[:PUNCTUATION:]', '[[:punct:]]', $rule);
         }
 
-        return $rule_regex_orig_trim_tmp;
+        return $rule;
     }
 
     /**
@@ -630,8 +634,8 @@ class Transliterator
         foreach (explode(';', $this->id) as $rule) {
             $rule_orig_trim = trim(
                 str_ireplace(
-                    array('Nonspacing Mark'),
-                    array('NonspacingMark'),
+                    array('Nonspacing Mark', 'Space Separator'),
+                    array('NonspacingMark', 'SpaceSeparator'),
                     rtrim($rule, ' ()')
                 )
             );
@@ -688,7 +692,7 @@ class Transliterator
                 preg_match('/[^]+]+$/', $rule_orig_trim, $rule_regex_extra_helper);
                 $rule_regex_extra = isset($rule_regex_extra_helper[0]) ? $rule_regex_extra_helper[0] : '';
 
-                $rule_orig_trim_regex = $this->normalize_regex_helper($rule_orig_trim, $rule);
+                $rule_orig_trim_regex = $this->normalize_regex_helper($rule_orig_trim);
 
                 if (
                     false !== strpos($rule_orig_trim_regex, '[')
@@ -702,10 +706,16 @@ class Transliterator
                     $rule_regex = '';
                 }
 
+                if ($rule_regex) {
+                    $rule_regex = trim($rule_regex);
+                }
+
                 // DEBUG
                 //var_dump($rule_regex);
 
                 if ($rule_regex) {
+                    $rule_regex = str_replace('\u', '\\\u', $rule_regex);
+                    
                     if (true === $use_callback_for_rule) {
                         $rule_regex = ltrim($rule_regex, ': ');
                         $that = clone $this;
