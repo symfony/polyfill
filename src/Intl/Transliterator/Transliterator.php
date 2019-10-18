@@ -15,8 +15,9 @@ namespace Symfony\Polyfill\Intl\Transliterator;
  * Partial intl implementation in pure PHP.
  *
  * Implemented:
- * - create        - Opens a Transliterator by id. (WARNING: Transliterator::REVERSE is not implemented)
- * - transliterate - Transforms a string or part thereof using an ICU transliterator.
+ * - create          - Opens a Transliterator by id. (WARNING: Transliterator::REVERSE is not implemented)
+ * - createFromRules - Create Transliterator from rules. (WARNING: Transliterator::REVERSE is not implemented)
+ * - transliterate   - Transforms a string or part thereof using an ICU transliterator.
  *
  * @author Lars Moelleken <lars@moelleken.org>
  *
@@ -122,28 +123,12 @@ class Transliterator
         }
     }
 
-    /**
-     * Returns an replacement array for ASCII methods with one language.
-     *
-     * For example, German will map 'ä' to 'ae', while other languages
-     * will simply return e.g. 'a'.
-     *
-     * @psalm-suppress InvalidNullableReturnType - we use the prepare* methods here, so we don't get NULL here
-     *
-     * @param string $language [optional] <p>Language of the source string e.g.: en, de_at, or de-ch.
-     *                         (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
-     *
-     * @return array{orig: string[], replace: string[]}
-     *                     <p>An array of replacements.</p>
-     */
-    private static function charsArrayWithOneLanguage($language = 'en')
+    private static function charsArrayWithOneLanguage($language = '')
     {
-        $language = self::get_language($language);
+        $language = self::getLanguage($language);
 
-        // init
         static $CHARS_ARRAY = array();
 
-        // check static cache
         if (isset($CHARS_ARRAY[$language])) {
             return $CHARS_ARRAY[$language];
         }
@@ -167,15 +152,8 @@ class Transliterator
         return $CHARS_ARRAY[$language];
     }
 
-    /**
-     * Returns an replacement array for ASCII methods with multiple languages.
-     *
-     * @return array{orig: string[], replace: string[]}
-     *                     <p>An array of replacements.</p>
-     */
     private static function charsArrayWithSingleLanguageValues()
     {
-        // init
         static $CHARS_ARRAY = null;
 
         if (isset($CHARS_ARRAY)) {
@@ -184,8 +162,6 @@ class Transliterator
 
         self::prepareAsciiMaps();
 
-        /* @noinspection AlterInForeachInspection */
-        /* @psalm-suppress PossiblyNullIterator - we use the prepare* methods here, so we don't get NULL here */
         foreach (self::$ASCII_MAPS as &$map) {
             $CHARS_ARRAY[] = $map;
         }
@@ -200,7 +176,7 @@ class Transliterator
         return $CHARS_ARRAY;
     }
 
-    private static function clean_id($s)
+    private static function cleanId($s)
     {
         return rtrim($s, ';');
     }
@@ -219,7 +195,7 @@ class Transliterator
 
         $transliterator = new self();
 
-        $transliterator->id_intern = self::clean_id($id);
+        $transliterator->id_intern = self::cleanId($id);
 
         if (\Transliterator::FORWARD !== $direction && null !== $direction) {
             throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
@@ -242,7 +218,7 @@ class Transliterator
 
         $transliterator = new self();
 
-        $transliterator->id_intern = self::clean_id($rules);
+        $transliterator->id_intern = self::cleanId($rules);
 
         if (\Transliterator::FORWARD !== $direction && null !== $direction) {
             throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
@@ -256,39 +232,19 @@ class Transliterator
         throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator::createInverse".'));
     }
 
-    /**
-     * Get data from "/data/*.php".
-     *
-     * @param string $file
-     *
-     * @return array
-     */
     private static function getData($file)
     {
-        /* @noinspection PhpIncludeInspection */
-        /* @noinspection UsingInclusionReturnValueInspection */
-        /* @psalm-suppress UnresolvableInclude */
         return include __DIR__.'/Resources/unidata/'.$file.'.php';
     }
 
-    /**
-     * Get data from "/data/*.php".
-     *
-     * @param string $file
-     *
-     * @return array|false
-     *                     <p>Will return <strong>false</strong> on error.</p>
-     */
     private static function getDataIfExists($file)
     {
         $file = __DIR__.'/Resources/unidata/'.$file.'.php';
         if (file_exists($file)) {
-            /* @noinspection PhpIncludeInspection */
-            /* @noinspection UsingInclusionReturnValueInspection */
             return include $file;
         }
 
-        return false;
+        return array();
     }
 
     public function getErrorCode()
@@ -301,19 +257,7 @@ class Transliterator
         return '';
     }
 
-    /**
-     * Get the language from a string.
-     *
-     * e.g.: de_at -> de_at
-     *       de_DE -> de
-     *       DE_DE -> de
-     *       de-de -> de
-     *
-     * @param string $language
-     *
-     * @return string
-     */
-    private static function get_language($language)
+    private static function getLanguage($language)
     {
         if ('' === $language) {
             return '';
@@ -343,14 +287,22 @@ class Transliterator
         return array_values(self::$LOCALE_TO_TRANSLITERATOR_ID);
     }
 
-    private function normalize_regex_helper($rule)
+    private function normalizeRegex($rule)
     {
         if (false !== stripos($rule, '[:NONSPACINGMARK:]')) {
-            $rule = str_ireplace('[:NONSPACINGMARK:]', '\p{Mn}+', $rule);
+            if (preg_match('/\[(.*?\[:NONSPACINGMARK:\].*?)\]/i', $rule)) {
+                $rule = str_ireplace('[:NONSPACINGMARK:]', '\p{Mn}', $rule);
+            } else {
+                $rule = str_ireplace('[:NONSPACINGMARK:]', '[\p{Mn}]+', $rule);
+            }
         }
 
         if (false !== stripos($rule, '[:SPACESEPARATOR:]')) {
-            $rule = str_ireplace('[:SPACESEPARATOR:]', '\s+', $rule);
+            if (preg_match('/\[(.*?\[:SPACESEPARATOR:\].*?)\]/i', $rule)) {
+                $rule = str_ireplace('[:SPACESEPARATOR:]', '\s', $rule);
+            } else {
+                $rule = str_ireplace('[:SPACESEPARATOR:]', '[\s]+', $rule);
+            }
         }
 
         $space_regex_found = false;
@@ -398,9 +350,6 @@ class Transliterator
         return $rule;
     }
 
-    /**
-     * @psalm-suppress MissingReturnType
-     */
     private static function prepareAsciiMaps()
     {
         if (null === self::$ASCII_MAPS) {
@@ -408,28 +357,13 @@ class Transliterator
         }
     }
 
-    /**
-     * Returns an ASCII version of the string. A set of non-ASCII characters are
-     * replaced with their closest ASCII counterparts, and the rest are removed
-     * by default. The language or locale of the source string can be supplied
-     * for language-specific transliteration in any of the following formats:
-     * en, en_GB, or en-GB. For example, passing "de" results in "äöü" mapping
-     * to "aeoeue" rather than "aou" as in other languages.
-     *
-     * @param string $s        <p>The input string.</p>
-     * @param string $language [optional] <p>Language of the source string.
-     *                         (default is 'XXX') | ASCII::*_LANGUAGE_CODE</p>
-     *
-     * @return string
-     *                <p>A string that contains only ASCII characters.</p>
-     */
-    private static function to_ascii($s, $language = 'XXX')
+    private static function toAscii($s, $language = '')
     {
         if ('' === $s) {
             return '';
         }
 
-        $language = self::get_language($language);
+        $language = self::getLanguage($language);
 
         $language_specific_chars = self::charsArrayWithOneLanguage($language);
         if (!empty($language_specific_chars['orig'])) {
@@ -439,7 +373,6 @@ class Transliterator
         $language_all_chars = self::charsArrayWithSingleLanguageValues();
         $s = str_replace($language_all_chars['orig'], $language_all_chars['replace'], $s);
 
-        /* @psalm-suppress PossiblyNullOperand - we use the prepare* methods here, so we don't get NULL here */
         if (!isset(self::$ASCII_MAPS[$language])) {
             $use_transliterate = true;
         } else {
@@ -447,14 +380,18 @@ class Transliterator
         }
 
         if (true === $use_transliterate) {
-            $s = self::to_transliterate($s, null);
+            $s = self::toTransliterate($s);
         }
 
         return $s;
     }
 
-    private static function to_translit($s)
+    private static function toTranslit($s)
     {
+        if ('' === $s) {
+            return '';
+        }
+
         if (null === self::$TRANSLIT) {
             self::$TRANSLIT = self::getData('translit');
         }
@@ -462,19 +399,7 @@ class Transliterator
         return str_replace(self::$TRANSLIT['orig'], self::$TRANSLIT['replace'], $s);
     }
 
-    /**
-     * Returns an ASCII version of the string. A set of non-ASCII characters are
-     * replaced with their closest ASCII counterparts, and the rest are removed
-     * unless instructed otherwise.
-     *
-     * @param string      $s       <p>The input string.</p>
-     * @param string|null $unknown [optional] <p>Character use if character unknown. (default is '?')
-     *                             But you can also use NULL to keep the unknown chars.</p>
-     *
-     * @return string
-     *                <p>A String that contains only ASCII characters.</p>
-     */
-    private static function to_transliterate($s, $unknown = '?')
+    private static function toTransliterate($s)
     {
         static $UTF8_TO_TRANSLIT = null;
         static $TRANSLITERATOR = null;
@@ -483,7 +408,6 @@ class Transliterator
             return '';
         }
 
-        // check if we only have ASCII, first (better performance)
         if (\strlen($s) === strspn($s, self::$ASCII)) {
             return $s;
         }
@@ -507,7 +431,6 @@ class Transliterator
 
             $ordC1 = self::$ORD[$c[1]];
 
-            // ASCII - next please
             if ($ordC0 >= 192 && $ordC0 <= 223) {
                 $ord = ($ordC0 - 192) * 64 + ($ordC1 - 128);
             }
@@ -535,7 +458,7 @@ class Transliterator
                 ||
                 null === $ord
             ) {
-                $s_tmp .= null === $unknown ? $c : $unknown;
+                $s_tmp .= $c;
 
                 continue;
             }
@@ -543,44 +466,21 @@ class Transliterator
             $bank = $ord >> 8;
             if (!isset($UTF8_TO_TRANSLIT[$bank])) {
                 $UTF8_TO_TRANSLIT[$bank] = self::getDataIfExists(sprintf('x%02x', $bank));
-                if (false === $UTF8_TO_TRANSLIT[$bank]) {
-                    $UTF8_TO_TRANSLIT[$bank] = array();
-                }
             }
 
             $new_char = $ord & 255;
 
             if (isset($UTF8_TO_TRANSLIT[$bank][$new_char])) {
-                // keep for debugging
-                /*
-                echo "file: " . sprintf('x%02x', $bank) . "\n";
-                echo "char: " . $c . "\n";
-                echo "ord: " . $ord . "\n";
-                echo "new_char: " . $new_char . "\n";
-                echo "new_char: " . mb_chr($new_char) . "\n";
-                echo "ascii: " . $UTF8_TO_TRANSLIT[$bank][$new_char] . "\n";
-                echo "bank:" . $bank . "\n\n";
-                 */
-
-                if (null === $unknown && '' === $UTF8_TO_TRANSLIT[$bank][$new_char]) {
-                    $c = null === $unknown ? $c : $unknown;
-                } elseif ('[?]' === $UTF8_TO_TRANSLIT[$bank][$new_char]) {
-                    $c = null === $unknown ? $c : $unknown;
-                } else {
-                    $c = $UTF8_TO_TRANSLIT[$bank][$new_char];
+                $new_char = $UTF8_TO_TRANSLIT[$bank][$new_char];
+                if (
+                    '' !== $new_char
+                    &&
+                    '[?]' !== $new_char
+                    &&
+                    '[?] ' !== $new_char
+                ) {
+                    $c = $new_char;
                 }
-            } else {
-                // keep for debugging missing chars
-                /*
-                echo "file: " . sprintf('x%02x', $bank) . "\n";
-                echo "char: " . $c . "\n";
-                echo "ord: " . $ord . "\n";
-                echo "new_char: " . $new_char . "\n";
-                echo "new_char: " . mb_chr($new_char) . "\n";
-                echo "bank:" . $bank . "\n\n";
-                 */
-
-                $c = null === $unknown ? $c : $unknown;
             }
 
             $s_tmp .= $c;
@@ -628,9 +528,6 @@ class Transliterator
             }
         }
 
-        // DEBUG
-        //var_dump($s_start, $s_end, $s, "\n");
-
         foreach (explode(';', $this->id) as $rule) {
             $rule_orig_trim = trim(
                 str_ireplace(
@@ -647,14 +544,16 @@ class Transliterator
                 )
             );
 
-            // DEBUG
-            //var_dump($rule);
+            $regex_rule_found = false;
 
-            // reset
-            $use_callback_for_rule = false;
-
-            if (0 === strpos($rule, '::')) {
-                $use_callback_for_rule = true;
+            if (
+                false !== strpos($rule, '[')
+                &&
+                false !== strpos($rule, ']')
+            ) {
+                $regex_rule_found = true;
+            } elseif ('REMOVE' === $rule) {
+                $s = '';
             } elseif ('NFC' === $rule) {
                 normalizer_is_normalized($s, \Normalizer::FORM_C) ?: $s = normalizer_normalize($s, \Normalizer::NFC);
             } elseif ('NFD' === $rule) {
@@ -664,60 +563,57 @@ class Transliterator
             } elseif ('NFKC' === $rule) {
                 normalizer_is_normalized($s, \Normalizer::FORM_KC) ?: $s = normalizer_normalize($s, \Normalizer::NFKC);
             } elseif ('DE-ASCII' === $rule) {
-                $s = self::to_ascii($s, 'de');
+                $s = self::toAscii($s, 'de');
             } elseif ('LATIN-ASCII' === $rule) {
-                $s = self::to_ascii($s);
-            } elseif (false !== strpos($rule, 'UPPER')) {
+                $s = self::toAscii($s);
+            } elseif ('UPPER' === $rule) {
                 $s = mb_strtoupper($s);
-            } elseif (false !== strpos($rule, 'LOWER')) {
+            } elseif ('LOWER' === $rule) {
                 $s = mb_strtolower($s);
             } elseif (false !== strpos($rule, 'LATIN')) {
-                $s = self::to_translit($s);
+                $s = self::toTranslit($s);
             } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
-                $s = self::to_ascii($s, $lang);
+                $s = self::toAscii($s, $lang);
             } elseif (
                 false !== strpos($rule, '-ASCII')
                 &&
                 $lang = str_replace('-ASCII', '', $rule)
             ) {
-                $s = self::to_ascii($s, $lang);
+                $s = self::toAscii($s, $lang);
             }
 
-            if (
-                false !== strpos($rule, '[')
-                &&
-                false !== strpos($rule, ']')
-            ) {
+            if (true === $regex_rule_found) {
                 $rule_regex_extra_helper = array();
                 preg_match('/[^]+]+$/', $rule_orig_trim, $rule_regex_extra_helper);
                 $rule_regex_extra = isset($rule_regex_extra_helper[0]) ? $rule_regex_extra_helper[0] : '';
 
-                $rule_orig_trim_regex = $this->normalize_regex_helper($rule_orig_trim);
+                $rule_regex = trim(
+                    str_replace(
+                        '\u',
+                        '\\\u',
+                        preg_replace(
+                            '/[^]+]+$/',
+                            '',
+                            $this->normalizeRegex($rule_orig_trim)
+                        )
+                    ),
+                    ' :'
+                );
 
+                /* @noinspection PhpUsageOfSilenceOperatorInspection */
                 if (
-                    false !== strpos($rule_orig_trim_regex, '[')
+                    $rule_regex
                     &&
-                    false !== strpos($rule_orig_trim_regex, ']')
+                    false !== @preg_match('/'.$rule_regex.'/u', null)
                 ) {
-                    $rule_regex = preg_replace('/[^]+]+$/', '', $rule_orig_trim_regex);
-                } elseif (false !== stripos($rule_orig_trim_regex, 'REMOVE')) {
-                    $rule_regex = str_ireplace('REMOVE', '', $rule_orig_trim_regex);
-                } else {
-                    $rule_regex = '';
-                }
+                    if (false !== strpos($rule_regex_extra, '>')) {
+                        $rule_regex_extra = str_replace('>', '', $rule_regex_extra);
+                        $rule_regex_extra_replacement_helper = array();
+                        preg_match('/\'(?<replacement>.*?)\'/', $rule_regex_extra, $rule_regex_extra_replacement_helper);
+                        $rule_regex_extra_replacement = isset($rule_regex_extra_replacement_helper['replacement']) ? $rule_regex_extra_replacement_helper['replacement'] : '';
 
-                if ($rule_regex) {
-                    $rule_regex = trim($rule_regex);
-                }
-
-                // DEBUG
-                //var_dump($rule_regex);
-
-                if ($rule_regex) {
-                    $rule_regex = str_replace('\u', '\\\u', $rule_regex);
-                    
-                    if (true === $use_callback_for_rule) {
-                        $rule_regex = ltrim($rule_regex, ': ');
+                        $s = preg_replace('/'.$rule_regex.'/u', $rule_regex_extra_replacement, $s);
+                    } else {
                         $that = clone $this;
                         $that->id_intern = $rule_regex_extra;
                         $s = preg_replace_callback(
@@ -728,15 +624,6 @@ class Transliterator
                             $s
                         );
                         unset($that);
-                    } elseif (false !== stripos($rule_regex_extra, 'REMOVE')) {
-                        $s = preg_replace('/'.$rule_regex.'/u', '', $s);
-                    } elseif (false !== strpos($rule_regex_extra, '>')) {
-                        $rule_regex_extra = str_replace('>', '', $rule_regex_extra);
-                        $rule_regex_extra_replacement_helper = array();
-                        preg_match('/\'(?<replacement>.*?)\'/', $rule_regex_extra, $rule_regex_extra_replacement_helper);
-                        $rule_regex_extra_replacement = isset($rule_regex_extra_replacement_helper['replacement']) ? $rule_regex_extra_replacement_helper['replacement'] : '';
-
-                        $s = preg_replace('/'.$rule_regex.'/u', $rule_regex_extra_replacement, $s);
                     }
                 }
             } elseif (false !== strpos($rule, '>')) {

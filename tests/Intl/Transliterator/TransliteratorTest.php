@@ -78,15 +78,15 @@ class TransliteratorTest extends TestCase
             $this->markTestSkipped('intl is not installed');
         }
 
-        // https://unicode.org/cldr/utility/transform.jsp?a=NFKC%3B+%5B%3ANonspacing+Mark%3A%5D+Remove%3B+NFKC%3B+Any-Upper%3B+Any-Latin%3B+Latin-ASCII%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
-        $rules = 'NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Upper; Any-Latin; Latin-ASCII;';
+        // https://unicode.org/cldr/utility/transform.jsp?a=NFKC%3B+%5B%3ANonspacing+Mark%3A%5D+Remove%3B+NFKC%3B+Any-Upper%3B+Any-Latin%3B+Latin-ASCII%3B+%5BAU%5D+lower%28%29%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
+        $rules = 'NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Upper; Any-Latin; Latin-ASCII;  [AU] lower() ;';
         $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
         $p_orig = \Transliterator::create($rules);
 
-        $this->assertSame('<TEST> - OAU - 123 - ABC - ...', $p->transliterate($str));
+        $this->assertSame('<TEST> - Oau - 123 - aBC - ...', $p->transliterate($str));
         $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
 
         // ---
