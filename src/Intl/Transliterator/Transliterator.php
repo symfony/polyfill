@@ -27,8 +27,8 @@ namespace Symfony\Polyfill\Intl\Transliterator;
  */
 class Transliterator
 {
-    const FORWARD = \Transliterator::FORWARD;
-    const REVERSE = \Transliterator::REVERSE;
+    const FORWARD = 0;
+    const REVERSE = 1;
 
     private static $LOCALE_TO_TRANSLITERATOR_ID = array(
         'am' => 'Amharic-Latin',
@@ -86,7 +86,7 @@ class Transliterator
     /**
      * @var int
      */
-    private $direction = \Transliterator::FORWARD;
+    private $direction = self::FORWARD;
 
     private function __construct()
     {
@@ -181,7 +181,7 @@ class Transliterator
         return rtrim($s, ';');
     }
 
-    public static function create($id, $direction = \Transliterator::FORWARD)
+    public static function create($id, $direction = self::FORWARD)
     {
         if (
             false !== strpos($id, '<')
@@ -197,14 +197,14 @@ class Transliterator
 
         $transliterator->id_intern = self::cleanId($id);
 
-        if (\Transliterator::FORWARD !== $direction && null !== $direction) {
+        if (self::FORWARD !== $direction && null !== $direction) {
             throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
         }
 
         return $transliterator;
     }
 
-    public static function createFromRules($rules, $direction = \Transliterator::FORWARD)
+    public static function createFromRules($rules, $direction = self::FORWARD)
     {
         if (
             false === strpos($rules, '<')
@@ -220,7 +220,7 @@ class Transliterator
 
         $transliterator->id_intern = self::cleanId($rules);
 
-        if (\Transliterator::FORWARD !== $direction && null !== $direction) {
+        if (self::FORWARD !== $direction && null !== $direction) {
             throw new \DomainException(sprintf('The PHP intl extension is required for using "Transliterator->direction".'));
         }
 
