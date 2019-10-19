@@ -224,7 +224,9 @@ class TransliteratorTest extends TestCase
         if (class_exists('Transliterator')) {
             $p_orig = \Transliterator::createFromRules($rules);
 
-            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+            if (PHP_VERSION_ID > 50400) {
+                $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+            }
         }
 
         // ---
