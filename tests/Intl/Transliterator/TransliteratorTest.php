@@ -104,13 +104,13 @@ class TransliteratorTest extends TestCase
         // ---
 
         $rules = 'Any-Latin; Latin-ASCII; [^a-zA-Z[:space separator:]] Any-remove';
-        $str = 'A æ Übérmensch på høyeste nivå! И я люблю PHP! есть. ﬁ ... Ѳ Ѣ Ѵ Ѕ Э Ы Щ ш Ч Ц џ ќ ѓ';
+        $str = 'A æ Übérmensch på høyeste nivå! И я люблю PHP! ест. ﬁ ... Ѕ Э Ы Щ ш Ч Ц џ ќ ѓ';
 
         $p = p::create($rules);
 
         $p_orig = \Transliterator::create($rules);
 
-        $this->assertSame('A ae Ubermensch pa hoyeste niva I a lublu PHP est fi     Z E Y S s C C d k g', $p->transliterate($str));
+        $this->assertSame('A ae Ubermensch pa hoyeste niva I a lublu PHP est fi  Z E Y S s C C d k g', $p->transliterate($str));
         $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
     }
 
