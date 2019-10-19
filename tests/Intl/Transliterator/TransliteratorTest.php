@@ -41,48 +41,52 @@ class TransliteratorTest extends TestCase
      */
     public function testTransliteratorCreate()
     {
-        $intl_support = \extension_loaded('intl');
-        if (false === $intl_support) {
-            $this->markTestSkipped('intl is not installed');
-        }
-
         // https://unicode.org/cldr/utility/transform.jsp?a=NFKC%3B+%5B%3ANonspacing+Mark%3A%5D+Remove%3B+NFKC%3B+Any-Latin%3B+Latin-ASCII%3B&b=&show=on
         $rules = 'NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Latin; Latin-ASCII;';
 
         $p = p::create($rules);
 
-        $p_orig = \Transliterator::create($rules);
+        $this->assertSame('NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Latin; Latin-ASCII', $p->id);
 
-        $this->assertSame(
-            str_replace(' ', '', $p_orig->id),
-            str_replace(' ', '', $p->id)
-        );
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame(
+                str_replace(' ', '', $p_orig->id),
+                str_replace(' ', '', $p->id)
+            );
+        }
     }
 
     public function testTransliteratorIdIsReadOnly()
     {
-        $intl_support = \extension_loaded('intl');
-        if (false === $intl_support) {
-            $this->markTestSkipped('intl is not installed');
-        }
-
         $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
         $rules = 'LOWER();';
 
-        $p_orig = \Transliterator::create($rules);
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
 
-        $p = p::create($rules);
+            $p = p::create($rules);
 
-        $this->assertSame($p_orig->id, $p->id);
+            $this->assertSame($p_orig->id, $p->id);
 
-        @$p->id = 'UPPER;';
-        @$p_orig->id = 'UPPER;';
+            @$p->id = 'UPPER;';
+            @$p_orig->id = 'UPPER;';
 
-        $this->assertSame('LOWER()', $p->id);
-        $this->assertSame($p_orig->id, $p->id);
+            $this->assertSame('LOWER()', $p->id);
+            $this->assertSame($p_orig->id, $p->id);
 
-        $this->assertSame('‹ťéśţ› - öäü - 123 - abc - …', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+            $this->assertSame('‹ťéśţ› - öäü - 123 - abc - …', $p->transliterate($str));
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        } else {
+            $p = p::create($rules);
+
+            @$p->id = 'UPPER;';
+
+            $this->assertSame('LOWER()', $p->id);
+
+            $this->assertSame('‹ťéśţ› - öäü - 123 - abc - …', $p->transliterate($str));
+        }
     }
 
     /**
@@ -90,21 +94,19 @@ class TransliteratorTest extends TestCase
      */
     public function testTransliteratorTransliterate()
     {
-        $intl_support = \extension_loaded('intl');
-        if (false === $intl_support) {
-            $this->markTestSkipped('intl is not installed');
-        }
-
         // https://unicode.org/cldr/utility/transform.jsp?a=NFKC%3B+%5B%3ANonspacing+Mark%3A%5D+Remove%3B+NFKC%3B+Any-Upper%3B+Any-Latin%3B+Latin-ASCII%3B+%5BAU%5D+lower%28%29%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = 'NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Upper; Any-Latin; Latin-ASCII;  [AU] lower() ;';
         $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
-        $p_orig = \Transliterator::create($rules);
-
         $this->assertSame('<TEST> - Oau - 123 - aBC - ...', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
 
         // ---
 
@@ -113,10 +115,13 @@ class TransliteratorTest extends TestCase
 
         $p = p::create($rules);
 
-        $p_orig = \Transliterator::create($rules);
-
         $this->assertSame('test  oau  123  abc  ', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
 
         // ---
 
@@ -125,36 +130,42 @@ class TransliteratorTest extends TestCase
 
         $p = p::create($rules);
 
-        $p_orig = \Transliterator::create($rules);
-
         $this->assertSame('A ae Ubermensch pa hoyeste niva I a lublu PHP est fi  Z E Y S s C C d k g', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
     }
 
     public function testTransliteratorNull()
     {
-        $intl_support = \extension_loaded('intl');
-        if (false === $intl_support) {
-            $this->markTestSkipped('intl is not installed');
-        }
-
         $rules = ':: [ŤÄ] lower();';
 
         $p = p::create($rules);
-        $p_orig = \Transliterator::create($rules);
 
         $this->assertNull($p);
-        $this->assertSame($p_orig, $p);
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame($p_orig, $p);
+        }
 
         // ---
 
         $rules = 'lower();';
 
         $p = p::createFromRules($rules);
-        $p_orig = \Transliterator::createFromRules($rules);
 
         $this->assertNull($p);
-        $this->assertSame($p_orig, $p);
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig, $p);
+        }
     }
 
     /**
@@ -162,21 +173,19 @@ class TransliteratorTest extends TestCase
      */
     public function testTransliteratorTransliterateAndRemove()
     {
-        $intl_support = \extension_loaded('intl');
-        if (false === $intl_support) {
-            $this->markTestSkipped('intl is not installed');
-        }
-
         // https://unicode.org/cldr/utility/transform.jsp?a=Any-Upper%3B+%5B%5E%5Cx20%5Cx65%5Cx69%5Cx61%5Cx73%5Cx6E%5Cx74%5Cx72%5Cx6F%5Cx6C%5Cx75%5Cx64%5Cx5D%5Cx5B%5Cx63%5Cx6D%5Cx70%5Cx27%5Cx0A%5Cx67%5Cx7C%5Cx68%5Cx76%5Cx2E%5Cx66%5Cx62%5Cx2C%5Cx3A%5Cx3D%5Cx2D%5Cx71%5Cx31%5Cx30%5Cx43%5Cx32%5Cx2A%5Cx79%5Cx78%5Cx29%5Cx28%5Cx4C%5Cx39%5Cx41%5Cx53%5Cx2F%5Cx50%5Cx22%5Cx45%5Cx6A%5Cx4D%5Cx49%5Cx6B%5Cx33%5Cx3E%5Cx35%5Cx54%5Cx3C%5Cx44%5Cx34%5Cx7D%5Cx42%5Cx7B%5Cx38%5Cx46%5Cx77%5Cx52%5Cx36%5Cx37%5Cx55%5Cx47%5Cx4E%5Cx3B%5Cx4A%5Cx7A%5Cx56%5Cx23%5Cx48%5Cx4F%5Cx57%5Cx5F%5Cx26%5Cx21%5Cx4B%5Cx3F%5Cx58%5Cx51%5Cx25%5Cx59%5Cx5C%5Cx09%5Cx5A%5Cx2B%5Cx7E%5Cx5E%5Cx24%5Cx40%5Cx60%5Cx7F%5Cx00%5Cx01%5Cx02%5Cx03%5Cx04%5Cx05%5Cx06%5Cx07%5Cx08%5Cx0B%5Cx0C%5Cx0D%5Cx0E%5Cx0F%5Cx10%5Cx11%5Cx12%5Cx13%5Cx14%5Cx15%5Cx16%5Cx17%5Cx18%5Cx19%5Cx1A%5Cx1B%5Cx1C%5Cx1D%5Cx1E%5Cx1F%5D+Remove%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = 'Any-Upper; [^\x20\x65\x69\x61\x73\x6E\x74\x72\x6F\x6C\x75\x64\x5D\x5B\x63\x6D\x70\x27\x0A\x67\x7C\x68\x76\x2E\x66\x62\x2C\x3A\x3D\x2D\x71\x31\x30\x43\x32\x2A\x79\x78\x29\x28\x4C\x39\x41\x53\x2F\x50\x22\x45\x6A\x4D\x49\x6B\x33\x3E\x35\x54\x3C\x44\x34\x7D\x42\x7B\x38\x46\x77\x52\x36\x37\x55\x47\x4E\x3B\x4A\x7A\x56\x23\x48\x4F\x57\x5F\x26\x21\x4B\x3F\x58\x51\x25\x59\x5C\x09\x5A\x2B\x7E\x5E\x24\x40\x60\x7F\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F] Remove;';
         $str = '‹ŤÉŚŢ› - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
-        $p_orig = \Transliterator::create($rules);
-
         $this->assertSame(' -  - 123 - ABC - ', $p->transliterate($str));
-        $this->assertSame(trim($p_orig->transliterate($str)), trim($p->transliterate($str)));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame(trim($p_orig->transliterate($str)), trim($p->transliterate($str)));
+        }
 
         // ---
 
@@ -186,10 +195,13 @@ class TransliteratorTest extends TestCase
 
         $p = p::create($rules);
 
-        $p_orig = \Transliterator::create($rules);
-
         $this->assertSame('‹ŤÉŚŢ›ÖÄÜ…', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
     }
 
     /**
@@ -203,10 +215,13 @@ class TransliteratorTest extends TestCase
 
         $p = p::createFromRules($rules);
 
-        $p_orig = \Transliterator::createFromRules($rules);
-
         $this->assertSame(' ŤÉŚŢ öäü 123 abc ', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
 
         // ---
 
@@ -216,10 +231,13 @@ class TransliteratorTest extends TestCase
 
         $p = p::createFromRules($rules);
 
-        $p_orig = \Transliterator::createFromRules($rules);
-
         $this->assertSame('‹ŤÉŚŢ› - öfü - 123 - abc - …', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
 
         // ---
 
@@ -228,10 +246,13 @@ class TransliteratorTest extends TestCase
 
         $p = p::createFromRules($rules);
 
-        $p_orig = \Transliterator::createFromRules($rules);
-
         $this->assertSame('‹ŤÉŚŢ› - öü - 123 - abc - …', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
 
         // ---
 
@@ -241,10 +262,13 @@ class TransliteratorTest extends TestCase
 
         $p = p::createFromRules($rules);
 
-        $p_orig = \Transliterator::createFromRules($rules);
-
         $this->assertSame('‹ťÉŚŢ› - ÖäÜ - 123 - abc - …', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
     }
 
     /**
@@ -252,22 +276,22 @@ class TransliteratorTest extends TestCase
      */
     public function testTransliteratorTransliterateForGermanLanguage()
     {
-        $intl_support = \extension_loaded('intl');
-        if (false === $intl_support) {
-            $this->markTestSkipped('intl is not installed');
-        }
-
         // https://unicode.org/cldr/utility/transform.jsp?a=Any-Lower%3B+de-ASCII%3B&b=%C5%A4%C3%89%C5%9A%C5%A2+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = 'Any-Lower; de-ASCII;';
         $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
 
         $p = p::create($rules);
 
-        //$p_orig = (\Transliterator::create($rules));
-
         $this->assertSame('test - oeaeue - 123 - abc - ...', $p->transliterate($str));
-        // TODO? -> this is not working on travis-ci -> missing language stuff ??
-        //$this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+
+        /*
+        if (class_exists('Transliterator')) {
+            $p_orig = (\Transliterator::create($rules));
+
+            // TODO? -> this is not working on travis-ci -> old ICU version -> https://github.com/unicode-org/cldr/blob/master/common/transforms/de-ASCII.xml
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
+        */
     }
 
     /**
@@ -275,11 +299,6 @@ class TransliteratorTest extends TestCase
      */
     public function testTransliteratorTransliterateForTurkmenLanguage()
     {
-        $intl_support = \extension_loaded('intl');
-        if (false === $intl_support) {
-            $this->markTestSkipped('intl is not installed');
-        }
-
         // https://unicode.org/cldr/utility/transform.jsp?a=Turkmen-Latin%2FBGN%3B+Latin-ASCII%3B&b=%C5%A4%C3%89%C5%9A%C5%A2+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = 'Turkmen-Latin/BGN; Latin-ASCII;';
         $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
@@ -287,46 +306,42 @@ class TransliteratorTest extends TestCase
 
         $p = p::create($rules);
 
-        $p_orig = \Transliterator::create($rules);
-
         $this->assertSame('TEST - oau - 123 - abc - ...', $p->transliterate($str));
-        $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
-
         $this->assertSame('ŤÉŚŢ - oau - 123 - abc - ...', $p->transliterate($str, 5));
-        $this->assertSame($p_orig->transliterate($str, 5), $p->transliterate($str, 5));
-
         $this->assertSame('ŤÉŚŢ - oau - 123 - abc - …', $p->transliterate($str, 5, 10));
-        $this->assertSame($p_orig->transliterate($str, 5, 10), $p->transliterate($str, 5, 10));
-
         $this->assertSame('TEST - oau - 123 - abc - ...', $p->transliterate($str, 0));
-        $this->assertSame($p_orig->transliterate($str, 0), $p->transliterate($str, 0));
-
         $this->assertFalse($p->transliterate($str, $str_len + 1));
-        $this->assertSame($p_orig->transliterate($str, $str_len + 1), $p->transliterate($str, $str_len + 1));
-
         $this->assertSame('ŤÉŚŢ - öäü - 123 - abc - …', $p->transliterate($str, $str_len, $str_len));
-        $this->assertSame($p_orig->transliterate($str, $str_len, $str_len), $p->transliterate($str, $str_len, $str_len));
-
         $this->assertSame('ŤÉŚŢ - öäü - 123 - abc - …', $p->transliterate($str, $str_len, $str_len));
-        $this->assertSame($p_orig->transliterate($str, $str_len, $str_len), $p->transliterate($str, $str_len, $str_len));
-
         $this->assertFalse($p->transliterate($str, 2, -2));
-        $this->assertSame($p_orig->transliterate($str, 2, -2), $p->transliterate($str, 2, -2));
-
         $this->assertFalse($p->transliterate($str, -2, 2));
-        $this->assertSame($p_orig->transliterate($str, -2, 2), $p->transliterate($str, -2, 2));
-
         $this->assertSame('TEST - oau - 123 - abc - …', $p->transliterate($str, null, 10));
-        $this->assertSame($p_orig->transliterate($str, null, 10), $p->transliterate($str, null, 10));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::create($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+            $this->assertSame($p_orig->transliterate($str, 5), $p->transliterate($str, 5));
+            $this->assertSame($p_orig->transliterate($str, 5, 10), $p->transliterate($str, 5, 10));
+            $this->assertSame($p_orig->transliterate($str, 0), $p->transliterate($str, 0));
+            $this->assertSame($p_orig->transliterate($str, $str_len + 1), $p->transliterate($str, $str_len + 1));
+            $this->assertSame($p_orig->transliterate($str, $str_len, $str_len), $p->transliterate($str, $str_len, $str_len));
+            $this->assertSame($p_orig->transliterate($str, $str_len, $str_len), $p->transliterate($str, $str_len, $str_len));
+            $this->assertSame($p_orig->transliterate($str, 2, -2), $p->transliterate($str, 2, -2));
+            $this->assertSame($p_orig->transliterate($str, -2, 2), $p->transliterate($str, -2, 2));
+            $this->assertSame($p_orig->transliterate($str, null, 10), $p->transliterate($str, null, 10));
+        }
     }
 
     /**
-     * @covers \Symfony\Polyfill\Intl\Transliterator\Transliterator::get_language
+     * @covers \Symfony\Polyfill\Intl\Transliterator\Transliterator::getLanguage
      */
     public function testTransliteratorGetLanguage()
     {
-        $id_array_orig = transliterator_list_ids();
-        $this->assertTrue(\is_array($id_array_orig) && \count($id_array_orig) > 1);
+        if (class_exists('Transliterator')) {
+            $id_array_orig = transliterator_list_ids();
+            $this->assertTrue(\is_array($id_array_orig) && \count($id_array_orig) > 1);
+        }
 
         $id_array = p::listIDs();
         $this->assertTrue(\is_array($id_array) && \count($id_array) > 1);
