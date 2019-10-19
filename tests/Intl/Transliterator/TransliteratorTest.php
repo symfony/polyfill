@@ -215,7 +215,11 @@ class TransliteratorTest extends TestCase
 
         $p = p::createFromRules($rules);
 
-        $this->assertSame(' ŤÉŚŢ öäü 123 abc ', $p->transliterate($str));
+        if (PHP_VERSION_ID < 50400) {
+            $this->assertSame('‹ŤÉŚŢ› öäü 123 abc …', $p->transliterate($str));
+        } else {
+            $this->assertSame(' ŤÉŚŢ öäü 123 abc ', $p->transliterate($str));
+        }
 
         if (class_exists('Transliterator')) {
             $p_orig = \Transliterator::createFromRules($rules);
