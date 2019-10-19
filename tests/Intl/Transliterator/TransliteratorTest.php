@@ -19,6 +19,23 @@ use Symfony\Polyfill\Intl\Transliterator\Transliterator as p;
  */
 class TransliteratorTest extends TestCase
 {
+    private $old_mb_internal_encoding;
+
+    public function setUp()
+    {
+        if (function_exists('mb_internal_encoding')) {
+            $this->old_mb_internal_encoding = mb_internal_encoding();
+            mb_internal_encoding('UTF-8');
+        }
+    }
+
+    public function tearDown()
+    {
+        if (function_exists('mb_internal_encoding')) {
+            mb_internal_encoding($this->old_mb_internal_encoding);
+        }
+    }
+
     /**
      * @covers \Symfony\Polyfill\Intl\Transliterator\Transliterator::create
      */
