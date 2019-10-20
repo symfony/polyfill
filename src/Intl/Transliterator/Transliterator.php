@@ -305,6 +305,14 @@ class Transliterator
             }
         }
 
+        if (false !== stripos($rule, '[:SEPARATOR:]')) {
+            if (preg_match('/\[(.*?\[:SEPARATOR:\].*?)\]/i', $rule)) {
+                $rule = str_ireplace('[:SEPARATOR:]', '[ ]', $rule);
+            } else {
+                $rule = str_ireplace('[:SEPARATOR:]', '[ ]+', $rule);
+            }
+        }
+
         $space_regex_found = false;
         if (false !== stripos($rule, '[[:SPACE:]]')) {
             $space_regex_found = true;
@@ -534,14 +542,17 @@ class Transliterator
                     array('Nonspacing Mark', 'Space Separator'),
                     array('NonspacingMark', 'SpaceSeparator'),
                     rtrim($rule, ' ()')
-                )
+                ),
+                ' :'
             );
+
             $rule = trim(
                 str_ireplace(
                     array('/BGN', 'ANY-', ' '),
                     '',
                     strtoupper($rule_orig_trim)
-                )
+                ),
+                ' :'
             );
 
             $regex_rule_found = false;
@@ -587,17 +598,14 @@ class Transliterator
                 preg_match('/[^]+]+$/', $rule_orig_trim, $rule_regex_extra_helper);
                 $rule_regex_extra = isset($rule_regex_extra_helper[0]) ? $rule_regex_extra_helper[0] : '';
 
-                $rule_regex = trim(
-                    str_replace(
-                        '\u',
-                        '\\\u',
-                        preg_replace(
-                            '/[^]+]+$/',
-                            '',
-                            $this->normalizeRegex($rule_orig_trim)
-                        )
-                    ),
-                    ' :'
+                $rule_regex = str_replace(
+                    '\u',
+                    '\\\u',
+                    preg_replace(
+                        '/[^]+]+$/',
+                        '',
+                        $this->normalizeRegex($rule_orig_trim)
+                    )
                 );
 
                 /* @noinspection PhpUsageOfSilenceOperatorInspection */
@@ -635,8 +643,8 @@ class Transliterator
 
                 if (isset($rule_replacer_helper['search'])) {
                     $s = str_replace(
-                        trim($rule_replacer_helper['search']),
-                        isset($rule_replacer_helper['replace']) ? trim($rule_replacer_helper['replace']) : '',
+                        trim($rule_replacer_helper['search'], ' '),
+                        isset($rule_replacer_helper['replace']) ? trim($rule_replacer_helper['replace'], ' ') : '',
                         $s
                     );
                 }

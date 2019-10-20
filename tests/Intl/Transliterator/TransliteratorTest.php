@@ -275,6 +275,28 @@ class TransliteratorTest extends TestCase
 
             $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
         }
+
+        // ---
+
+        // https://stackoverflow.com/a/13331948/1155858
+        $rules = ':: Any-Latin;'
+                 . ':: NFD;'
+                 . ':: [:Nonspacing Mark:] Remove;'
+                 . ':: NFC;'
+                 . ':: [:Punctuation:] Remove;'
+                 . ':: Lower();'
+                 . '[:Separator:] > \'-\'';
+        $str = 'Namnet på bildtävlingen';
+
+        $p = p::createFromRules($rules);
+
+        $this->assertSame('namnet-pa-bildtavlingen', $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
     }
 
     /**
