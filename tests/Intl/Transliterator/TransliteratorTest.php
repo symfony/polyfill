@@ -262,7 +262,7 @@ class TransliteratorTest extends TestCase
 
         // ---
 
-        $rules = '\'high school\' > \'H.S.\';'; // http://userguide.icu-project.org/transforms/general/rules
+        $rules = '\'high school\' > \'H.S.\';'; // http://userguide.icu-project.org/transforms/general
         $str = '‹ŤÉŚŢ› - öäü - 123 - abc - … high school';
 
         $p = p::createFromRules($rules);
@@ -277,7 +277,6 @@ class TransliteratorTest extends TestCase
 
         // ---
 
-
         // https://unicode.org/cldr/utility/transform.jsp?a=%3A%3A+%5B%C5%A4%C3%84%5D+lower%28%29%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%96%C3%84%C3%9C+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = ':: [ŤÄ] lower();'; // http://userguide.icu-project.org/transforms/general/rules
         $str = '‹ŤÉŚŢ› - ÖÄÜ - 123 - abc - …';
@@ -285,6 +284,38 @@ class TransliteratorTest extends TestCase
         $p = p::createFromRules($rules);
 
         $this->assertSame('‹ťÉŚŢ› - ÖäÜ - 123 - abc - …', $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
+
+        // ---
+
+        // https://unicode.org/cldr/utility/transform.jsp?a=%3A%3A+%5B%3ANumber%3A%5D+remove%28%29%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%96%C3%84%C3%9C+-+123+-+abc+-+%E2%80%A6&show=on
+        $rules = ':: [:Number:] remove();'; // http://userguide.icu-project.org/transforms/general/rules
+        $str = '‹ŤÉŚŢ› - ÖÄÜ - 123 - abc - …';
+
+        $p = p::createFromRules($rules);
+
+        $this->assertSame('‹ŤÉŚŢ› - ÖÄÜ -  - abc - …', $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
+
+        // ---
+
+        // https://unicode.org/cldr/utility/transform.jsp?a=%3A%3A+%5B%3AUppercase+Letter%3A%5D+remove%28%29%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%96%C3%84%C3%9C+-+123+-+abc+-+%E2%80%A6&show=on
+        $rules = ':: [[:Uppercase Letter:][:Lowercase Letter:]] remove();'; // http://userguide.icu-project.org/transforms/general/rules
+        $str = '‹ŤÉŚŢ› - ÖÄÜ - 123 - abc - …';
+
+        $p = p::createFromRules($rules);
+
+        $this->assertSame('‹› -  - 123 -  - …', $p->transliterate($str));
 
         if (class_exists('Transliterator')) {
             $p_orig = \Transliterator::createFromRules($rules);

@@ -31,31 +31,31 @@ class Transliterator
     const REVERSE = 1;
 
     private static $LOCALE_TO_TRANSLITERATOR_ID = array(
-        'am' => 'Amharic-Latin',
-        'ar' => 'Arabic-Latin',
-        'az' => 'Azerbaijani-Latin',
-        'be' => 'Belarusian-Latin',
-        'bg' => 'Bulgarian-Latin',
-        'bn' => 'Bengali-Latin',
-        'el' => 'Greek-Latin',
-        'fa' => 'Persian-Latin',
-        'he' => 'Hebrew-Latin',
-        'hy' => 'Armenian-Latin',
-        'ka' => 'Georgian-Latin',
-        'kk' => 'Kazakh-Latin',
-        'ky' => 'Kirghiz-Latin',
-        'ko' => 'Korean-Latin',
-        'mk' => 'Macedonian-Latin',
-        'mn' => 'Mongolian-Latin',
-        'or' => 'Oriya-Latin',
-        'ps' => 'Pashto-Latin',
-        'ru' => 'Russian-Latin',
-        'sr' => 'Serbian-Latin',
-        'th' => 'Thai-Latin',
-        'tk' => 'Turkmen-Latin',
-        'uk' => 'Ukrainian-Latin',
-        'uz' => 'Uzbek-Latin',
-        'zh' => 'Han-Latin',
+        'am' => 'AMHARIC-LATIN',
+        'ar' => 'ARABIC-LATIN',
+        'az' => 'AZERBAIJANI-LATIN',
+        'be' => 'BELARUSIAN-LATIN',
+        'bg' => 'BULGARIAN-LATIN',
+        'bn' => 'BENGALI-LATIN',
+        'el' => 'GREEK-LATIN',
+        'fa' => 'PERSIAN-LATIN',
+        'he' => 'HEBREW-LATIN',
+        'hy' => 'ARMENIAN-LATIN',
+        'ka' => 'GEORGIAN-LATIN',
+        'kk' => 'KAZAKH-LATIN',
+        'ky' => 'KIRGHIZ-LATIN',
+        'ko' => 'KOREAN-LATIN',
+        'mk' => 'MACEDONIAN-LATIN',
+        'mn' => 'MONGOLIAN-LATIN',
+        'or' => 'ORIYA-LATIN',
+        'ps' => 'PASHTO-LATIN',
+        'ru' => 'RUSSIAN-LATIN',
+        'sr' => 'SERBIAN-LATIN',
+        'th' => 'THAI-LATIN',
+        'tk' => 'TURKMEN-LATIN',
+        'uk' => 'UKRAINIAN-LATIN',
+        'uz' => 'UZBEK-LATIN',
+        'zh' => 'HAN-LATIN',
     );
 
     /**
@@ -313,6 +313,30 @@ class Transliterator
             }
         }
 
+        if (false !== stripos($rule, '[:NUMBER:]')) {
+            if (preg_match('/\[(.*?\[:NUMBER:\].*?)\]/i', $rule)) {
+                $rule = str_ireplace('[:NUMBER:]', '\d', $rule);
+            } else {
+                $rule = str_ireplace('[:NUMBER:]', '[\d]+', $rule);
+            }
+        }
+
+        if (false !== stripos($rule, '[:UPPERCASELETTER:]')) {
+            if (preg_match('/\[(.*?\[:UPPERCASELETTER:\].*?)\]/i', $rule)) {
+                $rule = str_ireplace('[:UPPERCASELETTER:]', '\p{Lu}', $rule);
+            } else {
+                $rule = str_ireplace('[:UPPERCASELETTER:]', '[\p{Lu}]+', $rule);
+            }
+        }
+
+        if (false !== stripos($rule, '[:LOWERCASELETTER:]')) {
+            if (preg_match('/\[(.*?\[:LOWERCASELETTER:\].*?)\]/i', $rule)) {
+                $rule = str_ireplace('[:LOWERCASELETTER:]', '\p{Ll}', $rule);
+            } else {
+                $rule = str_ireplace('[:LOWERCASELETTER:]', '[\p{Ll}]+', $rule);
+            }
+        }
+
         $space_regex_found = false;
         if (false !== stripos($rule, '[[:SPACE:]]')) {
             $space_regex_found = true;
@@ -539,8 +563,18 @@ class Transliterator
         foreach (explode(';', $this->id) as $rule) {
             $rule_orig_trim = trim(
                 str_ireplace(
-                    array('Nonspacing Mark', 'Space Separator'),
-                    array('NonspacingMark', 'SpaceSeparator'),
+                    array(
+                        'Nonspacing Mark',
+                        'Space Separator',
+                        'Uppercase Letter',
+                        'Lowercase Letter',
+                    ),
+                    array(
+                        'NonspacingMark',
+                        'SpaceSeparator',
+                        'UppercaseLetter',
+                        'LowercaseLetter',
+                    ),
                     rtrim($rule, ' ()')
                 ),
                 ' :'
@@ -581,10 +615,10 @@ class Transliterator
                 $s = mb_strtoupper($s);
             } elseif ('LOWER' === $rule) {
                 $s = mb_strtolower($s);
-            } elseif (false !== strpos($rule, 'LATIN')) {
-                $s = self::toTranslit($s);
             } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
                 $s = self::toAscii($s, $lang);
+            } elseif (false !== strpos($rule, 'LATIN')) {
+                $s = self::toTranslit($s);
             } elseif (
                 false !== strpos($rule, '-ASCII')
                 &&
