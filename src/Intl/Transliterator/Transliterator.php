@@ -643,8 +643,8 @@ class Transliterator
 
                 if (isset($rule_replacer_helper['search'])) {
                     $s = str_replace(
-                        trim($rule_replacer_helper['search'], ' '),
-                        isset($rule_replacer_helper['replace']) ? trim($rule_replacer_helper['replace'], ' ') : '',
+                        trim($rule_replacer_helper['search'], ' \''),
+                        isset($rule_replacer_helper['replace']) ? trim($rule_replacer_helper['replace'], ' \'') : '',
                         $s
                     );
                 }

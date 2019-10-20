@@ -262,6 +262,22 @@ class TransliteratorTest extends TestCase
 
         // ---
 
+        $rules = '\'high school\' > \'H.S.\';'; // http://userguide.icu-project.org/transforms/general/rules
+        $str = '‹ŤÉŚŢ› - öäü - 123 - abc - … high school';
+
+        $p = p::createFromRules($rules);
+
+        $this->assertSame('‹ŤÉŚŢ› - öäü - 123 - abc - … H.S.', $p->transliterate($str));
+
+        if (class_exists('Transliterator')) {
+            $p_orig = \Transliterator::createFromRules($rules);
+
+            $this->assertSame($p_orig->transliterate($str), $p->transliterate($str));
+        }
+
+        // ---
+
+
         // https://unicode.org/cldr/utility/transform.jsp?a=%3A%3A+%5B%C5%A4%C3%84%5D+lower%28%29%3B&b=%E2%80%B9%C5%A4%C3%89%C5%9A%C5%A2%E2%80%BA+-+%C3%96%C3%84%C3%9C+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = ':: [ŤÄ] lower();'; // http://userguide.icu-project.org/transforms/general/rules
         $str = '‹ŤÉŚŢ› - ÖÄÜ - 123 - abc - …';
