@@ -30,6 +30,9 @@ class Transliterator
     const FORWARD = 0;
     const REVERSE = 1;
 
+    /**
+     * @var array<string, string>
+     */
     private static $LOCALE_TO_TRANSLITERATOR_ID = array(
         'am' => 'AMHARIC-LATIN',
         'ar' => 'ARABIC-LATIN',
@@ -59,11 +62,6 @@ class Transliterator
     );
 
     /**
-     * @var array|null
-     */
-    private static $TRANSLIT;
-
-    /**
      * @var array<string, array<string, string>>|null
      */
     private static $ASCII_MAPS;
@@ -87,6 +85,11 @@ class Transliterator
      * @var int
      */
     private $direction = self::FORWARD;
+
+    /**
+     * @var string
+     */
+    private static $internalEncoding = 'UTF-8';
 
     private function __construct()
     {
@@ -405,30 +408,9 @@ class Transliterator
         $language_all_chars = self::charsArrayWithSingleLanguageValues();
         $s = str_replace($language_all_chars['orig'], $language_all_chars['replace'], $s);
 
-        if (!isset(self::$ASCII_MAPS[$language])) {
-            $use_transliterate = true;
-        } else {
-            $use_transliterate = false;
-        }
-
-        if (true === $use_transliterate) {
-            $s = self::toTransliterate($s);
-        }
+        $s = self::toTransliterate($s);
 
         return $s;
-    }
-
-    private static function toTranslit($s)
-    {
-        if ('' === $s) {
-            return '';
-        }
-
-        if (null === self::$TRANSLIT) {
-            self::$TRANSLIT = self::getData('translit');
-        }
-
-        return str_replace(self::$TRANSLIT['orig'], self::$TRANSLIT['replace'], $s);
     }
 
     private static function toTransliterate($s)
@@ -535,7 +517,7 @@ class Transliterator
                     return false;
                 }
 
-                $s_len = mb_strlen($s);
+                $s_len = mb_strlen($s, self::$internalEncoding);
                 if ($start > $s_len) {
                     return false;
                 }
@@ -543,7 +525,7 @@ class Transliterator
                     $end = null;
                 }
 
-                $s_start = mb_substr($s, null, $start);
+                $s_start = mb_substr($s, null, $start, self::$internalEncoding);
             } else {
                 $s_start = '';
             }
@@ -553,10 +535,10 @@ class Transliterator
                     return false;
                 }
 
-                $s_end = mb_substr($s, -$end);
-                $s = mb_substr($s, $start, -$end);
+                $s_end = mb_substr($s, -$end, null, self::$internalEncoding);
+                $s = mb_substr($s, $start, -$end, self::$internalEncoding);
             } else {
-                $s = mb_substr($s, $start);
+                $s = mb_substr($s, $start, null, self::$internalEncoding);
             }
         }
 
@@ -612,13 +594,13 @@ class Transliterator
             } elseif ('LATIN-ASCII' === $rule) {
                 $s = self::toAscii($s);
             } elseif ('UPPER' === $rule) {
-                $s = mb_strtoupper($s);
+                $s = mb_strtoupper($s, self::$internalEncoding);
             } elseif ('LOWER' === $rule) {
-                $s = mb_strtolower($s);
+                $s = mb_strtolower($s, self::$internalEncoding);
             } elseif ($lang = array_search($rule, self::$LOCALE_TO_TRANSLITERATOR_ID)) {
                 $s = self::toAscii($s, $lang);
             } elseif (false !== strpos($rule, 'LATIN')) {
-                $s = self::toTranslit($s);
+                $s = self::toAscii($s);
             } elseif (
                 false !== strpos($rule, '-ASCII')
                 &&
