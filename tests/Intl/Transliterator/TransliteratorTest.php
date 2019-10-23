@@ -360,7 +360,7 @@ class TransliteratorTest extends TestCase
         // https://unicode.org/cldr/utility/transform.jsp?a=Turkmen-Latin%2FBGN%3B+Latin-ASCII%3B&b=%C5%A4%C3%89%C5%9A%C5%A2+-+%C3%B6%C3%A4%C3%BC+-+123+-+abc+-+%E2%80%A6&show=on
         $rules = 'Turkmen-Latin/BGN; Latin-ASCII;';
         $str = 'ŤÉŚŢ - öäü - 123 - abc - …';
-        $str_len = mb_strlen($str);
+        $str_len = mb_strlen($str, 'UTF-8');
 
         $p = p::create($rules);
 
