@@ -511,12 +511,14 @@ class Transliterator
 
         $s_start = '';
         $s_end = '';
-        if (PHP_VERSION_ID < 50408) {
-            $null_helper = 2147483647;
-        } else {
-            $null_helper = null;
-        }
         if (null !== $start || null !== $end) {
+
+            if (PHP_VERSION_ID < 50408) {
+                $null_helper = 2147483647;
+            } else {
+                $null_helper = null;
+            }
+
             if (null !== $start) {
                 if ($start < 0) {
                     return false;
@@ -527,15 +529,15 @@ class Transliterator
                     return false;
                 }
                 if ($start === $s_len) {
-                    $end = $null_helper;
+                    $end = null;
                 }
 
-                $s_start = mb_substr($s, $null_helper, $start, self::$internalEncoding);
+                $s_start = mb_substr($s, 0, $start, self::$internalEncoding);
             } else {
                 $s_start = '';
             }
 
-            if ($null_helper !== $end && null !== $end) {
+            if (null !== $end) {
                 if ($end < 0) {
                     return false;
                 }
