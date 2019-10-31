@@ -36,6 +36,7 @@ before_install:
     - if [[ $TRAVIS_PHP_VERSION = 5.* ]]; then echo yes | pecl install -f apcu-4.0.11; fi
     - if [[ $TRAVIS_PHP_VERSION = 7.* ]]; then echo yes | pecl install -f apcu_bc-1.0.4; fi
     - if [[ $TRAVIS_PHP_VERSION = 7.* ]]; then echo yes | pecl install -f apcu-5.1.17; fi
+    - yes | pecl install uuid || true
     - php -i
 
 install:

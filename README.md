@@ -9,6 +9,7 @@ Polyfills are provided for:
 - the `apcu` extension when the legacy `apc` extension is installed;
 - the `ctype` extension when PHP is compiled without ctype;
 - the `mbstring` and `iconv` extensions;
+- the `uuid` extension;
 - the `MessageFormatter` class and the `msgfmt_format_message` functions;
 - the `Normalizer` class and the `grapheme_*` functions;
 - the `utf8_encode` and `utf8_decode` functions from the `xml` extension or PHP-7.2 core;
@@ -78,6 +79,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-intl-normalizer` for using the intl normalizer,
 - `symfony/polyfill-mbstring` for using the mbstring functions,
 - `symfony/polyfill-util` for using the polyfill utility helpers.
+- `symfony/polyfill-uuid` for using the `uuid_*` functions,
 
 Requiring `symfony/polyfill` directly would prevent Composer from sharing
 correctly polyfills in dependency graphs. As such, it would likely install
@@ -93,7 +95,7 @@ to support all polyfills. Implementations are then loaded on-demand when
 needed during code execution.
 
 If your project requires a minimum PHP version it is advisable to add polyfills
-for lower PHP versions to the `replace` section of your `composer.json`. 
+for lower PHP versions to the `replace` section of your `composer.json`.
 This removes any overhead from these polyfills as they are no longer part of your project.
 The same can be done for polyfills for extensions that you require.
 

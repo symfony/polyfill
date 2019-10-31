@@ -1,14 +1,14 @@
 {
-    "name": "symfony/polyfill-iconv",
+    "name": "symfony/polyfill-uuid",
     "type": "library",
-    "description": "Symfony polyfill for the Iconv extension",
-    "keywords": ["polyfill", "shim", "compatibility", "portable", "iconv"],
+    "description": "Symfony polyfill for uuid functions",
+    "keywords": ["polyfill", "compatibility", "portable", "uuid"],
     "homepage": "https://symfony.com",
     "license": "MIT",
     "authors": [
         {
-            "name": "Nicolas Grekas",
-            "email": "p@tchwork.com"
+            "name": "Grégoire Pineau",
+            "email": "lyrixx@lyrixx.info"
         },
         {
             "name": "Symfony Community",
@@ -16,14 +16,14 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=7"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Iconv\\": "" },
+        "psr-4": { "Symfony\\Polyfill\\Uuid\\": "" },
         "files": [ "bootstrap.php" ]
     },
     "suggest": {
-        "ext-iconv": "For best performance"
+        "ext-uuid": "For best performance"
     },
     "minimum-stability": "dev",
     "extra": {
