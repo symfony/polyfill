@@ -1,3 +1,7 @@
+* v1.13.0
+
+ * added polyfills for `uuid_*` functions
+
 * v1.12.0
 
  * added PHP 7.4 polyfill
