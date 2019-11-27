@@ -12,6 +12,7 @@
 namespace Symfony\Polyfill\Tests\Uuid;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Polyfill\Uuid\Uuid;
 
 /**
  * @requires extension uuid
@@ -31,8 +32,8 @@ class UuidTest extends TestCase
     public function provideCreateNoOverlapTests()
     {
         return array(
-            array(UUID_TYPE_RANDOM),
-            array(UUID_TYPE_TIME),
+            array(Uuid::UUID_TYPE_RANDOM),
+            array(Uuid::UUID_TYPE_TIME),
         );
     }
 
@@ -119,10 +120,10 @@ class UuidTest extends TestCase
     {
         return array(
             array(false, 'foobar'),
-            array(UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'),
-            array(UUID_TYPE_RANDOM, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-            array(UUID_TYPE_TIME, 'dbc6260f-e9cc-11e9-8dac-9cb6d0897f07'),
-            array(UUID_TYPE_TIME, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
+            array(Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'),
+            array(Uuid::UUID_TYPE_RANDOM, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
+            array(Uuid::UUID_TYPE_TIME, 'dbc6260f-e9cc-11e9-8dac-9cb6d0897f07'),
+            array(Uuid::UUID_TYPE_TIME, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
         );
     }
 
@@ -136,9 +137,9 @@ class UuidTest extends TestCase
     {
         return array(
             array(false, 'foobar'),
-            array(UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'),
-            array(UUID_VARIANT_DCE, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-            array(UUID_VARIANT_DCE, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
+            array(Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'),
+            array(Uuid::UUID_VARIANT_DCE, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
+            array(Uuid::UUID_VARIANT_DCE, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
         );
     }
 
