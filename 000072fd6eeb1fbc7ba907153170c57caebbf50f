@@ -1,0 +1,20 @@
+---------------------------------------------------------------------------
+
+by lyrixx at 2019-11-05T11:09:51Z
+
+I think this PR is ready :tada:
+
+---------------------------------------------------------------------------
+
+by stof at 2019-11-05T12:16:38Z
+
+based on https://github.com/symfony/polyfill/pull/197#discussion_r342492555 (and my answer just after), it is not, as the error handling is not the same in the polyfill and in the original extension.
+
+---------------------------------------------------------------------------
+
+by lyrixx at 2019-11-05T15:40:04Z
+
+OK, I removed all the type hints and codes incompatible with PHP > 5.3
+Tests run on PHP 5.4+. They don't run on PHP 5.3 because the PECL does not compile.
+
+Should be really ready now :smile:
