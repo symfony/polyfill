@@ -250,26 +250,23 @@ final class Uuid
 
     private static function uuid_generate_random()
     {
-        return sprintf('%08x-%04x-%04x-%04x-%06x%06x',
+        $uuid = bin2hex(random_bytes(16));
+
+        return sprintf('%08s-%04s-%04x-%04x-%012s',
             // 32 bits for "time_low"
-            random_int(0, 0xffffffff),
-
+            substr($uuid, 0, 8),
             // 16 bits for "time_mid"
-            random_int(0, 0xffff),
-
+            substr($uuid, 8, 4),
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 4
-            random_int(0, 0x0fff) | 0x4000,
-
+            hexdec(substr($uuid, 12, 3)) & 0x0fff | 0x4000,
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
             // two most significant bits holds zero and one for variant DCE1.1
-            random_int(0, 0x3fff) | 0x8000,
-
+            hexdec(substr($uuid, 16, 4)) & 0x3fff | 0x8000,
             // 48 bits for "node"
-            random_int(0, 0xffffff),
-            random_int(0, 0xffffff)
+            substr($uuid, 20, 12)
         );
     }
 
