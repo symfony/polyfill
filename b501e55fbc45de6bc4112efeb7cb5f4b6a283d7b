@@ -1,0 +1,32 @@
+---------------------------------------------------------------------------
+
+by BackEndTea at 2019-11-10T18:47:20Z
+
+This probably needs a test case with exactly this combo (split of 1, and 'UTF-8'encoding)
+
+---------------------------------------------------------------------------
+
+by kamil-tekiela at 2019-11-10T19:22:37Z
+
+The first test kind of handles this, because 1 and UTF-8 should be the default values.
+
+We could add the following test:
+
+    $this->assertSame(array('e', '́', '💩', '𐍈'), mb_str_split('é💩𐍈', 1, 'UTF-8'));
+
+---------------------------------------------------------------------------
+
+by BackEndTea at 2019-11-10T19:27:09Z
+
+I'd say  👍 for a more explicit test for this case
+
+---------------------------------------------------------------------------
+
+by voku at 2019-11-15T02:54:36Z
+
+```preg_match_all``` seems to be faster, or?
+
+-> https://3v4l.org/8XPK7 (preg_match_all)
+-> https://3v4l.org/Dl2ml (preg_split)
+
+PS: I think for short strings it's even faster to use substr ? e.g. https://github.com/voku/portable-utf8/commit/e70be3849f826fb63299a9bb4a5fa4581c53fd9a#diff-890805f35966ea20340b9076d7b47329R7212
