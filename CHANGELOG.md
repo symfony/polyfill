@@ -1,6 +1,8 @@
 * v1.13.0
 
  * added polyfills for `uuid_*` functions
+ * optimized `mb_str_split()`
+ * fixed handling negative offsets for grapheme and mbstring functions
 
 * v1.12.0
 
