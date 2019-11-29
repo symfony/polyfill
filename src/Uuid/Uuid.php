@@ -47,7 +47,7 @@ final class Uuid
             case self::UUID_TYPE_DEFAULT:
                 return self::uuid_generate_random();
             default:
-                trigger_error("Unknown/invalid UUID type '%d' requested, using default type instead", E_USER_WARNING);
+                trigger_error(sprintf("Unknown/invalid UUID type '%d' requested, using default type instead", $uuid_type), E_USER_WARNING);
                 return self::uuid_generate_random();
         }
     }
@@ -72,7 +72,7 @@ final class Uuid
         }
 
         if (!\is_string($uuid2)) {
-            trigger_error(sprintf("uuid_compare() expects parameter 1 to be string, %s given", gettype($uuid2)), E_USER_WARNING);
+            trigger_error(sprintf("uuid_compare() expects parameter 2 to be string, %s given", gettype($uuid2)), E_USER_WARNING);
 
             return null;
         }
@@ -142,13 +142,13 @@ final class Uuid
             return self::UUID_TYPE_NULL;
         }
 
-        if (($parsed['clock_seq'] & 0x8000) == 0) {
+        if (($parsed['clock_seq'] & 0x8000) === 0) {
             return self::UUID_VARIANT_NCS;
         }
-        if (($parsed['clock_seq'] & 0x4000) == 0) {
+        if (($parsed['clock_seq'] & 0x4000) === 0) {
             return self::UUID_VARIANT_DCE;
         }
-        if (($parsed['clock_seq'] & 0x2000) == 0) {
+        if (($parsed['clock_seq'] & 0x2000) === 0) {
             return self::UUID_VARIANT_MICROSOFT;
         }
 
@@ -209,7 +209,7 @@ final class Uuid
             return null;
         }
 
-        if (null === $parsed = self::uuid_parse_as_array($uuid)) {
+        if (null === self::uuid_parse_as_array($uuid)) {
             return false;
         }
 
@@ -221,7 +221,7 @@ final class Uuid
     public static function uuid_unparse($uuidAsBinary)
     {
         if (!\is_string($uuidAsBinary)) {
-            trigger_error(sprintf("uuid_unparse() expects parameter 1 to be string, %s given", gettype($uuid)), E_USER_WARNING);
+            trigger_error(sprintf("uuid_unparse() expects parameter 1 to be string, %s given", gettype($uuidAsBinary)), E_USER_WARNING);
 
             return null;
         }
@@ -229,7 +229,7 @@ final class Uuid
         $dataAsArray = unpack('H*', $uuidAsBinary);
         $data = $dataAsArray[1];
 
-        if (32 != \strlen($data)) {
+        if (32 !== \strlen($data)) {
             return false;
         }
 
@@ -330,7 +330,7 @@ final class Uuid
 
     private static function uuid_parse_as_array($uuid)
     {
-        if (36 != \strlen($uuid)) {
+        if (36 !== \strlen($uuid)) {
             return null;
         }
 
