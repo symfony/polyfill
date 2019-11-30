@@ -1,3 +1,7 @@
+* v1.13.1
+
+ * fixed issues with the uuid polyfill
+
 * v1.13.0
 
  * added polyfills for `uuid_*` functions
