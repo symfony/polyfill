@@ -12,17 +12,17 @@
 use Symfony\Polyfill\Uuid as p;
 
 if (!function_exists('uuid_create')) {
-    define(UUID_VARIANT_NCS, p\Uuid::UUID_VARIANT_NCS);
-    define(UUID_VARIANT_DCE, p\Uuid::UUID_VARIANT_DCE);
-    define(UUID_VARIANT_MICROSOFT, p\Uuid::UUID_VARIANT_MICROSOFT);
-    define(UUID_VARIANT_OTHER, p\Uuid::UUID_VARIANT_OTHER);
-    define(UUID_TYPE_DEFAULT, p\Uuid::UUID_TYPE_DEFAULT);
-    define(UUID_TYPE_TIME, p\Uuid::UUID_TYPE_TIME);
-    define(UUID_TYPE_DCE, p\Uuid::UUID_TYPE_DCE);
-    define(UUID_TYPE_NAME, p\Uuid::UUID_TYPE_NAME);
-    define(UUID_TYPE_RANDOM, p\Uuid::UUID_TYPE_RANDOM);
-    define(UUID_TYPE_NULL, p\Uuid::UUID_TYPE_NULL);
-    define(UUID_TYPE_INVALID, p\Uuid::UUID_TYPE_INVALID);
+    define('UUID_VARIANT_NCS', 0);
+    define('UUID_VARIANT_DCE', 1);
+    define('UUID_VARIANT_MICROSOFT', 2);
+    define('UUID_VARIANT_OTHER', 3);
+    define('UUID_TYPE_DEFAULT', 0);
+    define('UUID_TYPE_TIME', 1);
+    define('UUID_TYPE_DCE', 4);
+    define('UUID_TYPE_NAME', 1);
+    define('UUID_TYPE_RANDOM', 4);
+    define('UUID_TYPE_NULL', -1);
+    define('UUID_TYPE_INVALID', -42);
 
     function uuid_create($type = UUID_TYPE_DEFAULT) { return p\Uuid::uuid_create($type); }
     function uuid_is_valid($uuid) { return p\Uuid::uuid_is_valid($uuid); }
