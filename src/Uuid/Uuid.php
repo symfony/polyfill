@@ -163,7 +163,7 @@ final class Uuid
             return null;
         }
 
-        if (\PHP_INT_SIZE !== 8) {
+        if (\PHP_INT_SIZE === 4) {
             throw new \RuntimeException('UUID time generation is not supported on 32-bit systems. Use the uuid extension instead.');
         }
 
@@ -275,6 +275,10 @@ final class Uuid
      */
     private static function uuid_generate_time()
     {
+        if (\PHP_INT_SIZE === 4) {
+            throw new \RuntimeException('UUID time generation is not supported on 32-bit systems. Use the uuid extension instead.');
+        }
+
         // https://tools.ietf.org/html/rfc4122#section-4.1.4
         // 0x01b21dd213814000 is the number of 100-ns intervals between the
         // UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
