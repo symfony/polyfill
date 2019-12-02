@@ -318,6 +318,8 @@ class MbstringTest extends TestCase
      */
     public function testStrSplit()
     {
+        $this->assertSame(array('H', "\r", "\n", 'W'), mb_str_split("H\r\nW", 1));
+        $this->assertSame(array('Hell', "o\nWo", 'rld!'), mb_str_split("Hello\nWorld!", 4));
         $this->assertSame(array('한', '국', '어'), mb_str_split('한국어'));
         $this->assertSame(array('по', 'бе', 'да'), mb_str_split('победа', 2));
         $this->assertSame(array('źre', 'bię'), mb_str_split('źrebię', 3));
