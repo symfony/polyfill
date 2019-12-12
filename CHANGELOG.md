@@ -1,3 +1,7 @@
+* v1.13.2
+
+ * use correct block size for SHA1 in `hash_pbkdf2()` polyfill
+
 * v1.13.1
 
  * fixed issues with the uuid polyfill

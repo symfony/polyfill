@@ -50,4 +50,9 @@ class Php55Test extends TestCase
 
         return $values;
     }
+
+    public function testtestHashPbkdf2Sha1()
+    {
+        $this->assertSame('3d2eec4fe41c849b80c8d8366', hash_pbkdf2('sha1', 'passwordPASSWORDpassword', 'saltSALTsaltSALTsaltSALTsaltSALTsalt', 4096, 25));
+    }
 }
