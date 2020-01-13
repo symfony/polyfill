@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-01-13T12:48:05Z
+
+Tests on PHP8 are not green, but at least they run.
