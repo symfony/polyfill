@@ -1,6 +1,8 @@
 * v1.13.2
 
  * use correct block size for SHA1 in `hash_pbkdf2()` polyfill
+ * fixed `mb_str_split()` ignoring new-line characters
+ * updated Unicode maps
 
 * v1.13.1
 
