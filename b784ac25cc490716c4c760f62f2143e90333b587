@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by stof at 2019-12-03T13:00:09Z
+
+should we bring this updater tooling in this repo (or maybe at least a script doing that, with a dev dependency on this compiler) ?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-12-03T13:48:51Z
+
+The CS of the compiler class is not up to the standards of this repo. I won't be able to port it here in the short term.
