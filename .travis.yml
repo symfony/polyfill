@@ -42,6 +42,7 @@ before_install:
 install:
     - if [[ $TRAVIS_BRANCH = master ]]; then export COMPOSER_ROOT_VERSION=dev-master; else export COMPOSER_ROOT_VERSION=$TRAVIS_BRANCH.x-dev; fi
     - composer --prefer-source install
+    - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then phpenv global 7.1; ./vendor/bin/simple-phpunit install; phpenv global nightly; fi
 
 script:
     - ./vendor/bin/simple-phpunit
