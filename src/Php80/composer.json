@@ -1,11 +1,15 @@
 {
-    "name": "symfony/polyfill-php71",
+    "name": "symfony/polyfill-php80",
     "type": "library",
-    "description": "Symfony polyfill backporting some PHP 7.1+ features to lower PHP versions",
+    "description": "Symfony polyfill backporting some PHP 8.0+ features to lower PHP versions",
     "keywords": ["polyfill", "shim", "compatibility", "portable"],
     "homepage": "https://symfony.com",
     "license": "MIT",
     "authors": [
+        {
+            "name": "Ion Bazan",
+            "email": "ion.bazan@gmail.com"
+        },
         {
             "name": "Nicolas Grekas",
             "email": "p@tchwork.com"
@@ -16,10 +20,10 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3"
+        "php": ">=7.0.8"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Php71\\": "" },
+        "psr-4": { "Symfony\\Polyfill\\Php80\\": "" },
         "files": [ "bootstrap.php" ]
     },
     "minimum-stability": "dev",

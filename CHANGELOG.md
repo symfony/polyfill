@@ -1,3 +1,7 @@
+* v1.14.0
+
+ * added PHP 8.0 polyfill
+
 * v1.13.2
 
  * use correct block size for SHA1 in `hash_pbkdf2()` polyfill
