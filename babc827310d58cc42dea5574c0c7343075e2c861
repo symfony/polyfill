@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by stof at 2019-11-26T09:54:55Z
+
+@IonBazan your idea based on `var_dump` will now work when xdebug overloads it (and it might not work on Windows due to line endings, but that's easier to solve).
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2019-12-05T11:00:26Z
+
+@nicolas-grekas @stof changes applied. I decided to drop PHP 5 because found it impossible to detect negative zeros on it.
