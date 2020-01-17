@@ -52,6 +52,15 @@ class Php80Test extends TestCase
         fdiv($divident, $divisor);
     }
 
+    /**
+     * @requires PHP 7.0
+     */
+    public function testFilterValidateBool()
+    {
+        $this->assertTrue(\defined('FILTER_VALIDATE_BOOL'));
+        $this->assertSame(FILTER_VALIDATE_BOOLEAN, FILTER_VALIDATE_BOOL);
+    }
+
     public function fdivProvider()
     {
         return array(
