@@ -1,6 +1,7 @@
 # 1.15.0
 
   * added `preg_last_error_msg()` to the PHP 8 polyfill
+  * added interface `Stringable` to the PHP 8 polyfill
 
 # 1.14.0
 
