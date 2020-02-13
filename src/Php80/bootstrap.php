@@ -16,7 +16,7 @@ if (PHP_VERSION_ID < 80000 && PHP_VERSION_ID >= 70000) {
         function fdiv($dividend, $divisor) { return p\Php80::fdiv($dividend, $divisor); }
     }
 
-    if (!defined('FILTER_VALIDATE_BOOL')) {
+    if (!defined('FILTER_VALIDATE_BOOL') && defined('FILTER_VALIDATE_BOOLEAN')) {
         define('FILTER_VALIDATE_BOOL', FILTER_VALIDATE_BOOLEAN);
     }
 }
