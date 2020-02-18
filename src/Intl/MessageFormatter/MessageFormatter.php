@@ -46,7 +46,7 @@ namespace Symfony\Polyfill\Intl\MessageFormatter;
  *  * simple parameters
  *  * integer number parameters
  *
- * It does NOT support the ['apostrophe-friendly' syntax](http://www.php.net/manual/en/messageformatter.formatmessage.php).
+ * It does NOT support the ['apostrophe-friendly' syntax](https://php.net/MessageFormatter.formatMessage).
  * Also messages that are working with the fallback implementation are not necessarily compatible with the
  * PHP intl MessageFormatter so do not rely on the fallback if you are able to install intl extension somehow.
  *
