@@ -14,12 +14,14 @@ namespace Symfony\Polyfill\Tests\Php80;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * @requires PHP 7.0
+ *
  * @author Ion Bazan <ion.bazan@gmail.com>
+ * @author Nico Oelgart <nicoswd@gmail.com>
  */
 class Php80Test extends TestCase
 {
     /**
-     * @requires PHP 7.0
      * @covers \Symfony\Polyfill\Php80\Php80::fdiv
      * @dataProvider fdivProvider
      */
@@ -32,7 +34,6 @@ class Php80Test extends TestCase
     }
 
     /**
-     * @requires PHP 7.0
      * @covers \Symfony\Polyfill\Php80\Php80::fdiv
      * @dataProvider nanFdivProvider
      */
@@ -42,7 +43,6 @@ class Php80Test extends TestCase
     }
 
     /**
-     * @requires PHP 7.0
      * @covers \Symfony\Polyfill\Php80\Php80::fdiv
      * @dataProvider invalidFloatProvider
      */
@@ -53,12 +53,40 @@ class Php80Test extends TestCase
     }
 
     /**
-     * @requires PHP 7.0
      */
     public function testFilterValidateBool()
     {
         $this->assertTrue(\defined('FILTER_VALIDATE_BOOL'));
         $this->assertSame(FILTER_VALIDATE_BOOLEAN, FILTER_VALIDATE_BOOL);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::pregLastErrorMsg
+     */
+    public function testPregNoError()
+    {
+        $this->assertSame('No error', preg_last_error_msg());
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::pregLastErrorMsg
+     */
+    public function testPregMalformedUtfError()
+    {
+        @preg_split('/a/u', "a\xff");
+        $this->assertSame('Malformed UTF-8 characters, possibly incorrectly encoded', preg_last_error_msg());
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::pregLastErrorMsg
+     */
+    public function testPregMalformedUtf8Offset()
+    {
+        @preg_match('/a/u', "\xE3\x82\xA2", $m, 0, 1);
+        $this->assertSame(
+            'The offset did not correspond to the beginning of a valid UTF-8 code point',
+            preg_last_error_msg()
+        );
     }
 
     public function fdivProvider()
