@@ -27,7 +27,7 @@ final class Php80
         return (float) @($dividend / $divisor);
     }
 
-    public static function pregLastErrorMsg()
+    public static function preg_last_error_msg()
     {
         switch (preg_last_error()) {
             case PREG_INTERNAL_ERROR:

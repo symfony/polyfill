@@ -17,7 +17,7 @@ if (PHP_VERSION_ID < 80000 && PHP_VERSION_ID >= 70000) {
     }
 
     if (!function_exists('preg_last_error_msg')) {
-        function preg_last_error_msg() { return p\Php80::pregLastErrorMsg(); }
+        function preg_last_error_msg() { return p\Php80::preg_last_error_msg(); }
     }
 
     if (!defined('FILTER_VALIDATE_BOOL') && defined('FILTER_VALIDATE_BOOLEAN')) {
