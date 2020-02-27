@@ -52,8 +52,6 @@ class Php80Test extends TestCase
         fdiv($divident, $divisor);
     }
 
-    /**
-     */
     public function testFilterValidateBool()
     {
         $this->assertTrue(\defined('FILTER_VALIDATE_BOOL'));
