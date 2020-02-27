@@ -22,9 +22,9 @@
  *
  * Extensive documentation can be found at php.net, see links:
  *
- * @see http://php.net/sessionhandlerinterface
- * @see http://php.net/session.customhandler
- * @see http://php.net/session-set-save-handler
+ * @see https://php.net/sessionhandlerinterface
+ * @see https://php.net/session.customhandler
+ * @see https://php.net/session-set-save-handler
  *
  * @author Drak <drak@zikula.org>
  * @author Tobias Schultze <http://tobion.de>
@@ -34,10 +34,10 @@ interface SessionHandlerInterface
     /**
      * Re-initializes existing session, or creates a new one.
      *
-     * @see http://php.net/sessionhandlerinterface.open
+     * @see https://php.net/sessionhandlerinterface.open
      *
      * @param string $savePath    Save path
-     * @param string $sessionName Session name, see http://php.net/function.session-name.php
+     * @param string $sessionName Session name, see https://php.net/function.session-name.php
      *
      * @return bool true on success, false on failure
      */
@@ -46,7 +46,7 @@ interface SessionHandlerInterface
     /**
      * Closes the current session.
      *
-     * @see http://php.net/sessionhandlerinterface.close
+     * @see https://php.net/sessionhandlerinterface.close
      *
      * @return bool true on success, false on failure
      */
@@ -55,9 +55,9 @@ interface SessionHandlerInterface
     /**
      * Reads the session data.
      *
-     * @see http://php.net/sessionhandlerinterface.read
+     * @see https://php.net/sessionhandlerinterface.read
      *
-     * @param string $sessionId Session ID, see http://php.net/function.session-id
+     * @param string $sessionId Session ID, see https://php.net/function.session-id
      *
      * @return string Same session data as passed in write() or empty string when non-existent or on failure
      */
@@ -69,9 +69,9 @@ interface SessionHandlerInterface
      * Care, the session ID passed to write() can be different from the one previously
      * received in read() when the session ID changed due to session_regenerate_id().
      *
-     * @see http://php.net/sessionhandlerinterface.write
+     * @see https://php.net/sessionhandlerinterface.write
      *
-     * @param string $sessionId Session ID , see http://php.net/function.session-id
+     * @param string $sessionId Session ID , see https://php.net/function.session-id
      * @param string $data      Serialized session data to save
      *
      * @return bool true on success, false on failure
@@ -81,9 +81,9 @@ interface SessionHandlerInterface
     /**
      * Destroys a session.
      *
-     * @see http://php.net/sessionhandlerinterface.destroy
+     * @see https://php.net/sessionhandlerinterface.destroy
      *
-     * @param string $sessionId Session ID, see http://php.net/function.session-id
+     * @param string $sessionId Session ID, see https://php.net/function.session-id
      *
      * @return bool true on success, false on failure
      */
@@ -92,7 +92,7 @@ interface SessionHandlerInterface
     /**
      * Cleans up expired sessions (garbage collection).
      *
-     * @see http://php.net/sessionhandlerinterface.gc
+     * @see https://php.net/sessionhandlerinterface.gc
      *
      * @param string|int $maxlifetime Sessions that have not updated for the last maxlifetime seconds will be removed
      *
