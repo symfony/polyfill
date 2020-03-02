@@ -49,6 +49,11 @@ final class Php80
         }
     }
 
+    public static function str_contains(string $haystack, string $needle): bool
+    {
+        return false !== strpos($haystack, $needle);
+    }
+
     private static function floatArg($value, $caller, $pos)
     {
         if (\is_float($value)) {

@@ -23,4 +23,8 @@ if (PHP_VERSION_ID < 80000 && PHP_VERSION_ID >= 70000) {
     if (!defined('FILTER_VALIDATE_BOOL') && defined('FILTER_VALIDATE_BOOLEAN')) {
         define('FILTER_VALIDATE_BOOL', FILTER_VALIDATE_BOOLEAN);
     }
+
+    if (!function_exists('str_contains')) {
+        function str_contains() { return p\Php80::str_contains(); }
+    }
 }

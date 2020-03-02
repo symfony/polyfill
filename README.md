@@ -45,6 +45,7 @@ Polyfills are provided for:
   introduced in PHP 7.4;
 - the `fdiv` function introduced in PHP 8.0;
 - the `preg_last_error_msg` function introduced in PHP 8.0;
+- the `str_contains` function introduced in PHP 8.0;
 - the `ValueError` class introduced in PHP 8.0;
 - the `FILTER_VALIDATE_BOOL` constant introduced in PHP 8.0;
 
