@@ -1,8 +1,9 @@
 Symfony Polyfill / Php80
 ========================
 
-This component provides functions added to PHP 8.0 core:
+This component provides features added to PHP 8.0 core:
 
+- `Stringable` interface
 - [`fdiv`](https://php.net/fdiv)
 - `ValueError` class
 - `FILTER_VALIDATE_BOOL` constant
