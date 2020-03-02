@@ -11,9 +11,9 @@
 
 use Symfony\Polyfill\Php80 as p;
 
-if (PHP_VERSION_ID < 80000 && PHP_VERSION_ID >= 70000) {
+if (PHP_VERSION_ID < 80000) {
     if (!function_exists('fdiv')) {
-        function fdiv($dividend, $divisor) { return p\Php80::fdiv($dividend, $divisor); }
+        function fdiv(float $dividend, float $divisor): float { return p\Php80::fdiv($dividend, $divisor); }
     }
 
     if (!function_exists('preg_last_error_msg')) {

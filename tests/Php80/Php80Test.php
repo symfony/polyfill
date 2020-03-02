@@ -48,7 +48,7 @@ class Php80Test extends TestCase
      */
     public function testFdivTypeError($divident, $divisor)
     {
-        $this->setExpectedException('\TypeError');
+        $this->setExpectedException('TypeError');
         fdiv($divident, $divisor);
     }
 
@@ -134,8 +134,6 @@ class Php80Test extends TestCase
             array('invalid', 1.0),
             array('invalid', 'invalid'),
             array(1.0, 'invalid'),
-            array(1.0, false),
-            array(1.0, true),
         );
     }
 
