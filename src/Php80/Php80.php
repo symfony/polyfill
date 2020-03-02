@@ -19,15 +19,12 @@ namespace Symfony\Polyfill\Php80;
  */
 final class Php80
 {
-    public static function fdiv($dividend, $divisor)
+    public static function fdiv(float $dividend, float $divisor): float
     {
-        $dividend = self::floatArg($dividend, __FUNCTION__, 1);
-        $divisor = self::floatArg($divisor, __FUNCTION__, 2);
-
-        return (float) @($dividend / $divisor);
+        return @($dividend / $divisor);
     }
 
-    public static function preg_last_error_msg()
+    public static function preg_last_error_msg(): string
     {
         switch (preg_last_error()) {
             case PREG_INTERNAL_ERROR:
@@ -47,18 +44,5 @@ final class Php80
             default:
                 return 'Unknown error';
         }
-    }
-
-    private static function floatArg($value, $caller, $pos)
-    {
-        if (\is_float($value)) {
-            return $value;
-        }
-
-        if (!\is_numeric($value)) {
-            throw new \TypeError(sprintf('%s() expects parameter %d to be float, %s given', $caller, $pos, \gettype($value)));
-        }
-
-        return (float) $value;
     }
 }

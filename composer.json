@@ -50,6 +50,7 @@
     "autoload": {
         "psr-4": { "Symfony\\Polyfill\\": "src/" },
         "files": [
+            "src/bootstrap.php",
             "src/Apcu/bootstrap.php",
             "src/Ctype/bootstrap.php",
             "src/Php54/bootstrap.php",
@@ -60,7 +61,6 @@
             "src/Php72/bootstrap.php",
             "src/Php73/bootstrap.php",
             "src/Php74/bootstrap.php",
-            "src/Php80/bootstrap.php",
             "src/Uuid/bootstrap.php",
             "src/Iconv/bootstrap.php",
             "src/Intl/Grapheme/bootstrap.php",

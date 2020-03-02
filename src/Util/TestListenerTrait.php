@@ -31,6 +31,10 @@ class TestListenerTrait
             if (!$tests = $suite->tests()) {
                 continue;
             }
+            $testedClass = new \ReflectionClass($testClass);
+            if (preg_match('{^ \* @requires PHP (.*)}mi', $testedClass->getDocComment(), $m) && version_compare($m[1], \PHP_VERSION, '>')) {
+                continue;
+            }
             if (!preg_match('/^(.+)\\\\Tests(\\\\.*)Test$/', $testClass, $m)) {
                 $mainSuite->addTest(TestListener::warning('Unknown naming convention for '.$testClass));
                 continue;
