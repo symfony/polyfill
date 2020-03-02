@@ -65,7 +65,7 @@ class TestListenerTrait
             $bootstrap->rewind();
 
             foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
-                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
+                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)(?: ?: [^ ]++)?) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
                     $warnings[] = TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
                     continue;
                 }

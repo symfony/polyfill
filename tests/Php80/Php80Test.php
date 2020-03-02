@@ -59,7 +59,7 @@ class Php80Test extends TestCase
     }
 
     /**
-     * @covers \Symfony\Polyfill\Php80\Php80::pregLastErrorMsg
+     * @covers \Symfony\Polyfill\Php80\Php80::preg_last_error_msg
      */
     public function testPregNoError()
     {
@@ -67,7 +67,7 @@ class Php80Test extends TestCase
     }
 
     /**
-     * @covers \Symfony\Polyfill\Php80\Php80::pregLastErrorMsg
+     * @covers \Symfony\Polyfill\Php80\Php80::preg_last_error_msg
      */
     public function testPregMalformedUtfError()
     {
@@ -76,7 +76,7 @@ class Php80Test extends TestCase
     }
 
     /**
-     * @covers \Symfony\Polyfill\Php80\Php80::pregLastErrorMsg
+     * @covers \Symfony\Polyfill\Php80\Php80::preg_last_error_msg
      */
     public function testPregMalformedUtf8Offset()
     {
