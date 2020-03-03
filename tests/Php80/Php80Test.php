@@ -87,6 +87,24 @@ class Php80Test extends TestCase
         );
     }
 
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::str_contains
+     */
+    public function testStrContains()
+    {
+        $this->assertTrue(str_contains('abc', ''));
+        $this->assertTrue(str_contains('abc', 'a'));
+        $this->assertTrue(str_contains('abc', 'bc'));
+        $this->assertTrue(str_contains('abc', 'abc'));
+        $this->assertTrue(str_contains('한국어', '국'));
+        $this->assertTrue(str_contains('한국어', ''));
+        $this->assertTrue(str_contains('', ''));
+        $this->assertFalse(str_contains('abc', 'd'));
+        $this->assertFalse(str_contains('abc', 'abcd'));
+        $this->assertFalse(str_contains('DÉJÀ', 'à'));
+        $this->assertFalse(str_contains('a', 'à'));
+    }
+
     public function fdivProvider()
     {
         return array(
