@@ -33,10 +33,10 @@ class UuidTest extends TestCase
     {
         $uuidNs = uuid_create();
 
-        $this->assertFalse(uuid_generate_md5("not a uuid", "foo"));
+        $this->assertFalse(uuid_generate_md5('not a uuid', 'foo'));
 
-        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_md5($uuidNs, "foo"));
-        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_md5($uuidNs, "bar"));
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_md5($uuidNs, 'foo'));
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_md5($uuidNs, 'bar'));
         $this->assertNotSame($a, $b);
         $this->assertSame(UUID_TYPE_MD5, uuid_type($a));
         $this->assertSame(UUID_TYPE_MD5, uuid_type($b));
@@ -48,10 +48,10 @@ class UuidTest extends TestCase
     {
         $uuidNs = uuid_create();
 
-        $this->assertFalse(uuid_generate_sha1("not a uuid", "foo"));
+        $this->assertFalse(uuid_generate_sha1('not a uuid', 'foo'));
 
-        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_sha1($uuidNs, "foo"));
-        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_sha1($uuidNs, "bar"));
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_sha1($uuidNs, 'foo'));
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_sha1($uuidNs, 'bar'));
         $this->assertNotSame($a, $b);
         $this->assertSame(UUID_TYPE_SHA1, uuid_type($a));
         $this->assertSame(UUID_TYPE_SHA1, uuid_type($b));
