@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-02-06T11:05:23Z
+
+Now in sync with latest changes, including https://github.com/php/php-src/pull/5153
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-02-27T09:47:14Z
+
+Review addressed, implem synced with the PR on php-src.
