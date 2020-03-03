@@ -29,6 +29,36 @@ class UuidTest extends TestCase
         $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', uuid_create(UUID_TYPE_TIME));
     }
 
+    public function testGenerateMd5()
+    {
+        $uuidNs = uuid_create();
+
+        $this->assertFalse(uuid_generate_md5("not a uuid", "foo"));
+
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_md5($uuidNs, "foo"));
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_md5($uuidNs, "bar"));
+        $this->assertNotSame($a, $b);
+        $this->assertSame(UUID_TYPE_MD5, uuid_type($a));
+        $this->assertSame(UUID_TYPE_MD5, uuid_type($b));
+
+        $this->assertSame('828658e4-5ae7-39fc-820b-d01a789b1a4d', uuid_generate_md5('ec07aa88-f84e-47b9-a581-1c6b30a2f484', 'the name'));
+    }
+
+    public function testGenerateSha1()
+    {
+        $uuidNs = uuid_create();
+
+        $this->assertFalse(uuid_generate_sha1("not a uuid", "foo"));
+
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_sha1($uuidNs, "foo"));
+        $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_sha1($uuidNs, "bar"));
+        $this->assertNotSame($a, $b);
+        $this->assertSame(UUID_TYPE_SHA1, uuid_type($a));
+        $this->assertSame(UUID_TYPE_SHA1, uuid_type($b));
+
+        $this->assertSame('851def0c-b9c7-55aa-a991-130e769ec0a9', uuid_generate_sha1('ec07aa88-f84e-47b9-a581-1c6b30a2f484', 'the name'));
+    }
+
     public function provideCreateNoOverlapTests()
     {
         return array(

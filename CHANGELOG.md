@@ -2,6 +2,7 @@
 
   * added `preg_last_error_msg()` to the PHP 8 polyfill
   * added interface `Stringable` to the PHP 8 polyfill
+  * added support for UUID V3 and V5
 
 # 1.14.0
 
