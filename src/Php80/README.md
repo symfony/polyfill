@@ -7,6 +7,7 @@ This component provides features added to PHP 8.0 core:
 - [`fdiv`](https://php.net/fdiv)
 - `ValueError` class
 - `FILTER_VALIDATE_BOOL` constant
+- [`get_debug_type`](https://php.net/get_debug_type)
 - [`preg_last_error_msg`](https://php.net/preg_last_error_msg)
 - [`str_contains`](https://php.net/str_contains)
 

@@ -27,4 +27,8 @@ if (PHP_VERSION_ID < 80000) {
     if (!defined('FILTER_VALIDATE_BOOL') && defined('FILTER_VALIDATE_BOOLEAN')) {
         define('FILTER_VALIDATE_BOOL', FILTER_VALIDATE_BOOLEAN);
     }
+
+    if (!function_exists('get_debug_type')) {
+        function get_debug_type($value): string { return p\Php80::get_debug_type($value); }
+    }
 }

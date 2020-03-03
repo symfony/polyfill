@@ -155,6 +155,34 @@ class Php80Test extends TestCase
         );
     }
 
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::get_debug_type
+     */
+    public function testGetDebugType()
+    {
+        $this->assertSame(__CLASS__, get_debug_type($this));
+        $this->assertSame('stdClass', get_debug_type(new \stdClass()));
+        $this->assertSame('class@anonymous', get_debug_type(eval('return new class() {};')));
+        $this->assertSame('stdClass@anonymous', get_debug_type(eval('return new class() extends stdClass {};')));
+        $this->assertSame('Reflector@anonymous', get_debug_type(eval('return new class() implements Reflector { function __toString() {} public static function export() {} };')));
+
+        $this->assertSame('string', get_debug_type('foo'));
+        $this->assertSame('bool', get_debug_type(false));
+        $this->assertSame('bool', get_debug_type(true));
+        $this->assertSame('null', get_debug_type(null));
+        $this->assertSame('array', get_debug_type(array()));
+        $this->assertSame('int', get_debug_type(1));
+        $this->assertSame('float', get_debug_type(1.2));
+        $this->assertSame('resource (stream)', get_debug_type($h = fopen(__FILE__, 'r')));
+        $this->assertSame('resource (closed)', get_debug_type(fclose($h) ? $h : $h));
+
+        $unserializeCallbackHandler = ini_set('unserialize_callback_func', null);
+        $var = unserialize('O:8:"Foo\Buzz":0:{}');
+        ini_set('unserialize_callback_func', $unserializeCallbackHandler);
+
+        $this->assertSame('__PHP_Incomplete_Class', get_debug_type($var));
+    }
+
     public function setExpectedException($exception, $message = '', $code = null)
     {
         if (!class_exists('PHPUnit\Framework\Error\Notice')) {
