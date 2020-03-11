@@ -14,9 +14,6 @@ namespace Symfony\Polyfill\Tests\Uuid;
 use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Uuid\Uuid;
 
-/**
- * @requires extension uuid
- */
 class UuidTest extends TestCase
 {
     public function testCreate()

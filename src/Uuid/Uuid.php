@@ -32,6 +32,13 @@ final class Uuid
     const UUID_TYPE_NULL = -1;
     const UUID_TYPE_INVALID = -42;
 
+    // https://tools.ietf.org/html/rfc4122#section-4.1.4
+    // 0x01b21dd213814000 is the number of 100-ns intervals between the
+    // UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
+    const TIME_OFFSET_INT = 0x01b21dd213814000;
+    const TIME_OFFSET_BIN = "\x01\xb2\x1d\xd2\x13\x81\x40\x00";
+    const TIME_OFFSET_COM = "\xfe\x4d\xe2\x2d\xec\x7e\xc0\x00";
+
     public static function uuid_create($uuid_type = UUID_TYPE_DEFAULT)
     {
         if (!\is_int($uuid_type)) {
@@ -125,7 +132,7 @@ final class Uuid
             substr($hash, 8, 4),
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 5
-            hexdec(substr($hash, 12, 4)) & 0x0fff | 0x5000,
+            hexdec(substr($hash, 13, 3)) | 0x5000,
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
@@ -170,15 +177,7 @@ final class Uuid
             return false;
         }
 
-        if ($uuid1 === $uuid2) {
-            return 0;
-        }
-
-        if ($uuid1 < $uuid2) {
-            return -1;
-        }
-
-        return 1;
+        return strcasecmp($uuid1, $uuid2);
     }
 
     public static function uuid_is_null($uuid)
@@ -208,7 +207,7 @@ final class Uuid
             return self::UUID_TYPE_NULL;
         }
 
-        return ($parsed['time_hi_and_version'] >> 12) & 0xF;
+        return $parsed['version'];
     }
 
     public static function uuid_variant($uuid)
@@ -248,10 +247,6 @@ final class Uuid
             return null;
         }
 
-        if (\PHP_INT_SIZE === 4) {
-            throw new \RuntimeException('UUID time generation is not supported on 32-bit systems. Use the uuid extension instead.');
-        }
-
         if (null === $parsed = self::uuid_parse_as_array($uuid)) {
             return false;
         }
@@ -260,11 +255,16 @@ final class Uuid
             return false;
         }
 
-        $high = $parsed['time_mid'] | (($parsed['time_hi_and_version'] & 0xFFF) << 16);
-        $clockReg = $parsed['time_low'] | ($high << 32);
-        $clockReg -= 122192928000000000;
 
-        return (int) ($clockReg / 10000000);
+        if (\PHP_INT_SIZE >= 8) {
+            return intdiv(hexdec($parsed['time']) - self::TIME_OFFSET_INT, 10000000);
+        }
+
+        $time = str_pad(hex2bin($parsed['time']), 8, "\0", STR_PAD_LEFT);
+        $time = self::binaryAdd($time, self::TIME_OFFSET_COM);
+        $time[0] = $time[0] & "\x7F";
+
+        return (int) substr(self::toDecimal($time), 0, -7);
     }
 
     public static function uuid_mac($uuid)
@@ -283,7 +283,7 @@ final class Uuid
             return false;
         }
 
-        return dechex($parsed['node']);
+        return $parsed['node'];
     }
 
     public static function uuid_parse($uuid)
@@ -344,7 +344,7 @@ final class Uuid
             substr($uuid, 8, 4),
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 4
-            hexdec(substr($uuid, 12, 3)) & 0x0fff | 0x4000,
+            hexdec(substr($uuid, 12, 3)) | 0x4000,
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
@@ -360,16 +360,16 @@ final class Uuid
      */
     private static function uuid_generate_time()
     {
-        if (\PHP_INT_SIZE === 4) {
-            throw new \RuntimeException('UUID time generation is not supported on 32-bit systems. Use the uuid extension instead.');
-        }
+        $time = microtime(false);
+        $time = substr($time, 11).substr($time, 2, 7);
 
-        // https://tools.ietf.org/html/rfc4122#section-4.1.4
-        // 0x01b21dd213814000 is the number of 100-ns intervals between the
-        // UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
-        $offset = 0x01b21dd213814000;
-        $timeOfDay = gettimeofday();
-        $time = ($timeOfDay['sec'] * 10000000) + ($timeOfDay['usec'] * 10) + $offset;
+        if (\PHP_INT_SIZE >= 8) {
+            $time = str_pad(dechex($time + self::TIME_OFFSET_INT), 16, '0', STR_PAD_LEFT);
+        } else {
+            $time = str_pad(self::toBinary($time), 8, "\0", STR_PAD_LEFT);
+            $time = self::binaryAdd($time, self::TIME_OFFSET_BIN);
+            $time = bin2hex($time);
+        }
 
         // https://tools.ietf.org/html/rfc4122#section-4.1.5
         // We are using a random data for the sake of simplicity: since we are
@@ -395,16 +395,16 @@ final class Uuid
             }
         }
 
-        return sprintf('%08x-%04x-%04x-%04x-%012s',
+        return sprintf('%08s-%04s-%04x-%04x-%012s',
             // 32 bits for "time_low"
-            $time & 0xffffffff,
+            substr($time, -8),
 
             // 16 bits for "time_mid"
-            ($time >> 32) & 0xffff,
+            substr($time, -12, 4),
 
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 1
-            ($time >> 48) | 1 << 12,
+            hexdec(substr($time, -15, 3)) | 1 << 12,
 
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
@@ -423,16 +423,80 @@ final class Uuid
             return null;
         }
 
-        if (!preg_match('{^(?<time_low>[0-9a-f]{8})-(?<time_mid>[0-9a-f]{4})-(?<time_hi_and_version>[0-9a-f]{4})-(?<clock_seq>[0-9a-f]{4})-(?<node>[0-9a-f]{12})$}i', $uuid, $matches)) {
+        if (!preg_match('{^(?<time_low>[0-9a-f]{8})-(?<time_mid>[0-9a-f]{4})-(?<version>[0-9a-f])(?<time_hi>[0-9a-f]{3})-(?<clock_seq>[0-9a-f]{4})-(?<node>[0-9a-f]{12})$}i', $uuid, $matches)) {
             return null;
         }
 
         return array(
-            'time_low' => hexdec($matches['time_low']),
-            'time_mid' => hexdec($matches['time_mid']),
-            'time_hi_and_version' => hexdec($matches['time_hi_and_version']),
+            'time' => '0'.$matches['time_hi'].$matches['time_mid'].$matches['time_low'],
+            'version' => hexdec($matches['version']),
             'clock_seq' => hexdec($matches['clock_seq']),
-            'node' => hexdec($matches['node']),
+            'node' => $matches['node'],
         );
+    }
+
+    private static function toBinary($digits)
+    {
+        $bytes = '';
+        $len = \strlen($digits);
+
+        while ($len > $i = strspn($digits, '0')) {
+            for ($j = 2, $r = 0; $i < $len; $i += $j, $j = 0) {
+                do {
+                    $r *= 10;
+                    $d = (int) substr($digits, $i, ++$j);
+                } while ($i + $j < $len && $r + $d < 256);
+
+                $j = \strlen((string) $d);
+                $q = str_pad(($d += $r) >> 8, $j, '0', STR_PAD_LEFT);
+                $digits = substr_replace($digits, $q, $i, $j);
+                $r = $d % 256;
+            }
+
+            $bytes .= \chr($r);
+        }
+
+        return strrev($bytes);
+    }
+
+    private static function toDecimal($bytes)
+    {
+        $digits = '';
+        $len = \strlen($bytes);
+
+        while ($len > $i = strspn($bytes, "\0")) {
+            for ($r = 0; $i < $len; $i += $j) {
+                $j = $d = 0;
+                do {
+                    $r <<= 8;
+                    $d = ($d << 8) + \ord($bytes[$i + $j]);
+                } while ($i + ++$j < $len && $r + $d < 10);
+
+                if (256 < $d) {
+                    $q = intdiv($d += $r, 10);
+                    $bytes[$i] = \chr($q >> 8);
+                    $bytes[1 + $i] = \chr($q & 0xFF);
+                } else {
+                    $bytes[$i] = \chr(intdiv($d += $r, 10));
+                }
+                $r = $d % 10;
+            }
+
+            $digits .= (string) $r;
+        }
+
+        return strrev($digits);
+    }
+
+    private static function binaryAdd($a, $b)
+    {
+        $sum = 0;
+        for ($i = 7; 0 <= $i; --$i) {
+            $sum += \ord($a[$i]) + \ord($b[$i]);
+            $a[$i] = \chr($sum & 0xFF);
+            $sum >>= 8;
+        }
+
+        return $a;
     }
 }
