@@ -11,11 +11,13 @@
 
 use Symfony\Polyfill\Intl\Grapheme as p;
 
-if (!function_exists('grapheme_strlen')) {
+if (!defined('GRAPHEME_EXTR_COUNT')) {
     define('GRAPHEME_EXTR_COUNT', 0);
     define('GRAPHEME_EXTR_MAXBYTES', 1);
     define('GRAPHEME_EXTR_MAXCHARS', 2);
+}
 
+if (!function_exists('grapheme_strlen')) {
     function grapheme_extract($s, $size, $type = 0, $start = 0, &$next = 0) { return p\Grapheme::grapheme_extract($s, $size, $type, $start, $next); }
     function grapheme_stripos($s, $needle, $offset = 0) { return p\Grapheme::grapheme_stripos($s, $needle, $offset); }
     function grapheme_stristr($s, $needle, $beforeNeedle = false) { return p\Grapheme::grapheme_stristr($s, $needle, $beforeNeedle); }

@@ -11,12 +11,14 @@
 
 use Symfony\Polyfill\Iconv as p;
 
-if (!function_exists('iconv')) {
+if (!defined('ICONV_IMPL')) {
     define('ICONV_IMPL', 'Symfony');
     define('ICONV_VERSION', '1.0');
     define('ICONV_MIME_DECODE_STRICT', 1);
     define('ICONV_MIME_DECODE_CONTINUE_ON_ERROR', 2);
+}
 
+if (!function_exists('iconv')) {
     function iconv($from, $to, $s) { return p\Iconv::iconv($from, $to, $s); }
     function iconv_get_encoding($type = 'all') { return p\Iconv::iconv_get_encoding($type); }
     function iconv_set_encoding($type, $charset) { return p\Iconv::iconv_set_encoding($type, $charset); }
