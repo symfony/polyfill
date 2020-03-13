@@ -41,13 +41,13 @@ final class Uuid
 
     public static function uuid_create($uuid_type = UUID_TYPE_DEFAULT)
     {
-        if (!\is_int($uuid_type)) {
+        if (!\is_numeric($uuid_type) && null !== $uuid_type) {
             trigger_error(sprintf('uuid_create() expects parameter 1 to be int, %s given', \gettype($uuid_type)), E_USER_WARNING);
 
             return null;
         }
 
-        switch ($uuid_type) {
+        switch ((int) $uuid_type) {
             case self::UUID_TYPE_NAME:
             case self::UUID_TYPE_TIME:
                 return self::uuid_generate_time();
@@ -64,13 +64,13 @@ final class Uuid
 
     public static function uuid_generate_md5($uuid_ns, $name)
     {
-        if (!\is_string($uuid_ns)) {
+        if (!\is_string($uuid_ns = self::toString($uuid_ns))) {
             trigger_error(sprintf('uuid_generate_md5() expects parameter 1 to be string, %s given', \gettype($uuid_ns)), E_USER_WARNING);
 
             return null;
         }
 
-        if (!\is_string($name)) {
+        if (!\is_string($name = self::toString($name))) {
             trigger_error(sprintf('uuid_generate_md5() expects parameter 2 to be string, %s given', \gettype($name)), E_USER_WARNING);
 
             return null;
@@ -80,10 +80,7 @@ final class Uuid
             return false;
         }
 
-        $ctx = hash_init('md5');
-        hash_update($ctx, self::uuid_parse($uuid_ns));
-        hash_update($ctx, $name);
-        $hash = hash_final($ctx);
+        $hash = md5(hex2bin(str_replace('-', '', $uuid_ns)).$name);
 
         return sprintf('%08s-%04s-%04x-%04x-%012s',
             // 32 bits for "time_low"
@@ -104,13 +101,13 @@ final class Uuid
 
     public static function uuid_generate_sha1($uuid_ns, $name)
     {
-        if (!\is_string($uuid_ns)) {
+        if (!\is_string($uuid_ns = self::toString($uuid_ns))) {
             trigger_error(sprintf('uuid_generate_sha1() expects parameter 1 to be string, %s given', \gettype($uuid_ns)), E_USER_WARNING);
 
             return null;
         }
 
-        if (!\is_string($name)) {
+        if (!\is_string($name = self::toString($name))) {
             trigger_error(sprintf('uuid_generate_sha1() expects parameter 2 to be string, %s given', \gettype($name)), E_USER_WARNING);
 
             return null;
@@ -120,10 +117,7 @@ final class Uuid
             return false;
         }
 
-        $ctx = hash_init('sha1');
-        hash_update($ctx, self::uuid_parse($uuid_ns));
-        hash_update($ctx, $name);
-        $hash = hash_final($ctx);
+        $hash = sha1(hex2bin(str_replace('-', '', $uuid_ns)).$name);
 
         return sprintf('%08s-%04s-%04x-%04x-%012s',
             // 32 bits for "time_low"
@@ -146,7 +140,7 @@ final class Uuid
 
     public static function uuid_is_valid($uuid)
     {
-        if (!\is_string($uuid)) {
+        if (!\is_string($uuid = self::toString($uuid))) {
             trigger_error(sprintf('uuid_is_valid() expects parameter 1 to be string, %s given', \gettype($uuid)), E_USER_WARNING);
 
             return null;
@@ -157,13 +151,13 @@ final class Uuid
 
     public static function uuid_compare($uuid1, $uuid2)
     {
-        if (!\is_string($uuid1)) {
+        if (!\is_string($uuid1 = self::toString($uuid1))) {
             trigger_error(sprintf('uuid_compare() expects parameter 1 to be string, %s given', \gettype($uuid1)), E_USER_WARNING);
 
             return null;
         }
 
-        if (!\is_string($uuid2)) {
+        if (!\is_string($uuid2 = self::toString($uuid2))) {
             trigger_error(sprintf('uuid_compare() expects parameter 2 to be string, %s given', \gettype($uuid2)), E_USER_WARNING);
 
             return null;
@@ -182,7 +176,7 @@ final class Uuid
 
     public static function uuid_is_null($uuid)
     {
-        if (!\is_string($uuid)) {
+        if (!\is_string($uuid = self::toString($uuid))) {
             trigger_error(sprintf('uuid_is_null() expects parameter 1 to be string, %s given', \gettype($uuid)), E_USER_WARNING);
 
             return null;
@@ -193,7 +187,7 @@ final class Uuid
 
     public static function uuid_type($uuid)
     {
-        if (!\is_string($uuid)) {
+        if (!\is_string($uuid = self::toString($uuid))) {
             trigger_error(sprintf('uuid_type() expects parameter 1 to be string, %s given', \gettype($uuid)), E_USER_WARNING);
 
             return null;
@@ -203,7 +197,7 @@ final class Uuid
             return false;
         }
 
-        if (self::uuid_is_null($uuid)) {
+        if ('00000000-0000-0000-0000-000000000000' === $uuid) {
             return self::UUID_TYPE_NULL;
         }
 
@@ -212,7 +206,7 @@ final class Uuid
 
     public static function uuid_variant($uuid)
     {
-        if (!\is_string($uuid)) {
+        if (!\is_string($uuid = self::toString($uuid))) {
             trigger_error(sprintf('uuid_variant() expects parameter 1 to be string, %s given', \gettype($uuid)), E_USER_WARNING);
 
             return null;
@@ -222,7 +216,7 @@ final class Uuid
             return false;
         }
 
-        if (self::uuid_is_null($uuid)) {
+        if ('00000000-0000-0000-0000-000000000000' === $uuid) {
             return self::UUID_TYPE_NULL;
         }
 
@@ -241,7 +235,7 @@ final class Uuid
 
     public static function uuid_time($uuid)
     {
-        if (!\is_string($uuid)) {
+        if (!\is_string($uuid = self::toString($uuid))) {
             trigger_error(sprintf('uuid_time() expects parameter 1 to be string, %s given', \gettype($uuid)), E_USER_WARNING);
 
             return null;
@@ -251,7 +245,7 @@ final class Uuid
             return false;
         }
 
-        if (self::UUID_TYPE_TIME !== self::uuid_type($uuid)) {
+        if (self::UUID_TYPE_TIME !== $parsed['version']) {
             return false;
         }
 
@@ -269,7 +263,7 @@ final class Uuid
 
     public static function uuid_mac($uuid)
     {
-        if (!\is_string($uuid)) {
+        if (!\is_string($uuid = self::toString($uuid))) {
             trigger_error(sprintf('uuid_mac() expects parameter 1 to be string, %s given', \gettype($uuid)), E_USER_WARNING);
 
             return null;
@@ -279,7 +273,7 @@ final class Uuid
             return false;
         }
 
-        if (self::UUID_TYPE_TIME !== self::uuid_type($uuid)) {
+        if (self::UUID_TYPE_TIME !== $parsed['version']) {
             return false;
         }
 
@@ -288,7 +282,7 @@ final class Uuid
 
     public static function uuid_parse($uuid)
     {
-        if (!\is_string($uuid)) {
+        if (!\is_string($uuid = self::toString($uuid))) {
             trigger_error(sprintf('uuid_parse() expects parameter 1 to be string, %s given', \gettype($uuid)), E_USER_WARNING);
 
             return null;
@@ -305,7 +299,7 @@ final class Uuid
 
     public static function uuid_unparse($uuidAsBinary)
     {
-        if (!\is_string($uuidAsBinary)) {
+        if (!\is_string($uuidAsBinary = self::toString($uuidAsBinary))) {
             trigger_error(sprintf('uuid_unparse() expects parameter 1 to be string, %s given', \gettype($uuidAsBinary)), E_USER_WARNING);
 
             return null;
@@ -433,6 +427,15 @@ final class Uuid
             'clock_seq' => hexdec($matches['clock_seq']),
             'node' => $matches['node'],
         );
+    }
+
+    private static function toString($v)
+    {
+        if (\is_string($v) || null === $v || (\is_object($v) ? \is_callable(array($v, '__toString')) : is_scalar($v))) {
+            return (string) $v;
+        }
+
+        return $v;
     }
 
     private static function toBinary($digits)
