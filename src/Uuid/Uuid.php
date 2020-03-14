@@ -440,8 +440,6 @@ final class Uuid
 
     private static function toBinary($digits)
     {
-        $quotient = array();
-        $remainder = 0;
         $bytes = '';
         $count = \strlen($digits);
 
@@ -459,33 +457,19 @@ final class Uuid
                 }
             }
 
-            $bytes .= \chr($remainder);
+            $bytes = \chr($remainder).$bytes;
             $count = \count($digits = $quotient);
         }
 
-        return strrev($bytes);
+        return $bytes;
     }
 
     private static function toDecimal($bytes)
     {
         $digits = '';
-        $quotient = array();
-        $remainder = 0;
-        $count = \strlen($bytes);
+        $bytes = array_values(unpack('C*', $bytes));
 
-        for ($i = 0; $i !== $count; ++$i) {
-            $carry = \ord($bytes[$i]) + ($remainder << 8);
-            $digit = (int) ($carry / 10);
-            $remainder = $carry % 10;
-
-            if ($digit || $quotient) {
-                $quotient[] = $digit;
-            }
-        }
-
-        $digits = (string) $remainder;
-
-        while ($count = \count($bytes = $quotient)) {
+        while ($count = \count($bytes)) {
             $quotient = array();
             $remainder = 0;
 
@@ -499,11 +483,11 @@ final class Uuid
                 }
             }
 
-            $digits .= $remainder;
+            $digits = $remainder.$digits;
             $bytes = $quotient;
         }
 
-        return strrev($digits);
+        return $digits;
     }
 
     private static function binaryAdd($a, $b)
