@@ -431,7 +431,7 @@ final class Uuid
 
     private static function toString($v)
     {
-        if (\is_string($v) || null === $v || (\is_object($v) ? \is_callable(array($v, '__toString')) : is_scalar($v))) {
+        if (\is_string($v) || null === $v || (\is_object($v) ? method_exists($v, '__toString') : is_scalar($v))) {
             return (string) $v;
         }
 
@@ -440,23 +440,27 @@ final class Uuid
 
     private static function toBinary($digits)
     {
+        $quotient = array();
+        $remainder = 0;
         $bytes = '';
-        $len = \strlen($digits);
+        $count = \strlen($digits);
 
-        while ($len > $i = strspn($digits, '0')) {
-            for ($j = 2, $r = 0; $i < $len; $i += $j, $j = 0) {
-                do {
-                    $r *= 10;
-                    $d = (int) substr($digits, $i, ++$j);
-                } while ($i + $j < $len && $r + $d < 256);
+        while ($count) {
+            $quotient = array();
+            $remainder = 0;
 
-                $j = \strlen((string) $d);
-                $q = str_pad(($d += $r) >> 8, $j, '0', STR_PAD_LEFT);
-                $digits = substr_replace($digits, $q, $i, $j);
-                $r = $d % 256;
+            for ($i = 0; $i !== $count; ++$i) {
+                $carry = $digits[$i] + $remainder * 10;
+                $digit = $carry >> 8;
+                $remainder = $carry & 0xFF;
+
+                if ($digit || $quotient) {
+                    $quotient[] = $digit;
+                }
             }
 
-            $bytes .= \chr($r);
+            $bytes .= \chr($remainder);
+            $count = \count($digits = $quotient);
         }
 
         return strrev($bytes);
@@ -465,27 +469,38 @@ final class Uuid
     private static function toDecimal($bytes)
     {
         $digits = '';
-        $len = \strlen($bytes);
+        $quotient = array();
+        $remainder = 0;
+        $count = \strlen($bytes);
 
-        while ($len > $i = strspn($bytes, "\0")) {
-            for ($r = 0; $i < $len; $i += $j) {
-                $j = $d = 0;
-                do {
-                    $r <<= 8;
-                    $d = ($d << 8) + \ord($bytes[$i + $j]);
-                } while ($i + ++$j < $len && $r + $d < 10);
+        for ($i = 0; $i !== $count; ++$i) {
+            $carry = \ord($bytes[$i]) + ($remainder << 8);
+            $digit = (int) ($carry / 10);
+            $remainder = $carry % 10;
 
-                if (256 < $d) {
-                    $q = intdiv($d += $r, 10);
-                    $bytes[$i] = \chr($q >> 8);
-                    $bytes[1 + $i] = \chr($q & 0xFF);
-                } else {
-                    $bytes[$i] = \chr(intdiv($d += $r, 10));
+            if ($digit || $quotient) {
+                $quotient[] = $digit;
+            }
+        }
+
+        $digits = (string) $remainder;
+
+        while ($count = \count($bytes = $quotient)) {
+            $quotient = array();
+            $remainder = 0;
+
+            for ($i = 0; $i !== $count; ++$i) {
+                $carry = $bytes[$i] + ($remainder << 8);
+                $digit = (int) ($carry / 10);
+                $remainder = $carry % 10;
+
+                if ($digit || $quotient) {
+                    $quotient[] = $digit;
                 }
-                $r = $d % 10;
             }
 
-            $digits .= (string) $r;
+            $digits .= $remainder;
+            $bytes = $quotient;
         }
 
         return strrev($digits);
