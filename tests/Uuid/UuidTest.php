@@ -200,7 +200,7 @@ class UuidTest extends TestCase
             array(false, '00000000-0000-0000-0000-000000000000'),
             array(false, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
             array('b52d3e41ad26', '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
-            array('3c7de2fa99cb', '77ffc38a-fb21-11e9-b46a-3c7de2fa99cb'),
+            array('3c7de2fa99cb', '77ffc38a-fb21-11e9-b46a-3c7de2fa99CB'),
         );
     }
 

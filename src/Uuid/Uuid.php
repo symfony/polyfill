@@ -277,7 +277,7 @@ final class Uuid
             return false;
         }
 
-        return $parsed['node'];
+        return strtr($parsed['node'], 'ABCDEF', 'abcdef');
     }
 
     public static function uuid_parse($uuid)
