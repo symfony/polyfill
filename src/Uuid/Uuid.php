@@ -76,20 +76,20 @@ final class Uuid
             return null;
         }
 
-        if (null === self::uuid_parse_as_array($uuid_ns)) {
+        if (!self::isValid($uuid_ns)) {
             return false;
         }
 
         $hash = md5(hex2bin(str_replace('-', '', $uuid_ns)).$name);
 
-        return sprintf('%08s-%04s-%04x-%04x-%012s',
+        return sprintf('%08s-%04s-3%03s-%04x-%012s',
             // 32 bits for "time_low"
             substr($hash, 0, 8),
             // 16 bits for "time_mid"
             substr($hash, 8, 4),
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 3
-            hexdec(substr($hash, 12, 4)) & 0x0fff | 0x3000,
+            substr($hash, 13, 3),
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
@@ -113,26 +113,26 @@ final class Uuid
             return null;
         }
 
-        if (null === self::uuid_parse_as_array($uuid_ns)) {
+        if (!self::isValid($uuid_ns)) {
             return false;
         }
 
         $hash = sha1(hex2bin(str_replace('-', '', $uuid_ns)).$name);
 
-        return sprintf('%08s-%04s-%04x-%04x-%012s',
+        return sprintf('%08s-%04s-5%03s-%04x-%012s',
             // 32 bits for "time_low"
             substr($hash, 0, 8),
             // 16 bits for "time_mid"
             substr($hash, 8, 4),
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 5
-            hexdec(substr($hash, 13, 3)) | 0x5000,
+            substr($hash, 13, 3),
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
             // WARNING: On old libuuid version, there is a bug. 0x0fff is used instead of 0x3fff
             // See https://github.com/karelzak/util-linux/commit/d6ddf07d31dfdc894eb8e7e6842aa856342c526e
-            (hexdec(substr($hash, 16, 4)) & 0x3fff) | 0x8000,
+            hexdec(substr($hash, 16, 4)) & 0x3fff | 0x8000,
             // 48 bits for "node"
             substr($hash, 20, 12)
         );
@@ -146,7 +146,7 @@ final class Uuid
             return null;
         }
 
-        return null !== self::uuid_parse_as_array($uuid);
+        return self::isValid($uuid);
     }
 
     public static function uuid_compare($uuid1, $uuid2)
@@ -163,11 +163,11 @@ final class Uuid
             return null;
         }
 
-        if (null === self::uuid_parse_as_array($uuid1)) {
+        if (!self::isValid($uuid1)) {
             return false;
         }
 
-        if (null === self::uuid_parse_as_array($uuid2)) {
+        if (!self::isValid($uuid2)) {
             return false;
         }
 
@@ -193,12 +193,12 @@ final class Uuid
             return null;
         }
 
-        if (null === $parsed = self::uuid_parse_as_array($uuid)) {
-            return false;
-        }
-
         if ('00000000-0000-0000-0000-000000000000' === $uuid) {
             return self::UUID_TYPE_NULL;
+        }
+
+        if (null === $parsed = self::parse($uuid)) {
+            return false;
         }
 
         return $parsed['version'];
@@ -212,12 +212,12 @@ final class Uuid
             return null;
         }
 
-        if (null === $parsed = self::uuid_parse_as_array($uuid)) {
-            return false;
-        }
-
         if ('00000000-0000-0000-0000-000000000000' === $uuid) {
             return self::UUID_TYPE_NULL;
+        }
+
+        if (null === $parsed = self::parse($uuid)) {
+            return false;
         }
 
         if (($parsed['clock_seq'] & 0x8000) === 0) {
@@ -241,7 +241,7 @@ final class Uuid
             return null;
         }
 
-        if (null === $parsed = self::uuid_parse_as_array($uuid)) {
+        if (null === $parsed = self::parse($uuid)) {
             return false;
         }
 
@@ -269,7 +269,7 @@ final class Uuid
             return null;
         }
 
-        if (null === $parsed = self::uuid_parse_as_array($uuid)) {
+        if (null === $parsed = self::parse($uuid)) {
             return false;
         }
 
@@ -288,57 +288,45 @@ final class Uuid
             return null;
         }
 
-        if (null === self::uuid_parse_as_array($uuid)) {
+        if (!self::isValid($uuid)) {
             return false;
         }
 
-        $uuid = str_replace('-', '', $uuid);
-
-        return pack('H*', $uuid);
+        return hex2bin(str_replace('-', '', $uuid));
     }
 
-    public static function uuid_unparse($uuidAsBinary)
+    public static function uuid_unparse($bytes)
     {
-        if (!\is_string($uuidAsBinary = self::toString($uuidAsBinary))) {
-            trigger_error(sprintf('uuid_unparse() expects parameter 1 to be string, %s given', \gettype($uuidAsBinary)), E_USER_WARNING);
+        if (!\is_string($bytes = self::toString($bytes))) {
+            trigger_error(sprintf('uuid_unparse() expects parameter 1 to be string, %s given', \gettype($bytes)), E_USER_WARNING);
 
             return null;
         }
 
-        $dataAsArray = unpack('H*', $uuidAsBinary);
-        $data = $dataAsArray[1];
-
-        if (32 !== \strlen($data)) {
+        if (16 !== \strlen($bytes)) {
             return false;
         }
 
-        $uuid = sprintf('%s-%s-%s-%s-%s',
-            substr($data, 0, 8),
-            substr($data, 8, 4),
-            substr($data, 12, 4),
-            substr($data, 16, 4),
-            substr($data, 20, 12)
-        );
+        $uuid = bin2hex($bytes);
+        $uuid = substr_replace($uuid, '-', 8, 0);
+        $uuid = substr_replace($uuid, '-', 13, 0);
+        $uuid = substr_replace($uuid, '-', 18, 0);
 
-        if (null === self::uuid_parse_as_array($uuid)) {
-            return false;
-        }
-
-        return $uuid;
+        return substr_replace($uuid, '-', 23, 0);
     }
 
     private static function uuid_generate_random()
     {
         $uuid = bin2hex(random_bytes(16));
 
-        return sprintf('%08s-%04s-%04x-%04x-%012s',
+        return sprintf('%08s-%04s-4%03s-%04x-%012s',
             // 32 bits for "time_low"
             substr($uuid, 0, 8),
             // 16 bits for "time_mid"
             substr($uuid, 8, 4),
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 4
-            hexdec(substr($uuid, 12, 3)) | 0x4000,
+            substr($uuid, 13, 3),
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
@@ -389,7 +377,7 @@ final class Uuid
             }
         }
 
-        return sprintf('%08s-%04s-%04x-%04x-%012s',
+        return sprintf('%08s-%04s-1%03s-%04x-%012s',
             // 32 bits for "time_low"
             substr($time, -8),
 
@@ -398,7 +386,7 @@ final class Uuid
 
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 1
-            hexdec(substr($time, -15, 3)) | 1 << 12,
+            substr($time, -15, 3),
 
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
@@ -411,13 +399,14 @@ final class Uuid
         );
     }
 
-    private static function uuid_parse_as_array($uuid)
+    private static function isValid($uuid)
     {
-        if (36 !== \strlen($uuid)) {
-            return null;
-        }
+        return (bool) preg_match('{^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$}Di', $uuid);
+    }
 
-        if (!preg_match('{^(?<time_low>[0-9a-f]{8})-(?<time_mid>[0-9a-f]{4})-(?<version>[0-9a-f])(?<time_hi>[0-9a-f]{3})-(?<clock_seq>[0-9a-f]{4})-(?<node>[0-9a-f]{12})$}i', $uuid, $matches)) {
+    private static function parse($uuid)
+    {
+        if (!preg_match('{^(?<time_low>[0-9a-f]{8})-(?<time_mid>[0-9a-f]{4})-(?<version>[0-9a-f])(?<time_hi>[0-9a-f]{3})-(?<clock_seq>[0-9a-f]{4})-(?<node>[0-9a-f]{12})$}Di', $uuid, $matches)) {
             return null;
         }
 
