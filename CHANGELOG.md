@@ -1,7 +1,9 @@
 # 1.15.0
 
-  * added `preg_last_error_msg()` to the PHP 8 polyfill
   * added interface `Stringable` to the PHP 8 polyfill
+  * added `get_debug_type()` to the PHP 8 polyfill
+  * added `str_contains()` to the PHP 8 polyfill
+  * added `preg_last_error_msg()` to the PHP 8 polyfill
   * added support for UUID V3 and V5
   * added support for UUID on 32-bit systems
   * fixed support for preloading
