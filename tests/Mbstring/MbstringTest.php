@@ -295,7 +295,11 @@ class MbstringTest extends TestCase
     public function testStrposEmptyDelimiter()
     {
         mb_strpos('abc', 'a');
-        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'Empty delimiter', null, '\TypeError');
+        if (\PHP_VERSION_ID >= 80000) { // PHP 8 always returns this.
+            $this->assertSame(0, mb_strpos('abc', ''));
+        }
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Empty delimiter');
+        // todo: fix polyfill to consider every string contains empty strings now.
         mb_strpos('abc', '');
     }
 
@@ -308,7 +312,7 @@ class MbstringTest extends TestCase
         if (\PHP_VERSION_ID >= 70100) {
             $this->assertFalse(mb_strpos('abc', 'a', -1));
         } else {
-            $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'Offset not contained in string', null, '\TypeError');
+            $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Offset not contained in string');
             mb_strpos('abc', 'a', -1);
         }
     }
@@ -330,7 +334,8 @@ class MbstringTest extends TestCase
         $this->assertFalse(@mb_str_split('победа', 0));
         $this->assertNull(@mb_str_split(array(), 0));
 
-        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero', null, '\TypeError');
+        // This is not converted to an exception yet.
+        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero');
         mb_str_split('победа', 0);
     }
 
@@ -468,7 +473,7 @@ class MbstringTest extends TestCase
      *   $php8_exception. Expect the first exception in versions prior to PHP 8.
      *
      * @param string      $exception      PHP 5.x and 7.x exception
-     * @param string      $message        Message for the exception
+     * @param string      $message        text for the warning, or message for the exception
      * @param int|null    $code           Exception error code
      * @param string|null $php8_exception in case $exception is different in
      *                                    PHP 8, the name of the exception
