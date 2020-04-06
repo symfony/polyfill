@@ -77,6 +77,25 @@ final class Mbstring
         array('μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'),
     );
 
+    /**
+     * A helper method to either trigger an error, or throw an exception in PHP 8.
+     *
+     * @param string $error_msg  the error message to be used in the error or exception
+     * @param int    $error_type Type of the error. Not used when an exception is thrown.
+     * @param null   $exception  in case an exception must be thrown in PHP 8,
+     *                           the fully-qualified name of the exception
+     */
+    private static function triggerErrorOrException(
+      $error_msg,
+      $error_type = E_USER_NOTICE,
+      $exception = null
+    ) {
+        if (null !== $exception && PHP_VERSION_ID >= 80000) {
+            throw new $exception($error_msg);
+        }
+        trigger_error($error_msg, $error_type);
+    }
+
     public static function mb_convert_encoding($s, $toEncoding, $fromEncoding = null)
     {
         if (\is_array($fromEncoding) || false !== strpos($fromEncoding, ',')) {
@@ -136,13 +155,13 @@ final class Mbstring
 
     public static function mb_encode_mimeheader($s, $charset = null, $transferEncoding = null, $linefeed = null, $indent = null)
     {
-        trigger_error('mb_encode_mimeheader() is bugged. Please use iconv_mime_encode() instead', E_USER_WARNING);
+        self::triggerErrorOrException('mb_encode_mimeheader() is bugged. Please use iconv_mime_encode() instead', E_USER_WARNING, '\TypeError');
     }
 
     public static function mb_decode_numericentity($s, $convmap, $encoding = null)
     {
         if (null !== $s && !\is_scalar($s) && !(\is_object($s) && \method_exists($s, '__toString'))) {
-            trigger_error('mb_decode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', E_USER_WARNING);
+            self::triggerErrorOrException('mb_decode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', E_USER_WARNING, '\TypeError');
 
             return null;
         }
@@ -152,7 +171,7 @@ final class Mbstring
         }
 
         if (null !== $encoding && !\is_scalar($encoding)) {
-            trigger_error('mb_decode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', E_USER_WARNING);
+            self::triggerErrorOrException('mb_decode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', E_USER_WARNING, '\TypeError');
 
             return '';  // Instead of null (cf. mb_encode_numericentity).
         }
@@ -202,7 +221,7 @@ final class Mbstring
     public static function mb_encode_numericentity($s, $convmap, $encoding = null, $is_hex = false)
     {
         if (null !== $s && !\is_scalar($s) && !(\is_object($s) && \method_exists($s, '__toString'))) {
-            trigger_error('mb_encode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', E_USER_WARNING);
+            self::triggerErrorOrException('mb_encode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', E_USER_WARNING, '\TypeError');
 
             return null;
         }
@@ -212,13 +231,13 @@ final class Mbstring
         }
 
         if (null !== $encoding && !\is_scalar($encoding)) {
-            trigger_error('mb_encode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', E_USER_WARNING);
+            self::triggerErrorOrException('mb_encode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', E_USER_WARNING, '\TypeError');
 
             return null;  // Instead of '' (cf. mb_decode_numericentity).
         }
 
         if (null !== $is_hex && !\is_scalar($is_hex)) {
-            trigger_error('mb_encode_numericentity() expects parameter 4 to be boolean, '.\gettype($s).' given', E_USER_WARNING);
+            self::triggerErrorOrException('mb_encode_numericentity() expects parameter 4 to be boolean, '.\gettype($s).' given', E_USER_WARNING, '\TypeError');
 
             return null;
         }
@@ -493,7 +512,7 @@ final class Mbstring
 
         $needle = (string) $needle;
         if ('' === $needle) {
-            trigger_error(__METHOD__.': Empty delimiter', E_USER_WARNING);
+            self::triggerErrorOrException(__METHOD__.': Empty delimiter', E_USER_WARNING, '\TypeError');
 
             return false;
         }
@@ -529,13 +548,13 @@ final class Mbstring
     public static function mb_str_split($string, $split_length = 1, $encoding = null)
     {
         if (null !== $string && !\is_scalar($string) && !(\is_object($string) && \method_exists($string, '__toString'))) {
-            trigger_error('mb_str_split() expects parameter 1 to be string, '.\gettype($string).' given', E_USER_WARNING);
+            self::triggerErrorOrException('mb_str_split() expects parameter 1 to be string, '.\gettype($string).' given', E_USER_WARNING, '\TypeError');
 
             return null;
         }
 
         if (1 > $split_length = (int) $split_length) {
-            trigger_error('The length of each segment must be greater than zero', E_USER_WARNING);
+            self::triggerErrorOrException('The length of each segment must be greater than zero', E_USER_WARNING, '\TypeError');
 
             return false;
         }

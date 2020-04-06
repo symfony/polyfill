@@ -101,7 +101,7 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string');
+        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string', null, '\TypeError');
         mb_decode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -110,7 +110,7 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string');
+        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string', null, '\TypeError');
         mb_decode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -157,7 +157,7 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string');
+        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string', null, '\TypeError');
         mb_encode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -166,7 +166,7 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string');
+        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string', null, '\TypeError');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -176,7 +176,7 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidIsHexType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 4 to be bool');
+        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'expects parameter 4 to be bool', null, '\TypeError');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
     }
 
@@ -295,7 +295,7 @@ class MbstringTest extends TestCase
     public function testStrposEmptyDelimiter()
     {
         mb_strpos('abc', 'a');
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Empty delimiter');
+        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'Empty delimiter', null, '\TypeError');
         mb_strpos('abc', '');
     }
 
@@ -308,7 +308,7 @@ class MbstringTest extends TestCase
         if (\PHP_VERSION_ID >= 70100) {
             $this->assertFalse(mb_strpos('abc', 'a', -1));
         } else {
-            $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Offset not contained in string');
+            $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'Offset not contained in string', null, '\TypeError');
             mb_strpos('abc', 'a', -1);
         }
     }
@@ -330,7 +330,7 @@ class MbstringTest extends TestCase
         $this->assertFalse(@mb_str_split('победа', 0));
         $this->assertNull(@mb_str_split(array(), 0));
 
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero');
+        $this->setExpectedExceptionVersionDependent('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero', null, '\TypeError');
         mb_str_split('победа', 0);
     }
 
@@ -458,6 +458,27 @@ class MbstringTest extends TestCase
             $this->expectExceptionMessage($message);
         } else {
             parent::setExpectedException($exception, $message, $code);
+        }
+    }
+
+    /**
+     * Version-dependent exception handling. From PHP 8.0 and later, PHP throws
+     *   \TypeError and \ValueError exceptions on errors. If the tests are being
+     *   run in PHP 8.0 or later, set it to expect the exception passed to
+     *   $php8_exception. Expect the first exception in versions prior to PHP 8.
+     *
+     * @param string      $exception      PHP 5.x and 7.x exception
+     * @param string      $message        Message for the exception
+     * @param int|null    $code           Exception error code
+     * @param string|null $php8_exception in case $exception is different in
+     *                                    PHP 8, the name of the exception
+     */
+    public function setExpectedExceptionVersionDependent($exception, $message, $code = null, $php8_exception = null)
+    {
+        if (null !== $php8_exception && PHP_VERSION_ID >= 80000) {
+            $this->setExpectedException($php8_exception, $message, $code);
+        } else {
+            $this->setExpectedException($exception, $message, $code);
         }
     }
 }
