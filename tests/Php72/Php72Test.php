@@ -67,6 +67,20 @@ class Php72Test extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Php72\Php72::spl_object_id
+     */
+    public function testSplObjectIdUniqueValues()
+    {
+        // Should be able to represent more than 2**16 ids on 32-bit systems.
+        $result = array();
+        for ($i = 0; $i < 70000; $i++) {
+            $obj = new \stdClass();
+            $result[spl_object_id($obj)] = $obj;
+        }
+        $this->assertSame(70000, count($result));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Php72\Php72::sapi_windows_vt100_support
      */
     public function testSapiWindowsVt100Support()
