@@ -1,0 +1,29 @@
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-04-21T14:49:02Z
+
+Thank you. I have added some elaborate tests that use my native language (Sinhalese) in it. Internally, these functions use memory compare (using C `memcmp`), so they always work the same way `subtr`, `strlen`, and `strncmp` functions which we use in the polyfill.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-04-22T05:08:30Z
+
+The RFC vote is currently at 38-4 in favor. The highest number of votes cast on an RFC was 71, and even if everyone remaining votes no, 38/71 = 53%, so this RFC can be considered a pass. I suppose it's OK to submit this for review.
+
+---------------------------------------------------------------------------
+
+by stof at 2020-04-22T14:21:36Z
+
+@Ayesh 53% is not a passing vote. The threshold is 2/3.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-04-22T14:29:13Z
+
+@stof - shouldn't it be 50%+1 because the RFC is not a language change? Syntax changes sure would require 2/3, but this RFC has no BC impact.
+
+---------------------------------------------------------------------------
+
+by jdreesen at 2020-04-22T15:39:40Z
+
+I think it's 2/3 every time, since https://wiki.php.net/rfc/abolish-narrow-margins
