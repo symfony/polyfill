@@ -1,3 +1,8 @@
+# 1.16.0
+
+  * added `str_starts_with()` and `str_ends_with()` to the PHP 8 polyfill
+  * fixed `spl_object_id()` on 32-bit systems
+
 # 1.15.0
 
   * added interface `Stringable` to the PHP 8 polyfill
