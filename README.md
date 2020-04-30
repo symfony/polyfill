@@ -47,6 +47,7 @@ Polyfills are provided for:
 - the `get_debug_type` function introduced in PHP 8.0;
 - the `preg_last_error_msg` function introduced in PHP 8.0;
 - the `str_contains` function introduced in PHP 8.0;
+- the `str_starts_with` and `str_ends_with` functions introduced in PHP 8.0;
 - the `ValueError` class introduced in PHP 8.0;
 - the `FILTER_VALIDATE_BOOL` constant introduced in PHP 8.0;
 
