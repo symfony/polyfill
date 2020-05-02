@@ -91,6 +91,6 @@ final class Php80
 
     public static function str_ends_with(string $haystack, string $needle): bool
     {
-        return '' === $needle || $needle === \substr($haystack, -\strlen($needle));
+        return '' === $needle || ('' !== $haystack && 0 === \substr_compare($haystack, $needle, -\strlen($needle)));
     }
 }
