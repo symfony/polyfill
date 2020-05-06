@@ -2,6 +2,7 @@
 
   * added `str_starts_with()` and `str_ends_with()` to the PHP 8 polyfill
   * fixed `spl_object_id()` on 32-bit systems
+  * fixed `idn_to_ascii()` not failing on leading or trailing hyphen-minus
 
 # 1.15.0
 

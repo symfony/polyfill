@@ -298,6 +298,12 @@ class IdnTest extends TestCase
             array(
                 'aa..aa.de',
             ),
+            array(
+                '-leading.de',
+            ),
+            array(
+                'trailing-.de',
+            ),
         );
     }
 
