@@ -17,6 +17,8 @@ if (PHP_VERSION_ID < 50600) {
     }
     if (extension_loaded('ldap') && !defined('LDAP_ESCAPE_FILTER')) {
         define('LDAP_ESCAPE_FILTER', 1);
+    }
+    if (extension_loaded('ldap') && !defined('LDAP_ESCAPE_DN')) {
         define('LDAP_ESCAPE_DN', 2);
     }
 
