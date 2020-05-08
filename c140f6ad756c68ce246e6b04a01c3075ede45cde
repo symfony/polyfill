@@ -1,0 +1,40 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-04-30T14:24:22Z
+
+To validate the change, can you please run a simple benchmark with nothing else but a require for vendor/autoload.php, in three situations:
+- all extensions loaded in php, polyfills installed
+- no extensions loaded in php, polyfills installed
+- again but with NO polyfills installed
+?
+
+If you think about other relevant benchmarks, please proceed :) Thanks.
+
+---------------------------------------------------------------------------
+
+by capuderg at 2020-05-05T13:38:12Z
+
+I've run some basic time benchmarks. I've only tested the [mbstrings polyfill library](https://github.com/symfony/polyfill-mbstring) (not this whole library)
+
+A new PHP 7.4.5 CLI docker container was used as an environment.
+
+I've run the basic `require_once __DIR__ . '/vendor/autoload.php';` 1000 times and here are the averages (in seconds) for each situation:
+
+- "empty" composer (no packages required) with `mbstring` extension disabled: 0.0179128654
+- "empty" composer (no packages required) with `mbstring` extension enabled: 0.01777232742
+
+- "symfony/polyfill-mbstring = 1.15" required with `mbstring` extension disabled: 0.02518279123
+- "symfony/polyfill-mbstring = 1.15" required with `mbstring` extension enabled: 0.02492605114
+
+- "symfony/polyfill-mbstring with updated bootstrap.php" required with `mbstring` extension disabled: 0.02665189552
+- "symfony/polyfill-mbstring with updated bootstrap.php" required with `mbstring` extension enabled: 0.02570387244
+
+I hope this helps :)
+
+---------------------------------------------------------------------------
+
+by JanJakes at 2020-05-07T08:57:14Z
+
+@capuderg Great, thanks! I didn't have time to get to this yet, only started to prepare a PHP Docker container without mbstring. This looks good, not sure if we need any more tests.
+
+@nicolas-grekas Do you have any clues why the builds are failing? The `Parse error: syntax error, unexpected T_OBJECT_OPERATOR in C:\projects\polyfill\vendor\bin\.phpunit\phpunit-4.8\phpunit on line 13` doesn't say much.
