@@ -29,7 +29,7 @@ if (!defined('UUID_TYPE_DEFAULT')) {
 if (!defined('UUID_TYPE_TIME')) {
     define('UUID_TYPE_TIME', 1);
 }
-if (!defined('UUUID_TYPE_MD5')) {
+if (!defined('UUID_TYPE_MD5')) {
     define('UUID_TYPE_MD5', 3);
 }
 if (!defined('UUID_TYPE_DCE')) {
