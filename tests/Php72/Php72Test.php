@@ -50,6 +50,14 @@ class Php72Test extends TestCase
         $this->assertSame(PHP_OS_FAMILY, p::php_os_family());
     }
 
+    public function testPhpFloat()
+    {
+        $this->assertSame(15, PHP_FLOAT_DIG);
+        $this->assertSame(2.2204460492503E-16, PHP_FLOAT_EPSILON);
+        $this->assertSame(2.2250738585072E-308, PHP_FLOAT_MIN);
+        $this->assertSame(1.7976931348623157E+308, PHP_FLOAT_MAX);
+    }
+
     /**
      * @covers \Symfony\Polyfill\Php72\Php72::spl_object_id
      */
