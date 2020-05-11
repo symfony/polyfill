@@ -179,6 +179,28 @@ class Php80Test extends TestCase
         $this->assertFalse(str_ends_with($testEmoji, "✨")); // 0xe2 0x9c 0xa8
     }
 
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::get_resource_id
+     */
+    public function testGetResourceIdWithValidResource()
+    {
+        $resource = \fopen(__FILE__, 'r');
+        $resourceId = (int) $resource;
+        $this->assertSame($resourceId, get_resource_id($resource));
+        \fclose($resource);
+        $this->assertSame($resourceId, get_resource_id($resource));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::get_resource_id
+     * @dataProvider invalidResourceProvider
+     */
+    public function testGetResourceWithInvalidValue($value)
+    {
+        $this->setExpectedException('TypeError');
+        get_resource_id($value);
+    }
+
     public function fdivProvider()
     {
         return array(
@@ -226,6 +248,18 @@ class Php80Test extends TestCase
             array('invalid', 1.0),
             array('invalid', 'invalid'),
             array(1.0, 'invalid'),
+        );
+    }
+
+    public function invalidResourceProvider()
+    {
+        return array(
+            array(true),
+            array(null),
+            array(new \stdClass()),
+            array('test'),
+            array(10),
+            array(10.0),
         );
     }
 
