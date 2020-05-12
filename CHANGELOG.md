@@ -1,6 +1,7 @@
 # 1.17.0
 
   * added `get_resource_id()` to the PHP 8 polyfill
+  * fix declaring extra constants when `intl` is loaded
 
 # 1.16.0
 

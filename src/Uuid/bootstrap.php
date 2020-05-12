@@ -11,6 +11,10 @@
 
 use Symfony\Polyfill\Uuid as p;
 
+if (extension_loaded('uuid')) {
+    return;
+}
+
 if (!defined('UUID_VARIANT_NCS')) {
     define('UUID_VARIANT_NCS', 0);
 }
