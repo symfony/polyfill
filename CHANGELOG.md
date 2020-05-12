@@ -1,3 +1,7 @@
+# 1.17.0
+
+  * added `get_resource_id()` to the PHP 8 polyfill
+
 # 1.16.0
 
   * added `str_starts_with()` and `str_ends_with()` to the PHP 8 polyfill
