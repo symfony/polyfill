@@ -51,6 +51,7 @@ Polyfills are provided for:
 - the `str_starts_with` and `str_ends_with` functions introduced in PHP 8.0;
 - the `ValueError` class introduced in PHP 8.0;
 - the `FILTER_VALIDATE_BOOL` constant introduced in PHP 8.0;
+- the `get_resource_id` function introduced in PHP 8.0;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
