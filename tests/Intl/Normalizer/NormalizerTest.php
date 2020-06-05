@@ -58,7 +58,7 @@ class NormalizerTest extends TestCase
         $this->assertFalse(pn::isNormalized($d, pn::NFD)); // The current implementation defensively says false
 
         $this->assertFalse(pn::isNormalized('', pn::NONE));
-        $this->assertFalse(pn::isNormalized('', 6));
+        $this->assertFalse(pn::isNormalized('', 42));
     }
 
     /**
