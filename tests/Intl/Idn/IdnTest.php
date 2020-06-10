@@ -1,33 +1,18 @@
 <?php
 
 /*
- * Copyright (c) 2014 TrueServer B.V.
+ * This file is part of the Symfony package.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is furnished
- * to do so, subject to the following conditions:
+ * (c) Fabien Potencier <fabien@symfony.com> and Trevor Rowbotham <trevor.rowbotham@pm.me>
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * Originally forked from
- * https://github.com/true/php-punycode/blob/v2.1.1/tests/PunycodeTest.php
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Symfony\Polyfill\Tests\Intl\Idn;
 
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Polyfill\Intl\Idn\Idn;
 
 /**
@@ -39,12 +24,186 @@ use Symfony\Polyfill\Intl\Idn\Idn;
  * @author Laurent Bassin <laurent@bassin.info>
  *
  * @covers \Symfony\Polyfill\Intl\Idn\Idn::<!public>
- *
- * @requires PHP 5.4
  */
 class IdnTest extends TestCase
 {
+    private static $ERROR_CODE_MAP = array(
+        'P1' => Idn::ERROR_DISALLOWED,
+        'P4' => array(
+            Idn::ERROR_EMPTY_LABEL,
+            Idn::ERROR_DOMAIN_NAME_TOO_LONG,
+            Idn::ERROR_LABEL_TOO_LONG,
+            Idn::ERROR_PUNYCODE,
+        ),
+        'V1' => Idn::ERROR_INVALID_ACE_LABEL,
+        'V2' => Idn::ERROR_HYPHEN_3_4,
+        'V3' => array(Idn::ERROR_LEADING_HYPHEN, Idn::ERROR_TRAILING_HYPHEN),
+        'V4' => Idn::ERROR_LABEL_HAS_DOT,
+        'V5' => Idn::ERROR_LEADING_COMBINING_MARK,
+        'V6' => Idn::ERROR_DISALLOWED,
+        // V7 and V8 are handled by C* and B* respectively.
+        'A3' => Idn::ERROR_PUNYCODE,
+        'A4_1' => Idn::ERROR_DOMAIN_NAME_TOO_LONG,
+        'A4_2' => array(Idn::ERROR_EMPTY_LABEL, Idn::ERROR_LABEL_TOO_LONG),
+        'B1' => Idn::ERROR_BIDI,
+        'B2' => Idn::ERROR_BIDI,
+        'B3' => Idn::ERROR_BIDI,
+        'B4' => Idn::ERROR_BIDI,
+        'B5' => Idn::ERROR_BIDI,
+        'B6' => Idn::ERROR_BIDI,
+        'C1' => Idn::ERROR_CONTEXTJ,
+        'C2' => Idn::ERROR_CONTEXTJ,
+        // ContextO isn't tested here.
+        // 'C3' => Idn::ERROR_CONTEXTO_PUNCTUATION,
+        // 'C4' => Idn::ERROR_CONTEXTO_PUNCTUATION,
+        // 'C5' => Idn::ERROR_CONTEXTO_PUNCTUATION,
+        // 'C6' => Idn::ERROR_CONTEXTO_PUNCTUATION,
+        // 'C7' => Idn::ERROR_CONTEXTO_PUNCTUATION,
+        // 'C8' => Idn::ERROR_CONTEXTO_DIGITS,
+        // 'C9' => Idn::ERROR_CONTEXTO_DIGITS,
+        'X4_2' => Idn::ERROR_EMPTY_LABEL,
+        'X3' => Idn::ERROR_EMPTY_LABEL,
+    );
+
     /**
+     * @return array<int, array{0: string, 1: string, 2: array<int, int|array<int, int>>, 3: string, 4: array<int, int|array<int, int>>, 5: string, 6: array<int, int|array<int, int>>}>
+     */
+    public function getData()
+    {
+        $h = fopen(__DIR__.'/IdnaTestV2.txt', 'r');
+        $tests = array();
+
+        while (false !== ($line = fgets($h))) {
+            if ("\n" === $line || '#' === $line[0]) {
+                continue;
+            }
+
+            list($line) = explode('#', $line);
+            list($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus) = array_map('trim', explode(';', $line));
+
+            if ('' === $toUnicode) {
+                $toUnicode = $source;
+            }
+
+            if ('' === $toAsciiN) {
+                $toAsciiN = $toUnicode;
+            }
+
+            if ('' === $toAsciiT) {
+                $toAsciiT = $toAsciiN;
+            }
+
+            $toUnicodeStatus = $this->resolveErrorCodes($toUnicodeStatus, array());
+            $toAsciiNStatus = $this->resolveErrorCodes($toAsciiNStatus, $toUnicodeStatus);
+            $toAsciiTStatus = $this->resolveErrorCodes($toAsciiTStatus, $toAsciiNStatus);
+            $tests[] = array($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus);
+        }
+
+        fclose($h);
+
+        return $tests;
+    }
+
+    /**
+     * @requires PHP 7.1
+     * @dataProvider getData
+     *
+     * @param string                          $source
+     * @param string                          $toUnicode
+     * @param array<int, int|array<int, int>> $toUnicodeStatus
+     * @param string                          $toAsciiN
+     * @param array<int, int|array<int, int>> $toAsciiNStatus
+     * @param string                          $toAsciiT
+     * @param array<int, int|array<int, int>> $toAsciiTStatus
+     */
+    public function testToUnicode($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
+    {
+        $options = IDNA_CHECK_BIDI | IDNA_CHECK_CONTEXTJ | IDNA_USE_STD3_RULES | IDNA_NONTRANSITIONAL_TO_UNICODE;
+        $result = idn_to_utf8($source, $options, INTL_IDNA_VARIANT_UTS46, $info);
+
+        if ($info === null) {
+            $this->markTestSkipped('PHP Bug #72506.');
+        }
+
+        if ($toUnicodeStatus === array()) {
+            $this->assertSame($toUnicode, $info['result']);
+            $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
+        } else {
+            $this->assertNotSame(0, $info['errors'], 'Expected to find errors, but found none.');
+        }
+    }
+
+    /**
+     * @requires PHP 7.1
+     * @dataProvider getData
+     *
+     * @param string                          $source
+     * @param string                          $toUnicode
+     * @param array<int, int|array<int, int>> $toUnicodeStatus
+     * @param string                          $toAsciiN
+     * @param array<int, int|array<int, int>> $toAsciiNStatus
+     * @param string                          $toAsciiT
+     * @param array<int, int|array<int, int>> $toAsciiTStatus
+     */
+    public function testToAsciiNonTransitional($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
+    {
+        $options = IDNA_CHECK_BIDI | IDNA_CHECK_CONTEXTJ | IDNA_USE_STD3_RULES | IDNA_NONTRANSITIONAL_TO_ASCII;
+        $result = idn_to_ascii($source, $options, INTL_IDNA_VARIANT_UTS46, $info);
+
+        if ($info === null) {
+            $this->markTestSkipped('PHP Bug #72506.');
+        }
+
+        if ($toAsciiNStatus === array()) {
+            $this->assertSame($toAsciiN, $info['result']);
+            $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
+        } else {
+            $this->assertNotSame(0, $info['errors'], 'Expected to find errors, but found none.');
+        }
+    }
+
+    /**
+     * @requires PHP 7.1
+     * @dataProvider getData
+     *
+     * @param string                          $source
+     * @param string                          $toUnicode
+     * @param array<int, int|array<int, int>> $toUnicodeStatus
+     * @param string                          $toAsciiN
+     * @param array<int, int|array<int, int>> $toAsciiNStatus
+     * @param string                          $toAsciiT
+     * @param array<int, int|array<int, int>> $toAsciiTStatus
+     */
+    public function testToAsciiTransitional($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
+    {
+        $options = IDNA_CHECK_BIDI | IDNA_CHECK_CONTEXTJ | IDNA_USE_STD3_RULES;
+        $result = idn_to_ascii($source, $options, INTL_IDNA_VARIANT_UTS46, $info);
+
+        if ($info === null) {
+            $this->markTestSkipped('PHP Bug #72506.');
+        }
+
+        // There is currently a bug in the test data, where it is expected that the following 2
+        // source strings result in an empty string. However, due to the way the test files are setup
+        // it currently isn't possible to represent an empty string as an expected value. So, we
+        // skip these 2 problem tests. I have notified the Unicode Consortium about this and they
+        // have passed the information along to the spec editors.
+        // U+200C or U+200D
+        if ("\xE2\x80\x8C" === $source || "\xE2\x80\x8D" === $source) {
+            $toAsciiT = '';
+        }
+
+        if ($toAsciiTStatus === array()) {
+            $this->assertSame($toAsciiT, $info['result']);
+            $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
+        } else {
+            $this->assertNotSame(0, $info['errors'], 'Expected to find errors, but found none.');
+        }
+    }
+
+    /**
+     * @requires PHP 5.4
+     * @requires PHP < 8
      * @group legacy
      * @dataProvider domainNamesProvider
      */
@@ -55,6 +214,7 @@ class IdnTest extends TestCase
     }
 
     /**
+     * @requires PHP 5.4
      * @dataProvider invalidUtf8DomainNamesProvider
      */
     public function testEncodeInvalid($decoded)
@@ -64,6 +224,8 @@ class IdnTest extends TestCase
     }
 
     /**
+     * @requires PHP 5.4
+     * @requires PHP < 8
      * @group legacy
      * @dataProvider domainNamesProvider
      */
@@ -74,29 +236,7 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @group legacy
-     * @dataProvider invalidAsciiDomainName2003Provider
-     */
-    public function testDecodeInvalid2003($encoded, $expected)
-    {
-        $result = @idn_to_utf8($encoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertSame($expected, $result);
-    }
-
-    /**
-     * @group legacy
-     * @dataProvider domainNamesUppercase2003Provider
-     */
-    public function testUppercase2003($decoded, $ascii, $encoded)
-    {
-        $result = @idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertSame($ascii, $result);
-
-        $result = @idn_to_utf8($ascii, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
-        $this->assertSame($encoded, $result);
-    }
-
-    /**
+     * @requires PHP 5.4
      * @dataProvider domainNamesProvider
      */
     public function testEncodeUTS46($decoded, $encoded)
@@ -106,6 +246,7 @@ class IdnTest extends TestCase
     }
 
     /**
+     * @requires PHP 5.4
      * @dataProvider domainNamesProvider
      */
     public function testDecodeUTS46($decoded, $encoded)
@@ -115,6 +256,7 @@ class IdnTest extends TestCase
     }
 
     /**
+     * @requires PHP 5.4
      * @dataProvider domainNamesUppercaseUTS46Provider
      */
     public function testUppercaseUTS46($decoded, $ascii, $encoded)
@@ -143,12 +285,13 @@ class IdnTest extends TestCase
     }
 
     /**
+     * @requires PHP < 8
      * @group legacy
      * @dataProvider domainNamesProvider
      */
     public function testEncodePhp53($decoded, $encoded)
     {
-        $result = @idn_to_ascii($decoded, IDNA_DEFAULT);
+        $result = @Idn::idn_to_ascii($decoded, IDNA_DEFAULT, INTL_IDNA_VARIANT_2003);
         $this->assertSame($encoded, $result);
     }
 
@@ -244,27 +387,6 @@ class IdnTest extends TestCase
         );
     }
 
-    public function domainNamesUppercase2003Provider()
-    {
-        return array(
-            array(
-                'рф.RU',
-                'xn--p1ai.RU',
-                'рф.RU',
-            ),
-            array(
-                'GUANGDONG.广东',
-                'GUANGDONG.xn--xhq521b',
-                'GUANGDONG.广东',
-            ),
-            array(
-                'renanGonçalves.COM',
-                'xn--renangonalves-pgb.COM',
-                'renangonçalves.COM',
-            ),
-        );
-    }
-
     public function domainNamesUppercaseUTS46Provider()
     {
         return array(
@@ -307,17 +429,45 @@ class IdnTest extends TestCase
         );
     }
 
-    public function invalidAsciiDomainName2003Provider()
+    /**
+     * @param array<int, int|array<int, int>> $inherit
+     *
+     * @return array<int, int|array<int, int>>
+     */
+    private function resolveErrorCodes($statusCodes, $inherit)
     {
-        return array(
-            array(
-                'xn--zcaccffbljjkknnoorrssuuxxd5e0a0a3ae9c6a4a9bzdzdxdudwdxd2d2d8d0dse7d6dwe9dxeueweye4eyewe9e5ewkkewc9ftfpfplwexfwf4infvf2f6f6f7f8fpg8fmgngrgrgvgzgygxg3gyg1g3g5gykqg9g.de',
-                'xn--zcaccffbljjkknnoorrssuuxxd5e0a0a3ae9c6a4a9bzdzdxdudwdxd2d2d8d0dse7d6dwe9dxeueweye4eyewe9e5ewkkewc9ftfpfplwexfwf4infvf2f6f6f7f8fpg8fmgngrgrgvgzgygxg3gyg1g3g5gykqg9g.de',
-            ),
-            array(
-                'xn--zcaccffbljjkknnoorrssuuxxd5e0a0a3ae9c8c1b0dxdvdvdxdvd3d0d6dyd8d5d4due7dveseuewe2eweue7e3esk9dxc7frf9e7kuevfuf1ilftf5f4f4f5f6fng6f8f9fpgpgtgxgwgvg1g2gzg1g3gvkog7g.xn--vda.de',
-                'xn--zcaccffbljjkknnoorrssuuxxd5e0a0a3ae9c8c1b0dxdvdvdxdvd3d0d6dyd8d5d4due7dveseuewe2eweue7e3esk9dxc7frf9e7kuevfuf1ilftf5f4f4f5f6fng6f8f9fpgpgtgxgwgvg1g2gzg1g3gvkog7g.þ.de',
-            ),
-        );
+        if ('' === $statusCodes) {
+            return $inherit;
+        }
+
+        if ('[]' === $statusCodes) {
+            return array();
+        }
+
+        $matchCount = preg_match_all('/[PVUABCX][0-9](?:_[0-9])?/', $statusCodes, $matches);
+
+        if (PREG_NO_ERROR !== preg_last_error()) {
+            throw new RuntimeException();
+        }
+
+        if (0 === $matchCount) {
+            throw new RuntimeException();
+        }
+
+        $errors = array();
+
+        foreach ($matches[0] as $match) {
+            if ('U' === $match[0]) {
+                continue;
+            }
+
+            if (!isset(self::$ERROR_CODE_MAP[$match])) {
+                throw new \RuntimeException(sprintf('Unhandled error code %s.', $match));
+            }
+
+            $errors[] = self::$ERROR_CODE_MAP[$match];
+        }
+
+        return $errors;
     }
 }
