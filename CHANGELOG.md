@@ -1,3 +1,7 @@
+# 1.17.1
+
+  * fix accuracy of `Normalizer::isNormalized()`
+
 # 1.17.0
 
   * added `get_resource_id()` to the PHP 8 polyfill

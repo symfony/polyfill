@@ -23,7 +23,6 @@ namespace Symfony\Polyfill\Intl\Normalizer;
  */
 class Normalizer
 {
-    const NONE = \Normalizer::NONE;
     const FORM_D = \Normalizer::FORM_D;
     const FORM_KD = \Normalizer::FORM_KD;
     const FORM_C = \Normalizer::FORM_C;
@@ -42,18 +41,18 @@ class Normalizer
 
     public static function isNormalized($s, $form = self::NFC)
     {
-        if ($form <= self::NONE || self::NFKC < $form) {
+        if (!\in_array($form, array(self::NFD, self::NFKD, self::NFC, self::NFKC))) {
             return false;
         }
         $s = (string) $s;
         if (!isset($s[strspn($s, self::$ASCII)])) {
             return true;
         }
-        if (self::NFC === $form && preg_match('//u', $s) && !preg_match('/[^\x00-\x{2FF}]/u', $s)) {
+        if (self::NFC == $form && preg_match('//u', $s) && !preg_match('/[^\x00-\x{2FF}]/u', $s)) {
             return true;
         }
 
-        return false; // Pretend false as quick checks implementented in PHP won't be so quick
+        return self::normalize($s, $form) === $s;
     }
 
     public static function normalize($s, $form = self::NFC)
@@ -64,12 +63,16 @@ class Normalizer
         }
 
         switch ($form) {
-            case self::NONE: return $s;
             case self::NFC: $C = true; $K = false; break;
             case self::NFD: $C = false; $K = false; break;
             case self::NFKC: $C = true; $K = true; break;
             case self::NFKD: $C = false; $K = true; break;
-            default: return false;
+            default:
+                if (\defined('Normalizer::NONE') && \Normalizer::NONE == $form) {
+                    return $s;
+                }
+
+                return false;
         }
 
         if ('' === $s) {

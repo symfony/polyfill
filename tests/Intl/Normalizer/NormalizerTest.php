@@ -31,7 +31,7 @@ class NormalizerTest extends TestCase
         $rpn = $rpn->getConstants();
         $rin = $rin->getConstants();
 
-        unset($rin['FORM_KC_CF'], $rin['NFKC_CF']);
+        unset($rin['NONE'], $rin['FORM_KC_CF'], $rin['NFKC_CF']);
 
         ksort($rpn);
         ksort($rin);
@@ -55,9 +55,8 @@ class NormalizerTest extends TestCase
         $this->assertFalse(normalizer_is_normalized($d, pn::NFC));
         $this->assertFalse(normalizer_is_normalized("\xFF"));
 
-        $this->assertFalse(pn::isNormalized($d, pn::NFD)); // The current implementation defensively says false
+        $this->assertTrue(pn::isNormalized($d, pn::NFD));
 
-        $this->assertFalse(pn::isNormalized('', pn::NONE));
         $this->assertFalse(pn::isNormalized('', 42));
     }
 
@@ -67,7 +66,9 @@ class NormalizerTest extends TestCase
     public function testNormalize()
     {
         $c = in::normalize('déjà', pn::NFC).in::normalize('훈쇼™', pn::NFD);
-        $this->assertSame($c, normalizer_normalize($c, pn::NONE));
+        if (\defined('Normalizer::NONE')) {
+            $this->assertSame($c, normalizer_normalize($c, \Normalizer::NONE));
+        }
 
         $c = 'déjà 훈쇼™';
         $d = in::normalize($c, pn::NFD);
