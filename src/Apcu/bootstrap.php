@@ -68,8 +68,8 @@ if (!function_exists('apcu_sma_info')) {
     function apcu_sma_info($limited = false) { return apc_sma_info($limited); }
 }
 
-if (!class_exists('APCUIterator', false) && class_exists('APCIterator', false)) {
-    class APCUIterator extends APCIterator
+if (!class_exists('APCuIterator', false) && class_exists('APCIterator', false)) {
+    class APCuIterator extends APCIterator
     {
         public function __construct($search = null, $format = APC_ITER_ALL, $chunk_size = 100, $list = APC_LIST_ACTIVE)
         {

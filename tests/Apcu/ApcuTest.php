@@ -65,12 +65,12 @@ class ApcuTest extends TestCase
         $this->assertSame(array(), apcu_exists(array_keys($data)));
     }
 
-    public function testAPCUIterator()
+    public function testAPCuIterator()
     {
         $key = __CLASS__;
         $this->assertTrue(apcu_store($key, 456));
 
-        $entries = iterator_to_array(new \APCUIterator('/^'.preg_quote($key, '/').'$/', APC_ITER_KEY | APC_ITER_VALUE));
+        $entries = iterator_to_array(new \APCuIterator('/^'.preg_quote($key, '/').'$/', APC_ITER_KEY | APC_ITER_VALUE));
 
         $this->assertSame(array($key), array_keys($entries));
         $this->assertSame($key, $entries[$key]['key']);
