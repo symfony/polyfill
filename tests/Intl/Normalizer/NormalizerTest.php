@@ -66,7 +66,7 @@ class NormalizerTest extends TestCase
     public function testNormalize()
     {
         $c = in::normalize('déjà', pn::NFC).in::normalize('훈쇼™', pn::NFD);
-        if (\defined('Normalizer::NONE')) {
+        if (\PHP_VERSION_ID < 70300) {
             $this->assertSame($c, normalizer_normalize($c, \Normalizer::NONE));
         }
 
