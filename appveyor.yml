@@ -39,8 +39,9 @@ install:
     - IF %PHP%==1 echo extension=php_intl.dll >> php.ini
     - IF %PHP%==1 echo extension=php_mbstring.dll >> php.ini
     - IF %PHP%==1 echo extension=php_ldap.dll >> php.ini
+    - IF %PHP%==1 echo extension=php_curl.dll >> php.ini
     - appveyor DownloadFile https://curl.haxx.se/ca/cacert.pem
-    - IF %PHP%==1 echo openssl.cafile="c:\php\cacert.pem" >> php.ini
+    - IF %PHP%==1 echo curl.cainfo="c:\php\cacert.pem" >> php.ini
     - appveyor DownloadFile https://github.com/composer/composer/releases/download/1.9.0/composer.phar
     - cd c:\projects\polyfill
     - IF %APPVEYOR_REPO_BRANCH%==master (SET COMPOSER_ROOT_VERSION=dev-master) ELSE (SET COMPOSER_ROOT_VERSION=%APPVEYOR_REPO_BRANCH%.x-dev)
