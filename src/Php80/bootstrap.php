@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+// this file should be kept in sync with src/bootstrap.php
+
 use Symfony\Polyfill\Php80 as p;
 
 if (PHP_VERSION_ID >= 80000) {
