@@ -1,3 +1,8 @@
+# 1.18.0
+
+  * improve polyfill-idn to make it compliant with latest Unicode specs
+  * added `UnhandledMatchError` to the PHP 8 polyfill
+
 # 1.17.1
 
   * fix accuracy of `Normalizer::isNormalized()`
