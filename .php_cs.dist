@@ -23,6 +23,7 @@ return PhpCsFixer\Config::create()
             ->append(array(__FILE__))
             ->exclude(array(
                 'src/Iconv/Resources',
+                'src/Intl/Idn/Resources',
                 'src/Intl/Normalizer/Resources',
             ))
     )
