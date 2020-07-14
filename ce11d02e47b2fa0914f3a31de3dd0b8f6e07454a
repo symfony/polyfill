@@ -1,0 +1,694 @@
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-11T00:12:38Z
+
+All the errors in PHP 5.3 seem to be because `idn_to_ascii`/`idn_to_utf8` don't have the `$variant` and `$idna_info` parameters. I guess we need to either mark the tests as requiring PHP > 5.3 and make some PHP 5.3 only tests or make the tests only test the return value.
+
+The remaining failures seem to be a result of ICU using very old versions of Unicode. Because the `intl` extension is installed, it never loads the`Normalizer` from `symfony/polyfill-intl-normalizer`, so we get stuck with the native `Normalizer`.
+Precise (PHP 5.3) -> ICU 4.8, Unicode Version 6.0
+Trusty  (PHP 5.4-7.4) -> ICU 52.1, Unicode Version 6.3
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-11T20:22:56Z
+
+Hmm, spent some time in xdebug and it appears that the polyfill isn't being used at all due to the test framework logic in https://github.com/symfony/polyfill/blob/master/src/Util/TestListenerTrait.php#L67.
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-14T02:37:39Z
+
+There are 460 failures remaining, all belonging to the native implementation. There are no failures when the polyfill is used.
+
+The 3 errors in PHP 7.4 are a result of the native implementation failing to populate the `$idna_info` parameter when the input is an empty string. https://3v4l.org/KkI1u.
+
+The rest are mismatches between the native implementation's output and the test data. I can't do anything about these.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-06-14T14:51:27Z
+
+Crazy work :)
+With https://github.com/symfony/polyfill/pull/268, we'll be able to remove the normalizationProps and combiningClass maps + all the related code.
+
+About this huge Mapping table, I would recommend splitting it into several hash maps:
+- $mapped[$code] => replacement - ranges should expanded to exact code points
+- $valid[$code] => replacement - small ranges should be expanded, large ranges should lead to generated code `if (0x30000 <= $code && $code <= 0x3134A) return true`
+- same for other map but "disallowed", which could be the default case maybe?
+
+Overall, I think there are too many helper classes. Ideally, we'd have only the two required methods and everything else would be private methods on the Idn class.
+
+Would it make sense to you?
+Let's do this step by step of course :)
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-15T05:04:30Z
+
+> With #268, we'll be able to remove the normalizationProps and combiningClass maps + all the related code.
+
+Awesome!
+
+> Overall, I think there are too many helper classes. Ideally, we'd have only the two required methods and everything else would be private methods on the Idn class.
+
+We should be able to remove most, if not all the additional classes:
+
+* Between #268 and changing out `CodePoint::encode()` for `mb_chr()` we should be able to drop the `CodePoint` class entirely.
+* We should be able to drop the `MappingTable`, `Utf8String`, and `Label` classes pretty easily as well.
+* The `Domain` class could also go away pretty easily as it mostly just stores some information related to label validation; just need to decide where else to store that info.
+* As for the generated `Regex` class, we could do some form of hash maps for it too, if you think that would be better than the current situation with regular expressions. I've gone back and forth on this a few times during development and couldn't decide which was the least bad choice; data tables or regular expressions.
+  * Would need a hash map for almost all the data from [DerivedBidiClass.txt](https://www.unicode.org/Public/13.0.0/ucd/extracted/DerivedBidiClass.txt), which is roughly 17,600 code points when you exclude everything with the property "L" and treat that as the default case. I would just need to change the logic in [Label::validateBidi()](https://github.com/TRowbotham/idna/blob/master/src/Label.php#L199) to loop backwards over each label's code points and check their directional status.
+  * Would need a hash map for all the data in [DerivedJoiningType.txt](https://www.unicode.org/Public/13.0.0/ucd/extracted/DerivedJoiningType.txt), which is roughly 2,700 code points. I would then need to change the logic in [Label::isValidContextJ()](https://github.com/TRowbotham/idna/blob/master/src/Label.php#L81) to mimic the regular expression `((Joining_Type:{L,D})(Joining_Type:T)*\u200C(Joining_Type:T)*(Joining_Type:{R,D}))`.
+  * Would need a hash map for code points with the property {Mn, Me, Mc} from [DerivedGeneralCategory.txt](https://www.unicode.org/Public/13.0.0/ucd/extracted/DerivedGeneralCategory.txt), which is roughly 2,300 code points.
+
+I kept the Punycode stuff separate since it is an entirely different specification ([RFC 3492](https://tools.ietf.org/html/rfc3492)), but it would be easy enough to merge `Punycode` into `Idn`. If we merged them, then the `CodePointString` class could also go away. Would you like me to merge them or keep them separate?
+
+> About this huge Mapping table, I would recommend splitting it into several hash maps:
+
+What would you consider a small range? Fewer than 10 code points?
+
+When combined, the new hash maps may exceed the size of the current mapping table after expanding smaller code point ranges. Assuming the size doesn't explode too badly, it should be a nice performance win with very little in the way of additional memory usage.
+
+[IdnaMappingTable.txt](https://www.unicode.org/Public/idna/13.0.0/IdnaMappingTable.txt) contains a total of 8,712 entries. 6,927 of those are individual code points, while the remaining 1,786 are code point ranges.
+
+A code point can have a status of `valid`, `ignored`, `mapped`, `deviation`, `disallowed`, `disallowed_STD3_valid`, or `disallowed_STD3_mapped`. Code points with a status of `disallowed_STD3_valid` or `disallowed_STD3_mapped` are treated as having a status of `disallowed` when the user supplies the `IDNA_USE_STD3_RULES` option, otherwise the status is `valid` or `mapped`, respectively. So, we are probably looking at 6 different hash maps after excluding whatever the default case is.
+
+There are 5,774 entries that have a status of `mapped`. 5,400 of those are individual code points (i.e. not code point ranges). Unfortunately, these entries contain data that we need so we can't exclude these entries and treat them as the default case. So, at a minimum, the "$mapped" hash map will contain 5,400 individual entries plus whatever code point ranges we expand.
+
+I still need to run some more numbers to see what the size inflation might be and to see whether `valid` or `disallowed` would be best as the default case.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-06-15T08:42:00Z
+
+#268 is now merged, rebase unlocked.
+For the regexps, I think they're good as is, no need to consider a hashmap.
+Which makes me wonder about using regexp for `valid`, `ignored`, `disallowed` and/or `disallowed_STD3_valid`? Maybe there are too many entries to make this an idea to consider...
+
+> What would you consider a small range? Fewer than 10 code points?
+
+we can audit the table to help decide this: consider how many ranges of N points exists and find some optimal compromise?
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-16T06:57:52Z
+
+It is a lot of data no matter how you slice it.
+
+Code points with a status of `mapped` and `disallowed_STD3_mapped` contain mapping data, so we couldn't do a regex for these. This means that no matter what we do, we are going to have 1-2 tables with a combined ~6,100 code points and their associated mappings.
+
+I think it would be best to use `valid` as the default case and it exclude it based on the numbers. Although the number of total code points is significantly less than `disallowed`, there are significantly more ranges in the `valid` case and a much larger number of individual code points. `disallowed` would allow us to expand more ranges, in the hash map case, leaving us with only a handful of larger `if (0x30000 <= $code && $code <= 0x3134A) return true` ranges to generate. The regular expression for `disallowed` should also be significantly smaller since we are dealing with fewer and larger ranges.
+
+In the case of hash maps, I think expanding ranges that are <= 30 code points for `disallowed` might be optimal here. This would yield hash maps with a combined ~9000 code points, which is only slightly larger than the current mapping table containing ~8700 entries.
+
+The number of code points for `ignored`, `deviation`, and `disallowed_STD3_valid` are all insignificant by comparison.
+
+Let me know what you think.
+
+----
+Here are all the numbers:
+
+Total code points: 1114112
+Total number of entries: 8713
+Number of code point ranges: 1786
+Number of individual code points: 6927
+
+<details>
+  <summary>Code points with a status of "valid"</summary>
+  <pre>
+Total code points: 137223
+Total individual code points: 971
+Number of code point ranges: 1141
+Min range size: 2
+Max range size: 42711
+Average range size: 119
+Expanding all ranges <= 5 would inflate the hash map by 1374 code points.
+Expanding all ranges <= 10 would inflate the hash map by 3578 code points.
+Expanding all ranges <= 15 would inflate the hash map by 4647 code points.
+Expanding all ranges <= 20 would inflate the hash map by 5489 code points.
+Expanding all ranges <= 30 would inflate the hash map by 7550 code points.
+Expanding all ranges <= 40 would inflate the hash map by 9102 code points.
+Expanding all ranges <= 50 would inflate the hash map by 10772 code points.
+Expanding all ranges <= 100 would inflate the hash map by 15995 code points.
+Expanding all ranges would inflate the hash map by 136252 code points.
+A range of 2 code points occurred 207 times.
+A range of 3 code points occurred 102 times.
+A range of 4 code points occurred 96 times.
+A range of 5 code points occurred 54 times.
+A range of 6 code points occurred 53 times.
+A range of 7 code points occurred 69 times.
+A range of 8 code points occurred 53 times.
+A range of 9 code points occurred 31 times.
+A range of 10 code points occurred 70 times.
+A range of 11 code points occurred 13 times.
+A range of 12 code points occurred 28 times.
+A range of 13 code points occurred 12 times.
+A range of 14 code points occurred 16 times.
+A range of 15 code points occurred 14 times.
+A range of 16 code points occurred 11 times.
+A range of 17 code points occurred 8 times.
+A range of 18 code points occurred 11 times.
+A range of 19 code points occurred 8 times.
+A range of 20 code points occurred 9 times.
+A range of 21 code points occurred 4 times.
+A range of 22 code points occurred 13 times.
+A range of 23 code points occurred 13 times.
+A range of 24 code points occurred 7 times.
+A range of 25 code points occurred 3 times.
+A range of 26 code points occurred 10 times.
+A range of 27 code points occurred 6 times.
+A range of 28 code points occurred 7 times.
+A range of 29 code points occurred 9 times.
+A range of 30 code points occurred 9 times.
+A range of 31 code points occurred 9 times.
+A range of 32 code points occurred 5 times.
+A range of 33 code points occurred 2 times.
+A range of 34 code points occurred 4 times.
+A range of 35 code points occurred 2 times.
+A range of 36 code points occurred 4 times.
+A range of 37 code points occurred 4 times.
+A range of 38 code points occurred 3 times.
+A range of 39 code points occurred 5 times.
+A range of 40 code points occurred 6 times.
+A range of 41 code points occurred 3 times.
+A range of 42 code points occurred 5 times.
+A range of 43 code points occurred 4 times.
+A range of 44 code points occurred 5 times.
+A range of 45 code points occurred 4 times.
+A range of 46 code points occurred 5 times.
+A range of 47 code points occurred 3 times.
+A range of 48 code points occurred 1 times.
+A range of 49 code points occurred 4 times.
+A range of 50 code points occurred 3 times.
+A range of 51 code points occurred 1 times.
+A range of 52 code points occurred 7 times.
+A range of 53 code points occurred 2 times.
+A range of 54 code points occurred 4 times.
+A range of 55 code points occurred 4 times.
+A range of 56 code points occurred 4 times.
+A range of 57 code points occurred 1 times.
+A range of 58 code points occurred 1 times.
+A range of 59 code points occurred 3 times.
+A range of 61 code points occurred 1 times.
+A range of 62 code points occurred 1 times.
+A range of 63 code points occurred 5 times.
+A range of 64 code points occurred 4 times.
+A range of 65 code points occurred 2 times.
+A range of 66 code points occurred 1 times.
+A range of 67 code points occurred 1 times.
+A range of 68 code points occurred 1 times.
+A range of 69 code points occurred 3 times.
+A range of 70 code points occurred 6 times.
+A range of 71 code points occurred 1 times.
+A range of 73 code points occurred 1 times.
+A range of 75 code points occurred 3 times.
+A range of 76 code points occurred 1 times.
+A range of 80 code points occurred 3 times.
+A range of 82 code points occurred 1 times.
+A range of 83 code points occurred 1 times.
+A range of 84 code points occurred 2 times.
+A range of 85 code points occurred 2 times.
+A range of 86 code points occurred 2 times.
+A range of 87 code points occurred 1 times.
+A range of 88 code points occurred 1 times.
+A range of 89 code points occurred 1 times.
+A range of 90 code points occurred 1 times.
+A range of 91 code points occurred 1 times.
+A range of 94 code points occurred 1 times.
+A range of 99 code points occurred 1 times.
+A range of 100 code points occurred 1 times.
+A range of 101 code points occurred 1 times.
+A range of 103 code points occurred 1 times.
+A range of 107 code points occurred 1 times.
+A range of 116 code points occurred 1 times.
+A range of 123 code points occurred 1 times.
+A range of 130 code points occurred 1 times.
+A range of 147 code points occurred 1 times.
+A range of 150 code points occurred 1 times.
+A range of 182 code points occurred 1 times.
+A range of 196 code points occurred 1 times.
+A range of 197 code points occurred 1 times.
+A range of 222 code points occurred 1 times.
+A range of 246 code points occurred 1 times.
+A range of 256 code points occurred 1 times.
+A range of 268 code points occurred 1 times.
+A range of 269 code points occurred 1 times.
+A range of 285 code points occurred 1 times.
+A range of 311 code points occurred 1 times.
+A range of 396 code points occurred 1 times.
+A range of 483 code points occurred 1 times.
+A range of 512 code points occurred 1 times.
+A range of 569 code points occurred 1 times.
+A range of 583 code points occurred 1 times.
+A range of 620 code points occurred 1 times.
+A range of 755 code points occurred 1 times.
+A range of 879 code points occurred 1 times.
+A range of 1071 code points occurred 1 times.
+A range of 1165 code points occurred 1 times.
+A range of 4149 code points occurred 1 times.
+A range of 4939 code points occurred 1 times.
+A range of 5762 code points occurred 1 times.
+A range of 6125 code points occurred 1 times.
+A range of 6582 code points occurred 1 times.
+A range of 7473 code points occurred 1 times.
+A range of 11172 code points occurred 1 times.
+A range of 20902 code points occurred 1 times.
+A range of 42711 code points occurred 1 times.
+  </pre>
+</details>
+<details>
+  <summary>Code points with a status of "ignored"</summary>
+  <pre>
+Total code points: 269
+Total individual code points: 6
+Number of code point ranges: 4
+Min range size: 3
+Max range size: 240
+Average range size: 65
+Expanding all ranges <= 5 would inflate the hash map by 7 code points.
+Expanding all ranges <= 10 would inflate the hash map by 7 code points.
+Expanding all ranges <= 15 would inflate the hash map by 7 code points.
+Expanding all ranges <= 20 would inflate the hash map by 23 code points.
+Expanding all ranges <= 30 would inflate the hash map by 23 code points.
+Expanding all ranges <= 40 would inflate the hash map by 23 code points.
+Expanding all ranges <= 50 would inflate the hash map by 23 code points.
+Expanding all ranges <= 100 would inflate the hash map by 23 code points.
+Expanding all ranges would inflate the hash map by 263 code points.
+A range of 3 code points occurred 1 times.
+A range of 4 code points occurred 1 times.
+A range of 16 code points occurred 1 times.
+A range of 240 code points occurred 1 times.
+  </pre>
+</details>
+<details>
+  <summary>Code points with a status of "mapped"</summary>
+  <pre>
+Total code points: 5774
+Total individual code points: 5400
+Number of code point ranges: 137
+Min range size: 2
+Max range size: 4
+Average range size: 2
+Expanding all ranges <= 5 would inflate the hash map by 374 code points.
+Expanding all ranges <= 10 would inflate the hash map by 374 code points.
+Expanding all ranges <= 15 would inflate the hash map by 374 code points.
+Expanding all ranges <= 20 would inflate the hash map by 374 code points.
+Expanding all ranges <= 30 would inflate the hash map by 374 code points.
+Expanding all ranges <= 40 would inflate the hash map by 374 code points.
+Expanding all ranges <= 50 would inflate the hash map by 374 code points.
+Expanding all ranges <= 100 would inflate the hash map by 374 code points.
+Expanding all ranges would inflate the hash map by 374 code points.
+A range of 2 code points occurred 83 times.
+A range of 3 code points occurred 8 times.
+A range of 4 code points occurred 46 times.
+  </pre>
+</details>
+<details>
+  <summary>Code points with a status of "deviation"</summary>
+  <pre>
+Total code points: 4
+Total individual code points: 2
+Number of code point ranges: 1
+Min range size: 2
+Max range size: 2
+Average range size: 2
+Expanding all ranges <= 5 would inflate the hash map by 2 code points.
+Expanding all ranges <= 10 would inflate the hash map by 2 code points.
+Expanding all ranges <= 15 would inflate the hash map by 2 code points.
+Expanding all ranges <= 20 would inflate the hash map by 2 code points.
+Expanding all ranges <= 30 would inflate the hash map by 2 code points.
+Expanding all ranges <= 40 would inflate the hash map by 2 code points.
+Expanding all ranges <= 50 would inflate the hash map by 2 code points.
+Expanding all ranges <= 100 would inflate the hash map by 2 code points.
+Expanding all ranges would inflate the hash map by 2 code points.
+A range of 2 code points occurred 1 times.
+  </pre>
+</details>
+<details>
+  <summary>Code points with a status of "disallowed"</summary>
+  <pre>
+Total code points: 970471
+Total individual code points: 262
+Number of code point ranges: 494
+Min range size: 2
+Max range size: 65534
+Average range size: 1963
+Expanding all ranges <= 5 would inflate the hash map by 692 code points.
+Expanding all ranges <= 10 would inflate the hash map by 1433 code points.
+Expanding all ranges <= 15 would inflate the hash map by 1972 code points.
+Expanding all ranges <= 20 would inflate the hash map by 2137 code points.
+Expanding all ranges <= 30 would inflate the hash map by 2372 code points.
+Expanding all ranges <= 40 would inflate the hash map by 2789 code points.
+Expanding all ranges <= 50 would inflate the hash map by 3186 code points.
+Expanding all ranges <= 100 would inflate the hash map by 4545 code points.
+Expanding all ranges would inflate the hash map by 970209 code points.
+A range of 2 code points occurred 138 times.
+A range of 3 code points occurred 43 times.
+A range of 4 code points occurred 43 times.
+A range of 5 code points occurred 23 times.
+A range of 6 code points occurred 23 times.
+A range of 7 code points occurred 26 times.
+A range of 8 code points occurred 22 times.
+A range of 9 code points occurred 15 times.
+A range of 10 code points occurred 11 times.
+A range of 11 code points occurred 12 times.
+A range of 12 code points occurred 14 times.
+A range of 13 code points occurred 5 times.
+A range of 14 code points occurred 6 times.
+A range of 15 code points occurred 6 times.
+A range of 16 code points occurred 2 times.
+A range of 17 code points occurred 2 times.
+A range of 19 code points occurred 1 times.
+A range of 20 code points occurred 4 times.
+A range of 21 code points occurred 1 times.
+A range of 23 code points occurred 1 times.
+A range of 24 code points occurred 1 times.
+A range of 25 code points occurred 1 times.
+A range of 26 code points occurred 1 times.
+A range of 27 code points occurred 1 times.
+A range of 29 code points occurred 1 times.
+A range of 30 code points occurred 2 times.
+A range of 32 code points occurred 4 times.
+A range of 34 code points occurred 3 times.
+A range of 37 code points occurred 3 times.
+A range of 38 code points occurred 2 times.
+A range of 41 code points occurred 2 times.
+A range of 42 code points occurred 3 times.
+A range of 45 code points occurred 1 times.
+A range of 47 code points occurred 1 times.
+A range of 48 code points occurred 1 times.
+A range of 49 code points occurred 1 times.
+A range of 52 code points occurred 1 times.
+A range of 53 code points occurred 1 times.
+A range of 54 code points occurred 1 times.
+A range of 55 code points occurred 1 times.
+A range of 56 code points occurred 1 times.
+A range of 63 code points occurred 1 times.
+A range of 64 code points occurred 2 times.
+A range of 65 code points occurred 1 times.
+A range of 70 code points occurred 1 times.
+A range of 73 code points occurred 1 times.
+A range of 76 code points occurred 1 times.
+A range of 78 code points occurred 2 times.
+A range of 80 code points occurred 1 times.
+A range of 86 code points occurred 1 times.
+A range of 96 code points occurred 2 times.
+A range of 100 code points occurred 1 times.
+A range of 101 code points occurred 1 times.
+A range of 102 code points occurred 1 times.
+A range of 128 code points occurred 1 times.
+A range of 130 code points occurred 1 times.
+A range of 135 code points occurred 1 times.
+A range of 139 code points occurred 1 times.
+A range of 144 code points occurred 1 times.
+A range of 152 code points occurred 1 times.
+A range of 154 code points occurred 2 times.
+A range of 166 code points occurred 1 times.
+A range of 183 code points occurred 1 times.
+A range of 192 code points occurred 1 times.
+A range of 194 code points occurred 1 times.
+A range of 213 code points occurred 1 times.
+A range of 263 code points occurred 1 times.
+A range of 270 code points occurred 1 times.
+A range of 294 code points occurred 1 times.
+A range of 310 code points occurred 1 times.
+A range of 368 code points occurred 1 times.
+A range of 688 code points occurred 1 times.
+A range of 785 code points occurred 1 times.
+A range of 1028 code points occurred 1 times.
+A range of 1280 code points occurred 1 times.
+A range of 1360 code points occurred 1 times.
+A range of 1504 code points occurred 1 times.
+A range of 2048 code points occurred 1 times.
+A range of 2308 code points occurred 1 times.
+A range of 2748 code points occurred 1 times.
+A range of 3103 code points occurred 1 times.
+A range of 4039 code points occurred 1 times.
+A range of 4956 code points occurred 1 times.
+A range of 6400 code points occurred 1 times.
+A range of 8633 code points occurred 1 times.
+A range of 8951 code points occurred 1 times.
+A range of 60595 code points occurred 1 times.
+A range of 65038 code points occurred 1 times.
+A range of 65534 code points occurred 12 times.
+  </pre>
+</details>
+<details>
+  <summary>Code points with a status of "disallowed_STD3_mapped"</summary>
+  <pre>
+Total code points: 304
+Total individual code points: 284
+Number of code point ranges: 4
+Min range size: 2
+Max range size: 11
+Average range size: 5
+Expanding all ranges <= 5 would inflate the hash map by 9 code points.
+Expanding all ranges <= 10 would inflate the hash map by 9 code points.
+Expanding all ranges <= 15 would inflate the hash map by 20 code points.
+Expanding all ranges <= 20 would inflate the hash map by 20 code points.
+Expanding all ranges <= 30 would inflate the hash map by 20 code points.
+Expanding all ranges <= 40 would inflate the hash map by 20 code points.
+Expanding all ranges <= 50 would inflate the hash map by 20 code points.
+Expanding all ranges <= 100 would inflate the hash map by 20 code points.
+Expanding all ranges would inflate the hash map by 20 code points.
+A range of 2 code points occurred 1 times.
+A range of 3 code points occurred 1 times.
+A range of 4 code points occurred 1 times.
+A range of 11 code points occurred 1 times.
+  </pre>
+</details>
+<details>
+  <summary>Code points with a status of "disallowed_STD3_valid"</summary>
+  <pre>
+Total code points: 67
+Total individual code points: 2
+Number of code point ranges: 5
+Min range size: 2
+Max range size: 45
+Average range size: 13
+Expanding all ranges <= 5 would inflate the hash map by 7 code points.
+Expanding all ranges <= 10 would inflate the hash map by 20 code points.
+Expanding all ranges <= 15 would inflate the hash map by 20 code points.
+Expanding all ranges <= 20 would inflate the hash map by 20 code points.
+Expanding all ranges <= 30 would inflate the hash map by 20 code points.
+Expanding all ranges <= 40 would inflate the hash map by 20 code points.
+Expanding all ranges <= 50 would inflate the hash map by 65 code points.
+Expanding all ranges <= 100 would inflate the hash map by 65 code points.
+Expanding all ranges would inflate the hash map by 65 code points.
+A range of 2 code points occurred 1 times.
+A range of 5 code points occurred 1 times.
+A range of 6 code points occurred 1 times.
+A range of 7 code points occurred 1 times.
+A range of 45 code points occurred 1 times.
+  </pre>
+</details>
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-17T01:02:17Z
+
+I've removed the majority of the helper classes, moving their functionality into the `Idn` class as private methods.
+
+Another option for the mapping table would be to leave it as is, but cache the lookup results for ASCII characters, which I suspect would be the most common case.
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-20T04:04:50Z
+
+I tried using regexp for the code point lookup and the performance wasn't very good.
+
+Doing the multiple hash map idea resulted in better performance and used less memory than the current mapping table. I used `valid` as the default case and expanded all code point ranges for `ignored`, `mapped`, `deviation`, `disallowed_STD3_mapped`, and `disallowed_STD3_valid`. For `disallowed`, I only expanded code point ranges containing <= 30 code points, and generated `if` statements for the remaining ranges.
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-27T21:07:47Z
+
+Are there any other changes you would like made?
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-28T20:32:55Z
+
+No, unfortunately there is no ascii fast path at the moment.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-06-29T07:27:32Z
+
+We need to figure out what to do with tests now.
+1. why is it that slow on PHP 5.3 (see Travis+appveyor)?
+2. all failures happen when *not* using the polyfill isn't it? Is PHP using an outdated database? If yes, maybe we should also use the same source data for now? Any other idea?
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-06-29T23:02:44Z
+
+> why is it that slow on PHP 5.3 (see Travis+appveyor)?
+
+We can move all the tests into a single method, which would cut down on the number of times we have to iterate over the test data, though that isn't the root cause of the slow down.
+
+> all failures happen when not using the polyfill isn't it? Is PHP using an outdated database? If yes, maybe we should also use the same source data for now? Any other idea?
+
+Correct, all the failures happen when the polyfill is *not* being used. Also, yes; PHP is using an outdated database. According to the travis logs, the Trusty dist is using ICU 52.1, which contains Unicode Version 6.3.
+
+We could potentially downgrade the data files, though I'm not particularly thrilled about having to do that. I know that the format of the test data changed with Unicode version 11.0.0, which is outlined in [Section 8.3](https://www.unicode.org/reports/tr46/#Migration), so that would need to be accounted for. The other problem with this is that there are 25 revisions of the UTS#46 specification, so we would need to find which revision is being used in the ICU lib that travis is using to compile the intl extension and assess all changes made to the specification since that revision to see if there are changes that need to be made to the polyfill code.
+
+We could just forget about trying to test the native functions. This is the easiest route.
+
+Another idea, which I'm not sure if its even possible since the travis PHP binary has the intl extension built into it, is to compile the intl extension with an appropriate version of ICU and load it using `extension=intl.so`.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-07-01T17:03:36Z
+
+For 5.3, we need to find the cause and work around it.
+For other versions, maybe we could start by changing the distribution?
+The latest Ubuntu on Travis is `bionic`.
+
+Alternatively, I'm OK to skip the full test-suite on the native implementation, but then we have to keep the existing test cases to still run some conversions with the native functions.
+
+Works for you?
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-07-01T19:26:36Z
+
+Yes, that works for me.
+
+I spent some time yesterday setting up a local PHP 5.3 install, so I'm hoping to find some time in the next few days to look into it. I did do a quick run of the test suite and was able to reproduce the slowness locally.
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-07-01T20:23:26Z
+
+So, PHP 5.3 runs out of memory before completing the test suite with the default memory limit of 128M. This is after combining the Idn tests into a single method, which brings the overall test count down to 7200. Doing a profile of both PHP 5.3 and 5.4 show completely different results. In PHP 5.3, running the test suite and stopping it after only running 950 tests reported that `count` was called over 12 million times. Allowing PHP 5.4 to run the entire test suite only reported `count` as having been called 310 thousand times. The majority of the time in PHP 5.3 seems to be spent within PHPUnit. Its still not clear to me why this is happening given that the same version of PHPUnit is being used in PHP 5.3 and 5.4.
+
+![profiles](https://user-images.githubusercontent.com/4984601/86287167-b77b3080-bbb5-11ea-88af-cfc4821e6465.png)
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-07-02T19:48:00Z
+
+Unfortunately, it looks like travis only supports PHP 7.1+ on bionic. On the plus side, there are 0 IDNA errors on the bionic builds, which is good to know. So, I guess we'll need to go with the alternative and add some other tests that test the native implementation separately. Would you be interested in keeping PHP 7.1+ on bionic or should I revert back to Trusty?
+
+The bionic builds do show 1 failure related to UUID:
+```
+1) Symfony\Polyfill\Tests\Uuid\UuidTest::testGenerateSha1
+
+Failed asserting that two strings are identical.
+
+--- Expected
+
++++ Actual
+
+@@ @@
+
+-851def0c-b9c7-55aa-a991-130e769ec0a9
+
++851def0c-b9c7-55aa-8991-130e769ec0a9
+```
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-07-02T19:52:43Z
+
+Cool, that's great news. We can use trusty on the legacy builds and keep bionic by default. The uuid failure is related to a buggy libuuid, I'll have a look later.
+To still test something on <= 7.0, we need to keep the existing test cases I guess.
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-07-05T20:33:41Z
+
+While bringing back the existing test cases I ran into 5 failures revolving around the use of `INTL_IDNA_VARIANT_2003`.
+
+The first 2 failures look worse than they actually are. This is really just a disagreement between how IDNA2003 and UTS46 choose to display domains that fail parsing when converting from ASCII to UTF-8. When calling `idn_to_utf8()` IDNA2003 will return the input when it fails a processing step. UTS46 on the other hand will convert as much of the input to UTF-8 as possible. In either case, the result of calling `idn_to_ascii(idn_to_utf8($input, ...), ...)` will return `false` in both IDNA2003 and UTS46, and that is the most important part, as a domain's UTF-8 form is purely for display purposes, whereas its ASCII form is used for DNS resolution.
+
+As for the last 3 failures, IDNA2003 skips case folding for labels that contain only ASCII, whereas UTS46 always does case folding. Again, as above, this is mostly a display issue as checking for domain name equivalence must be done in case-insensitive manner regardless of which specification is being used.
+
+Of course, there could be other cases where the difference isn't just a display issue, but its hard to say without concrete examples.
+
+I think the best thing to do here would be to remove these 5 data sets, but I wanted to get your opinion on it first. The only other option I can think of is to leave the existing code and have it handle IDNA2003 and have the new code handle UTS46, but I don't know how compliant the existing code is when it comes to IDNA2003. From a quick glance over the existing code it looks like it only performs 3 or 4 of the 8 steps from IDNA2003 sections [4.1](https://ietf.org/rfc/rfc3490.html#section-4.1) and [4.2](https://ietf.org/rfc/rfc3490.html#section-4.2).
+
+```bash
+1) Symfony\Polyfill\Tests\Intl\Idn\IdnTest::testDecodeInvalid2003 with data set #0 ('xn--zcaccffbljjkknnoorrssuuxx...g9g.de', 'xn--zcaccffbljjkknnoorrssuuxx...g9g.de')
+Polyfills enabled, Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'xn--zcaccffbljjkknnoorrssuuxxd5e0a0a3ae9c6a4a9bzdzdxdudwdxd2d2d8d0dse7d6dwe9dxeueweye4eyewe9e5ewkkewc9ftfpfplwexfwf4infvf2f6f6f7f8fpg8fmgngrgrgvgzgygxg3gyg1g3g5gykqg9g.de'
++'äöüßáàăâåãąāæćĉčċçďđéèĕêěëėęēğĝġģĥħíìĭîïĩįīıĵķĺľļłńňñņŋóòŏôőõøōœĸŕřŗśŝšşťţŧúùŭûůűũųūŵýŷÿźžżðþ.de'
+
+/home/trevor/GitHub/symfony-polyfill/tests/Intl/Idn/IdnTest.php:218
+
+2) Symfony\Polyfill\Tests\Intl\Idn\IdnTest::testDecodeInvalid2003 with data set #1 ('xn--zcaccffbljjkknnoorrssuuxx...vda.de', 'xn--zcaccffbljjkknnoorrssuuxx...g.þ.de')
+Polyfills enabled, Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'xn--zcaccffbljjkknnoorrssuuxxd5e0a0a3ae9c8c1b0dxdvdvdxdvd3d0d6dyd8d5d4due7dveseuewe2eweue7e3esk9dxc7frf9e7kuevfuf1ilftf5f4f4f5f6fng6f8f9fpgpgtgxgwgvg1g2gzg1g3gvkog7g.þ.de'
++'äöüßáàăâåãąāæćĉčċçďđéèĕêěëėęēğĝġģĥħíìĭîïĩįīıĵķĺľļłńňñņŋóòŏôőõøōœĸŕřŗśŝšşťţŧúùŭûůűũųūŵýŷÿźžżð.þ.de'
+
+/home/trevor/GitHub/symfony-polyfill/tests/Intl/Idn/IdnTest.php:218
+
+3) Symfony\Polyfill\Tests\Intl\Idn\IdnTest::testUppercase2003 with data set #0 ('рф.RU', 'xn--p1ai.RU', 'рф.RU')
+Polyfills enabled, Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'xn--p1ai.RU'
++'xn--p1ai.ru'
+
+/home/trevor/GitHub/symfony-polyfill/tests/Intl/Idn/IdnTest.php:228
+
+4) Symfony\Polyfill\Tests\Intl\Idn\IdnTest::testUppercase2003 with data set #1 ('GUANGDONG.广东', 'GUANGDONG.xn--xhq521b', 'GUANGDONG.广东')
+Polyfills enabled, Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'GUANGDONG.xn--xhq521b'
++'guangdong.xn--xhq521b'
+
+/home/trevor/GitHub/symfony-polyfill/tests/Intl/Idn/IdnTest.php:228
+
+5) Symfony\Polyfill\Tests\Intl\Idn\IdnTest::testUppercase2003 with data set #2 ('renanGonçalves.COM', 'xn--renangonalves-pgb.COM', 'renangonçalves.COM')
+Polyfills enabled, Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'xn--renangonalves-pgb.COM'
++'xn--renangonalves-pgb.com'
+
+/home/trevor/GitHub/symfony-polyfill/tests/Intl/Idn/IdnTest.php:228
+```
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-07-07T10:45:42Z
+
+I'm fine removing the 5 data sets.
+
+Please fetch your branch before iterating over: I rebased+squashed it after #271.
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-07-08T04:12:40Z
+
+All tests are green now!
+
+There are some failures on PHP 8, but that is because the `INTL_IDNA_VARIANT_2003` constant was removed. Do you want me to mark those tests with `@requires PHP < 8`?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-07-08T09:04:38Z
+
+> Do you want me to mark those tests with @requires PHP < 8?
+
+yes please!
+
+---------------------------------------------------------------------------
+
+by TRowbotham at 2020-07-10T19:57:09Z
+
+Thanks! I appreciate all the feedback. It was very helpful.
+
+Edit: I do have twitter, but forgot since I almost never use it. Handle is @trevor_rowbot.
