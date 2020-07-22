@@ -1,5 +1,7 @@
 <?php
 
-class AssertionError extends Error
-{
+if (!class_exists('AssertionError')) {
+    class AssertionError extends Error
+    {
+    }
 }

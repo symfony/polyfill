@@ -29,74 +29,76 @@
  * @author Drak <drak@zikula.org>
  * @author Tobias Schultze <http://tobion.de>
  */
-interface SessionHandlerInterface
-{
-    /**
-     * Re-initializes existing session, or creates a new one.
-     *
-     * @see https://php.net/sessionhandlerinterface.open
-     *
-     * @param string $savePath    Save path
-     * @param string $sessionName Session name, see https://php.net/function.session-name.php
-     *
-     * @return bool true on success, false on failure
-     */
-    public function open($savePath, $sessionName);
+if (!interface_exists('SessionHandlerInterface')) {
+    interface SessionHandlerInterface
+    {
+        /**
+         * Re-initializes existing session, or creates a new one.
+         *
+         * @see https://php.net/sessionhandlerinterface.open
+         *
+         * @param string $savePath    Save path
+         * @param string $sessionName Session name, see https://php.net/function.session-name.php
+         *
+         * @return bool true on success, false on failure
+         */
+        public function open($savePath, $sessionName);
 
-    /**
-     * Closes the current session.
-     *
-     * @see https://php.net/sessionhandlerinterface.close
-     *
-     * @return bool true on success, false on failure
-     */
-    public function close();
+        /**
+         * Closes the current session.
+         *
+         * @see https://php.net/sessionhandlerinterface.close
+         *
+         * @return bool true on success, false on failure
+         */
+        public function close();
 
-    /**
-     * Reads the session data.
-     *
-     * @see https://php.net/sessionhandlerinterface.read
-     *
-     * @param string $sessionId Session ID, see https://php.net/function.session-id
-     *
-     * @return string Same session data as passed in write() or empty string when non-existent or on failure
-     */
-    public function read($sessionId);
+        /**
+         * Reads the session data.
+         *
+         * @see https://php.net/sessionhandlerinterface.read
+         *
+         * @param string $sessionId Session ID, see https://php.net/function.session-id
+         *
+         * @return string Same session data as passed in write() or empty string when non-existent or on failure
+         */
+        public function read($sessionId);
 
-    /**
-     * Writes the session data to the storage.
-     *
-     * Care, the session ID passed to write() can be different from the one previously
-     * received in read() when the session ID changed due to session_regenerate_id().
-     *
-     * @see https://php.net/sessionhandlerinterface.write
-     *
-     * @param string $sessionId Session ID , see https://php.net/function.session-id
-     * @param string $data      Serialized session data to save
-     *
-     * @return bool true on success, false on failure
-     */
-    public function write($sessionId, $data);
+        /**
+         * Writes the session data to the storage.
+         *
+         * Care, the session ID passed to write() can be different from the one previously
+         * received in read() when the session ID changed due to session_regenerate_id().
+         *
+         * @see https://php.net/sessionhandlerinterface.write
+         *
+         * @param string $sessionId Session ID , see https://php.net/function.session-id
+         * @param string $data      Serialized session data to save
+         *
+         * @return bool true on success, false on failure
+         */
+        public function write($sessionId, $data);
 
-    /**
-     * Destroys a session.
-     *
-     * @see https://php.net/sessionhandlerinterface.destroy
-     *
-     * @param string $sessionId Session ID, see https://php.net/function.session-id
-     *
-     * @return bool true on success, false on failure
-     */
-    public function destroy($sessionId);
+        /**
+         * Destroys a session.
+         *
+         * @see https://php.net/sessionhandlerinterface.destroy
+         *
+         * @param string $sessionId Session ID, see https://php.net/function.session-id
+         *
+         * @return bool true on success, false on failure
+         */
+        public function destroy($sessionId);
 
-    /**
-     * Cleans up expired sessions (garbage collection).
-     *
-     * @see https://php.net/sessionhandlerinterface.gc
-     *
-     * @param string|int $maxlifetime Sessions that have not updated for the last maxlifetime seconds will be removed
-     *
-     * @return bool true on success, false on failure
-     */
-    public function gc($maxlifetime);
+        /**
+         * Cleans up expired sessions (garbage collection).
+         *
+         * @see https://php.net/sessionhandlerinterface.gc
+         *
+         * @param string|int $maxlifetime Sessions that have not updated for the last maxlifetime seconds will be removed
+         *
+         * @return bool true on success, false on failure
+         */
+        public function gc($maxlifetime);
+    }
 }

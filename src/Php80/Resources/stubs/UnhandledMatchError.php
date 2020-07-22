@@ -1,5 +1,7 @@
 <?php
 
-class UnhandledMatchError extends Error
-{
+if (!class_exists('UnhandledMatchError')) {
+    class UnhandledMatchError extends Error
+    {
+    }
 }

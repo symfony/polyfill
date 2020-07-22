@@ -1,5 +1,7 @@
 <?php
 
-class IntlException extends Exception
-{
+if (!class_exists('IntlException')) {
+    class IntlException extends Exception
+    {
+    }
 }

@@ -1,5 +1,7 @@
 <?php
 
-class ArithmeticError extends Error
-{
+if (!class_exists('ArithmeticError')) {
+    class ArithmeticError extends Error
+    {
+    }
 }

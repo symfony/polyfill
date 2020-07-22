@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
-class JsonException extends Exception
-{
+if (!class_exists('JsonException')) {
+    class JsonException extends Exception
+    {
+    }
 }
