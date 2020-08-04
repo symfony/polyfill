@@ -384,6 +384,10 @@ class IdnTest extends TestCase
                 'άέήίΰαβγδεζηθικλμνξοπρσστυφχ.com',
                 'xn--hxacdefghijklmnopqrstuvw0caz0a1a2a.com',
             ),
+            array(
+                'test@bücher.de',
+                'xn--test@bcher-feb.de',
+            ),
         );
     }
 
