@@ -1,3 +1,7 @@
+# 1.18.1
+
+  * Don't force labels containing URL delimiters to stay in their Unicode form when `using idn_to_ascii`
+
 # 1.18.0
 
   * improve polyfill-idn to make it compliant with latest Unicode specs
