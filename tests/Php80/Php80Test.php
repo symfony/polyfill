@@ -103,6 +103,10 @@ class Php80Test extends TestCase
         $this->assertFalse(str_contains('abc', 'abcd'));
         $this->assertFalse(str_contains('DÉJÀ', 'à'));
         $this->assertFalse(str_contains('a', 'à'));
+        $this->assertTrue(str_contains(null, ''));
+        $this->assertTrue(str_contains('', null));
+        $this->assertFalse(str_contains(null, 'a'));
+        $this->assertTrue(str_contains('a', null));
     }
 
     /**
@@ -142,6 +146,11 @@ class Php80Test extends TestCase
         $testEmoji = '🙌🎉✨🚀'; // 0xf0 0x9f 0x99 0x8c 0xf0 0x9f 0x8e 0x89 0xe2 0x9c 0xa8 0xf0 0x9f 0x9a 0x80
         $this->assertTrue(str_starts_with($testEmoji, "🙌")); // 0xf0 0x9f 0x99 0x8c
         $this->assertFalse(str_starts_with($testEmoji, "✨")); // 0xe2 0x9c 0xa8
+
+        $this->assertTrue(str_starts_with(null, ''));
+        $this->assertTrue(str_starts_with('', null));
+        $this->assertFalse(str_starts_with(null, 'test'));
+        $this->assertTrue(str_starts_with('test', null));
     }
 
     /**
@@ -177,6 +186,11 @@ class Php80Test extends TestCase
         $testEmoji = '🙌🎉✨🚀'; // 0xf0 0x9f 0x99 0x8c 0xf0 0x9f 0x8e 0x89 0xe2 0x9c 0xa8 0xf0 0x9f 0x9a 0x80
         $this->assertTrue(str_ends_with($testEmoji, "🚀")); // 0xf0 0x9f 0x9a 0x80
         $this->assertFalse(str_ends_with($testEmoji, "✨")); // 0xe2 0x9c 0xa8
+
+        $this->assertTrue(str_starts_with(null, ''));
+        $this->assertTrue(str_starts_with('', null));
+        $this->assertFalse(str_starts_with(null, 'test'));
+        $this->assertTrue(str_starts_with('test', null));
     }
 
     /**

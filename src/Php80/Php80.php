@@ -88,17 +88,22 @@ final class Php80
         }
     }
 
-    public static function str_contains(string $haystack, string $needle): bool
+    public static function str_contains(string $haystack = null, string $needle = null): bool
     {
+        // Cast to string to avoid deprecation notices
+        if (null === $needle) {
+            $needle = '';
+        }
+
         return '' === $needle || false !== strpos($haystack, $needle);
     }
 
-    public static function str_starts_with(string $haystack, string $needle): bool
+    public static function str_starts_with(string $haystack = null, string $needle = null): bool
     {
         return 0 === \strncmp($haystack, $needle, \strlen($needle));
     }
 
-    public static function str_ends_with(string $haystack, string $needle): bool
+    public static function str_ends_with(string $haystack = null, string $needle = null): bool
     {
         return '' === $needle || ('' !== $haystack && 0 === \substr_compare($haystack, $needle, -\strlen($needle)));
     }
