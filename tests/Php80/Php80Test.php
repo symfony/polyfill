@@ -103,10 +103,20 @@ class Php80Test extends TestCase
         $this->assertFalse(str_contains('abc', 'abcd'));
         $this->assertFalse(str_contains('DÉJÀ', 'à'));
         $this->assertFalse(str_contains('a', 'à'));
+
         $this->assertTrue(str_contains(null, ''));
         $this->assertTrue(str_contains('', null));
         $this->assertFalse(str_contains(null, 'a'));
         $this->assertTrue(str_contains('a', null));
+
+        $this->assertTrue(str_contains(true, '1'));
+        $this->assertTrue(str_contains('1', true));
+        $this->assertFalse(str_contains(false, '0'));
+        $this->assertTrue(str_contains('0', false));
+        $this->assertTrue(str_contains(123, '2'));
+        $this->assertTrue(str_contains('123456', 123));
+        $this->assertTrue(str_contains(1.23, '2'));
+        $this->assertTrue(str_contains('1.2345', 1.23));
     }
 
     /**
@@ -151,6 +161,15 @@ class Php80Test extends TestCase
         $this->assertTrue(str_starts_with('', null));
         $this->assertFalse(str_starts_with(null, 'test'));
         $this->assertTrue(str_starts_with('test', null));
+
+        $this->assertTrue(str_starts_with(true, '1'));
+        $this->assertTrue(str_starts_with('1', true));
+        $this->assertFalse(str_starts_with(false, '0'));
+        $this->assertTrue(str_starts_with('0', false));
+        $this->assertTrue(str_starts_with(123, '1'));
+        $this->assertTrue(str_starts_with('123456', 123));
+        $this->assertTrue(str_starts_with(1.23, '1'));
+        $this->assertTrue(str_starts_with('1.2345', 1.23));
     }
 
     /**
@@ -187,10 +206,59 @@ class Php80Test extends TestCase
         $this->assertTrue(str_ends_with($testEmoji, "🚀")); // 0xf0 0x9f 0x9a 0x80
         $this->assertFalse(str_ends_with($testEmoji, "✨")); // 0xe2 0x9c 0xa8
 
-        $this->assertTrue(str_starts_with(null, ''));
-        $this->assertTrue(str_starts_with('', null));
-        $this->assertFalse(str_starts_with(null, 'test'));
-        $this->assertTrue(str_starts_with('test', null));
+        $this->assertTrue(str_ends_with(null, ''));
+        $this->assertFalse(str_ends_with('', null));
+        $this->assertFalse(str_ends_with(null, 'test'));
+        $this->assertFalse(str_ends_with('test', null));
+
+        $this->assertTrue(str_ends_with(true, '1'));
+        $this->assertTrue(str_ends_with('1', true));
+        $this->assertFalse(str_ends_with(false, '0'));
+        $this->assertTrue(str_ends_with('0', false));
+        $this->assertTrue(str_ends_with(123, '3'));
+        $this->assertTrue(str_ends_with('123456', 456));
+        $this->assertTrue(str_ends_with(1.23, '3'));
+        $this->assertFalse(str_ends_with('1.2345', 1.23));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::str_contains
+     * @dataProvider provideStrMethodTypeErrors
+     */
+    public function testStrContainsTypeErrors($firstArg, $secondArg)
+    {
+        $this->setExpectedException('TypeError');
+        str_contains($firstArg, $secondArg);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::str_starts_with
+     * @dataProvider provideStrMethodTypeErrors
+     */
+    public function testStrStartsWithTypeErrors($firstArg, $secondArg)
+    {
+        $this->setExpectedException('TypeError');
+        str_starts_with($firstArg, $secondArg);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php80\Php80::str_ends_with
+     * @dataProvider provideStrMethodTypeErrors
+     */
+    public function testStrEndsWithTypeErrors($firstArg, $secondArg)
+    {
+        $this->setExpectedException('TypeError');
+        str_ends_with($firstArg, $secondArg);
+    }
+
+    public function provideStrMethodTypeErrors()
+    {
+        return array(
+            array(array(), 'test'),
+            array('test', array()),
+            array(new \stdClass(), 'test'),
+            array('test', new \stdClass()),
+        );
     }
 
     /**

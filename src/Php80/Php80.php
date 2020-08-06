@@ -91,9 +91,7 @@ final class Php80
     public static function str_contains(string $haystack = null, string $needle = null): bool
     {
         // Cast to string to avoid deprecation notices
-        if (null === $needle) {
-            $needle = '';
-        }
+        $needle = (string)$needle;
 
         return '' === $needle || false !== strpos($haystack, $needle);
     }
