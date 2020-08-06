@@ -207,9 +207,9 @@ class Php80Test extends TestCase
         $this->assertFalse(str_ends_with($testEmoji, "✨")); // 0xe2 0x9c 0xa8
 
         $this->assertTrue(str_ends_with(null, ''));
-        $this->assertFalse(str_ends_with('', null));
+        $this->assertTrue(str_ends_with('', null));
         $this->assertFalse(str_ends_with(null, 'test'));
-        $this->assertFalse(str_ends_with('test', null));
+        $this->assertTrue(str_ends_with('test', null));
 
         $this->assertTrue(str_ends_with(true, '1'));
         $this->assertTrue(str_ends_with('1', true));
