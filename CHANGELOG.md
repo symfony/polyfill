@@ -1,3 +1,7 @@
+# 1.18.2
+
+  * Add a polyfill for the `Attribute` class
+
 # 1.18.1
 
   * Don't force labels containing URL delimiters to stay in their Unicode form when `using idn_to_ascii`
