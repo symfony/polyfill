@@ -291,6 +291,14 @@ class Php80Test extends TestCase
         $this->assertSame('__PHP_Incomplete_Class', get_debug_type($var));
     }
 
+    public function testAttributePolyfill()
+    {
+        $attribute = new \Attribute();
+        $this->assertSame(\Attribute::TARGET_ALL, $attribute->flags);
+        $attribute = new \Attribute(\Attribute::TARGET_CLASS);
+        $this->assertSame(\Attribute::TARGET_CLASS, $attribute->flags);
+    }
+
     public function setExpectedException($exception, $message = '', $code = null)
     {
         if (!class_exists('PHPUnit\Framework\Error\Notice')) {
