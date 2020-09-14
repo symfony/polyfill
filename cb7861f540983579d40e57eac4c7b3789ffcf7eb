@@ -1,0 +1,24 @@
+---------------------------------------------------------------------------
+
+by stof at 2020-08-12T18:42:01Z
+
+doesn't this mean that the behavior of `$part` is not properly polyfilled ?
+
+---------------------------------------------------------------------------
+
+by TysonAndre at 2020-08-12T19:03:46Z
+
+> Determines which portion of haystack this function returns. If set to TRUE, it returns all of haystack from the beginning to the last occurrence of needle. If set to FALSE, it returns all of haystack from the last occurrence of needle to the end,
+
+It looks like the polyfill was wrong and no tests covered it with true and those encodings. Will work on tests and a fix later
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-08-27T10:37:34Z
+
+Related: #247
+This exception is one of the many exceptions that are thrown in PHP 8. See [PHP 8.0: Internal function warnings now throw TypeError and ValueError exceptions](https://php.watch/versions/8.0/internal-function-exceptions).
+
+All warnings raised by the original mbstring extension are now promoted to exceptions as part of the warnings promotion efforts in PHP 8.0. This among dozens of other components that already throw exceptions, and I believe we will need to scrutinize all functions in preparation for this change.
+
+[`ValueError` exception class](https://php.watch/versions/8.0/ValueError) is polyfilled already in #219
