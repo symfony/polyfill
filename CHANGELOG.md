@@ -1,6 +1,7 @@
 # 1.18.2
 
   * Add a polyfill for the `Attribute` class
+  * Fix polyfill for `mb_strrchr()`
 
 # 1.18.1
 
