@@ -16,12 +16,12 @@ if (PHP_VERSION_ID >= 70300) {
 }
 
 if (!function_exists('is_countable')) {
-    function is_countable($var) { return is_array($var) || $var instanceof Countable || $var instanceof ResourceBundle || $var instanceof SimpleXmlElement; }
+    function is_countable($value) { return is_array($value) || $value instanceof Countable || $value instanceof ResourceBundle || $value instanceof SimpleXmlElement; }
 }
 if (!function_exists('hrtime')) {
     require_once __DIR__.'/Php73.php';
     p\Php73::$startAt = (int) microtime(true);
-    function hrtime($asNum = false) { return p\Php73::hrtime($asNum); }
+    function hrtime($as_number  = false) { return p\Php73::hrtime($as_number ); }
 }
 if (!function_exists('array_key_first')) {
     function array_key_first(array $array) { foreach ($array as $key => $value) { return $key; } }

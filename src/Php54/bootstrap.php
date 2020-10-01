@@ -29,7 +29,7 @@ if (!function_exists('class_uses')) {
     }
 }
 if (!function_exists('hex2bin')) {
-    function hex2bin($data) { return p\Php54::hex2bin($data); }
+    function hex2bin($string) { return p\Php54::hex2bin($string); }
 }
 if (!function_exists('session_register_shutdown')) {
     function session_register_shutdown() { register_shutdown_function('session_write_close'); }
