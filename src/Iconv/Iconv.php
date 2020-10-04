@@ -544,7 +544,7 @@ final class Iconv
             return false;
         }
         if ($start >= $slen) {
-            return false;
+            return \PHP_VERSION_ID >= 80000 ? '' : false;
         }
 
         $rx = $slen - $start;
