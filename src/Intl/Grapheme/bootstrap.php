@@ -50,5 +50,5 @@ if (!function_exists('grapheme_strstr')) {
     function grapheme_strstr($s, $needle, $beforeNeedle = false) { return p\Grapheme::grapheme_strstr($s, $needle, $beforeNeedle); }
 }
 if (!function_exists('grapheme_substr')) {
-    function grapheme_substr($s, $start, $len = 2147483647) { return p\Grapheme::grapheme_substr($s, $start, $len); }
+    function grapheme_substr($s, $start, $len = null) { return p\Grapheme::grapheme_substr($s, $start, $len); }
 }

@@ -89,6 +89,10 @@ class GraphemeTest extends TestCase
     {
         $c = 'déjà';
 
+        if (\PHP_VERSION_ID >= 70000) {
+            $this->assertSame('jà', grapheme_substr($c, -2, null));
+        }
+
         if (\PHP_VERSION_ID >= 50418 && \PHP_VERSION_ID !== 50500) {
             // See http://bugs.php.net/62759 and 55562
             $this->assertSame('jà', grapheme_substr($c, -2, 3));

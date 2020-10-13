@@ -1,6 +1,5 @@
 language: php
 dist: bionic
-sudo: false
 
 cache:
     directories:
