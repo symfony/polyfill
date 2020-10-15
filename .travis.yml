@@ -9,22 +9,22 @@ cache:
 
 matrix:
     include:
-        - php: 5.3
-          dist: precise
-        - php: 5.4
-          dist: trusty
-        - php: 5.5
-          dist: trusty
-        - php: 5.6
-          dist: trusty
-        - php: 7.0
-          dist: trusty
-        - php: 7.1
-        - php: 7.2
-        - php: 7.3
-          env: SYMFONY_PHPUNIT_VERSION=7.2
-        - php: 7.4
-          env: SYMFONY_PHPUNIT_VERSION=7.2
+        # - php: 5.3
+        #   dist: precise
+        # - php: 5.4
+        #   dist: trusty
+        # - php: 5.5
+        #   dist: trusty
+        # - php: 5.6
+        #   dist: trusty
+        # - php: 7.0
+        #   dist: trusty
+        # - php: 7.1
+        # - php: 7.2
+        # - php: 7.3
+        #   env: SYMFONY_PHPUNIT_VERSION=7.2
+        # - php: 7.4
+        #   env: SYMFONY_PHPUNIT_VERSION=7.2
         - php: nightly
           env: SYMFONY_PHPUNIT_VERSION=7.2
     allow_failures:
@@ -47,6 +47,7 @@ install:
     - if [[ $TRAVIS_BRANCH = master ]]; then export COMPOSER_ROOT_VERSION=dev-master; else export COMPOSER_ROOT_VERSION=$TRAVIS_BRANCH.x-dev; fi
     - composer --prefer-source install
     - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then phpenv global 7.1; ./vendor/bin/simple-phpunit install; phpenv global nightly; fi
+    - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then composer require roave/better-reflection --ignore-platform-reqs --dev; fi
 
 script:
     - ./vendor/bin/simple-phpunit

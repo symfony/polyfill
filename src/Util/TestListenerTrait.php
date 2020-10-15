@@ -11,6 +11,10 @@
 
 namespace Symfony\Polyfill\Util;
 
+use Roave\BetterReflection\BetterReflection;
+use Roave\BetterReflection\Reflector\FunctionReflector;
+use Roave\BetterReflection\SourceLocator\Type\SingleFileSourceLocator;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
@@ -25,7 +29,7 @@ class TestListenerTrait
         }
         self::$enabledPolyfills = false;
         $SkippedTestError = class_exists('PHPUnit\Framework\SkippedTestError') ? 'PHPUnit\Framework\SkippedTestError' : 'PHPUnit_Framework_SkippedTestError';
-
+        $warnings = array();
         foreach ($mainSuite->tests() as $suite) {
             $testClass = $suite->getName();
             if (!$tests = $suite->tests()) {
@@ -43,8 +47,11 @@ class TestListenerTrait
                 continue;
             }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
-            $bootstrap = new \SplFileObject(\dirname($testedClass->getFileName()).'/bootstrap.php');
-            $warnings = array();
+            $filename = \dirname($testedClass->getFileName()).'/bootstrap.php';
+            $bootstrap = new \SplFileObject($filename);
+            if (PHP_VERSION_ID >= 80000) {
+                $warnings = array_merge($warnings, static::scanFileForInvalidSignatures($filename));
+            }
             $defLine = null;
 
             foreach (new \RegexIterator($bootstrap, '/define\(\'/') as $defLine) {
@@ -125,5 +132,56 @@ EOPHP
             $r->setAccessible(true);
             $r->setValue($e, 'Polyfills enabled, '.$r->getValue($e));
         }
+    }
+
+    /**
+     * @param string|string[] $files
+     */
+    private static function scanFileForInvalidSignatures($file)
+    {
+        $betterReflection = new BetterReflection();
+        $locator = new SingleFileSourceLocator($file, $betterReflection->astLocator());
+        $reflector = new FunctionReflector($locator, $betterReflection->classReflector());
+        $polyfills = $reflector->getAllFunctions();
+        $warnings = array();
+        foreach ($polyfills as $polyfill) {
+            $function = $polyfill->getName();
+            if (!\function_exists($function)) {
+                continue;
+            }
+
+            $originalFunction = new \ReflectionFunction($function);
+
+            $warnings[] = static::compareParameters($function, $originalFunction->getParameters(), $polyfill->getParameters());
+        }
+
+        return array_filter($warnings);
+    }
+
+    private static function compareParameters($methodOrFunction, $original, $polyfill)
+    {
+        $callable = function($parameter) { return $parameter->getName(); };
+        $polyfillParameters = array_map($callable, $polyfill);
+        $originalParameters = array_map($callable, $original);
+        if ($polyfillParameters !== $originalParameters) {
+            $toString = function($parameters) {
+                return implode(', ', array_map(function($parameter) {
+                    return '$'.$parameter;
+                }, $parameters));
+            };
+
+            $polyfillParametersString = $toString($polyfillParameters);
+            $originalParametersString = $toString($originalParameters);
+
+            return TestListener::warning(<<<FMT
+The polyfill for "$methodOrFunction" has an incorrect signature.
+
+Expected : $originalParametersString
+Actual   : $polyfillParametersString
+FMT
+);
+        }
+
+        return null;
     }
 }
