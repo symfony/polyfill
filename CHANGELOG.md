@@ -1,7 +1,8 @@
-# 1.18.2
+# 1.19.0
 
   * Add a polyfill for the `Attribute` class
   * Fix polyfill for `mb_strrchr()`
+  * Skip loading `Stringable` on PHP 8
 
 # 1.18.1
 
