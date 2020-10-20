@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-10-04T15:28:28Z
+
+Tests will fail in Travis due to an `UnexpectedValue` exception, which I believe is related to how composer determines the version. Tests run OK in my local tests.I will send a PR for grapheme if this is accepted :)
+
+Thank you.
