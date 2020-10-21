@@ -43,7 +43,7 @@ install:
     - appveyor DownloadFile https://github.com/composer/composer/releases/download/1.9.0/composer.phar
     - cd c:\projects\polyfill
     - mkdir %APPDATA%\Composer && copy /Y .github\composer-config.json %APPDATA%\Composer\config.json
-    - IF %APPVEYOR_REPO_BRANCH%==master (SET COMPOSER_ROOT_VERSION=dev-master) ELSE (SET COMPOSER_ROOT_VERSION=%APPVEYOR_REPO_BRANCH%.x-dev)
+    - SET COMPOSER_ROOT_VERSION=dev-main
     - composer update --prefer-source --no-progress --ansi
 
 test_script:
