@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by stof at 2020-10-20T10:14:33Z
+
+@nicolas-grekas to avoid closing existing PRs, I suggest retargeting them to `main` rather than `master` *before* deleting the master branch (either through the API, or manually as there's only a few PRs)
