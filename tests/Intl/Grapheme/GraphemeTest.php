@@ -93,7 +93,11 @@ class GraphemeTest extends TestCase
             $this->assertSame('jà', grapheme_substr($c, -2, null));
         }
 
-        if (\PHP_VERSION_ID >= 50418 && \PHP_VERSION_ID !== 50500) {
+        if (\PHP_VERSION_ID >= 80000) {
+            $this->assertSame('jà', grapheme_substr($c, -2, 3));
+            $this->assertSame('', grapheme_substr($c, -1, 0));
+            $this->assertSame('', grapheme_substr($c, 1, -4));
+        } elseif (\PHP_VERSION_ID >= 50418 && \PHP_VERSION_ID !== 50500) {
             // See http://bugs.php.net/62759 and 55562
             $this->assertSame('jà', grapheme_substr($c, -2, 3));
             $this->assertSame('', grapheme_substr($c, -1, 0));
@@ -104,8 +108,32 @@ class GraphemeTest extends TestCase
         $this->assertSame('jà', grapheme_substr($c, -2));
         $this->assertSame('j', grapheme_substr($c, -2, -1));
         $this->assertSame('', grapheme_substr($c, -2, -2));
-        $this->assertFalse(grapheme_substr($c, 5, 0));
-        $this->assertFalse(grapheme_substr($c, -5, 0));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_substr
+     * @requires PHP < 8
+     */
+    public function testGraphemeSubstrReturnsFalsePrePHP8()
+    {
+        $c = 'déjà';
+        $this->assertFalse(grapheme_substr($c, 5, 1));
+        $this->assertFalse(grapheme_substr($c, -5, 1));
+        $this->assertFalse(grapheme_substr($c, -42, 1));
+        $this->assertFalse(grapheme_substr($c, 42, 5));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_substr
+     * @requires PHP 8
+     */
+    public function testGraphemeSubstrReturnsEmptyPostPHP8()
+    {
+        $c = 'déjà';
+        $this->assertSame('', grapheme_substr($c, 5, 1));
+        $this->assertSame('d', grapheme_substr($c, -5, 1));
+        $this->assertSame('d', grapheme_substr($c, -42, 1));
+        $this->assertSame('', grapheme_substr($c, 42, 5));
     }
 
     /**
