@@ -1,8 +1,12 @@
 # 1.19.0
 
   * Add a polyfill for the `Attribute` class
+  * Improve performances of `array_key_last()`
   * Fix polyfill for `mb_strrchr()`
   * Skip loading `Stringable` on PHP 8
+  * Fix passing `$length=null` to `grapheme_substr()`
+  * Fix `iconv_substr()` and `grapheme_substr()` on PHP 8
+  * Fix using any IDNA constants
 
 # 1.18.1
 
