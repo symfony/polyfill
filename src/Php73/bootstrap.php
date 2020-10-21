@@ -27,5 +27,5 @@ if (!function_exists('array_key_first')) {
     function array_key_first(array $array) { foreach ($array as $key => $value) { return $key; } }
 }
 if (!function_exists('array_key_last')) {
-    function array_key_last(array $array) { end($array); return key($array); }
+    function array_key_last(array $array) { key(array_slice($array, -1, 1, true)); }
 }
