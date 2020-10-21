@@ -17,8 +17,10 @@ if (class_exists('PHPUnit_Runner_Version') && version_compare(\PHPUnit_Runner_Ve
 // gets defined without executing the code before it and so the definition is not properly conditional)
 } elseif (version_compare(\PHPUnit\Runner\Version::id(), '7.0.0', '<')) {
     class_alias('Symfony\Polyfill\Util\TestListenerForV6', 'Symfony\Polyfill\Util\TestListener');
-} else {
+} elseif (version_compare(\PHPUnit\Runner\Version::id(), '9.1.0', '<')) {
     class_alias('Symfony\Polyfill\Util\TestListenerForV7', 'Symfony\Polyfill\Util\TestListener');
+} else {
+    class_alias('Symfony\Polyfill\Util\TestListenerForV9', 'Symfony\Polyfill\Util\TestListener');
 }
 
 if (false) {
