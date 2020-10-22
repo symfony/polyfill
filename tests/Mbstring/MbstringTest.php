@@ -350,7 +350,7 @@ class MbstringTest extends TestCase
         $this->assertSame('ςσb', mb_stristr('aςσb', 'ΣΣ'));
         $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é'));
         $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é', false, 'ASCII'));
-        $this->assertSame(false, mb_strrchr('déjàdéjà', 'X', false, 'ASCII'));
+        $this->assertFalse(mb_strrchr('déjàdéjà', 'X', false, 'ASCII'));
         $this->assertSame('ÉJÀ', mb_strrichr('DÉJÀDÉJÀ', 'é'));
 
         $this->assertSame('d', mb_strstr('déjàdéjà', 'é', true));
@@ -358,7 +358,7 @@ class MbstringTest extends TestCase
         $this->assertSame('a', mb_stristr('aςσb', 'ΣΣ', true));
         $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true));
         $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true, 'ASCII'));
-        $this->assertSame(false, mb_strrchr('déjàdéjà', 'X', true, 'ASCII'));
+        $this->assertFalse(mb_strrchr('déjàdéjà', 'X', true, 'ASCII'));
         $this->assertSame('DÉJÀD', mb_strrichr('DÉJÀDÉJÀ', 'é', true));
         $this->assertSame('Paris', mb_stristr('der Straße nach Paris', 'Paris'));
     }
