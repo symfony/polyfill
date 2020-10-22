@@ -540,15 +540,14 @@ final class Mbstring
             
             return null;
         }
-        $split_length = (int) $split_length;
-        if (1 > $split_length) {
+
+        if (1 > $split_length = (int) $split_length) {
             trigger_error('mb_str_split(): The length of each segment must be greater than zero', E_USER_WARNING);
 
             return false;
         }
 
-        $encoding = self::getEncoding($encoding);
-        if ('UTF-8' === $encoding) {
+        if ('UTF-8' === $encoding = self::getEncoding($encoding)) {
             $rx = '/(';
             while (65535 < $split_length) {
                 $rx .= '.{65535}';
