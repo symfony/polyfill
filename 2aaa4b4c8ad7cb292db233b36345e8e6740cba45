@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-10-21T06:58:36Z
+
+Apologies about the force-push noise, some tests were failing because older PHPUnit versions apparently ignore `@requires PHP >= 8.0` style annotations, so I had to use `@requires PHP 8.0` instead.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-10-22T13:51:51Z
+
+I sent a PR for `iconv` before, #289, that is unfortunately incomplete. I will send a new PR to cover them too. I apologize for the time wasted and the excessive noise with those PRs, and I will be more careful to pay attention to edge cases too.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-22T14:12:26Z
+
+No worries. Please add to this very PR, that's ok.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-10-22T14:16:22Z
+
+Thank you, I cherry-picked the commit from #302 and closed it.
