@@ -30,7 +30,7 @@ class UuidTest extends TestCase
     {
         $uuidNs = uuid_create();
 
-        $this->assertFalse(uuid_generate_md5('not a uuid', 'foo'));
+        $this->assertFalse(@uuid_generate_md5('not a uuid', 'foo'));
 
         $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_md5($uuidNs, 'foo'));
         $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_md5($uuidNs, 'bar'));
@@ -45,7 +45,7 @@ class UuidTest extends TestCase
     {
         $uuidNs = uuid_create();
 
-        $this->assertFalse(uuid_generate_sha1('not a uuid', 'foo'));
+        $this->assertFalse(@uuid_generate_sha1('not a uuid', 'foo'));
 
         $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_sha1($uuidNs, 'foo'));
         $this->assertRegExp('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_sha1($uuidNs, 'bar'));
@@ -119,7 +119,7 @@ class UuidTest extends TestCase
     /** @dataProvider provideCompareTest */
     public function testCompareWithUuidNotValid($expected, $uuid1, $uuid2)
     {
-        $result = uuid_compare($uuid1, $uuid2);
+        $result = @uuid_compare($uuid1, $uuid2);
 
         // The result depends of pecl version ...
         if (-1 === $expected) {
@@ -144,7 +144,7 @@ class UuidTest extends TestCase
     /** @dataProvider provideIsNullTest */
     public function testIsNull($expected, $uuid)
     {
-        $this->assertSame($expected, uuid_is_null($uuid));
+        $this->assertSame($expected, @uuid_is_null($uuid));
     }
 
     public function provideTypeTest()
@@ -161,7 +161,7 @@ class UuidTest extends TestCase
     /** @dataProvider provideTypeTest */
     public function testType($expected, $uuid)
     {
-        $this->assertSame($expected, uuid_type($uuid));
+        $this->assertSame($expected, @uuid_type($uuid));
     }
 
     public function provideVariantTest()
@@ -177,7 +177,7 @@ class UuidTest extends TestCase
     /** @dataProvider provideVariantTest */
     public function testVariant($expected, $uuid)
     {
-        $this->assertSame($expected, uuid_variant($uuid));
+        $this->assertSame($expected, @uuid_variant($uuid));
     }
 
     public function provideTimeTest()
@@ -194,7 +194,7 @@ class UuidTest extends TestCase
     /** @dataProvider provideTimeTest */
     public function testTime($expected, $uuid)
     {
-        $this->assertSame($expected, uuid_time($uuid));
+        $this->assertSame($expected, @uuid_time($uuid));
     }
 
     public function provideMacTest()
@@ -211,7 +211,7 @@ class UuidTest extends TestCase
     /** @dataProvider provideMacTest */
     public function testMac($expected, $uuid)
     {
-        $this->assertSame($expected, uuid_mac($uuid));
+        $this->assertSame($expected, @uuid_mac($uuid));
     }
 
     public function provideParseTest()
@@ -227,7 +227,7 @@ class UuidTest extends TestCase
     /** @dataProvider provideParseTest */
     public function testParse($expected, $uuid, $bin2hex = true)
     {
-        $out = uuid_parse($uuid);
+        $out = @uuid_parse($uuid);
         if ($bin2hex) {
             $out = bin2hex($out);
         }
@@ -249,6 +249,6 @@ class UuidTest extends TestCase
     /** @dataProvider provideUnparseTest */
     public function testUnparse($expected, $uuid)
     {
-        $this->assertSame($expected, uuid_unparse($uuid));
+        $this->assertSame($expected, @uuid_unparse($uuid));
     }
 }
