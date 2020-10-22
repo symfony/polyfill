@@ -120,10 +120,14 @@ final class Grapheme
             $start += $slen;
         }
         if (0 > $start) {
-            return false;
+            if (\PHP_VERSION_ID < 80000) {
+                return false;
+            }
+
+            $start = 0;
         }
         if ($start >= $slen) {
-            return false;
+            return \PHP_VERSION_ID >= 80000 ? '' : false;
         }
 
         $rem = $slen - $start;
@@ -135,7 +139,7 @@ final class Grapheme
             return '';
         }
         if (0 > $len) {
-            return false;
+            return \PHP_VERSION_ID >= 80000 ? '' : false;
         }
         if ($len > $rem) {
             $len = $rem;

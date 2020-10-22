@@ -76,20 +76,26 @@ class IconvTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
-     * @requires PHP < 8.0.0
+     * @requires PHP < 8
      */
     public function testIconvSubstrReturnsFalsePrePHP8()
     {
-        $this->assertFalse(iconv_substr('x', 5, 1, 'UTF-8'));
+        $c = 'déjà';
+        $this->assertFalse(iconv_substr($c, 42, 1, 'UTF-8'));
+        $this->assertFalse(iconv_substr($c, -42, 1));
+        $this->assertFalse(iconv_substr($c, 42, 26));
     }
 
     /**
      * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
-     * @requires PHP >= 8.0.0
+     * @requires PHP 8
      */
     public function testIconvSubstrReturnsEmptyPostPHP8()
     {
-        $this->assertSame('', iconv_substr('x', 5, 1, 'UTF-8'));
+        $c = 'déjà';
+        $this->assertSame('', iconv_substr($c, 42, 1, 'UTF-8'));
+        $this->assertSame('d', iconv_substr($c, -42, 1));
+        $this->assertSame('', iconv_substr($c, 42, 26));
     }
 
     /**
