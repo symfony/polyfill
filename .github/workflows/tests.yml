@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+    push:
+    pull_request:
+
+jobs:
+
+    test:
+        name: PHPUnit Tests
+        runs-on: ubuntu-latest
+
+        env:
+            COMPOSER_ROOT_VERSION: dev-main
+
+        strategy:
+            matrix:
+                php:
+                    - '7.1'
+                    - '7.2'
+                    - '7.3'
+                    - '7.4'
+                    - '8.0'
+            fail-fast: false
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    coverage: "none"
+                    extensions: "apcu, intl, mbstring, uuid"
+                    ini-values: "memory_limit=-1, session.gc_probability=0, apc.enable_cli=1"
+                    php-version: "${{ matrix.php }}"
+                    tools: "composer:v2"
+
+            -   name: Install dependencies
+                run: composer --prefer-source --no-progress --ansi install
+
+            -   name: Run tests
+                run: ./vendor/bin/simple-phpunit
