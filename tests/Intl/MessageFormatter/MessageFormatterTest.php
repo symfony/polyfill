@@ -54,10 +54,6 @@ class MessageFormatterTest extends TestCase
         $result = $formatter->format($args);
         $this->assertEquals($expected, $result, $formatter->getErrorMessage());
 
-        if (\PHP_VERSION_ID < 50500) {
-            return;
-        }
-
         $formatter = new \MessageFormatter('en_US', $pattern);
         $result = $formatter->format($args);
         $this->assertEquals($expected, $result, $formatter->getErrorMessage());
@@ -220,10 +216,6 @@ _MSG_
         $result = $formatter->format(array('n' => 42));
         $this->assertEquals('{сабж} is 42', $result);
 
-        if (\PHP_VERSION_ID < 50500) {
-            return;
-        }
-
         $formatter = new \MessageFormatter('en_US', $pattern);
         $result = $formatter->format(array('n' => 42));
         $this->assertEquals('{сабж} is 42', $result);
@@ -237,10 +229,6 @@ _MSG_
         $result = $formatter->format(array());
         $this->assertEquals($pattern, $result, $formatter->getErrorMessage());
 
-        if (\PHP_VERSION_ID < 50500) {
-            return;
-        }
-
         $formatter = new \MessageFormatter('en_US', $pattern);
         $result = $formatter->format(array());
         $this->assertEquals($pattern, $result, $formatter->getErrorMessage());
@@ -253,10 +241,6 @@ _MSG_
         $formatter = new MessageFormatter('en_US', $pattern);
         $result = $formatter->format(array('begin' => 1, 'end' => 5, 'totalCount' => 10));
         $this->assertEquals('Showing <b>1-5</b> of <b>10</b> items.', $result);
-
-        if (\PHP_VERSION_ID < 50500) {
-            return;
-        }
 
         $formatter = new \MessageFormatter('en_US', $pattern);
         $result = $formatter->format(array('begin' => 1, 'end' => 5, 'totalCount' => 10));

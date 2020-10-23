@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
  */
 class ApcuTest extends TestCase
 {
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         if (!filter_var(ini_get('apc.enabled'), \FILTER_VALIDATE_BOOLEAN) || !filter_var(ini_get('apc.enable_cli'), \FILTER_VALIDATE_BOOLEAN)) {
             self::markTestSkipped('apc.enable_cli=1 is required.');

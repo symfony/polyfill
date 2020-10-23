@@ -33,9 +33,6 @@ class Php73Test extends TestCase
         }
     }
 
-    /**
-     * @requires PHP 5.5
-     */
     public function testIsCountableForGenerator()
     {
         require_once 'generator.php';
@@ -47,10 +44,10 @@ class Php73Test extends TestCase
     {
         $hrtime = hrtime(true);
         if (PHP_INT_SIZE === 4) {
-            $this->assertInternalType('float', $hrtime);
+            $this->assertIsFloat($hrtime);
             $this->assertEquals(floor($hrtime), $hrtime);
         } else {
-            $this->assertInternalType('int', $hrtime);
+            $this->assertIsInt($hrtime);
         }
     }
 
@@ -70,10 +67,10 @@ class Php73Test extends TestCase
     public function testHardwareTimeAsArrayType()
     {
         $hrtime = hrtime();
-        $this->assertInternalType('array', $hrtime);
+        $this->assertIsArray($hrtime);
         $this->assertCount(2, $hrtime);
-        $this->assertInternalType('int', $hrtime[0]);
-        $this->assertInternalType('int', $hrtime[1]);
+        $this->assertIsInt($hrtime[0]);
+        $this->assertIsInt($hrtime[1]);
     }
 
     public function testHardwareTimeAsArrayNanos()

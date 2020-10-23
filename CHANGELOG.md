@@ -1,3 +1,7 @@
+# 1.20.0
+
+  * Bump minimum PHP version to 7.1
+
 # 1.19.0
 
   * Add a polyfill for the `Attribute` class
