@@ -53,6 +53,8 @@ Polyfills are provided for:
 - the `UnhandledMatchError` class introduced in PHP 8.0;
 - the `FILTER_VALIDATE_BOOL` constant introduced in PHP 8.0;
 - the `get_resource_id` function introduced in PHP 8.0;
+- the `Attribute` class introduced in PHP 8.0;
+- the `Stringable` interface introduced in PHP 8.0;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
@@ -116,11 +118,11 @@ something like this:
 ```json
 {
     "replace": {
-        "symfony/polyfill-php54": "1.99",
-        "symfony/polyfill-php55": "1.99",
-        "symfony/polyfill-php56": "1.99",
-        "symfony/polyfill-php70": "1.99",
-        "symfony/polyfill-mbstring": "1.99"
+        "symfony/polyfill-php54": "*",
+        "symfony/polyfill-php55": "*",
+        "symfony/polyfill-php56": "*",
+        "symfony/polyfill-php70": "*",
+        "symfony/polyfill-mbstring": "*"
     }
 }
 ```
