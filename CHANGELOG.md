@@ -1,6 +1,7 @@
 # 1.19.0
 
   * Add a polyfill for the `Attribute` class
+  * Fix the name of arguments for PHP 8
   * Improve performances of `array_key_last()`
   * Fix polyfill for `mb_strrchr()`
   * Skip loading `Stringable` on PHP 8
