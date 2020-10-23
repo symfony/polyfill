@@ -623,9 +623,9 @@ final class Iconv
                     trigger_error(self::ERROR_ILLEGAL_CHARACTER);
 
                     return false;
-                } else {
-                    $i += $ulen;
                 }
+
+                $i += $ulen;
 
                 $u[$j++] = $uchr[0];
 
@@ -679,9 +679,9 @@ final class Iconv
                 if ($ignore && (1 === $ulen || !($valid || preg_match('/^.$/us', $uchr)))) {
                     ++$i;
                     continue;
-                } else {
-                    $i += $ulen;
                 }
+
+                $i += $ulen;
             }
 
             if (isset($map[$uchr])) {
