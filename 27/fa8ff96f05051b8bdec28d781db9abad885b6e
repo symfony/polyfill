@@ -1,0 +1,93 @@
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T10:50:25Z
+
+Why making PHP 7.2 the min version for the 1.x version of polyfills ? This won't help with the need to change all error handling in PHP 8 AFAICT.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-23T10:53:18Z
+
+> Why making PHP 7.2 the min version for the 1.x version of polyfills ?
+
+That's a bit arbitrary. 7.2 matches the current min of Symfony 5.
+
+> This won't help with the need to change all error handling in PHP 8 AFAICT.
+
+Nope indeed, that's loosely related (it will help prepare the CI and cleanup the codebase a bit, nothing more)
+
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T10:56:12Z
+
+> That's a bit arbitrary. 7.2 matches the current min of Symfony 5.
+
+But Symfony 4.4 is still maintained for years to come, and relies on polyfills. Shouldn't we at least take it into account ?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-23T10:58:33Z
+
+I think we do, by continuing to maintain `1.19.x-dev`.
+
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T11:01:57Z
+
+@nicolas-grekas in the past, we have added usage of new polyfills in patch releases of LTS versions when adding support of new PHP versions. If `1.19.x-dev` receives only bugfixes, this pattern won't work anymore as the new polyfills won't exist in it.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-23T11:07:01Z
+
+> in the past, we have added usage of new polyfills in patch releases of LTS versions when adding support of new PHP versions. If 1.19.x-dev receives only bugfixes, this pattern won't work anymore as the new polyfills won't exist in it.
+
+I understand, I think that's fine for 4.4: I don't anticipate that a polyfill for 8.1+ will be absolutely required for 4.4. We'll just skip using that polyfill if one is created. At least I think that the benefit of empty packages for older PHP versions outweigh the drawback for 4.4.
+
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T11:10:26Z
+
+@nicolas-grekas do we win a lot in terms of code cleanup for the polyfill codebase by going 7.2+ compared to going 7.1.3+ (the min version of Symfony 4) ?
+
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T11:12:38Z
+
+> I understand, I think that's fine for 4.4: I don't anticipate that a polyfill for 8.1+ will be absolutely required for 4.4. We'll just skip using that polyfill if one is created.
+
+The reason we use polyfills in LTS versions is that we migrate to new functions (like `get_debug_type` for instance) in all maintained branches to reduce on-going merge conflicts. So to me, forbidding to use new polyfills in the LTS version would actually hurt our maintenance, unless we also avoid using it in the newest branch...
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-10-23T11:18:34Z
+
+I'm ok to drop all PHP versions (up to 7.2), but we don't need to "maintain" 1.19 IMHO. Why not support 7.1 for 4.4? First, because the code is already old and stable (no known bugs), and if any, people should really update their PHP version instead (I don't see why we would need to maintain code for apps using obsolete PHP versions).
+
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T11:21:01Z
+
+@fabpot if we make a new patch release of 4.4 depend on a `symfony/polyfill-php81` when adding support for PHP 8.1 in the 4.4 branch, and that `symfony/polyfill-php81` does not have a version supporting PHP 7.1, it means we are effectively bumping the min version of the 4.4 LTS as composer won't be able to resolve dependencies anymore on PHP 7.1. And the Symfony LTS policy does not allow us to bump the min PHP version AFAIK.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-23T11:24:25Z
+
+Let me try downgrading to 7.1
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-23T11:48:53Z
+
+> Old polyfill packages which have no code anymore could use type: metapackage
+
+updated
+
+ready for 7.1
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-23T12:39:28Z
+
+PR is ready.
