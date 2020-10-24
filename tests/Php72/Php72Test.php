@@ -112,8 +112,8 @@ class Php72Test extends TestCase
         try {
             sapi_windows_vt100_support('foo', true);
         } catch (\PHPUnit\Framework\Error\Warning $e) {
-            $this->expectException('PHPUnit\Framework\Error\Warning');
-            $this->expectExceptionMessage('expects parameter 1 to be resource');
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 1 to be resource');
 
             throw $e;
         }
@@ -131,8 +131,8 @@ class Php72Test extends TestCase
         try {
             sapi_windows_vt100_support(fopen('php://memory', 'wb'), true);
         } catch (\PHPUnit\Framework\Error\Warning $e) {
-            $this->expectException('PHPUnit\Framework\Error\Warning');
-            $this->expectExceptionMessage('was not able to analyze the specified stream');
+            $this->expectWarning();
+            $this->expectWarningMessage('was not able to analyze the specified stream');
 
             throw $e;
         }
@@ -156,8 +156,8 @@ class Php72Test extends TestCase
         try {
             stream_isatty('foo');
         } catch (\PHPUnit\Framework\Error\Warning $e) {
-            $this->expectException('PHPUnit\Framework\Error\Warning');
-            $this->expectExceptionMessage('expects parameter 1 to be resource');
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 1 to be resource');
 
             throw $e;
         }

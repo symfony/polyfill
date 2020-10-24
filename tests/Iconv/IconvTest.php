@@ -132,8 +132,8 @@ class IconvTest extends TestCase
     public function testIconvMimeDecodeIllegal()
     {
         iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .');
-        $this->expectException('PHPUnit\Framework\Error\Notice');
-        $this->expectExceptionMessage('Detected an illegal character in input string');
+        $this->expectNotice();
+        $this->expectNoticeMessage('Detected an illegal character in input string');
         iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .');
     }
 
