@@ -1,0 +1,47 @@
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-23T15:01:21Z
+
+GH Actions seem to be disabled on this repo. Here's the latest run on my fork: https://github.com/derrabus/polyfill/runs/1298646165
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-23T15:08:18Z
+
+Dunno why they didn't run. Settings tell they are enabled.
+
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T15:15:27Z
+
+> Dunno why they didn't run. Settings tell they are enabled.
+
+IIRC, the workflow files need to be present in the target branch to allow the job to run. A PR *adding* the CI workflow won't trigger it.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-23T15:22:37Z
+
+> IIRC, the workflow files need to be present in the target branch to allow the job to run. A PR _adding_ the CI workflow won't trigger it.
+
+Oh my. Well then, you can click on `derrabus:improvement/gh-actions` at the top of this page to see the latest run.
+
+---------------------------------------------------------------------------
+
+by stof at 2020-10-23T15:29:02Z
+
+The failure on PHP 8 is because it installs PHPUnit 9.3 which is not yet supported by the bridge (I think 5.2-dev supports it but I'm not sure). Travis was forcing `SYMFONY_PHPUNIT_VERSION=7.2`
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-23T15:46:23Z
+
+> The failure on PHP 8 is because it installs PHPUnit 9.3 which is not yet supported by the bridge (I think 5.2-dev supports it but I'm not sure).
+
+PhpUnitBridge 5.2-dev is actually being used. That's why we get PHPUnit 9.3 in the first place.
+
+The listener is the problem. (edit: actually the test listener of the polyfills, not the bridge)
+
+> Travis was forcing `SYMFONY_PHPUNIT_VERSION=7.2`
+
+Yes, but Nicolas' PR removes that already. PHPUnit 7.2 won't work either because it is not compatible with PHP 8.
