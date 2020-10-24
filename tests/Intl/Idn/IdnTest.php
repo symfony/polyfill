@@ -76,7 +76,7 @@ class IdnTest extends TestCase
         $tests = array();
 
         while (false !== ($line = fgets($h))) {
-            if ("\n" === $line || '#' === $line[0]) {
+            if (PHP_EOL === $line || '#' === $line[0]) {
                 continue;
             }
 

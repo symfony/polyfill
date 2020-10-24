@@ -48,6 +48,7 @@ class TestListenerTrait
             $defLine = null;
 
             foreach (new \RegexIterator($bootstrap, '/define\(\'/') as $defLine) {
+                $defLine = \rtrim($defLine); // removes trailing \n on windows
                 preg_match('/define\(\'(?P<name>.+)\'/', $defLine, $matches);
                 if (\defined($matches['name'])) {
                     continue;
@@ -65,6 +66,7 @@ class TestListenerTrait
             $bootstrap->rewind();
 
             foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
+                $defLine = \rtrim($defLine); // removes trailing \n on windows
                 if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)(?: ?: [^ ]++)?) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
                     $warnings[] = TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
                     continue;

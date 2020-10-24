@@ -41,3 +41,113 @@ jobs:
 
             -   name: Run tests
                 run: ./vendor/bin/simple-phpunit
+
+    test-windows:
+        name: PHPUnit Tests (Windows 7.1 x86)
+        runs-on: windows-latest
+
+        env:
+            COMPOSER_ROOT_VERSION: dev-main
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Cache binaries
+                id: cache-binaries
+                uses: actions/cache@v2
+                with:
+                    path: c:\php
+                    key: ${{ runner.os }}-binaries-${{ hashFiles('**/.github/workflows/tests.yml') }}
+                    restore-keys: ${{ runner.os }}-binaries-
+
+            -   name: Install binaries
+                if: steps.cache-binaries.outputs.cache-hit != 'true'
+                run: |
+                    echo ::group::Download-Php
+                    if(!(Test-Path -path "c:\php\"))
+                    {
+                      New-Item -ItemType directory -Path "c:\php"
+                    }
+                    cd c:\php
+                    curl.exe -fsL https://github.com/symfony/binary-utils/releases/download/v0.1/php-7.1.3-Win32-VC14-x86.zip -o php.zip
+                    7z x php.zip -y
+                    del ./*.zip
+                    echo ::endgroup::
+
+                    echo ::group::Download-extensions
+                    cd ext
+                    curl.exe -fsL https://github.com/symfony/binary-utils/releases/download/v0.1/php_apcu-5.1.8-7.1-ts-vc14-x86.zip -o php_apcu.zip
+                    7z x php_apcu.zip -y
+                    del ./*.zip
+                    cd ..
+                    echo ::endgroup::
+
+                    echo ::group::Setup-.ini
+                    echo @php %%~dp0composer.phar %%* > composer.bat
+                    copy php.ini-development php.ini
+                    echo max_execution_time=1200 >> php.ini
+                    echo date.timezone="UTC" >> php.ini
+                    echo memory_limit=-1 >> php.ini
+                    echo extension_dir=ext >> php.ini
+                    echo extension=php_openssl.dll >> php.ini
+                    echo extension=php_apcu.dll >> php.ini
+                    echo extension=php_intl.dll >> php.ini
+                    echo extension=php_mbstring.dll >> php.ini
+                    echo extension=php_ldap.dll >> php.ini
+                    echo ::endgroup::
+
+                    echo ::group::Download-composer
+                    curl.exe -fsL https://github.com/composer/composer/releases/download/2.0.0/composer.phar -o composer.phar
+                    echo ::endgroup::
+
+            # this have to be run in a separate step
+            -   name: Setup binary path
+                run: echo "c:\php" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+
+            -   name: Debug info
+                run: |
+                    echo ::group::PHP-version
+                    php -v
+                    echo ::endgroup::
+
+                    echo ::group::PHP-modules
+                    php -m
+                    echo ::endgroup::
+
+                    echo ::group::Composer-version
+                    copy c:\php\composer.phar ./
+                    php composer.phar -V
+                    echo ::endgroup::
+
+            -   name: Get composer cache directory
+                id: vendor-dir
+                run: echo "::set-output name=dir::$(php c:\php\composer.phar config cache-files-dir)"
+
+            -   name: Cache dependencies
+                id: cache-vendors
+                uses: actions/cache@v2
+                with:
+                  path: |
+                      ${{ steps.vendor-dir.outputs.dir }}
+                      **/vendor
+                      **/composer.lock
+                  key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}-${{ hashFiles('**/.github/workflows/tests.yml') }}
+                  restore-keys: ${{ runner.os }}-composer-
+
+            -   name: Install dependencies
+                if: steps.cache-vendors.outputs.cache-hit != 'true'
+                run: |
+                    copy c:\php\composer.phar ./
+                    copy .github\composer-config.json ${{ steps.vendor-dir.outputs.dir }}\..\
+
+                    echo ::group::PHP-dependencies
+                    php composer.phar update --prefer-source --no-progress --ansi
+                    echo ::endgroup::
+
+                    echo ::group::PHPUnit-dependencies
+                    php ./vendor/symfony/phpunit-bridge/bin/simple-phpunit install
+                    echo ::endgroup::
+
+            -   name: Run tests
+                run: php -d allow_url_fopen=0 ./vendor/symfony/phpunit-bridge/bin/simple-phpunit
