@@ -16,6 +16,8 @@ use RuntimeException;
 use Symfony\Polyfill\Intl\Idn\Idn;
 
 /**
+ * @requires PHP 7.2
+ *
  * @author Renan Gonçalves <renan.saddam@gmail.com>
  * @author Sebastian Kroczek <sk@xbug.de>
  * @author Dmitry Lukashin <dmitry@lukashin.ru>
@@ -105,7 +107,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 7.1
      * @dataProvider getData
      *
      * @param string                          $source
@@ -134,7 +135,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 7.1
      * @dataProvider getData
      *
      * @param string                          $source
@@ -163,7 +163,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 7.1
      * @dataProvider getData
      *
      * @param string                          $source
@@ -202,7 +201,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.4
      * @requires PHP < 8
      * @group legacy
      * @dataProvider domainNamesProvider
@@ -214,7 +212,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.4
      * @dataProvider invalidUtf8DomainNamesProvider
      */
     public function testEncodeInvalid($decoded)
@@ -224,7 +221,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.4
      * @requires PHP < 8
      * @group legacy
      * @dataProvider domainNamesProvider
@@ -236,7 +232,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.4
      * @dataProvider domainNamesProvider
      */
     public function testEncodeUTS46($decoded, $encoded)
@@ -246,7 +241,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.4
      * @dataProvider domainNamesProvider
      */
     public function testDecodeUTS46($decoded, $encoded)
@@ -256,7 +250,6 @@ class IdnTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.4
      * @dataProvider domainNamesUppercaseUTS46Provider
      */
     public function testUppercaseUTS46($decoded, $ascii, $encoded)

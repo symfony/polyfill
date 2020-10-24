@@ -26,12 +26,8 @@ class IconvTest extends TestCase
      */
     public function testIconv()
     {
-        // Native iconv() behavior varies between versions and OS for these two tests
-        // See e.g. https://bugs.php.net/52211
-        if (\PHP_VERSION_ID >= 50610) {
-            $this->assertFalse(@iconv('UTF-8', 'ISO-8859-1', 'nœud'));
-            $this->assertSame('nud', iconv('UTF-8', 'ISO-8859-1//IGNORE', 'nœud'));
-        }
+        $this->assertFalse(@iconv('UTF-8', 'ISO-8859-1', 'nœud'));
+        $this->assertSame('nud', iconv('UTF-8', 'ISO-8859-1//IGNORE', 'nœud'));
 
         $this->assertSame(utf8_decode('déjà'), iconv('CP1252', 'ISO-8859-1', utf8_decode('déjà')));
         $this->assertSame('deja noeud', p::iconv('UTF-8//ignore//IGNORE', 'US-ASCII//TRANSLIT//IGNORE//translit', 'déjà nœud'));
@@ -136,7 +132,8 @@ class IconvTest extends TestCase
     public function testIconvMimeDecodeIllegal()
     {
         iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .');
-        $this->setExpectedException('PHPUnit\Framework\Error\Notice', 'Detected an illegal character in input string');
+        $this->expectException('PHPUnit\Framework\Error\Notice');
+        $this->expectExceptionMessage('Detected an illegal character in input string');
         iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .');
     }
 
@@ -188,18 +185,5 @@ HEADERS;
         $this->assertSame($a, iconv_get_encoding('all'));
 
         $this->assertFalse(@iconv_set_encoding('foo', 'UTF-8'));
-    }
-
-    public function setExpectedException($exception, $message = '', $code = null)
-    {
-        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
-            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
-        }
-        if (method_exists($this, 'expectException')) {
-            $this->expectException($exception);
-            $this->expectExceptionMessage($message);
-        } else {
-            parent::setExpectedException($exception, $message, $code);
-        }
     }
 }

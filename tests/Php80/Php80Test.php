@@ -14,8 +14,6 @@ namespace Symfony\Polyfill\Tests\Php80;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @requires PHP 7.0
- *
  * @author Ion Bazan <ion.bazan@gmail.com>
  * @author Nico Oelgart <nicoswd@gmail.com>
  */
@@ -48,7 +46,7 @@ class Php80Test extends TestCase
      */
     public function testFdivTypeError($divident, $divisor)
     {
-        $this->setExpectedException('TypeError');
+        $this->expectException('TypeError');
         fdiv($divident, $divisor);
     }
 
@@ -197,7 +195,7 @@ class Php80Test extends TestCase
      */
     public function testGetResourceWithInvalidValue($value)
     {
-        $this->setExpectedException('TypeError');
+        $this->expectException('TypeError');
         get_resource_id($value);
     }
 
@@ -297,20 +295,5 @@ class Php80Test extends TestCase
         $this->assertSame(\Attribute::TARGET_ALL, $attribute->flags);
         $attribute = new \Attribute(\Attribute::TARGET_CLASS);
         $this->assertSame(\Attribute::TARGET_CLASS, $attribute->flags);
-    }
-
-    public function setExpectedException($exception, $message = '', $code = null)
-    {
-        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
-            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
-        }
-        if (method_exists($this, 'expectException')) {
-            $this->expectException($exception);
-            if (!empty($message)) {
-                $this->expectExceptionMessage($message);
-            }
-        } else {
-            parent::setExpectedException($exception, $message, $code);
-        }
     }
 }

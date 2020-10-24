@@ -60,7 +60,8 @@ class Php74Test extends TestCase
         $this->assertNull(@get_mangled_object_vars(0));
         $this->assertNull(@get_mangled_object_vars(true));
         $this->assertNull(@get_mangled_object_vars('string'));
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be object');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('expects parameter 1 to be object');
         get_mangled_object_vars(1);
     }
 
@@ -99,21 +100,9 @@ class Php74Test extends TestCase
         $this->assertFalse(@mb_str_split('победа', 0));
         $this->assertNull(@mb_str_split(array(), 0));
 
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('The length of each segment must be greater than zero');
         mb_str_split('победа', 0);
-    }
-
-    public function setExpectedException($exception, $message = '', $code = null)
-    {
-        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
-            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
-        }
-        if (method_exists($this, 'expectException')) {
-            $this->expectException($exception);
-            $this->expectExceptionMessage($message);
-        } else {
-            parent::setExpectedException($exception, $message, $code);
-        }
     }
 }
 

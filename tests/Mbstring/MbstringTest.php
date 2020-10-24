@@ -70,12 +70,10 @@ class MbstringTest extends TestCase
 
         $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
         $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#0000225; &#0000226;', $convmap, 'UTF-8'));
-        if (PHP_VERSION > 54000) {
-            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#xe1; &#xe2;', $convmap, 'UTF-8'));
-            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#x0000e1; &#x0000e2;', $convmap, 'UTF-8'));
-            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#xE1; &#xE2;', $convmap, 'UTF-8'));
-            $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#x0000E1; &#x0000E2;', $convmap, 'UTF-8'));
-        }
+        $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#xe1; &#xe2;', $convmap, 'UTF-8'));
+        $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#x0000e1; &#x0000e2;', $convmap, 'UTF-8'));
+        $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#xE1; &#xE2;', $convmap, 'UTF-8'));
+        $this->assertSame('déjà &#0; à á', mb_decode_numericentity('déjà &#0; &#x0000E1; &#x0000E2;', $convmap, 'UTF-8'));
         --$convmap[2];
         $this->assertSame('déjà &#0; á â', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
         --$convmap[2];
@@ -84,10 +82,8 @@ class MbstringTest extends TestCase
         $bogusDecEntities = 'déjà &#0; &#225;&#225; &#&#225&#225 &#225 &#225t';
         $this->assertSame('déjà &#0; ââ &#&#225â â ât', mb_decode_numericentity($bogusDecEntities, $convmap, 'UTF-8'));
 
-        if (PHP_VERSION > 54000) {
-            $bogusHexEntities = 'déjà &#x0; &#xe1;&#xe1; &#xe1 &#xe1t &#xE1 &#xE1t';
-            $this->assertSame('déjà &#x0; ââ â ât â ât', mb_decode_numericentity($bogusHexEntities, $convmap, 'UTF-8'));
-        }
+        $bogusHexEntities = 'déjà &#x0; &#xe1;&#xe1; &#xe1 &#xe1t &#xE1 &#xE1t';
+        $this->assertSame('déjà &#x0; ââ â ât â ât', mb_decode_numericentity($bogusHexEntities, $convmap, 'UTF-8'));
 
         array_push($convmap, 0x1f600, 0x1f64f, -0x1f602, 0x0);
         $this->assertSame('déjà 😂 â ã', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
@@ -101,7 +97,8 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('expects parameter 1 to be string');
         mb_decode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -110,7 +107,8 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('expects parameter 3 to be string');
         mb_decode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -143,10 +141,8 @@ class MbstringTest extends TestCase
         $convmap = array(0x100, 0x10ffff, 0x0, 0x1fffff);
         $this->assertSame('&#351;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9'));
 
-        if (PHP_VERSION > 54000) {
-            $this->assertSame('&#351;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9', false));
-            $this->assertSame('&#x15F;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9', true));
-        }
+        $this->assertSame('&#351;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9', false));
+        $this->assertSame('&#x15F;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9', true));
 
         // U+1F602 FACE WITH TEARS OF JOY is F0 9F 98 82 in UTF-8. ISO-8859-9 leaves 7F-9F undefined.
         $this->assertSame("abc &#287;\x9F\x98\x82", mb_encode_numericentity('abc 😂', $convmap, 'ISO-8859-9'));
@@ -157,7 +153,8 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be string');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('expects parameter 1 to be string');
         mb_encode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -166,17 +163,18 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 3 to be string');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('expects parameter 3 to be string');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
     /**
-     * @requires PHP 5.4
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
      */
     public function testEncodeNumericEntityWarnsOnInvalidIsHexType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 4 to be bool');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('expects parameter 4 to be bool');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
     }
 
@@ -193,10 +191,7 @@ class MbstringTest extends TestCase
         if (PCRE_VERSION >= '8.10') {
             $this->assertSame('Déjà Σσσ Iı Ii İi', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', MB_CASE_TITLE));
         }
-        if (\PHP_VERSION_ID >= 70000) {
-            // Native iconv() is buggy before PHP 7
-            $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
-        }
+        $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
     }
 
     /**
@@ -295,7 +290,8 @@ class MbstringTest extends TestCase
     public function testStrposEmptyDelimiter()
     {
         mb_strpos('abc', 'a');
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Empty delimiter');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('Empty delimiter');
         mb_strpos('abc', '');
     }
 
@@ -305,12 +301,7 @@ class MbstringTest extends TestCase
     public function testStrposNegativeOffset()
     {
         mb_strpos('abc', 'a');
-        if (\PHP_VERSION_ID >= 70100) {
-            $this->assertFalse(mb_strpos('abc', 'a', -1));
-        } else {
-            $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'Offset not contained in string');
-            mb_strpos('abc', 'a', -1);
-        }
+        $this->assertFalse(mb_strpos('abc', 'a', -1));
     }
 
     /**
@@ -330,7 +321,8 @@ class MbstringTest extends TestCase
         $this->assertFalse(@mb_str_split('победа', 0));
         $this->assertNull(@mb_str_split(array(), 0));
 
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero');
+        $this->expectException('PHPUnit\Framework\Error\Warning');
+        $this->expectExceptionMessage('The length of each segment must be greater than zero');
         mb_str_split('победа', 0);
     }
 
@@ -450,18 +442,5 @@ class MbstringTest extends TestCase
         \mb_substitute_character('none');
         $this->assertSame('ab', mb_scrub("a\xE9b"));
         \mb_substitute_character($subst);
-    }
-
-    public function setExpectedException($exception, $message = '', $code = null)
-    {
-        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
-            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
-        }
-        if (method_exists($this, 'expectException')) {
-            $this->expectException($exception);
-            $this->expectExceptionMessage($message);
-        } else {
-            parent::setExpectedException($exception, $message, $code);
-        }
     }
 }

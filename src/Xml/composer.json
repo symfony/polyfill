@@ -17,13 +17,13 @@
     ],
     "abandoned": "symfony/polyfill-php72",
     "require": {
-        "php": ">=5.3.3",
-        "symfony/polyfill-php72": "~1.4"
+        "php": ">=7.1",
+        "symfony/polyfill-php72": "^1.20"
     },
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-main": "1.19-dev"
+            "dev-main": "1.20-dev"
         },
         "thanks": {
             "name": "symfony/polyfill",
