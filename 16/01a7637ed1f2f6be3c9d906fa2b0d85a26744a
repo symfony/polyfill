@@ -1,0 +1,37 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-10-21T17:03:12Z
+
+You'll find some thoughts at #247
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-21T19:59:19Z
+
+@nicolas-grekas I‘d like to get to the point that we can actually solve #247. Right now, the nightly run ist just plain dead. :-/
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-23T14:26:55Z
+
+Let's wait for #303.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-23T17:40:29Z
+
+I've rebased the PR on #303.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-23T17:49:08Z
+
+Current state of the PR: The tests should run on php 8 with PHPUnit 9.4. ~~They pass on php 7.4 and below and all failures on php 8 should be specific to php 8. I'd suggest to merge it (after #303) to get a proper CI for the PRs that fix PHP 8 compatibility.~~
+
+Forget what I wrote. We should fix that listener.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-10-23T23:25:04Z
+
+🤞🏻 The listener should work now.
