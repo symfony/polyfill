@@ -62,8 +62,8 @@ class Php73Test extends TestCase
         //   usleep(1000);
         //   $b = 1E6 * (float) microtime(false);
         //   $this->assertGreaterThanOrEqual(1000, $b-$a); // randomly false on windows!
-        if ('\\' === DIRECTORY_SEPARATOR) {
-            $this->markTestSkipped('Test based on time are not reliable on Windows');
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Tests based on time are not reliable on Windows');
         }
 
         $this->testHardwareTimeAsNum();
@@ -106,8 +106,8 @@ class Php73Test extends TestCase
         //   usleep(1000);
         //   $b = 1E6 * (float) microtime(false);
         //   $this->assertGreaterThanOrEqual(1000, $b-$a); // randomly false on windows!
-        if ('\\' === DIRECTORY_SEPARATOR) {
-            $this->markTestSkipped('Test based on time are not reliable on Windows');
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Tests based on time are not reliable on Windows');
         }
 
         $this->testHardwareTimeAsArrayNanos();
@@ -139,8 +139,8 @@ class Php73Test extends TestCase
         //   usleep(1000);
         //   $b = 1E6 * (float) microtime(false);
         //   $this->assertGreaterThanOrEqual(1000, $b-$a); // randomly false on windows!
-        if ('\\' === DIRECTORY_SEPARATOR) {
-            $this->markTestSkipped('Test based on time are not reliable on Windows');
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Tests based on time are not reliable on Windows');
         }
 
         $this->testHardwareTimeAsArraySeconds();

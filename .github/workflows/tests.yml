@@ -84,7 +84,6 @@ jobs:
                     echo ::endgroup::
 
                     echo ::group::Setup-.ini
-                    echo @php %%~dp0composer.phar %%* > composer.bat
                     copy php.ini-development php.ini
                     echo max_execution_time=1200 >> php.ini
                     echo date.timezone="UTC" >> php.ini
@@ -98,7 +97,7 @@ jobs:
                     echo ::endgroup::
 
                     echo ::group::Download-composer
-                    curl.exe -fsL https://github.com/composer/composer/releases/download/2.0.0/composer.phar -o composer.phar
+                    curl.exe -fsL https://getcomposer.org/composer-stable.phar -o composer.phar
                     echo ::endgroup::
 
             # this have to be run in a separate step
