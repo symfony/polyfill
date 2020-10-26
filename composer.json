@@ -25,11 +25,6 @@
     "replace": {
         "symfony/polyfill-apcu": "self.version",
         "symfony/polyfill-ctype": "self.version",
-        "symfony/polyfill-php54": "self.version",
-        "symfony/polyfill-php55": "self.version",
-        "symfony/polyfill-php56": "self.version",
-        "symfony/polyfill-php70": "self.version",
-        "symfony/polyfill-php71": "self.version",
         "symfony/polyfill-php72": "self.version",
         "symfony/polyfill-php73": "self.version",
         "symfony/polyfill-php74": "self.version",
@@ -73,7 +68,7 @@
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-main": "1.20-dev"
+            "dev-main": "1.21-dev"
         }
     }
 }
