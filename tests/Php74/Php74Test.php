@@ -60,8 +60,8 @@ class Php74Test extends TestCase
         $this->assertNull(@get_mangled_object_vars(0));
         $this->assertNull(@get_mangled_object_vars(true));
         $this->assertNull(@get_mangled_object_vars('string'));
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('expects parameter 1 to be object');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 1 to be object');
         get_mangled_object_vars(1);
     }
 
@@ -100,8 +100,8 @@ class Php74Test extends TestCase
         $this->assertFalse(@mb_str_split('победа', 0));
         $this->assertNull(@mb_str_split(array(), 0));
 
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('The length of each segment must be greater than zero');
+        $this->expectWarning();
+        $this->expectWarningMessage('The length of each segment must be greater than zero');
         mb_str_split('победа', 0);
     }
 }

@@ -97,8 +97,8 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('expects parameter 1 to be string');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 1 to be string');
         mb_decode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -107,8 +107,8 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('expects parameter 3 to be string');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 3 to be string');
         mb_decode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -153,8 +153,8 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('expects parameter 1 to be string');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 1 to be string');
         mb_encode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -163,8 +163,8 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('expects parameter 3 to be string');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 3 to be string');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -173,8 +173,8 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidIsHexType()
     {
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('expects parameter 4 to be bool');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 4 to be bool');
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
     }
 
@@ -290,8 +290,8 @@ class MbstringTest extends TestCase
     public function testStrposEmptyDelimiter()
     {
         mb_strpos('abc', 'a');
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('Empty delimiter');
+        $this->expectWarning();
+        $this->expectWarningMessage('Empty delimiter');
         mb_strpos('abc', '');
     }
 
@@ -321,8 +321,8 @@ class MbstringTest extends TestCase
         $this->assertFalse(@mb_str_split('победа', 0));
         $this->assertNull(@mb_str_split(array(), 0));
 
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('The length of each segment must be greater than zero');
+        $this->expectWarning();
+        $this->expectWarningMessage('The length of each segment must be greater than zero');
         mb_str_split('победа', 0);
     }
 

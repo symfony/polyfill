@@ -27,8 +27,8 @@ class GraphemeTest extends TestCase
     public function testGraphemeExtractArrayError()
     {
         grapheme_extract('', 0);
-        $this->expectException('PHPUnit\Framework\Error\Warning');
-        $this->expectExceptionMessage('expects parameter 1 to be string, array given');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 1 to be string, array given');
         grapheme_extract(array(), 0);
     }
 
