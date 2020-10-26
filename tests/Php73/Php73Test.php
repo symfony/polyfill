@@ -51,7 +51,10 @@ class Php73Test extends TestCase
         }
     }
 
-    public function testHardwareTimeAsNum()
+    /**
+     * @requires PHP >= 7.3
+     */
+    public function testHardwareTimeAsNum73()
     {
         // time is not reliable in tests on Windows.
         // reproduce case:
@@ -60,9 +63,18 @@ class Php73Test extends TestCase
         //   $b = 1E6 * (float) microtime(false);
         //   $this->assertGreaterThanOrEqual(1000, $b-$a); // randomly false on windows!
         if ('\\' === DIRECTORY_SEPARATOR) {
-            $this->markTestSkipped('Test base on time are not reliable on windows');
+            $this->markTestSkipped('Test based on time are not reliable on Windows');
         }
 
+        $this->testHardwareTimeAsNum();
+    }
+
+    /**
+     * @group time-sensitive
+     * @requires PHP < 7.3
+     */
+    public function testHardwareTimeAsNum()
+    {
         $hrtime = hrtime(true);
         usleep(100000);
         $hrtime2 = hrtime(true);
@@ -83,7 +95,10 @@ class Php73Test extends TestCase
         $this->assertIsInt($hrtime[1]);
     }
 
-    public function testHardwareTimeAsArrayNanos()
+    /**
+     * @requires PHP >= 7.3
+     */
+    public function testHardwareTimeAsArrayNanos73()
     {
         // time is not reliable in tests on Windows.
         // reproduce case:
@@ -92,9 +107,18 @@ class Php73Test extends TestCase
         //   $b = 1E6 * (float) microtime(false);
         //   $this->assertGreaterThanOrEqual(1000, $b-$a); // randomly false on windows!
         if ('\\' === DIRECTORY_SEPARATOR) {
-            $this->markTestSkipped('Test base on time are not reliable on windows');
+            $this->markTestSkipped('Test based on time are not reliable on Windows');
         }
 
+        $this->testHardwareTimeAsArrayNanos();
+    }
+
+    /**
+     * @group time-sensitive
+     * @requires PHP < 7.3
+     */
+    public function testHardwareTimeAsArrayNanos()
+    {
         $hrtime = hrtime();
         usleep(1000);
         $hrtime2 = hrtime();
@@ -103,7 +127,11 @@ class Php73Test extends TestCase
         $this->assertGreaterThanOrEqual(1000000, $hrtime2[1] - $hrtime[1]);
     }
 
-    public function testHardwareTimeAsArraySeconds()
+
+    /**
+     * @requires PHP >= 7.3
+     */
+    public function testHardwareTimeAsArraySeconds73()
     {
         // time is not reliable in tests on Windows.
         // reproduce case:
@@ -112,9 +140,18 @@ class Php73Test extends TestCase
         //   $b = 1E6 * (float) microtime(false);
         //   $this->assertGreaterThanOrEqual(1000, $b-$a); // randomly false on windows!
         if ('\\' === DIRECTORY_SEPARATOR) {
-            $this->markTestSkipped('Test base on time are not reliable on windows');
+            $this->markTestSkipped('Test based on time are not reliable on Windows');
         }
 
+        $this->testHardwareTimeAsArraySeconds();
+    }
+
+    /**
+     * @group time-sensitive
+     * @requires PHP < 7.3
+     */
+    public function testHardwareTimeAsArraySeconds()
+    {
         $hrtime = hrtime();
         usleep(1000000);
         $hrtime2 = hrtime();
