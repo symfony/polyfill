@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Intl\Exception;
+namespace Symfony\Polyfill\Intl\Icu\Exception;
 
 /**
  * Base exception class for not implemented behaviors of the intl extension in the Locale component.

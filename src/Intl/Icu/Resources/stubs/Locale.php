@@ -9,15 +9,13 @@
  * file that was distributed with this source code.
  */
 
-use Symfony\Component\Intl\Locale\Locale as IntlLocale;
+use Symfony\Polyfill\Intl\Icu\Locale as LocalePolyfill;
 
 /**
  * Stub implementation for the Locale class of the intl extension.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
- *
- * @see IntlLocale
  */
-class Locale extends IntlLocale
+class Locale extends LocalePolyfill
 {
 }

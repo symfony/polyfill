@@ -9,15 +9,13 @@
  * file that was distributed with this source code.
  */
 
-use Symfony\Component\Intl\DateFormatter\IntlDateFormatter as BaseIntlDateFormatter;
+use Symfony\Polyfill\Intl\Icu\IntlDateFormatter as IntlDateFormatterPolyfill;
 
 /**
  * Stub implementation for the IntlDateFormatter class of the intl extension.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
- *
- * @see BaseIntlDateFormatter
  */
-class IntlDateFormatter extends BaseIntlDateFormatter
+class IntlDateFormatter extends IntlDateFormatterPolyfill
 {
 }

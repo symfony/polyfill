@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Intl\Exception;
+namespace Symfony\Polyfill\Intl\Icu\Exception;
 
 /**
  * RuntimeException for the Intl component.

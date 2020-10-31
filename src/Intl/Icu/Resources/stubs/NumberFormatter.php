@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-use Symfony\Component\Intl\NumberFormatter\NumberFormatter as IntlNumberFormatter;
+use Symfony\Polyfill\Intl\Icu\NumberFormatter as NumberFormatterPolyfill;
 
 /**
  * Stub implementation for the NumberFormatter class of the intl extension.
@@ -18,6 +18,6 @@ use Symfony\Component\Intl\NumberFormatter\NumberFormatter as IntlNumberFormatte
  *
  * @see IntlNumberFormatter
  */
-class NumberFormatter extends IntlNumberFormatter
+class NumberFormatter extends NumberFormatterPolyfill
 {
 }

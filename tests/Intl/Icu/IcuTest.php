@@ -9,13 +9,14 @@
  * file that was distributed with this source code.
  */
 
-use Symfony\Polyfill\Intl\Icu\Collator as CollatorPolyfill;
+namespace Symfony\Polyfill\Intl\Icu\Tests;
 
-/**
- * Stub implementation for the Collator class of the intl extension.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-class Collator extends CollatorPolyfill
+use Symfony\Polyfill\Intl\Icu\Icu;
+
+class IcuTest extends AbstractIcuTest
 {
+    protected function getIntlErrorName($errorCode)
+    {
+        return Icu::getErrorName($errorCode);
+    }
 }
