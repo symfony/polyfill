@@ -49,6 +49,11 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         $formatter = $this->getDateFormatter('en', IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT);
 
         $this->assertEquals(date_default_timezone_get(), $formatter->getTimeZoneId());
+
+        $this->assertEquals(
+            $this->getDateTime(0, $formatter->getTimeZoneId())->format('M j, Y, g:i A'),
+            $formatter->format(0)
+        );
     }
 
     public function testConstructorWithoutDateType()
