@@ -13,7 +13,8 @@ Polyfills are provided for:
 - the `MessageFormatter` class and the `msgfmt_format_message` functions;
 - the `Normalizer` class and the `grapheme_*` functions;
 - the `utf8_encode` and `utf8_decode` functions from the `xml` extension or PHP-7.2 core;
-- the `Collator`, `NumberFormatter`, `Locale` and `IntlDateFormatter` classes;
+- the `Collator`, `NumberFormatter`, `Locale` and `IntlDateFormatter` classes,
+  limited to the "en" locale;
 - the `intl_error_name`, `intl_get_error_code`, `intl_get_error_message` and
   `intl_is_failure` functions;
 - the `idn_to_ascii` and `idn_to_utf8` functions;
