@@ -9,17 +9,17 @@
  * file that was distributed with this source code.
  */
 
-use Symfony\Component\Intl\Globals\IntlGlobals;
+use Symfony\Polyfill\Intl\Icu as p;
 
 if (!function_exists('intl_is_failure')) {
-    function intl_is_failure($error_code) { return IntlGlobals::isFailure($error_code); }
+    function intl_is_failure($error_code) { return p\Icu::isFailure($error_code); }
 }
 if (!function_exists('intl_get_error_code')) {
-    function intl_get_error_code() { return IntlGlobals::getErrorCode(); }
+    function intl_get_error_code() { return p\Icu::getErrorCode(); }
 }
 if (!function_exists('intl_get_error_message')) {
-    function intl_get_error_message() { return IntlGlobals::getErrorMessage(); }
+    function intl_get_error_message() { return p\Icu::getErrorMessage(); }
 }
 if (!function_exists('intl_error_name')) {
-    function intl_error_name($error_code) { return IntlGlobals::getErrorName($error_code); }
+    function intl_error_name($error_code) { return p\Icu::getErrorName($error_code); }
 }

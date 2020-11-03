@@ -16,14 +16,18 @@
         }
     ],
     "require": {
-        "php": ">=7.1",
-        "symfony/intl": "~2.3|~3.0|~4.0|~5.0"
+        "php": ">=7.1"
     },
     "autoload": {
-        "files": [ "bootstrap.php" ]
+        "files": [ "bootstrap.php" ],
+        "psr-4": { "Symfony\\Polyfill\\Intl\\Icu\\": "" },
+        "classmap": [ "Resources/stubs" ],
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
     },
     "suggest": {
-        "ext-intl": "For best performance"
+        "ext-intl": "For best performance and support of other locales than \"en\""
     },
     "minimum-stability": "dev",
     "extra": {
