@@ -1,3 +1,8 @@
+# 1.21.0
+
+  * made symfony/polyfill-intl-icu independent of symfony/intl
+  * made polyfills for PHP <= 7.1 independent of symfony/polyfill
+
 # 1.20.0
 
   * Bump minimum PHP version to 7.1
