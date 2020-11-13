@@ -1,0 +1,27 @@
+---------------------------------------------------------------------------
+
+by stof at 2020-11-13T12:32:03Z
+
+Another alternative could be to use `mb_substr`
+
+@nikic would the mbstring polyfill benefit from a similar optimization when using the UTF-8 encoding (which might be the common use case for mbstring) ?
+
+---------------------------------------------------------------------------
+
+by nikic at 2020-11-13T12:45:48Z
+
+> Another alternative could be to use `mb_substr`
+
+Yeah, that would also be much better than iconv_substr (as long as mb_substr is not also polyfilled by iconv_substr). In the end, mb_substr effectively also does an internal conversion to UTF-8 and a normal substr, plus adjustment of offsets. If there's no need to have a character offset, as in this case, it's better to just directly use substr.
+
+> @nikic would the mbstring polyfill benefit from a similar optimization when using the UTF-8 encoding (which might be the common use case for mbstring) ?
+
+Possibly. I've had mbstring enabled when testing, so didn't notice anything there. substr can be used to find the position of the string, but one would still have to convert the returned byte offset into a character offset. That part would still have to use some inefficient method (though only if the string is actually found).
+
+---------------------------------------------------------------------------
+
+by stof at 2020-11-13T13:03:11Z
+
+I'm fine using `substr` directly in this polyfill. But I indeed suggest optimizing the UTF-8 case in the mbstring polyfill (which uses iconv for the fallback).
+
+Side note, why is `iconv_substr` so slow compared to others ?
