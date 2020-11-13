@@ -205,13 +205,25 @@ final class Grapheme
             }
         }
 
-        switch ($mode) {
-            case 0: $needle = iconv_strpos($s, $needle, 0, 'UTF-8'); break;
-            case 1: $needle = mb_stripos($s, $needle, 0, 'UTF-8'); break;
-            case 2: $needle = iconv_strrpos($s, $needle, 'UTF-8'); break;
-            default: $needle = mb_strripos($s, $needle, 0, 'UTF-8'); break;
+        // As UTF-8 is self-synchronizing, and we have ensured the strings are valid UTF-8,
+        // we can use normal binary string functions here. For case-insensitive searches,
+        // case fold the strings first.
+        $caseInsensitive = $mode & 1;
+        $reverse = $mode & 2;
+        if ($caseInsensitive) {
+            // Use the same case folding mode as mbstring does for mb_stripos().
+            // Stick to SIMPLE case folding to avoid changing the length of the string, which
+            // might result in offsets being shifted.
+            $mode = \defined('MB_CASE_FOLD_SIMPLE') ? \MB_CASE_FOLD_SIMPLE : \MB_CASE_UPPER;
+            $s = mb_convert_case($s, $mode, 'UTF-8');
+            $needle = mb_convert_case($needle, $mode, 'UTF-8');
+        }
+        if ($reverse) {
+            $needlePos = strrpos($s, $needle);
+        } else {
+            $needlePos = strpos($s, $needle);
         }
 
-        return false !== $needle ? self::grapheme_strlen(iconv_substr($s, 0, $needle, 'UTF-8')) + $offset : false;
+        return false !== $needlePos ? self::grapheme_strlen(substr($s, 0, $needlePos)) + $offset : false;
     }
 }
