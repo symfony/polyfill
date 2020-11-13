@@ -2,6 +2,7 @@
 
   * made symfony/polyfill-intl-icu independent of symfony/intl
   * made polyfills for PHP <= 7.1 independent of symfony/polyfill
+  * optimize grapheme polyfill
 
 # 1.20.0
 
