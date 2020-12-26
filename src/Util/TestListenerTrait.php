@@ -13,6 +13,8 @@ namespace Symfony\Polyfill\Util;
 
 use PHPUnit\Framework\SkippedTestError;
 use PHPUnit\Util\Test;
+use Symfony\Component\VarDumper\Caster\ReflectionCaster;
+use Symfony\Component\VarDumper\Cloner\Stub;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
@@ -35,6 +37,7 @@ class TestListenerTrait
                 continue;
             }
             if (\in_array('class-polyfill', Test::getGroups($testClass), true)) {
+                // TODO: check signatures for all polyfilled methods on PHP >= 8
                 continue;
             }
             $testedClass = new \ReflectionClass($testClass);
@@ -49,7 +52,8 @@ class TestListenerTrait
                 continue;
             }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
-            $bootstrap = new \SplFileObject(\dirname($testedClass->getFileName()).'/bootstrap.php');
+            $bootstrap = \dirname($testedClass->getFileName()).'/bootstrap';
+            $bootstrap = new \SplFileObject($bootstrap.(\PHP_VERSION_ID >= 80000 && file_exists($bootstrap.'80.php') ? '80' : '').'.php');
             $newWarnings = 0;
             $defLine = null;
 
@@ -93,6 +97,7 @@ class TestListenerTrait
                         $defLine = sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
                     }
                 } catch (\ReflectionException $e) {
+                    $r = null;
                     $defLine = sprintf("throw new \\%s('Internal function not found: %s')", SkippedTestError::class, $f['name']);
                 }
 
@@ -112,6 +117,16 @@ function {$f['name']}{$f['signature']}
 }
 EOPHP
                 );
+
+                if (\PHP_VERSION_ID >= 80000 && $r && false === strpos($bootstrap->getPath(), 'Php7') && false === strpos($bootstrap->getPath(), 'Php80')) {
+                    $originalSignature = ReflectionCaster::getSignature(ReflectionCaster::castFunctionAbstract($r, [], new Stub(), true));
+                    $polyfillSignature = ReflectionCaster::castFunctionAbstract(new \ReflectionFunction($testNamespace.'\\'.$f['name']), [], new Stub(), true);
+                    $polyfillSignature = ReflectionCaster::getSignature($polyfillSignature);
+
+                    if ($polyfillSignature !== $originalSignature) {
+                        $warnings[] = TestListener::warning("Incompatible signature for PHP >= 8:\n- {$f['name']}$originalSignature\n+ {$f['name']}$polyfillSignature");
+                    }
+                }
             }
             if (!$newWarnings && null === $defLine) {
                 $warnings[] = TestListener::warning('No polyfills found in bootstrap.php for '.$testClass);

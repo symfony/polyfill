@@ -38,5 +38,5 @@ if (!function_exists('get_debug_type')) {
     function get_debug_type($value): string { return p\Php80::get_debug_type($value); }
 }
 if (!function_exists('get_resource_id')) {
-    function get_resource_id($res): int { return p\Php80::get_resource_id($res); }
+    function get_resource_id($resource): int { return p\Php80::get_resource_id($resource); }
 }
