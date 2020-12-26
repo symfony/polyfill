@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests;
+namespace Symfony\Polyfill\Tests\Intl\Icu;
 
 use Symfony\Polyfill\Intl\Icu\Exception\MethodArgumentNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Exception\MethodArgumentValueNotImplementedException;
@@ -18,6 +18,9 @@ use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
 use Symfony\Polyfill\Intl\Icu\IntlDateFormatter;
 use Symfony\Polyfill\Intl\Icu\Icu;
 
+/**
+ * @group class-polyfill
+ */
 class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
 {
     public function testConstructor()

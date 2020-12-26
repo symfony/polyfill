@@ -9,13 +9,16 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests;
+namespace Symfony\Polyfill\Tests\Intl\Icu;
 
 use Symfony\Polyfill\Intl\Icu\Collator;
 use Symfony\Polyfill\Intl\Icu\Exception\MethodArgumentValueNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Exception\MethodNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Icu;
 
+/**
+ * @group class-polyfill
+ */
 class CollatorTest extends AbstractCollatorTest
 {
     public function testConstructorWithUnsupportedLocale()

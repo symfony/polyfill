@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests;
+namespace Symfony\Polyfill\Tests\Intl\Icu;
 
 use PHPUnit\Framework\TestCase;
 

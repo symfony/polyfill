@@ -9,11 +9,14 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests;
+namespace Symfony\Polyfill\Tests\Intl\Icu;
 
 use Symfony\Polyfill\Intl\Icu\Exception\MethodNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Locale;
 
+/**
+ * @group class-polyfill
+ */
 class LocaleTest extends AbstractLocaleTest
 {
     public function testAcceptFromHttp()

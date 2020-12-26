@@ -9,10 +9,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests\Verification;
+namespace Symfony\Polyfill\Tests\Intl\Icu\Verification;
 
 use Symfony\Polyfill\Intl\Icu\IntlDateFormatter;
-use Symfony\Polyfill\Intl\Icu\Tests\AbstractIntlDateFormatterTest;
+use Symfony\Polyfill\Tests\Intl\Icu\AbstractIntlDateFormatterTest;
 
 /**
  * Verifies that {@link AbstractIntlDateFormatterTest} matches the behavior of
@@ -21,6 +21,8 @@ use Symfony\Polyfill\Intl\Icu\Tests\AbstractIntlDateFormatterTest;
  * @author Bernhard Schussek <bschussek@gmail.com>
  *
  * @requires extension intl
+ *
+ * @group class-polyfill
  */
 class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
 {

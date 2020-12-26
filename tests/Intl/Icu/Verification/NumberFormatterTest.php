@@ -9,15 +9,17 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests\Verification;
+namespace Symfony\Polyfill\Tests\Intl\Icu\Verification;
 
-use Symfony\Polyfill\Intl\Icu\Tests\AbstractNumberFormatterTest;
+use Symfony\Polyfill\Tests\Intl\Icu\AbstractNumberFormatterTest;
 
 /**
  * Note that there are some values written like -2147483647 - 1. This is the lower 32bit int max and is a known
  * behavior of PHP.
  *
  * @requires extension intl
+ *
+ * @group class-polyfill
  */
 class NumberFormatterTest extends AbstractNumberFormatterTest
 {

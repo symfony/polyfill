@@ -11,13 +11,7 @@
 
 namespace Symfony\Polyfill\Util;
 
-if (class_exists('PHPUnit_Runner_Version') && version_compare(\PHPUnit_Runner_Version::id(), '6.0.0', '<')) {
-    class_alias('Symfony\Polyfill\Util\TestListenerForV5', 'Symfony\Polyfill\Util\TestListener');
-// Using an early return instead of a else does not work when using the PHPUnit phar due to some weird PHP behavior (the class
-// gets defined without executing the code before it and so the definition is not properly conditional)
-} elseif (version_compare(\PHPUnit\Runner\Version::id(), '7.0.0', '<')) {
-    class_alias('Symfony\Polyfill\Util\TestListenerForV6', 'Symfony\Polyfill\Util\TestListener');
-} elseif (version_compare(\PHPUnit\Runner\Version::id(), '9.1.0', '<')) {
+if (version_compare(\PHPUnit\Runner\Version::id(), '9.1.0', '<')) {
     class_alias('Symfony\Polyfill\Util\TestListenerForV7', 'Symfony\Polyfill\Util\TestListener');
 } else {
     class_alias('Symfony\Polyfill\Util\TestListenerForV9', 'Symfony\Polyfill\Util\TestListener');

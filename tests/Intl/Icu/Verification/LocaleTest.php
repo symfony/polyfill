@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests\Verification;
+namespace Symfony\Polyfill\Tests\Intl\Icu\Verification;
 
-use Symfony\Polyfill\Intl\Icu\Tests\AbstractLocaleTest;
+use Symfony\Polyfill\Tests\Intl\Icu\AbstractLocaleTest;
 
 /**
  * Verifies that {@link AbstractLocaleTest} matches the behavior of the
@@ -20,6 +20,8 @@ use Symfony\Polyfill\Intl\Icu\Tests\AbstractLocaleTest;
  * @author Bernhard Schussek <bschussek@gmail.com>
  *
  * @requires extension intl
+ *
+ * @group class-polyfill
  */
 class LocaleTest extends AbstractLocaleTest
 {
