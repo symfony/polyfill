@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests;
+namespace Symfony\Polyfill\Tests\Intl\Icu;
 
 use Symfony\Polyfill\Intl\Icu\Exception\MethodArgumentNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Exception\MethodArgumentValueNotImplementedException;
@@ -21,6 +21,8 @@ use Symfony\Polyfill\Intl\Icu\NumberFormatter;
 /**
  * Note that there are some values written like -2147483647 - 1. This is the lower 32bit int max and is a known
  * behavior of PHP.
+ *
+ * @group class-polyfill
  */
 class NumberFormatterTest extends AbstractNumberFormatterTest
 {

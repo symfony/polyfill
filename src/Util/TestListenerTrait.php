@@ -11,6 +11,9 @@
 
 namespace Symfony\Polyfill\Util;
 
+use PHPUnit\Framework\SkippedTestError;
+use PHPUnit\Util\Test;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
@@ -24,11 +27,14 @@ class TestListenerTrait
             return;
         }
         self::$enabledPolyfills = false;
-        $SkippedTestError = class_exists('PHPUnit\Framework\SkippedTestError') ? 'PHPUnit\Framework\SkippedTestError' : 'PHPUnit_Framework_SkippedTestError';
+        $warnings = array();
 
         foreach ($mainSuite->tests() as $suite) {
             $testClass = $suite->getName();
             if (!$tests = $suite->tests()) {
+                continue;
+            }
+            if (\in_array('class-polyfill', Test::getGroups($testClass), true)) {
                 continue;
             }
             $testedClass = new \ReflectionClass($testClass);
@@ -44,21 +50,20 @@ class TestListenerTrait
             }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
             $bootstrap = new \SplFileObject(\dirname($testedClass->getFileName()).'/bootstrap.php');
-            $warnings = array();
+            $newWarnings = 0;
             $defLine = null;
 
             foreach (new \RegexIterator($bootstrap, '/define\(\'/') as $defLine) {
-                preg_match('/define\(\'(?P<name>.+)\'/', $defLine, $matches);
+                preg_match("/define\('(?P<name>[^']++)'/", $defLine, $matches);
                 if (\defined($matches['name'])) {
                     continue;
                 }
 
                 try {
                     eval($defLine);
-                } catch (\PHPUnit_Framework_Exception $ex){
-                    $warnings[] = TestListener::warning($ex->getMessage());
                 } catch (\PHPUnit\Framework\Exception $ex) {
                     $warnings[] = TestListener::warning($ex->getMessage());
+                    ++$newWarnings;
                 }
             }
 
@@ -67,6 +72,7 @@ class TestListenerTrait
             foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
                 if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)(?: ?: [^ ]++)?) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
                     $warnings[] = TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
+                    ++$newWarnings;
                     continue;
                 }
                 $testNamespace = substr($testClass, 0, strrpos($testClass, '\\'));
@@ -87,7 +93,7 @@ class TestListenerTrait
                         $defLine = sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
                     }
                 } catch (\ReflectionException $e) {
-                    $defLine = sprintf("throw new \\{$SkippedTestError}('Internal function not found: %s')", $f['name']);
+                    $defLine = sprintf("throw new \\%s('Internal function not found: %s')", SkippedTestError::class, $f['name']);
                 }
 
                 eval(<<<EOPHP
@@ -107,8 +113,8 @@ function {$f['name']}{$f['signature']}
 EOPHP
                 );
             }
-            if (!$warnings && null === $defLine) {
-                $warnings[] = new $SkippedTestError('No Polyfills found in bootstrap.php for '.$testClass);
+            if (!$newWarnings && null === $defLine) {
+                $warnings[] = TestListener::warning('No polyfills found in bootstrap.php for '.$testClass);
             } else {
                 $mainSuite->addTest(new TestListener($suite));
             }

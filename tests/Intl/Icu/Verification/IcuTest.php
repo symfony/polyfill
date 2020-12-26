@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests\Verification;
+namespace Symfony\Polyfill\Tests\Intl\Icu\Verification;
 
-use Symfony\Polyfill\Intl\Icu\Tests\AbstractIcuTest;
+use Symfony\Polyfill\Tests\Intl\Icu\AbstractIcuTest;
 
 /**
  * Verifies that {@link AbstractIcuTest} matches the behavior of the
@@ -20,6 +20,8 @@ use Symfony\Polyfill\Intl\Icu\Tests\AbstractIcuTest;
  * @author Bernhard Schussek <bschussek@gmail.com>
  *
  * @requires extension intl
+ *
+ * @group class-polyfill
  */
 class IcuTest extends AbstractIcuTest
 {

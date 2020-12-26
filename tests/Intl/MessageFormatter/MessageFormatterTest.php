@@ -42,6 +42,8 @@ use Symfony\Polyfill\Intl\MessageFormatter\MessageFormatter;
 
 /**
  * @author Carsten Brandt <mail@cebe.cc>
+ *
+ * @group class-polyfill
  */
 class MessageFormatterTest extends TestCase
 {

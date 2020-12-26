@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Polyfill\Intl\Icu\Tests\Verification;
+namespace Symfony\Polyfill\Tests\Intl\Icu\Verification;
 
-use Symfony\Polyfill\Intl\Icu\Tests\AbstractCollatorTest;
+use Symfony\Polyfill\Tests\Intl\Icu\AbstractCollatorTest;
 
 /**
  * Verifies that {@link AbstractCollatorTest} matches the behavior of the
@@ -20,6 +20,8 @@ use Symfony\Polyfill\Intl\Icu\Tests\AbstractCollatorTest;
  * @author Bernhard Schussek <bschussek@gmail.com>
  *
  * @requires extension intl
+ *
+ * @group class-polyfill
  */
 class CollatorTest extends AbstractCollatorTest
 {
