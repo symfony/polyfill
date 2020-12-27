@@ -70,7 +70,14 @@ class Php72Test extends TestCase
         $dump = ob_get_clean();
 
         $this->assertStringContainsString("#$id ", $dump);
+    }
 
+    /**
+     * @covers \Symfony\Polyfill\Php72\Php72::spl_object_id
+     * @requires PHP < 8
+     */
+    public function testSplObjectIdWithInvalidType()
+    {
         $this->assertNull(@spl_object_id(123));
     }
 
@@ -150,6 +157,7 @@ class Php72Test extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Php72\Php72::stream_isatty
+     * @requires PHP < 8
      */
     public function testStreamIsattyWarnsOnInvalidInputType()
     {

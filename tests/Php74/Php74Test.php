@@ -54,6 +54,7 @@ class Php74Test extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Php74\Php74::get_mangled_object_vars
+     * @requires PHP < 8
      */
     public function testGetMangledObjectVarsOnNonObject()
     {
@@ -96,6 +97,14 @@ class Php74Test extends TestCase
         $this->assertSame(array('źr', 'ebi', 'ę'), mb_str_split('źrebię', 3, 'ASCII'));
         $this->assertSame(array('alpha', 'bet'), mb_str_split('alphabet', 5));
         $this->assertSame(array('e', '́', '💩', '𐍈'), mb_str_split('é💩𐍈', 1, 'UTF-8'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
+     * @requires PHP < 8
+     */
+    public function testStrSplitWithInvalidValues()
+    {
         $this->assertSame(array(), mb_str_split('', 1, 'UTF-8'));
         $this->assertFalse(@mb_str_split('победа', 0));
         $this->assertNull(@mb_str_split(array(), 0));
