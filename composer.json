@@ -20,7 +20,8 @@
     },
     "require-dev": {
         "symfony/intl": "^4.4|^5.0",
-        "symfony/phpunit-bridge": "^5.3"
+        "symfony/phpunit-bridge": "^5.3",
+        "symfony/var-dumper": "^4.4|^5.1"
     },
     "replace": {
         "symfony/polyfill-apcu": "self.version",
