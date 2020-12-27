@@ -886,9 +886,9 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
     }
 
     /**
-     * @dataProvider setTimeZoneIdProvider
+     * @dataProvider setTimeZoneProvider
      */
-    public function testSetTimeZoneId($timeZoneId, $expectedTimeZoneId)
+    public function testSetTimeZone($timeZoneId, $expectedTimeZoneId)
     {
         $formatter = $this->getDefaultDateFormatter();
 
@@ -897,7 +897,7 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         $this->assertEquals($expectedTimeZoneId, $formatter->getTimeZoneId());
     }
 
-    public function setTimeZoneIdProvider()
+    public function setTimeZoneProvider()
     {
         return [
             ['UTC', 'UTC'],
