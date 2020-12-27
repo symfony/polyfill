@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-12-26T21:19:59Z
+
+PR is ready. I would appreciate help to fix [the failures](https://github.com/symfony/polyfill/pull/316/checks?check_run_id=1612105563) on PHP 8 once it's merged :pray:
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2020-12-26T22:13:12Z
+
+> Errors: 54, Failures: 18, Warnings: 2
+
+This is much more manageable and miles ahead of what we had before. Thank you for this amazing work @nicolas-grekas 🙏🏼. I will try to work on further fixes in coming days.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2020-12-26T22:22:58Z
+
+> I would appreciate help to fix [the failures](https://github.com/symfony/polyfill/pull/316/checks?check_run_id=1612105563) on PHP 8 once it's merged 🙏
+
+🙋🏻
+
+I'll pick (*rolls dice*) the UUID polyfill.
