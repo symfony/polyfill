@@ -98,15 +98,15 @@ abstract class Collator
     /**
      * Sort array maintaining index association.
      *
-     * @param array &$array   Input array
-     * @param int   $sortFlag Flags for sorting, can be one of the following:
-     *                        Collator::SORT_REGULAR - compare items normally (don't change types)
-     *                        Collator::SORT_NUMERIC - compare items numerically
-     *                        Collator::SORT_STRING - compare items as strings
+     * @param array &$array Input array
+     * @param int   $flags  Flags for sorting, can be one of the following:
+     *                      Collator::SORT_REGULAR - compare items normally (don't change types)
+     *                      Collator::SORT_NUMERIC - compare items numerically
+     *                      Collator::SORT_STRING - compare items as strings
      *
      * @return bool True on success or false on failure
      */
-    public function asort(array &$array, int $sortFlag = self::SORT_REGULAR)
+    public function asort(array &$array, int $flags = self::SORT_REGULAR)
     {
         $intlToPlainFlagMap = [
             self::SORT_REGULAR => \SORT_REGULAR,
@@ -114,7 +114,7 @@ abstract class Collator
             self::SORT_STRING => \SORT_STRING,
         ];
 
-        $plainSortFlag = isset($intlToPlainFlagMap[$sortFlag]) ? $intlToPlainFlagMap[$sortFlag] : self::SORT_REGULAR;
+        $plainSortFlag = $intlToPlainFlagMap[$flags] ?? self::SORT_REGULAR;
 
         return asort($array, $plainSortFlag);
     }
@@ -122,19 +122,13 @@ abstract class Collator
     /**
      * Not supported. Compare two Unicode strings.
      *
-     * @param string $str1 The first string to compare
-     * @param string $str2 The second string to compare
-     *
-     * @return bool|int Return the comparison result or false on failure:
-     *                  1 if $str1 is greater than $str2
-     *                  0 if $str1 is equal than $str2
-     *                  -1 if $str1 is less than $str2
+     * @return bool|int
      *
      * @see https://php.net/collator.compare
      *
      * @throws MethodNotImplementedException
      */
-    public function compare(string $str1, string $str2)
+    public function compare(string $string1, string $string2)
     {
         throw new MethodNotImplementedException(__METHOD__);
     }
@@ -142,15 +136,13 @@ abstract class Collator
     /**
      * Not supported. Get a value of an integer collator attribute.
      *
-     * @param int $attr An attribute specifier, one of the attribute constants
-     *
      * @return bool|int The attribute value on success or false on error
      *
      * @see https://php.net/collator.getattribute
      *
      * @throws MethodNotImplementedException
      */
-    public function getAttribute(int $attr)
+    public function getAttribute(int $attribute)
     {
         throw new MethodNotImplementedException(__METHOD__);
     }
@@ -178,8 +170,6 @@ abstract class Collator
     /**
      * Returns the collator's locale.
      *
-     * @param int $type Not supported. The locale name type to return (Locale::VALID_LOCALE or Locale::ACTUAL_LOCALE)
-     *
      * @return string The locale used to create the collator. Currently always
      *                returns "en".
      */
@@ -190,8 +180,6 @@ abstract class Collator
 
     /**
      * Not supported. Get sorting key for a string.
-     *
-     * @param string $string The string to produce the key from
      *
      * @return string The collation key for $string
      *
@@ -221,30 +209,19 @@ abstract class Collator
     /**
      * Not supported. Set a collator's attribute.
      *
-     * @param int $attr An attribute specifier, one of the attribute constants
-     * @param int $val  The attribute value, one of the attribute value constants
-     *
      * @return bool True on success or false on failure
      *
      * @see https://php.net/collator.setattribute
      *
      * @throws MethodNotImplementedException
      */
-    public function setAttribute(int $attr, int $val)
+    public function setAttribute(int $attribute, int $value)
     {
         throw new MethodNotImplementedException(__METHOD__);
     }
 
     /**
      * Not supported. Set the collator's strength.
-     *
-     * @param int $strength Strength to set, possible values:
-     *                      Collator::PRIMARY
-     *                      Collator::SECONDARY
-     *                      Collator::TERTIARY
-     *                      Collator::QUATERNARY
-     *                      Collator::IDENTICAL
-     *                      Collator::DEFAULT
      *
      * @return bool True on success or false on failure
      *
@@ -260,15 +237,13 @@ abstract class Collator
     /**
      * Not supported. Sort array using specified collator and sort keys.
      *
-     * @param array &$arr Array of strings to sort
-     *
      * @return bool True on success or false on failure
      *
      * @see https://php.net/collator.sortwithsortkeys
      *
      * @throws MethodNotImplementedException
      */
-    public function sortWithSortKeys(array &$arr)
+    public function sortWithSortKeys(array &$array)
     {
         throw new MethodNotImplementedException(__METHOD__);
     }
@@ -276,19 +251,13 @@ abstract class Collator
     /**
      * Not supported. Sort array using specified collator.
      *
-     * @param array &$arr     Array of string to sort
-     * @param int   $sortFlag Optional sorting type, one of the following:
-     *                        Collator::SORT_REGULAR
-     *                        Collator::SORT_NUMERIC
-     *                        Collator::SORT_STRING
-     *
      * @return bool True on success or false on failure
      *
      * @see https://php.net/collator.sort
      *
      * @throws MethodNotImplementedException
      */
-    public function sort(array &$arr, int $sortFlag = self::SORT_REGULAR)
+    public function sort(array &$array, int $flags = self::SORT_REGULAR)
     {
         throw new MethodNotImplementedException(__METHOD__);
     }
