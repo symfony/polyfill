@@ -911,7 +911,7 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         ];
     }
 
-    protected function getDefaultDateFormatter($pattern = '')
+    protected function getDefaultDateFormatter($pattern = null)
     {
         return $this->getDateFormatter('en', IntlDateFormatter::MEDIUM, IntlDateFormatter::SHORT, 'UTC', IntlDateFormatter::GREGORIAN, $pattern);
     }
