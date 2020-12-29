@@ -561,7 +561,7 @@ abstract class NumberFormatter
                 implode(', ', array_keys(self::$supportedAttributes))
             );
 
-            throw new MethodArgumentValueNotImplementedException(__METHOD__, 'attr', $value, $message);
+            throw new MethodArgumentValueNotImplementedException(__METHOD__, 'attribute', $value, $message);
         }
 
         if (self::$supportedAttributes['ROUNDING_MODE'] === $attribute && $this->isInvalidRoundingMode($value)) {
@@ -570,7 +570,7 @@ abstract class NumberFormatter
                 implode(', ', array_keys(self::$roundingModes))
             );
 
-            throw new MethodArgumentValueNotImplementedException(__METHOD__, 'attr', $value, $message);
+            throw new MethodArgumentValueNotImplementedException(__METHOD__, 'attribute', $value, $message);
         }
 
         if (self::$supportedAttributes['GROUPING_USED'] === $attribute) {

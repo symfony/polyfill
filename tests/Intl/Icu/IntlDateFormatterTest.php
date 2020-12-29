@@ -183,7 +183,7 @@ class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
         $this->assertIsIntlSuccess($formatter, 'U_ZERO_ERROR', Icu::U_ZERO_ERROR);
     }
 
-    protected function getDateFormatter($locale, $datetype, $timetype, $timezone = null, $calendar = IntlDateFormatter::GREGORIAN, $pattern = null)
+    protected function getDateFormatter($locale, $datetype, $timetype, $timezone = null, $calendar = IntlDateFormatter::GREGORIAN, $pattern = '')
     {
         return new class($locale, $datetype, $timetype, $timezone, $calendar, $pattern) extends IntlDateFormatter {
         };

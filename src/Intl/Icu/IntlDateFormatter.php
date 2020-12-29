@@ -129,7 +129,7 @@ abstract class IntlDateFormatter
      * @throws MethodArgumentValueNotImplementedException When $locale different than "en" or null is passed
      * @throws MethodArgumentValueNotImplementedException When $calendar different than GREGORIAN is passed
      */
-    public function __construct(?string $locale, ?int $dateType, ?int $timeType, $timezone = null, $calendar = null, ?string $pattern = '')
+    public function __construct(?string $locale, ?int $dateType, ?int $timeType, $timezone = null, $calendar = null, string $pattern = '')
     {
         if ('en' !== $locale && null !== $locale) {
             throw new MethodArgumentValueNotImplementedException(__METHOD__, 'locale', $locale, 'Only the locale "en" is supported');
@@ -141,6 +141,10 @@ abstract class IntlDateFormatter
 
         $this->dateType = $dateType ?? self::FULL;
         $this->timeType = $timeType ?? self::FULL;
+
+        if ('' === $pattern) {
+            $pattern = $this->getDefaultPattern();
+        }
 
         $this->setPattern($pattern);
         $this->setTimeZone($timezone);
@@ -162,7 +166,7 @@ abstract class IntlDateFormatter
      * @throws MethodArgumentValueNotImplementedException When $locale different than "en" or null is passed
      * @throws MethodArgumentValueNotImplementedException When $calendar different than GREGORIAN is passed
      */
-    public static function create(?string $locale, ?int $dateType, ?int $timeType, $timezone = null, int $calendar = null, ?string $pattern = '')
+    public static function create(?string $locale, ?int $dateType, ?int $timeType, $timezone = null, int $calendar = null, string $pattern = '')
     {
         return new static($locale, $dateType, $timeType, $timezone, $calendar, $pattern);
     }
@@ -397,13 +401,13 @@ abstract class IntlDateFormatter
      *
      * @see https://php.net/intldateformatter.parse
      *
-     * @throws MethodArgumentNotImplementedException When $position different than null, behavior not implemented
+     * @throws MethodArgumentNotImplementedException When $offset different than null, behavior not implemented
      */
     public function parse(string $string, &$offset = null)
     {
         // We don't calculate the position when parsing the value
         if (null !== $offset) {
-            throw new MethodArgumentNotImplementedException(__METHOD__, 'position');
+            throw new MethodArgumentNotImplementedException(__METHOD__, 'offset');
         }
 
         $dateTime = $this->createDateTime(0);
@@ -468,12 +472,8 @@ abstract class IntlDateFormatter
      * @see https://php.net/intldateformatter.setpattern
      * @see http://userguide.icu-project.org/formatparse/datetime
      */
-    public function setPattern(?string $pattern)
+    public function setPattern(string $pattern)
     {
-        if (null === $pattern) {
-            $pattern = $this->getDefaultPattern();
-        }
-
         $this->pattern = $pattern;
 
         return true;
