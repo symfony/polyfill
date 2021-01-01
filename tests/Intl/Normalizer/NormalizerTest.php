@@ -82,11 +82,23 @@ class NormalizerTest extends TestCase
         $this->assertSame($kc, normalizer_normalize($d, pn::NFKC));
         $this->assertSame($kd, normalizer_normalize($c, pn::NFKD));
 
-        $this->assertFalse(normalizer_normalize($c, -1));
         $this->assertFalse(normalizer_normalize("\xFF"));
 
         $this->assertSame("\xcc\x83\xc3\x92\xd5\x9b", normalizer_normalize("\xcc\x83\xc3\x92\xd5\x9b"));
         $this->assertSame("\xe0\xbe\xb2\xe0\xbd\xb1\xe0\xbe\x80\xe0\xbe\x80", normalizer_normalize("\xe0\xbd\xb6\xe0\xbe\x81", pn::NFD));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
+     */
+    public function testNormalizeWithInvalidForm()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('normalizer_normalize(): Argument #2 ($form) must be a a valid normalization form');
+        }
+
+        $this->assertFalse(normalizer_normalize('foo', -1));
     }
 
     /**

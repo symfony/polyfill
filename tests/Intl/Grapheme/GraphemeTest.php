@@ -27,8 +27,14 @@ class GraphemeTest extends TestCase
     public function testGraphemeExtractArrayError()
     {
         grapheme_extract('', 0);
-        $this->expectWarning();
-        $this->expectWarningMessage('expects parameter 1 to be string, array given');
+        if (80000 > PHP_VERSION_ID) {
+            $this->assertFalse(@grapheme_extract(array(), 0));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 1 to be string, array given');
+        } else {
+            $this->expectException(\TypeError::class);
+        }
         grapheme_extract(array(), 0);
     }
 
@@ -37,10 +43,8 @@ class GraphemeTest extends TestCase
      */
     public function testGraphemeExtract()
     {
-        $this->assertFalse(grapheme_extract('abc', 1, -1));
-
-        $this->assertSame(grapheme_extract('', 0), grapheme_extract('', 0));
-        $this->assertSame(grapheme_extract('abc', 0), grapheme_extract('abc', 0));
+        $this->assertFalse(grapheme_extract('', 0));
+        $this->assertSame('', grapheme_extract('abc', 0));
 
         $this->assertSame('국어', grapheme_extract('한국어', 2, GRAPHEME_EXTR_COUNT, 3, $next));
         $this->assertSame(9, $next);
@@ -55,9 +59,19 @@ class GraphemeTest extends TestCase
 
         $this->assertSame('d', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXBYTES));
         $this->assertSame('dé', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXCHARS));
+    }
 
-        $this->assertFalse(@grapheme_extract(array(), 0));
-        $this->assertFalse(@grapheme_extract(array(), 0));
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     */
+    public function testGraphemeExtractWithInvalidType()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('grapheme_extract(): Argument #3 ($type) must be one of GRAPHEME_EXTR_COUNT, GRAPHEME_EXTR_MAXBYTES, or GRAPHEME_EXTR_MAXCHARS');
+        }
+
+        $this->assertFalse(grapheme_extract('abc', 1, -1));
     }
 
     /**
@@ -142,13 +156,21 @@ class GraphemeTest extends TestCase
      */
     public function testGraphemeStrpos()
     {
-        $this->assertFalse(grapheme_strpos('abc', ''));
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(grapheme_strpos('abc', ''));
+        } else {
+            $this->assertSame(0, grapheme_strpos('abc', ''));
+        }
         $this->assertFalse(grapheme_strpos('abc', 'd'));
         $this->assertFalse(grapheme_strpos('abc', 'a', 3));
         $this->assertFalse(grapheme_strpos('abc', 'a', -1));
         $this->assertSame(1, grapheme_strpos('한국어', '국'));
         $this->assertSame(3, grapheme_stripos('DÉJÀ', 'à'));
-        $this->assertFalse(grapheme_strrpos('한국어', ''));
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(grapheme_strrpos('한국어', ''));
+        } else {
+            $this->assertSame(3, grapheme_strrpos('한국어', ''));
+        }
         $this->assertSame(1, grapheme_strrpos('한국어', '국'));
         $this->assertSame(3, grapheme_strripos('DÉJÀ', 'à'));
     }

@@ -61,7 +61,15 @@ final class Grapheme
         $type = (int) $type;
         $start = (int) $start;
 
-        if (!isset($s[0]) || 0 > $size || 0 > $start || 0 > $type || 2 < $type) {
+        if (GRAPHEME_EXTR_COUNT !== $type && GRAPHEME_EXTR_MAXBYTES !== $type && GRAPHEME_EXTR_MAXCHARS !== $type) {
+            if (80000 > \PHP_VERSION_ID) {
+                return false;
+            }
+
+            throw new \ValueError('grapheme_extract(): Argument #3 ($type) must be one of GRAPHEME_EXTR_COUNT, GRAPHEME_EXTR_MAXBYTES, or GRAPHEME_EXTR_MAXCHARS');
+        }
+
+        if (!isset($s[0]) || 0 > $size || 0 > $start) {
             return false;
         }
         if (0 === $size) {
@@ -181,7 +189,7 @@ final class Grapheme
     private static function grapheme_position($s, $needle, $offset, $mode)
     {
         $needle = (string) $needle;
-        if (!preg_match('/./us', $needle)) {
+        if (80000 > \PHP_VERSION_ID && !preg_match('/./us', $needle)) {
             return false;
         }
         $s = (string) $s;
