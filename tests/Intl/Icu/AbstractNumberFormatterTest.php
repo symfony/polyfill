@@ -828,7 +828,6 @@ abstract class AbstractNumberFormatterTest extends TestCase
             $this->markTestSkipped('PHP 64 bit is required.');
         }
 
-
         $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
 
         $parsedValue = $formatter->parse('2,147,483,648', NumberFormatter::TYPE_INT64);

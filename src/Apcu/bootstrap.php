@@ -15,7 +15,7 @@ if (!extension_loaded('apc') && !extension_loaded('apcu')) {
     return;
 }
 
-if (PHP_VERSION_ID >= 80000) {
+if (\PHP_VERSION_ID >= 80000) {
     return require __DIR__.'/bootstrap80.php';
 }
 
@@ -75,7 +75,7 @@ if (!function_exists('apcu_sma_info')) {
 if (!class_exists('APCuIterator', false) && class_exists('APCIterator', false)) {
     class APCuIterator extends APCIterator
     {
-        public function __construct($search = null, $format = APC_ITER_ALL, $chunk_size = 100, $list = APC_LIST_ACTIVE)
+        public function __construct($search = null, $format = \APC_ITER_ALL, $chunk_size = 100, $list = \APC_LIST_ACTIVE)
         {
             parent::__construct('user', $search, $format, $chunk_size, $list);
         }

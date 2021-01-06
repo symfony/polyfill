@@ -29,7 +29,7 @@ class TestListenerTrait
             return;
         }
         self::$enabledPolyfills = false;
-        $warnings = array();
+        $warnings = [];
 
         foreach ($mainSuite->tests() as $suite) {
             $testClass = $suite->getName();

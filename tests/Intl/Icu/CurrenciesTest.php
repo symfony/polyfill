@@ -12,7 +12,6 @@
 namespace Symfony\Polyfill\Tests\Intl\Icu;
 
 use PHPUnit\Framework\TestCase;
-use Symfony\Polyfill\Intl\Icu\Currencies;
 
 /**
  * @group class-polyfill

@@ -107,7 +107,7 @@ class NormalizerTest extends TestCase
     public function testNormalizeConformance()
     {
         $t = file(__DIR__.'/NormalizationTest.txt');
-        $c = array();
+        $c = [];
 
         foreach ($t as $s) {
             $t = explode('#', $s);

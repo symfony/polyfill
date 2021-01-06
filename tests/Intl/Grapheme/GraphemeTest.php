@@ -27,15 +27,15 @@ class GraphemeTest extends TestCase
     public function testGraphemeExtractArrayError()
     {
         grapheme_extract('', 0);
-        if (80000 > PHP_VERSION_ID) {
-            $this->assertFalse(@grapheme_extract(array(), 0));
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@grapheme_extract([], 0));
 
             $this->expectWarning();
             $this->expectWarningMessage('expects parameter 1 to be string, array given');
         } else {
             $this->expectException(\TypeError::class);
         }
-        grapheme_extract(array(), 0);
+        grapheme_extract([], 0);
     }
 
     /**
@@ -46,19 +46,19 @@ class GraphemeTest extends TestCase
         $this->assertFalse(grapheme_extract('', 0));
         $this->assertSame('', grapheme_extract('abc', 0));
 
-        $this->assertSame('국어', grapheme_extract('한국어', 2, GRAPHEME_EXTR_COUNT, 3, $next));
+        $this->assertSame('국어', grapheme_extract('한국어', 2, \GRAPHEME_EXTR_COUNT, 3, $next));
         $this->assertSame(9, $next);
 
         $next = 0;
-        $this->assertSame('한', grapheme_extract('한국어', 1, GRAPHEME_EXTR_COUNT, $next, $next));
-        $this->assertSame('국', grapheme_extract('한국어', 1, GRAPHEME_EXTR_COUNT, $next, $next));
-        $this->assertSame('어', grapheme_extract('한국어', 1, GRAPHEME_EXTR_COUNT, $next, $next));
-        $this->assertFalse(grapheme_extract('한국어', 1, GRAPHEME_EXTR_COUNT, $next, $next));
+        $this->assertSame('한', grapheme_extract('한국어', 1, \GRAPHEME_EXTR_COUNT, $next, $next));
+        $this->assertSame('국', grapheme_extract('한국어', 1, \GRAPHEME_EXTR_COUNT, $next, $next));
+        $this->assertSame('어', grapheme_extract('한국어', 1, \GRAPHEME_EXTR_COUNT, $next, $next));
+        $this->assertFalse(grapheme_extract('한국어', 1, \GRAPHEME_EXTR_COUNT, $next, $next));
 
-        $this->assertSame(str_repeat('-', 69000), grapheme_extract(str_repeat('-', 70000), 69000, GRAPHEME_EXTR_COUNT));
+        $this->assertSame(str_repeat('-', 69000), grapheme_extract(str_repeat('-', 70000), 69000, \GRAPHEME_EXTR_COUNT));
 
-        $this->assertSame('d', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXBYTES));
-        $this->assertSame('dé', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXCHARS));
+        $this->assertSame('d', grapheme_extract('déjà', 2, \GRAPHEME_EXTR_MAXBYTES));
+        $this->assertSame('dé', grapheme_extract('déjà', 2, \GRAPHEME_EXTR_MAXCHARS));
     }
 
     /**
@@ -79,9 +79,9 @@ class GraphemeTest extends TestCase
      */
     public function testGraphemeExtractWithNegativeStart()
     {
-        $this->assertSame('j', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXBYTES, -3, $next));
+        $this->assertSame('j', grapheme_extract('déjà', 2, \GRAPHEME_EXTR_MAXBYTES, -3, $next));
         $this->assertSame(4, $next);
-        $this->assertSame('jà', grapheme_extract('déjà', 2, GRAPHEME_EXTR_MAXCHARS, -3));
+        $this->assertSame('jà', grapheme_extract('déjà', 2, \GRAPHEME_EXTR_MAXCHARS, -3));
     }
 
     /**

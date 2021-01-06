@@ -11,7 +11,7 @@
 
 use Symfony\Polyfill\Intl\Normalizer as p;
 
-if (PHP_VERSION_ID >= 80000) {
+if (\PHP_VERSION_ID >= 80000) {
     return require __DIR__.'/bootstrap80.php';
 }
 

@@ -26,18 +26,18 @@ class Compiler
 {
     public static function translitMap($out_dir)
     {
-        $map = array();
+        $map = [];
 
         $h = fopen(self::getFile('UnicodeData.txt'), 'r');
         while (false !== $line = fgets($h)) {
-            $m = array();
+            $m = [];
 
             if (preg_match('/^([^;]*);[^;]*;[^;]*;[^;]*;[^;]*;<(circle|compat|font|fraction|narrow|small|square|wide)> ([^;]*);/', $line, $m)) {
                 $m[1] = self::chr(hexdec($m[1]));
 
                 $m[3] = explode(' ', $m[3]);
                 $m[3] = array_map('hexdec', $m[3]);
-                $m[3] = array_map(array(__CLASS__, 'chr'), $m[3]);
+                $m[3] = array_map([__CLASS__, 'chr'], $m[3]);
                 $m[3] = implode('', $m[3]);
 
                 switch ($m[2]) {
@@ -50,12 +50,12 @@ class Compiler
                     case 'fraction': $m[3] = ' '.$m[3].' '; break;
                 }
 
-                $m = array($m[1], $m[3]);
+                $m = [$m[1], $m[3]];
             } elseif (preg_match('/^([^;]*);CJK COMPATIBILITY IDEOGRAPH-[^;]*;[^;]*;[^;]*;[^;]*;([^;]*);/', $line, $m)) {
-                $m = array(
+                $m = [
                     self::chr(hexdec($m[1])),
                     self::chr(hexdec($m[2])),
-                );
+                ];
             }
 
             if (!$m) {
@@ -86,15 +86,15 @@ class Compiler
 
     public static function unicodeMaps($out_dir)
     {
-        $upperCase = array();
-        $lowerCase = array();
-        $caseFolding = array();
-        $combiningClass = array();
-        $canonicalComposition = array();
-        $canonicalDecomposition = array();
-        $compatibilityDecomposition = array();
+        $upperCase = [];
+        $lowerCase = [];
+        $caseFolding = [];
+        $combiningClass = [];
+        $canonicalComposition = [];
+        $canonicalDecomposition = [];
+        $compatibilityDecomposition = [];
 
-        $exclusion = array();
+        $exclusion = [];
 
         $h = fopen(self::getFile('CompositionExclusions.txt'), 'r');
         while (false !== $m = fgets($h)) {
@@ -126,7 +126,7 @@ class Compiler
                 $exclude = 1 == \count($decomp) || isset($exclusion[$k]);
 
                 $decomp = array_map('hexdec', $decomp);
-                $decomp = array_map(array(__CLASS__, 'chr'), $decomp);
+                $decomp = array_map([__CLASS__, 'chr'], $decomp);
                 $decomp = implode('', $decomp);
 
                 if ($canonic) {
@@ -176,7 +176,7 @@ class Compiler
 
                 $decomp = explode(' ', $m[3]);
                 $decomp = array_map('hexdec', $decomp);
-                $decomp = array_map(array(__CLASS__, 'chr'), $decomp);
+                $decomp = array_map([__CLASS__, 'chr'], $decomp);
                 $decomp = implode('', $decomp);
 
                 @($lowerCase[$k] != $decomp && $caseFolding[$m[2]][$k] = $decomp);
@@ -185,10 +185,10 @@ class Compiler
         fclose($h);
 
         // Only full case folding is worth serializing
-        $caseFolding = array(
+        $caseFolding = [
             array_keys($caseFolding['F']),
             array_values($caseFolding['F']),
-        );
+        ];
 
         $upperCase = "<?php\n\nreturn ".var_export($upperCase, true).";\n";
         $lowerCase = "<?php\n\nreturn ".var_export($lowerCase, true).";\n";
@@ -210,14 +210,14 @@ class Compiler
     public static function idnMaps($out_dir)
     {
         $handle = fopen(self::getFile('IdnaMappingTable.txt'), 'r');
-        $statuses = array(
-            'mapped' => array(),
-            'ignored' => array(),
-            'deviation' => array(),
-            'disallowed' => array(),
-            'disallowed_STD3_mapped' => array(),
-            'disallowed_STD3_valid' => array(),
-        );
+        $statuses = [
+            'mapped' => [],
+            'ignored' => [],
+            'deviation' => [],
+            'disallowed' => [],
+            'disallowed_STD3_mapped' => [],
+            'disallowed_STD3_valid' => [],
+        ];
         $rangeFallback = '';
 
         while (false !== ($line = fgets($handle))) {
@@ -225,12 +225,12 @@ class Compiler
                 continue;
             }
 
-            list($data) = explode('#', $line);
+            [$data] = explode('#', $line);
             $data = array_map('trim', explode(';', $data));
-            list($codePoints, $status) = $data;
+            [$codePoints, $status] = $data;
             $range = explode('..', $codePoints);
             $start = \intval($range[0], 16);
-            $codePoints = array($start, isset($range[1]) ? \intval($range[1], 16) : $start);
+            $codePoints = [$start, isset($range[1]) ? \intval($range[1], 16) : $start];
             $diff = $codePoints[1] - $codePoints[0] + 1;
 
             switch ($status) {
@@ -323,16 +323,16 @@ CP_STATUS;
     public static function idnViramaMap($out_dir)
     {
         $handle = fopen(self::getFile('DerivedCombiningClass.txt'), 'r');
-        $virama = array();
+        $virama = [];
 
         while (false !== ($line = fgets($handle))) {
             if ("\n" === $line || '#' === $line[0]) {
                 continue;
             }
 
-            list($data) = explode('#', $line);
+            [$data] = explode('#', $line);
             $data = array_map('trim', explode(';', $data));
-            list($codePoints, $combiningClass) = $data;
+            [$codePoints, $combiningClass] = $data;
 
             if ('9' !== $combiningClass) {
                 continue;
@@ -340,7 +340,7 @@ CP_STATUS;
 
             $range = explode('..', $codePoints);
             $start = \intval($range[0], 16);
-            $codePoints = array($start, isset($range[1]) ? \intval($range[1], 16) : $start);
+            $codePoints = [$start, isset($range[1]) ? \intval($range[1], 16) : $start];
             $diff = $codePoints[1] - $codePoints[0] + 1;
 
             for ($i = 0; $i < $diff; ++$i) {
@@ -355,18 +355,18 @@ CP_STATUS;
     public static function idnRegexClass($out_dir)
     {
         $handle = fopen(self::getFile('DerivedBidiClass.txt'), 'r');
-        $bidiData = array();
+        $bidiData = [];
 
         while (false !== ($line = fgets($handle))) {
             if ("\n" === $line || '#' === $line[0]) {
                 continue;
             }
 
-            list($data) = explode('#', $line);
+            [$data] = explode('#', $line);
             $data = array_map('trim', explode(';', $data));
             $range = explode('..', $data[0]);
             $start = \intval($range[0], 16);
-            $data[0] = array($start, isset($range[1]) ? \intval($range[1], 16) : $start);
+            $data[0] = [$start, isset($range[1]) ? \intval($range[1], 16) : $start];
             $bidiData[] = $data;
         }
 
@@ -395,7 +395,7 @@ CP_STATUS;
         };
         usort($bidiData, $cpSort);
         $rtlLabel = sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
-            return \in_array($data[1], array('R', 'AL', 'AN'), true);
+            return \in_array($data[1], ['R', 'AL', 'AN'], true);
         })));
 
         // Step 1. The first character must be a character with Bidi property L, R, or AL.  If it has the R
@@ -409,13 +409,13 @@ CP_STATUS;
         })));
         $bidiStep1Rtl = sprintf('/^[%s]/u',
         $buildCharClass(array_filter($bidiData, static function (array $data): bool {
-            return \in_array($data[1], array('R', 'AL'), true);
+            return \in_array($data[1], ['R', 'AL'], true);
         })));
 
         // Step 2. In an RTL label, only characters with the Bidi properties R, AL, AN, EN, ES, CS, ET, ON,
         // BN, or NSM are allowed.
         $bidiStep2 = sprintf('/[^%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
-            return \in_array($data[1], array('R', 'AL', 'AN', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM'), true);
+            return \in_array($data[1], ['R', 'AL', 'AN', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM'], true);
         })));
 
         // Step 3. In an RTL label, the end of the label must be a character with Bidi property R, AL, EN,
@@ -423,7 +423,7 @@ CP_STATUS;
         $bidiStep3 = sprintf(
             '/[%s][%s]*$/u',
             $buildCharClass(array_filter($bidiData, static function (array $data): bool {
-                return \in_array($data[1], array('R', 'AL', 'EN', 'AN'), true);
+                return \in_array($data[1], ['R', 'AL', 'EN', 'AN'], true);
             })),
             $buildCharClass(array_filter($bidiData, static function (array $data): bool {
                 return 'NSM' === $data[1];
@@ -446,7 +446,7 @@ CP_STATUS;
         // DerivedBidiClass.txt minus the ones explicitly marked as 'L', 'EN', 'ES', 'CS', 'ET', 'ON',
         // 'BN', or 'NSM'.
         $bidiStep5 = sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
-            return !\in_array($data[1], array('L', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM'), true);
+            return !\in_array($data[1], ['L', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM'], true);
         })));
 
         // Step 6. In an LTR label, the end of the label must be a character with Bidi property L or EN,
@@ -458,7 +458,7 @@ CP_STATUS;
         $bidiStep6 = sprintf(
             '/[^%s][%s]*$/u',
             $buildCharClass(array_filter($bidiData, static function (array $data): bool {
-                return !\in_array($data[1], array('L', 'EN'), true);
+                return !\in_array($data[1], ['L', 'EN'], true);
             })),
             $buildCharClass(array_filter($bidiData, static function (array $data): bool {
                 return 'NSM' === $data[1];
@@ -467,41 +467,41 @@ CP_STATUS;
 
         unset($bidiData);
         $handle = fopen(self::getFile('DerivedGeneralCategory.txt'), 'r');
-        $generalCategories = array();
+        $generalCategories = [];
 
         while (false !== ($line = fgets($handle))) {
             if ("\n" === $line || '#' === $line[0]) {
                 continue;
             }
 
-            list($data) = explode('#', $line);
+            [$data] = explode('#', $line);
             $data = array_map('trim', explode(';', $data));
             $range = explode('..', $data[0]);
             $start = \intval($range[0], 16);
-            $data[0] = array($start, isset($range[1]) ? \intval($range[1], 16) : $start);
+            $data[0] = [$start, isset($range[1]) ? \intval($range[1], 16) : $start];
             $generalCategories[] = $data;
         }
 
         fclose($handle);
         usort($generalCategories, $cpSort);
         $combiningMarks = sprintf('/^[%s]/u', $buildCharClass(array_filter($generalCategories, static function (array $data) {
-            return \in_array($data[1], array('Mc', 'Me', 'Mn'), true);
+            return \in_array($data[1], ['Mc', 'Me', 'Mn'], true);
         })));
         unset($generalCategories);
 
         $handle = fopen(self::getFile('DerivedJoiningType.txt'), 'r');
-        $joiningTypes = array();
+        $joiningTypes = [];
 
         while (false !== ($line = fgets($handle))) {
             if ("\n" === $line || '#' === $line[0]) {
                 continue;
             }
 
-            list($data) = explode('#', $line);
+            [$data] = explode('#', $line);
             $data = array_map('trim', explode(';', $data));
             $range = explode('..', $data[0]);
             $start = \intval($range[0], 16);
-            $data[0] = array($start, isset($range[1]) ? \intval($range[1], 16) : $start);
+            $data[0] = [$start, isset($range[1]) ? \intval($range[1], 16) : $start];
             $joiningTypes[] = $data;
         }
 

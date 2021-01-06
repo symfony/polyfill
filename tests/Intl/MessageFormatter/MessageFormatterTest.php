@@ -65,67 +65,67 @@ class MessageFormatterTest extends TestCase
     {
         $subject = 'Answer to the Ultimate Question of Life, the Universe, and Everything';
 
-        return array(
-            array(
+        return [
+            [
                 '{сабж} is {n}', // pattern
                 $subject.' is 42', // expected
-                array( // params
+                [ // params
                     'n' => 42,
                     'сабж' => $subject,
-                ),
-            ),
+                ],
+            ],
 
-            array(
+            [
                 '{сабж} is {n, number}', // pattern
                 $subject.' is 42', // expected
-                array( // params
+                [ // params
                     'n' => 42,
                     'сабж' => $subject,
-                ),
-            ),
+                ],
+            ],
 
-            array(
+            [
                 '{сабж} is {n, number, integer}', // pattern
                 $subject.' is 42', // expected
-                array( // params
+                [ // params
                     'n' => 42,
                     'сабж' => $subject,
-                ),
-            ),
+                ],
+            ],
 
-            array(
+            [
                 'Here is a big number: {f, number}', // pattern
                 'Here is a big number: 200,000,000', // expected
-                array( // params
+                [ // params
                     'f' => 2e+8,
-                ),
-            ),
+                ],
+            ],
 
-            array(
+            [
                 'Here is a big number: {f, number, integer}', // pattern
                 'Here is a big number: 200,000,000', // expected
-                array( // params
+                [ // params
                     'f' => 2e+8,
-                ),
-            ),
+                ],
+            ],
 
-            array(
+            [
                 'Here is a big number: {d, number}', // pattern
                 'Here is a big number: 200,000,000.101', // expected
-                array( // params
+                [ // params
                     'd' => 200000000.101,
-                ),
-            ),
+                ],
+            ],
 
-            array(
+            [
                 'Here is a big number: {d, number, integer}', // pattern
                 'Here is a big number: 200,000,000', // expected
-                array( // params
+                [ // params
                     'd' => 200000000.101,
-                ),
-            ),
+                ],
+            ],
 
-            array(<<<'_MSG_'
+            [<<<'_MSG_'
 {eye_color_of_host, select,
   brown {{num_guests, plural, offset:1
       =0 {{host} has brown eyes and does not give a party.}
@@ -145,69 +145,69 @@ class MessageFormatterTest extends TestCase
 _MSG_
                 ,
                 'Alex has brown eyes and invites Riley and 3 other people to their party.',
-                array(
+                [
                     'eye_color_of_host' => 'brown',
                     'num_guests' => 4,
                     'host' => 'Alex',
                     'guest' => 'Riley',
-                ),
-            ),
+                ],
+            ],
 
-            array(
+            [
                 '{name} has {eye_color} eyes like {eye_color, select, brown{wood} green{grass} other{a bird}}!',
                 'Alex has brown eyes like wood!',
-                array(
+                [
                     'name' => 'Alex',
                     'eye_color' => 'brown',
-                ),
-            ),
+                ],
+            ],
 
             // verify pattern in select does not get replaced
-            array(
+            [
                 '{name} has {eye_color} eyes like {eye_color, select, brown{wood} green{grass} other{a bird}}!',
                 'Alex has blue eyes like a bird!',
-                array(
+                [
                     'name' => 'Alex',
                     'eye_color' => 'blue',
                     // following should not be replaced
                     'wood' => 'nothing',
                     'grass' => 'nothing',
                     'a bird' => 'nothing',
-                ),
-            ),
+                ],
+            ],
 
             // verify pattern in select message gets replaced
-            array(
+            [
                 '{name} has {eye_color} eyes like {eye_color, select, brown{{wood}} green{grass} other{a bird}}!',
                 'Alex has brown eyes like bears!',
-                array(
+                [
                     'name' => 'Alex',
                     'eye_color' => 'brown',
                     'wood' => 'bears',
                     'grass' => 'plants',
                     'a bird' => 'the sea',
-                ),
-            ),
+                ],
+            ],
 
             // formatting a message that contains params but they are not provided.
-            array(
+            [
                 'Incorrect password (length must be from { min, number } to { max, number } symbols).',
                 'Incorrect password (length must be from {min} to {max} symbols).',
-                array('attribute' => 'password'),
-            ),
+                ['attribute' => 'password'],
+            ],
 
             // some parser specific verifications
-            array(
+            [
                 'Alex has {eye_color} eyes like {eye_color, select, brown{{wood}} other{a bird}} and loves {number}!',
                 'Alex has brown eyes like bears and loves 42!',
-                array(
+                [
                     'number' => 42,
                     'eye_color' => 'brown',
                     'wood' => 'bears',
                     'grass' => 'plants',
-                ),
-            ),
-        );
+                ],
+            ],
+        ];
     }
 
     public function testInsufficientArguments()
@@ -215,11 +215,11 @@ _MSG_
         $pattern = '{сабж} is {n}';
 
         $formatter = new MessageFormatter('en_US', $pattern);
-        $result = $formatter->format(array('n' => 42));
+        $result = $formatter->format(['n' => 42]);
         $this->assertEquals('{сабж} is 42', $result);
 
         $formatter = new \MessageFormatter('en_US', $pattern);
-        $result = $formatter->format(array('n' => 42));
+        $result = $formatter->format(['n' => 42]);
         $this->assertEquals('{сабж} is 42', $result);
     }
 
@@ -228,11 +228,11 @@ _MSG_
         $pattern = '{сабж} is {n}';
 
         $formatter = new MessageFormatter('en_US', $pattern);
-        $result = $formatter->format(array());
+        $result = $formatter->format([]);
         $this->assertEquals($pattern, $result, $formatter->getErrorMessage());
 
         $formatter = new \MessageFormatter('en_US', $pattern);
-        $result = $formatter->format(array());
+        $result = $formatter->format([]);
         $this->assertEquals($pattern, $result, $formatter->getErrorMessage());
     }
 
@@ -241,11 +241,11 @@ _MSG_
         $pattern = 'Showing <b>{begin, number}-{end, number}</b> of <b>{totalCount, number}</b> {totalCount, plural, one{item} other{items}}.';
 
         $formatter = new MessageFormatter('en_US', $pattern);
-        $result = $formatter->format(array('begin' => 1, 'end' => 5, 'totalCount' => 10));
+        $result = $formatter->format(['begin' => 1, 'end' => 5, 'totalCount' => 10]);
         $this->assertEquals('Showing <b>1-5</b> of <b>10</b> items.', $result);
 
         $formatter = new \MessageFormatter('en_US', $pattern);
-        $result = $formatter->format(array('begin' => 1, 'end' => 5, 'totalCount' => 10));
+        $result = $formatter->format(['begin' => 1, 'end' => 5, 'totalCount' => 10]);
         $this->assertEquals('Showing <b>1-5</b> of <b>10</b> items.', $result);
     }
 
@@ -253,13 +253,13 @@ _MSG_
     {
         $pattern = 'Number {n, number, percent}';
         $formatter = new MessageFormatter('en-US', $pattern);
-        $this->assertFalse($formatter->format(array('n' => 42)));
+        $this->assertFalse($formatter->format(['n' => 42]));
     }
 
     public function testUnsupportedCurrencyException()
     {
         $pattern = 'Number {n, number, currency}';
         $formatter = new MessageFormatter('en-US', $pattern);
-        $this->assertFalse($formatter->format(array('n' => 42)));
+        $this->assertFalse($formatter->format(['n' => 42]));
     }
 }

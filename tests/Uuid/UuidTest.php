@@ -23,7 +23,7 @@ class UuidTest extends TestCase
 
     public function testCreateTime()
     {
-        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', uuid_create(UUID_TYPE_TIME));
+        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', uuid_create(\UUID_TYPE_TIME));
     }
 
     public function testGenerateMd5()
@@ -33,8 +33,8 @@ class UuidTest extends TestCase
         $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_md5($uuidNs, 'foo'));
         $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_md5($uuidNs, 'bar'));
         $this->assertNotSame($a, $b);
-        $this->assertSame(UUID_TYPE_MD5, uuid_type($a));
-        $this->assertSame(UUID_TYPE_MD5, uuid_type($b));
+        $this->assertSame(\UUID_TYPE_MD5, uuid_type($a));
+        $this->assertSame(\UUID_TYPE_MD5, uuid_type($b));
 
         $this->assertSame('828658e4-5ae7-39fc-820b-d01a789b1a4d', uuid_generate_md5('ec07aa88-f84e-47b9-a581-1c6b30a2f484', 'the name'));
     }
@@ -56,8 +56,8 @@ class UuidTest extends TestCase
         $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $a = uuid_generate_sha1($uuidNs, 'foo'));
         $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $b = uuid_generate_sha1($uuidNs, 'bar'));
         $this->assertNotSame($a, $b);
-        $this->assertSame(UUID_TYPE_SHA1, uuid_type($a));
-        $this->assertSame(UUID_TYPE_SHA1, uuid_type($b));
+        $this->assertSame(\UUID_TYPE_SHA1, uuid_type($a));
+        $this->assertSame(\UUID_TYPE_SHA1, uuid_type($b));
 
         if ('851def0c-b9c7-55aa-8991-130e769ec0a9' === uuid_generate_sha1('ec07aa88-f84e-47b9-a581-1c6b30a2f484', 'the name') && '851def0c-b9c7-55aa-8991-130e769ec0a9' === uuid_generate_sha1('ec07aa88-f84e-47b9-a581-1c6b30a2f484', 'the name')) {
             $this->markTestSkipped('Buggy libuuid.');
@@ -78,16 +78,16 @@ class UuidTest extends TestCase
 
     public function provideCreateNoOverlapTests(): array
     {
-        return array(
-            array(Uuid::UUID_TYPE_RANDOM),
-            array(Uuid::UUID_TYPE_TIME),
-        );
+        return [
+            [Uuid::UUID_TYPE_RANDOM],
+            [Uuid::UUID_TYPE_TIME],
+        ];
     }
 
     /** @dataProvider provideCreateNoOverlapTests */
     public function testCreateNoOverlap(int $type)
     {
-        $uuids = array();
+        $uuids = [];
         $count = 100000;
         for ($i = 0; $i < $count; ++$i) {
             $uuids[] = uuid_create($type);
@@ -100,14 +100,14 @@ class UuidTest extends TestCase
 
     public function provideIsValidTest(): array
     {
-        return array(
-            array(true, '00000000-0000-0000-0000-000000000000'),
-            array(true, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-            array(true, 'FA83B381-328C-46B8-8C90-4E9BA47DFA4B'),
-            array(false, 'fa83b381-328c-ZZZZ-8c90-4e9ba47dfa4b'),
-            array(false, 'fa83b381328c46b88c904e9ba47dfa4b'),
-            array(false, 'foobar'),
-        );
+        return [
+            [true, '00000000-0000-0000-0000-000000000000'],
+            [true, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+            [true, 'FA83B381-328C-46B8-8C90-4E9BA47DFA4B'],
+            [false, 'fa83b381-328c-ZZZZ-8c90-4e9ba47dfa4b'],
+            [false, 'fa83b381328c46b88c904e9ba47dfa4b'],
+            [false, 'foobar'],
+        ];
     }
 
     /** @dataProvider provideIsValidTest */
@@ -118,11 +118,11 @@ class UuidTest extends TestCase
 
     public function provideCompareTest(): array
     {
-        return array(
-            array(-1, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4c'),
-            array(0, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-            array(1, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4d', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4c'),
-        );
+        return [
+            [-1, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4c'],
+            [0, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+            [1, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4d', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4c'],
+        ];
     }
 
     /** @dataProvider provideCompareTest */
@@ -160,11 +160,11 @@ class UuidTest extends TestCase
 
     public function provideIsNullTest(): array
     {
-        return array(
-            array(true, '00000000-0000-0000-0000-000000000000'),
-            array(false, '00000000-0000-0000-0000-000000000001'),
-            array(false, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-        );
+        return [
+            [true, '00000000-0000-0000-0000-000000000000'],
+            [false, '00000000-0000-0000-0000-000000000001'],
+            [false, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+        ];
     }
 
     /** @dataProvider provideIsNullTest */
@@ -185,12 +185,12 @@ class UuidTest extends TestCase
 
     public function provideTypeTest(): array
     {
-        return array(
-            array(Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'),
-            array(Uuid::UUID_TYPE_RANDOM, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-            array(Uuid::UUID_TYPE_TIME, 'dbc6260f-e9cc-11e9-8dac-9cb6d0897f07'),
-            array(Uuid::UUID_TYPE_TIME, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
-        );
+        return [
+            [Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'],
+            [Uuid::UUID_TYPE_RANDOM, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+            [Uuid::UUID_TYPE_TIME, 'dbc6260f-e9cc-11e9-8dac-9cb6d0897f07'],
+            [Uuid::UUID_TYPE_TIME, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
+        ];
     }
 
     /** @dataProvider provideTypeTest */
@@ -211,11 +211,11 @@ class UuidTest extends TestCase
 
     public function provideVariantTest(): array
     {
-        return array(
-            array(Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'),
-            array(Uuid::UUID_VARIANT_DCE, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-            array(Uuid::UUID_VARIANT_DCE, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
-        );
+        return [
+            [Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'],
+            [Uuid::UUID_VARIANT_DCE, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+            [Uuid::UUID_VARIANT_DCE, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
+        ];
     }
 
     /** @dataProvider provideVariantTest */
@@ -236,10 +236,10 @@ class UuidTest extends TestCase
 
     public function provideTimeTest(): array
     {
-        return array(
-            array(1572444805, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
-            array(1572445677, '77ffc38a-fb21-11e9-b46a-3c7de2fa99cb'),
-        );
+        return [
+            [1572444805, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
+            [1572445677, '77ffc38a-fb21-11e9-b46a-3c7de2fa99cb'],
+        ];
     }
 
     /** @dataProvider provideTimeTest */
@@ -250,11 +250,11 @@ class UuidTest extends TestCase
 
     public function provideInvalidTimeTest(): array
     {
-        return array(
-            array('foobar'),
-            array('00000000-0000-0000-0000-000000000000'),
-            array('fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-        );
+        return [
+            ['foobar'],
+            ['00000000-0000-0000-0000-000000000000'],
+            ['fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+        ];
     }
 
     /**
@@ -272,10 +272,10 @@ class UuidTest extends TestCase
 
     public function provideMacTest(): array
     {
-        return array(
-            array('b52d3e41ad26', '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'),
-            array('3c7de2fa99cb', '77ffc38a-fb21-11e9-b46a-3c7de2fa99CB'),
-        );
+        return [
+            ['b52d3e41ad26', '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
+            ['3c7de2fa99cb', '77ffc38a-fb21-11e9-b46a-3c7de2fa99CB'],
+        ];
     }
 
     /** @dataProvider provideMacTest */
@@ -286,11 +286,11 @@ class UuidTest extends TestCase
 
     public function provideInvalidMacTest(): array
     {
-        return array(
-            array('foobar'),
-            array('00000000-0000-0000-0000-000000000000'),
-            array('fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-        );
+        return [
+            ['foobar'],
+            ['00000000-0000-0000-0000-000000000000'],
+            ['fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+        ];
     }
 
     /**
@@ -308,11 +308,11 @@ class UuidTest extends TestCase
 
     public function provideParseTest(): array
     {
-        return array(
-            array('00000000000000000000000000000000', '00000000-0000-0000-0000-000000000000'),
-            array('fa83b381328c46b88c904e9ba47dfa4b', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'),
-            array('77ffc38afb2111e9b46a3c7de2fa99cb', '77ffc38a-fb21-11e9-b46a-3c7de2fa99cb'),
-        );
+        return [
+            ['00000000000000000000000000000000', '00000000-0000-0000-0000-000000000000'],
+            ['fa83b381328c46b88c904e9ba47dfa4b', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
+            ['77ffc38afb2111e9b46a3c7de2fa99cb', '77ffc38a-fb21-11e9-b46a-3c7de2fa99cb'],
+        ];
     }
 
     /** @dataProvider provideParseTest */
@@ -335,11 +335,11 @@ class UuidTest extends TestCase
 
     public function provideUnparseTest(): array
     {
-        return array(
-            array('00000000-0000-0000-0000-000000000000', pack('H*', '00000000000000000000000000000000')),
-            array('fa83b381-328c-46b8-8c90-4e9ba47dfa4b', pack('H*', 'fa83b381328c46b88c904e9ba47dfa4b')),
-            array('77ffc38a-fb21-11e9-b46a-3c7de2fa99cb', pack('H*', '77ffc38afb2111e9b46a3c7de2fa99cb')),
-        );
+        return [
+            ['00000000-0000-0000-0000-000000000000', pack('H*', '00000000000000000000000000000000')],
+            ['fa83b381-328c-46b8-8c90-4e9ba47dfa4b', pack('H*', 'fa83b381328c46b88c904e9ba47dfa4b')],
+            ['77ffc38a-fb21-11e9-b46a-3c7de2fa99cb', pack('H*', '77ffc38afb2111e9b46a3c7de2fa99cb')],
+        ];
     }
 
     /** @dataProvider provideUnparseTest */
@@ -350,10 +350,10 @@ class UuidTest extends TestCase
 
     public function provideInvalidUnparseTest(): array
     {
-        return array(
-            array('foobar'),
-            array(pack('h*', '46b8')),
-        );
+        return [
+            ['foobar'],
+            [pack('h*', '46b8')],
+        ];
     }
 
     /**

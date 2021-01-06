@@ -52,7 +52,7 @@ if (!defined('UUID_TYPE_INVALID')) {
 }
 
 if (!function_exists('uuid_create')) {
-    function uuid_create(int $uuid_type = UUID_TYPE_DEFAULT): string { return p\Uuid::uuid_create($uuid_type); }
+    function uuid_create(int $uuid_type = \UUID_TYPE_DEFAULT): string { return p\Uuid::uuid_create($uuid_type); }
 }
 if (!function_exists('uuid_generate_md5')) {
     function uuid_generate_md5(string $uuid_ns, string $name): string { return p\Uuid::uuid_generate_md5($uuid_ns, $name); }

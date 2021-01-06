@@ -9,6 +9,6 @@
  * file that was distributed with this source code.
  */
 
-if (PHP_VERSION_ID < 80000) {
+if (\PHP_VERSION_ID < 80000) {
     require __DIR__.'/Php80/bootstrap.php';
 }

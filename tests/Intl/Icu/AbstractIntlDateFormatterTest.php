@@ -12,9 +12,9 @@
 namespace Symfony\Polyfill\Tests\Intl\Icu;
 
 use PHPUnit\Framework\TestCase;
-use Symfony\Polyfill\Intl\Icu\IntlDateFormatter;
 use Symfony\Polyfill\Intl\Icu\Icu;
 use Symfony\Polyfill\Intl\Icu\Intl;
+use Symfony\Polyfill\Intl\Icu\IntlDateFormatter;
 
 /**
  * Test case for IntlDateFormatter implementations.
@@ -254,7 +254,7 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         $formatData[] = ['h:mm a', $dateTimeImmutable, '12:00 AM'];
         $formatData[] = ['yyyyy.MMMM.dd hh:mm aaa', $dateTimeImmutable, '01970.January.01 12:00 AM'];
 
-        if (!defined('INTL_ICU_VERSION') || version_compare(\INTL_ICU_VERSION, '59.1', '>=')) {
+        if (!\defined('INTL_ICU_VERSION') || version_compare(\INTL_ICU_VERSION, '59.1', '>=')) {
             // Before ICU 59.1 GMT was used instead of UTC
             $formatData[] = ["yyyy.MM.dd 'at' HH:mm:ss zzz", 0, '1970.01.01 at 00:00:00 UTC'];
             $formatData[] = ['K:mm a, z', 0, '0:00 AM, UTC'];

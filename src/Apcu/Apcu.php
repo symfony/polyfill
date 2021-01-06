@@ -27,7 +27,7 @@ final class Apcu
             return apc_add($key, $var, $ttl);
         }
 
-        $errors = array();
+        $errors = [];
         foreach ($key as $k => $v) {
             if (!apc_add($k, $v, $ttl)) {
                 $errors[$k] = -1;
@@ -43,7 +43,7 @@ final class Apcu
             return apc_store($key, $var, $ttl);
         }
 
-        $errors = array();
+        $errors = [];
         foreach ($key as $k => $v) {
             if (!apc_store($k, $v, $ttl)) {
                 $errors[$k] = -1;
@@ -59,7 +59,7 @@ final class Apcu
             return apc_exists($keys);
         }
 
-        $existing = array();
+        $existing = [];
         foreach ($keys as $k) {
             if (apc_exists($k)) {
                 $existing[$k] = true;
@@ -76,7 +76,7 @@ final class Apcu
         }
 
         $succeeded = true;
-        $values = array();
+        $values = [];
         foreach ($key as $k) {
             $v = apc_fetch($k, $success);
             if ($success) {

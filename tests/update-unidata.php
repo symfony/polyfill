@@ -7,7 +7,7 @@ require __DIR__.'/Compiler.php';
 
 @mkdir(__DIR__.'/unicode/data', 0777, true);
 
-foreach (array('UnicodeData.txt', 'CompositionExclusions.txt', 'CaseFolding.txt') as $file) {
+foreach (['UnicodeData.txt', 'CompositionExclusions.txt', 'CaseFolding.txt'] as $file) {
     $data = file_get_contents('https://unicode.org/Public/UNIDATA/'.$file);
     file_put_contents(__DIR__.'/unicode/data/'.$file, $data);
 }
@@ -28,7 +28,7 @@ file_put_contents(__DIR__.'/Intl/Normalizer/NormalizationTest.txt', $data);
 $data = file_get_contents('http://www.unicode.org/Public/idna/latest/IdnaMappingTable.txt');
 file_put_contents(__DIR__.'/unicode/data/IdnaMappingTable.txt', $data);
 
-foreach (array('DerivedBidiClass.txt', 'DerivedCombiningClass.txt', 'DerivedGeneralCategory.txt', 'DerivedJoiningType.txt') as $file) {
+foreach (['DerivedBidiClass.txt', 'DerivedCombiningClass.txt', 'DerivedGeneralCategory.txt', 'DerivedJoiningType.txt'] as $file) {
     $data = file_get_contents('http://www.unicode.org/Public/UNIDATA/extracted/'.$file);
     file_put_contents(__DIR__.'/unicode/data/'.$file, $data);
 }

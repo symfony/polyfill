@@ -31,14 +31,14 @@ class Php72Test extends TestCase
         $s = implode('', $s);
         $e = utf8_encode($s);
 
-        $this->assertSame(\utf8_encode($s), utf8_encode($s));
-        $this->assertSame(\utf8_decode($e), utf8_decode($e));
+        $this->assertSame(utf8_encode($s), utf8_encode($s));
+        $this->assertSame(utf8_decode($e), utf8_decode($e));
         $this->assertSame('??', utf8_decode('Σ어'));
 
         $s = 444;
 
-        $this->assertSame(\utf8_encode($s), utf8_encode($s));
-        $this->assertSame(\utf8_decode($s), utf8_decode($s));
+        $this->assertSame(utf8_encode($s), utf8_encode($s));
+        $this->assertSame(utf8_decode($s), utf8_decode($s));
     }
 
     /**
@@ -47,15 +47,15 @@ class Php72Test extends TestCase
     public function testPhpOsFamily()
     {
         $this->assertTrue(\defined('PHP_OS_FAMILY'));
-        $this->assertSame(PHP_OS_FAMILY, p::php_os_family());
+        $this->assertSame(\PHP_OS_FAMILY, p::php_os_family());
     }
 
     public function testPhpFloat()
     {
-        $this->assertSame(15, PHP_FLOAT_DIG);
-        $this->assertSame(2.2204460492503E-16, PHP_FLOAT_EPSILON);
-        $this->assertSame(2.2250738585072E-308, PHP_FLOAT_MIN);
-        $this->assertSame(1.7976931348623157E+308, PHP_FLOAT_MAX);
+        $this->assertSame(15, \PHP_FLOAT_DIG);
+        $this->assertSame(2.2204460492503E-16, \PHP_FLOAT_EPSILON);
+        $this->assertSame(2.2250738585072E-308, \PHP_FLOAT_MIN);
+        $this->assertSame(1.7976931348623157E+308, \PHP_FLOAT_MAX);
     }
 
     /**
@@ -87,12 +87,12 @@ class Php72Test extends TestCase
     public function testSplObjectIdUniqueValues()
     {
         // Should be able to represent more than 2**16 ids on 32-bit systems.
-        $result = array();
-        for ($i = 0; $i < 70000; $i++) {
+        $result = [];
+        for ($i = 0; $i < 70000; ++$i) {
             $obj = new \stdClass();
             $result[spl_object_id($obj)] = $obj;
         }
-        $this->assertSame(70000, count($result));
+        $this->assertCount(70000, $result);
     }
 
     /**
@@ -104,7 +104,7 @@ class Php72Test extends TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->assertFalse(sapi_windows_vt100_support(STDIN, true));
+        $this->assertFalse(sapi_windows_vt100_support(\STDIN, true));
     }
 
     /**
@@ -191,9 +191,9 @@ class Php72Test extends TestCase
 
     public function testScrub()
     {
-        $subst = \mb_substitute_character();
-        \mb_substitute_character('none');
+        $subst = mb_substitute_character();
+        mb_substitute_character('none');
         $this->assertSame('ab', mb_scrub("a\xE9b"));
-        \mb_substitute_character($subst);
+        mb_substitute_character($subst);
     }
 }

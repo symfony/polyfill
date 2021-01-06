@@ -74,7 +74,7 @@ class MbstringTest extends TestCase
         $this->assertSame('déjà', mb_convert_encoding(base64_encode('déjà'), 'Utf-8', 'Base64'));
         $this->assertSame('déjà', mb_convert_encoding('d&eacute;j&#224;', 'Utf-8', 'Html-entities'));
         $this->assertSame('déjà', mb_convert_encoding(utf8_decode('déjà'), 'Utf-8', 'ASCII,ISO-2022-JP,UTF-8,ISO-8859-1'));
-        $this->assertSame('déjà', mb_convert_encoding(utf8_decode('déjà'), 'Utf-8', array('ASCII', 'ISO-2022-JP', 'UTF-8', 'ISO-8859-1')));
+        $this->assertSame('déjà', mb_convert_encoding(utf8_decode('déjà'), 'Utf-8', ['ASCII', 'ISO-2022-JP', 'UTF-8', 'ISO-8859-1']));
     }
 
     /**
@@ -82,11 +82,11 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntity()
     {
-        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+        $convmap = [0x80, 0x10ffff, 0x1, 0x1fffff];
         if (80000 > \PHP_VERSION_ID) {
-            $this->assertFalse(@mb_decode_numericentity('déjà', array(), 'UTF-8'));
+            $this->assertFalse(@mb_decode_numericentity('déjà', [], 'UTF-8'));
         } else {
-            $this->assertSame('déjà', mb_decode_numericentity('déjà', array(), 'UTF-8'));
+            $this->assertSame('déjà', mb_decode_numericentity('déjà', [], 'UTF-8'));
         }
 
         $this->assertSame('', mb_decode_numericentity('', $convmap, 'UTF-8'));
@@ -113,7 +113,7 @@ class MbstringTest extends TestCase
         array_push($convmap, 0x1f600, 0x1f64f, -0x1f602, 0x0);
         $this->assertSame('déjà 😂 â ã', mb_decode_numericentity('déjà &#0; &#225; &#226;', $convmap, 'UTF-8'));
 
-        $convmap = array(0x100, 0x10ffff, 0x0, 0x1fffff);
+        $convmap = [0x100, 0x10ffff, 0x0, 0x1fffff];
         $this->assertSame("\xFE", mb_decode_numericentity('&#351;', $convmap, 'ISO-8859-9'));
     }
 
@@ -123,7 +123,7 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWithInvalidTypes()
     {
-        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+        $convmap = [0x80, 0x10ffff, 0x1, 0x1fffff];
 
         $this->assertNull(@mb_decode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
         $this->assertFalse(@mb_decode_numericentity('déjà', new \stdClass(), 'UTF-8'));
@@ -141,7 +141,7 @@ class MbstringTest extends TestCase
         } else {
             $this->expectException(\TypeError::class);
         }
-        mb_decode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
+        mb_decode_numericentity(new \stdClass(), [0x0, 0x10ffff, 0x0, 0x1fffff], 'UTF-8');
     }
 
     /**
@@ -155,7 +155,7 @@ class MbstringTest extends TestCase
         } else {
             $this->expectException(\TypeError::class);
         }
-        mb_decode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
+        mb_decode_numericentity('déjà', [0x0, 0x10ffff, 0x0, 0x1fffff], new \stdClass());
     }
 
     /**
@@ -163,11 +163,11 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntity()
     {
-        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+        $convmap = [0x80, 0x10ffff, 0x1, 0x1fffff];
         if (80000 > \PHP_VERSION_ID) {
-            $this->assertFalse(@mb_encode_numericentity('déjà', array(), 'UTF-8'));
+            $this->assertFalse(@mb_encode_numericentity('déjà', [], 'UTF-8'));
         } else {
-            $this->assertSame('déjà', mb_encode_numericentity('déjà', array(), 'UTF-8'));
+            $this->assertSame('déjà', mb_encode_numericentity('déjà', [], 'UTF-8'));
         }
 
         $this->assertSame('', mb_encode_numericentity('', $convmap, 'UTF-8'));
@@ -184,7 +184,7 @@ class MbstringTest extends TestCase
         array_push($convmap, 0x0, 0x1f, 0x1f602, 0x1fffff);
         $this->assertSame('&#128514; &#96;', mb_encode_numericentity("\x00 a", $convmap, 'UTF-8'));
 
-        $convmap = array(0x100, 0x10ffff, 0x0, 0x1fffff);
+        $convmap = [0x100, 0x10ffff, 0x0, 0x1fffff];
         $this->assertSame('&#351;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9'));
 
         $this->assertSame('&#351;', mb_encode_numericentity("\xFE", $convmap, 'ISO-8859-9', false));
@@ -200,7 +200,7 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWithInvalidTypes()
     {
-        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+        $convmap = [0x80, 0x10ffff, 0x1, 0x1fffff];
 
         $this->assertNull(@mb_encode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
         $this->assertFalse(@mb_encode_numericentity('déjà', new \stdClass(), 'UTF-8'));
@@ -219,7 +219,7 @@ class MbstringTest extends TestCase
         } else {
             $this->expectException(\TypeError::class);
         }
-        mb_encode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
+        mb_encode_numericentity(new \stdClass(), [0x0, 0x10ffff, 0x0, 0x1fffff], 'UTF-8');
     }
 
     /**
@@ -233,7 +233,7 @@ class MbstringTest extends TestCase
         } else {
             $this->expectException(\TypeError::class);
         }
-        mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
+        mb_encode_numericentity('déjà', [0x0, 0x10ffff, 0x0, 0x1fffff], new \stdClass());
     }
 
     /**
@@ -247,7 +247,7 @@ class MbstringTest extends TestCase
         } else {
             $this->expectException(\TypeError::class);
         }
-        mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
+        mb_encode_numericentity('déjà', [0x0, 0x10ffff, 0x0, 0x1fffff], 'UTF-8', new \stdClass());
     }
 
     /**
@@ -257,11 +257,11 @@ class MbstringTest extends TestCase
      */
     public function testStrCase()
     {
-        $this->assertSame(\PHP_VERSION_ID >= 70300 ? 'i̇' : 'i', \mb_strtolower('İ'));
+        $this->assertSame(\PHP_VERSION_ID >= 70300 ? 'i̇' : 'i', mb_strtolower('İ'));
         $this->assertSame('déjà σσς iiıi', p::mb_strtolower('DÉJÀ Σσς İIıi'));
         $this->assertSame('DÉJÀ ΣΣΣ İIII', mb_strtoupper('Déjà Σσς İIıi'));
-        if (PCRE_VERSION >= '8.10') {
-            $this->assertSame('Déjà Σσσ Iı Ii İi', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', MB_CASE_TITLE));
+        if (\PCRE_VERSION >= '8.10') {
+            $this->assertSame('Déjà Σσσ Iı Ii İi', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', \MB_CASE_TITLE));
         }
         $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
     }
@@ -289,7 +289,7 @@ class MbstringTest extends TestCase
                         continue 2;
                     }
             }
-            $this->assertSame(mb_convert_case('a'.\chr($i).'b', MB_CASE_TITLE, 'UTF-8'), p::mb_convert_case('a'.\chr($i).'b', MB_CASE_TITLE, 'UTF-8'), 'Title case for char 0x'.dechex($i));
+            $this->assertSame(mb_convert_case('a'.\chr($i).'b', \MB_CASE_TITLE, 'UTF-8'), p::mb_convert_case('a'.\chr($i).'b', \MB_CASE_TITLE, 'UTF-8'), 'Title case for char 0x'.dechex($i));
         }
     }
 
@@ -390,18 +390,18 @@ class MbstringTest extends TestCase
      */
     public function testStrSplit()
     {
-        $this->assertSame(array('H', "\r", "\n", 'W'), mb_str_split("H\r\nW", 1));
-        $this->assertSame(array('Hell', "o\nWo", 'rld!'), mb_str_split("Hello\nWorld!", 4));
-        $this->assertSame(array('한', '국', '어'), mb_str_split('한국어'));
-        $this->assertSame(array('по', 'бе', 'да'), mb_str_split('победа', 2));
-        $this->assertSame(array('źre', 'bię'), mb_str_split('źrebię', 3));
-        $this->assertSame(array('źr', 'ebi', 'ę'), mb_str_split('źrebię', 3, 'ASCII'));
-        $this->assertSame(array('alpha', 'bet'), mb_str_split('alphabet', 5));
-        $this->assertSame(array('e', '́', '💩', '𐍈'), mb_str_split('é💩𐍈', 1, 'UTF-8'));
-        $this->assertSame(array(), mb_str_split('', 1, 'UTF-8'));
+        $this->assertSame(['H', "\r", "\n", 'W'], mb_str_split("H\r\nW", 1));
+        $this->assertSame(['Hell', "o\nWo", 'rld!'], mb_str_split("Hello\nWorld!", 4));
+        $this->assertSame(['한', '국', '어'], mb_str_split('한국어'));
+        $this->assertSame(['по', 'бе', 'да'], mb_str_split('победа', 2));
+        $this->assertSame(['źre', 'bię'], mb_str_split('źrebię', 3));
+        $this->assertSame(['źr', 'ebi', 'ę'], mb_str_split('źrebię', 3, 'ASCII'));
+        $this->assertSame(['alpha', 'bet'], mb_str_split('alphabet', 5));
+        $this->assertSame(['e', '́', '💩', '𐍈'], mb_str_split('é💩𐍈', 1, 'UTF-8'));
+        $this->assertSame([], mb_str_split('', 1, 'UTF-8'));
 
         if (80000 > \PHP_VERSION_ID) {
-            $this->assertNull(@mb_str_split(array(), 0));
+            $this->assertNull(@mb_str_split([], 0));
         }
     }
 
@@ -471,8 +471,8 @@ class MbstringTest extends TestCase
         $this->assertTrue(mb_detect_order('ASCII, UTF-8'));
         $this->assertSame('ASCII', mb_detect_encoding('abc'));
         $this->assertSame('UTF-8', mb_detect_encoding('abc', 'UTF8, ASCII'));
-        $this->assertSame('ISO-8859-1', mb_detect_encoding("\xE9", array('UTF-8', 'ASCII', 'ISO-8859-1'), true));
-        $this->assertFalse(mb_detect_encoding("\xE9", array('UTF-8', 'ASCII', 'Windows-1252'), true));
+        $this->assertSame('ISO-8859-1', mb_detect_encoding("\xE9", ['UTF-8', 'ASCII', 'ISO-8859-1'], true));
+        $this->assertFalse(mb_detect_encoding("\xE9", ['UTF-8', 'ASCII', 'Windows-1252'], true));
     }
 
     /**
@@ -481,8 +481,8 @@ class MbstringTest extends TestCase
     public function testDetectOrder()
     {
         $this->assertTrue(mb_detect_order('ASCII, UTF-8'));
-        $this->assertSame(array('ASCII', 'UTF-8'), mb_detect_order());
-        $this->assertTrue(mb_detect_order(array('ASCII', 'UTF-8')));
+        $this->assertSame(['ASCII', 'UTF-8'], mb_detect_order());
+        $this->assertTrue(mb_detect_order(['ASCII', 'UTF-8']));
     }
 
     /**
@@ -513,7 +513,7 @@ class MbstringTest extends TestCase
      */
     public function testEncodingAliases()
     {
-        $this->assertSame(array('utf8'), mb_encoding_aliases('UTF-8'));
+        $this->assertSame(['utf8'], mb_encoding_aliases('UTF-8'));
         $this->assertFalse(p::mb_encoding_aliases('ASCII'));
     }
 
@@ -547,9 +547,9 @@ class MbstringTest extends TestCase
 
     public function testScrub()
     {
-        $subst = \mb_substitute_character();
-        \mb_substitute_character('none');
+        $subst = mb_substitute_character();
+        mb_substitute_character('none');
         $this->assertSame('ab', mb_scrub("a\xE9b"));
-        \mb_substitute_character($subst);
+        mb_substitute_character($subst);
     }
 }

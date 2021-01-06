@@ -162,11 +162,11 @@ class MessageFormatter
     private static function tokenizePattern($pattern)
     {
         if (false === $start = $pos = strpos($pattern, '{')) {
-            return array($pattern);
+            return [$pattern];
         }
 
         $depth = 1;
-        $tokens = array(substr($pattern, 0, $pos));
+        $tokens = [substr($pattern, 0, $pos)];
 
         while (true) {
             $open = strpos($pattern, '{', 1 + $pos);
@@ -228,7 +228,6 @@ class MessageFormatter
             case 'choice':
             case 'selectordinal':
                 throw new \DomainException(sprintf('The PHP intl extension is required to use the "%s" message format.', $type));
-
             case 'number':
                 $format = isset($token[2]) ? trim($token[2]) : null;
                 if (!is_numeric($arg) || (null !== $format && 'integer' !== $format)) {
@@ -293,7 +292,7 @@ class MessageFormatter
                     $selector = trim($plural[$i++]);
 
                     if (1 === $i && 0 === strncmp($selector, 'offset:', 7)) {
-                        $pos = strpos(str_replace(array("\n", "\r", "\t"), ' ', $selector), ' ', 7);
+                        $pos = strpos(str_replace(["\n", "\r", "\t"], ' ', $selector), ' ', 7);
                         $offset = (int) trim(substr($selector, 7, $pos - 7));
                         $selector = trim(substr($selector, 1 + $pos, \strlen($selector)));
                     }

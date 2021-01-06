@@ -100,12 +100,12 @@ class IconvTest extends TestCase
     public function testIconvMimeEncode()
     {
         $text = "\xE3\x83\x86\xE3\x82\xB9\xE3\x83\x88\xE3\x83\x86\xE3\x82\xB9\xE3\x83\x88";
-        $options = array(
+        $options = [
             'scheme' => 'Q',
             'input-charset' => 'UTF-8',
             'output-charset' => 'UTF-8',
             'line-length' => 30,
-        );
+        ];
 
         $this->assertSame(
             "Subject: =?UTF-8?Q?=E3=83=86?=\r\n =?UTF-8?Q?=E3=82=B9?=\r\n =?UTF-8?Q?=E3=83=88?=\r\n =?UTF-8?Q?=E3=83=86?=\r\n =?UTF-8?Q?=E3=82=B9?=\r\n =?UTF-8?Q?=E3=83=88?=",
@@ -121,8 +121,8 @@ class IconvTest extends TestCase
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?B?Kg==?= .'));
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .'));
         if ('\\' !== \DIRECTORY_SEPARATOR) {
-            $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
-            $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
+            $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', \ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
+            $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .', \ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
         }
     }
 
@@ -151,17 +151,17 @@ X-Bar: =?cp949?B?UkU6odk=?= =?UTF-8?Q?Bar?=
 To: <test@example.com>
 HEADERS;
 
-        $result = array(
+        $result = [
             'From' => '<foo@example.com>',
             'Subject' => '=?ks_c_5601-1987?B?UkU6odk=?= Foo',
-            'X-Bar' => array(
+            'X-Bar' => [
                 'RE:☆ Foo',
                 'RE:☆Bar',
-            ),
+            ],
             'To' => '<test@example.com>',
-        );
+        ];
 
-        $this->assertSame($result, iconv_mime_decode_headers($headers, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8'));
+        $this->assertSame($result, iconv_mime_decode_headers($headers, \ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8'));
     }
 
     /**
@@ -171,11 +171,11 @@ HEADERS;
      */
     public function testIconvGetEncoding()
     {
-        $a = array(
+        $a = [
            'input_encoding' => 'UTF-8',
            'output_encoding' => 'UTF-8',
            'internal_encoding' => 'UTF-8',
-        );
+        ];
 
         foreach ($a as $t => $e) {
             $this->assertTrue(@iconv_set_encoding($t, $e));

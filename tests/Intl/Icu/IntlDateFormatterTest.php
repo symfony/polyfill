@@ -15,8 +15,8 @@ use Symfony\Polyfill\Intl\Icu\Exception\MethodArgumentNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Exception\MethodArgumentValueNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Exception\MethodNotImplementedException;
 use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
-use Symfony\Polyfill\Intl\Icu\IntlDateFormatter;
 use Symfony\Polyfill\Intl\Icu\Icu;
+use Symfony\Polyfill\Intl\Icu\IntlDateFormatter;
 
 /**
  * @group class-polyfill
