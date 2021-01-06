@@ -28,15 +28,39 @@ class MbstringTest extends TestCase
      */
     public function testStubs()
     {
-        $this->assertFalse(@mb_substitute_character('?'));
         $this->assertTrue(mb_substitute_character('none'));
         $this->assertSame('none', mb_substitute_character());
 
         $this->assertContains('UTF-8', mb_list_encodings());
 
         $this->assertTrue(mb_internal_encoding('utf8'));
-        $this->assertFalse(@mb_internal_encoding('no-no'));
         $this->assertSame('UTF-8', mb_internal_encoding());
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_substitute_character
+     */
+    public function testSubstituteCharacterWithInvalidCharacter()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('Argument #1 ($substitute_character) must be "none", "long", "entity" or a valid codepoint');
+        }
+
+        $this->assertFalse(@mb_substitute_character('?'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_substitute_character
+     */
+    public function testInternalEncodingWithInvalidEncoding()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('Argument #1 ($encoding) must be a valid encoding, "no-no" given');
+        }
+
+        $this->assertFalse(@mb_internal_encoding('no-no'));
     }
 
     /**
@@ -59,10 +83,11 @@ class MbstringTest extends TestCase
     public function testDecodeNumericEntity()
     {
         $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
-        $this->assertNull(@mb_decode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
-        $this->assertFalse(@mb_decode_numericentity('déjà', new \stdClass(), 'UTF-8'));
-        $this->assertFalse(@mb_decode_numericentity('déjà', array(), 'UTF-8'));
-        $this->assertEmpty(@mb_decode_numericentity('déjà', $convmap, new \stdClass()));  // PHPUnit returns null.
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_decode_numericentity('déjà', array(), 'UTF-8'));
+        } else {
+            $this->assertSame('déjà', mb_decode_numericentity('déjà', array(), 'UTF-8'));
+        }
 
         $this->assertSame('', mb_decode_numericentity('', $convmap, 'UTF-8'));
         $iso = 'déjà &amp; &225; &#E1; &#XE1; &#e1; &#Xe1;';
@@ -94,11 +119,28 @@ class MbstringTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     * @requires PHP < 8
+     */
+    public function testDecodeNumericEntityWithInvalidTypes()
+    {
+        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+
+        $this->assertNull(@mb_decode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
+        $this->assertFalse(@mb_decode_numericentity('déjà', new \stdClass(), 'UTF-8'));
+        $this->assertEmpty(@mb_decode_numericentity('déjà', $convmap, new \stdClass()));  // PHPUnit returns null.
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
      */
     public function testDecodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->expectWarning();
-        $this->expectWarningMessage('expects parameter 1 to be string');
+        if (80000 > \PHP_VERSION_ID) {
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 1 to be string');
+        } else {
+            $this->expectException(\TypeError::class);
+        }
         mb_decode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -107,8 +149,12 @@ class MbstringTest extends TestCase
      */
     public function testDecodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->expectWarning();
-        $this->expectWarningMessage('expects parameter 3 to be string');
+        if (80000 > \PHP_VERSION_ID) {
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 3 to be string');
+        } else {
+            $this->expectException(\TypeError::class);
+        }
         mb_decode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -118,11 +164,11 @@ class MbstringTest extends TestCase
     public function testEncodeNumericEntity()
     {
         $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
-        $this->assertNull(@mb_encode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
-        $this->assertFalse(@mb_encode_numericentity('déjà', new \stdClass(), 'UTF-8'));
-        $this->assertFalse(@mb_encode_numericentity('déjà', array(), 'UTF-8'));
-        $this->assertNull(@mb_encode_numericentity('déjà', $convmap, new \stdClass()));
-        $this->assertNull(@mb_encode_numericentity('déjà', $convmap, 'UTF-8', new \stdClass()));
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_encode_numericentity('déjà', array(), 'UTF-8'));
+        } else {
+            $this->assertSame('déjà', mb_encode_numericentity('déjà', array(), 'UTF-8'));
+        }
 
         $this->assertSame('', mb_encode_numericentity('', $convmap, 'UTF-8'));
         $iso = 'abc &amp; &#225; &#xe1; &#xE1;';
@@ -149,12 +195,30 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_encode_numericentity
+     * @requires PHP < 8
+     */
+    public function testEncodeNumericEntityWithInvalidTypes()
+    {
+        $convmap = array(0x80, 0x10ffff, 0x1, 0x1fffff);
+
+        $this->assertNull(@mb_encode_numericentity(new \stdClass(), $convmap, 'UTF-8'));
+        $this->assertFalse(@mb_encode_numericentity('déjà', new \stdClass(), 'UTF-8'));
+        $this->assertNull(@mb_encode_numericentity('déjà', $convmap, new \stdClass()));
+        $this->assertNull(@mb_encode_numericentity('déjà', $convmap, 'UTF-8', new \stdClass()));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
      */
     public function testEncodeNumericEntityWarnsOnInvalidInputType()
     {
-        $this->expectWarning();
-        $this->expectWarningMessage('expects parameter 1 to be string');
+        if (80000 > \PHP_VERSION_ID) {
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 1 to be string');
+        } else {
+            $this->expectException(\TypeError::class);
+        }
         mb_encode_numericentity(new \stdClass(), array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8');
     }
 
@@ -163,8 +227,12 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidEncodingType()
     {
-        $this->expectWarning();
-        $this->expectWarningMessage('expects parameter 3 to be string');
+        if (80000 > \PHP_VERSION_ID) {
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 3 to be string');
+        } else {
+            $this->expectException(\TypeError::class);
+        }
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), new \stdClass());
     }
 
@@ -173,8 +241,12 @@ class MbstringTest extends TestCase
      */
     public function testEncodeNumericEntityWarnsOnInvalidIsHexType()
     {
-        $this->expectWarning();
-        $this->expectWarningMessage('expects parameter 4 to be bool');
+        if (80000 > \PHP_VERSION_ID) {
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 4 to be bool');
+        } else {
+            $this->expectException(\TypeError::class);
+        }
         mb_encode_numericentity('déjà', array(0x0, 0x10ffff, 0x0, 0x1fffff), 'UTF-8', new \stdClass());
     }
 
@@ -269,13 +341,21 @@ class MbstringTest extends TestCase
      */
     public function testStrpos()
     {
-        $this->assertFalse(@mb_strpos('abc', ''));
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_strpos('abc', ''));
+        } else {
+            $this->assertSame(0, mb_strpos('abc', ''));
+        }
         $this->assertFalse(@mb_strpos('abc', 'a', -1));
         $this->assertFalse(mb_strpos('abc', 'd'));
         $this->assertFalse(mb_strpos('abc', 'a', 3));
         $this->assertSame(1, mb_strpos('한국어', '국'));
         $this->assertSame(3, mb_stripos('DÉJÀ', 'à'));
-        $this->assertFalse(mb_strrpos('한국어', ''));
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(mb_strrpos('한국어', ''));
+        } else {
+            $this->assertSame(3, mb_strrpos('한국어', ''));
+        }
         $this->assertSame(1, mb_strrpos('한국어', '국'));
         $this->assertSame(3, mb_strripos('DÉJÀ', 'à'));
         $this->assertSame(1, mb_stripos('aςσb', 'ΣΣ'));
@@ -286,6 +366,7 @@ class MbstringTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strpos
+     * @requires PHP < 8
      */
     public function testStrposEmptyDelimiter()
     {
@@ -318,11 +399,27 @@ class MbstringTest extends TestCase
         $this->assertSame(array('alpha', 'bet'), mb_str_split('alphabet', 5));
         $this->assertSame(array('e', '́', '💩', '𐍈'), mb_str_split('é💩𐍈', 1, 'UTF-8'));
         $this->assertSame(array(), mb_str_split('', 1, 'UTF-8'));
-        $this->assertFalse(@mb_str_split('победа', 0));
-        $this->assertNull(@mb_str_split(array(), 0));
 
-        $this->expectWarning();
-        $this->expectWarningMessage('The length of each segment must be greater than zero');
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertNull(@mb_str_split(array(), 0));
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_str_split
+     */
+    public function testStrSplitWithInvalidLength()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_str_split('победа', 0));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('The length of each segment must be greater than zero');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('Argument #2 ($length) must be greater than 0');
+        }
+
         mb_str_split('победа', 0);
     }
 
@@ -395,8 +492,20 @@ class MbstringTest extends TestCase
     {
         $this->assertTrue(mb_language('UNI'));
         $this->assertSame('uni', mb_language());
-        $this->assertFalse(@mb_language('ABC'));
         $this->assertTrue(mb_language('neutral'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_language
+     */
+    public function testLanguageWithInvalidLanguage()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('Argument #1 ($language) must be a valid language, "ABC" given');
+        }
+
+        $this->assertFalse(@mb_language('ABC'));
     }
 
     /**
