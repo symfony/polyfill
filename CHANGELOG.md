@@ -1,3 +1,10 @@
+# 1.22.0
+
+  * added PHP 8.1 polyfill
+  * fixed signatures on PHP 8
+  * fixed behaviors on PHP 8
+  * synced values of `Normalizer::*` consts
+
 # 1.21.0
 
   * made symfony/polyfill-intl-icu independent of symfony/intl
