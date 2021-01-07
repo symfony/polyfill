@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-01-06T14:50:11Z
+
+@fabpot could you please configure the subtree splitter to split the `src/Php81` folder into https://github.com/symfony/polyfill-php81 ? (I already created the repo)
