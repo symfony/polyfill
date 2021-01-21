@@ -13,7 +13,7 @@ use Symfony\Polyfill\Apcu as p;
 
 if (extension_loaded('Zend Data Cache')) {
     if (!function_exists('apcu_add')) {
-        function apcu_add($key, mixed $value, int $ttl = 0): array|bool { return p\Apcu::apcu_add($key, $value, $ttl); }
+        function apcu_add($key, mixed $value, ?int $ttl = 0): array|bool { return p\Apcu::apcu_add($key, $value, (int) $ttl); }
     }
     if (!function_exists('apcu_delete')) {
         function apcu_delete($key): array|bool { return p\Apcu::apcu_delete($key); }
@@ -25,11 +25,11 @@ if (extension_loaded('Zend Data Cache')) {
         function apcu_fetch($key, &$success = null): mixed { return p\Apcu::apcu_fetch($key, $success); }
     }
     if (!function_exists('apcu_store')) {
-        function apcu_store($key, mixed $value, int $ttl = 0): array|bool { return p\Apcu::apcu_store($key, $value, $ttl); }
+        function apcu_store($key, mixed $value, ?int $ttl = 0): array|bool { return p\Apcu::apcu_store($key, $value, (int) $ttl); }
     }
 } else {
     if (!function_exists('apcu_add')) {
-        function apcu_add($key, mixed $value, int $ttl = 0): array|bool { return apc_add($key, $value, $ttl); }
+        function apcu_add($key, mixed $value, ?int $ttl = 0): array|bool { return apc_add($key, $value, (int) $ttl); }
     }
     if (!function_exists('apcu_delete')) {
         function apcu_delete($key): array|bool { return apc_delete($key); }
@@ -41,7 +41,7 @@ if (extension_loaded('Zend Data Cache')) {
         function apcu_fetch($key, &$success = null) { return apc_fetch($key, $success); }
     }
     if (!function_exists('apcu_store')) {
-        function apcu_store($key, mixed $value, int $ttl = 0): array|bool { return apc_store($key, $value, $ttl); }
+        function apcu_store($key, mixed $value, ?int $ttl = 0): array|bool { return apc_store($key, $value, (int) $ttl); }
     }
 }
 
