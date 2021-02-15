@@ -1,3 +1,7 @@
+# 1.22.1
+
+  * always accept null values on PHP 8, as native functions do
+
 # 1.22.0
 
   * added PHP 8.1 polyfill

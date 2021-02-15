@@ -74,8 +74,8 @@ class TestListenerTrait
             $bootstrap->rewind();
 
             foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
-                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)(?: ?: [^ ]++)?) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\)]*+\)); \}$/', $defLine, $f)) {
-                    $warnings[] = TestListener::warning('Invalid line in bootstrap.php: '.trim($defLine));
+                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)(?: ?: [^ ]++)?) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\n]*?\)); \}$/', $defLine, $f)) {
+                    $warnings[] = TestListener::warning('Invalid line in '.$bootstrap->getPathname().': '.trim($defLine));
                     ++$newWarnings;
                     continue;
                 }
@@ -123,7 +123,14 @@ EOPHP
                     $polyfillSignature = ReflectionCaster::castFunctionAbstract(new \ReflectionFunction($testNamespace.'\\'.$f['name']), [], new Stub(), true);
                     $polyfillSignature = ReflectionCaster::getSignature($polyfillSignature);
 
-                    if ($polyfillSignature !== $originalSignature) {
+                    $map = [
+                        '?' => '',
+                        'array|string|null $string' => 'array|string $string',
+                        'array|string|null $from_encoding = null' => 'array|string|null $from_encoding = null',
+                        'array|string|null $from_encoding' => 'array|string $from_encoding',
+                    ];
+
+                    if (strtr($polyfillSignature, $map) !== $originalSignature) {
                         $warnings[] = TestListener::warning("Incompatible signature for PHP >= 8:\n- {$f['name']}$originalSignature\n+ {$f['name']}$polyfillSignature");
                     }
                 }
