@@ -62,6 +62,7 @@
             "src/Intl/MessageFormatter/Resources/stubs",
             "src/Intl/Normalizer/Resources/stubs",
             "src/Php80/Resources/stubs",
+            "src/Php81/Resources/stubs",
             "src/Php73/Resources/stubs"
         ]
     },
