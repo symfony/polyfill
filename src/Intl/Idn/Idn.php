@@ -142,12 +142,13 @@ final class Idn
      * @param int    $options
      * @param int    $variant
      * @param array  $idna_info
+     * @param int    $phpVersion
      *
      * @return string|false
      */
-    public static function idn_to_ascii($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
+    public static function idn_to_ascii($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [], $phpVersion = \PHP_VERSION_ID)
     {
-        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
+        if ($phpVersion >= 70400 && self::INTL_IDNA_VARIANT_2003 === $variant) {
             @trigger_error('idn_to_ascii(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
         }
 
@@ -195,12 +196,13 @@ final class Idn
      * @param int    $options
      * @param int    $variant
      * @param array  $idna_info
+     * @param int    $phpVersion
      *
      * @return string|false
      */
-    public static function idn_to_utf8($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
+    public static function idn_to_utf8($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [], $phpVersion = \PHP_VERSION_ID)
     {
-        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
+        if ($phpVersion >= 70400 && self::INTL_IDNA_VARIANT_2003 === $variant) {
             @trigger_error('idn_to_utf8(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
         }
 
