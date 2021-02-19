@@ -142,7 +142,6 @@ final class Idn
      * @param int    $options
      * @param int    $variant
      * @param array  $idna_info
-     * @param int    $phpVersion
      *
      * @return string|false
      */
@@ -196,7 +195,6 @@ final class Idn
      * @param int    $options
      * @param int    $variant
      * @param array  $idna_info
-     * @param int    $phpVersion
      *
      * @return string|false
      */
