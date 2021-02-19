@@ -288,15 +288,6 @@ class IdnTest extends TestCase
         $this->assertSame($encoded, $result);
     }
 
-    /**
-     * @dataProvider domainNamesProvider
-     */
-    public function testEncodeDefaultPhp73($decoded, $encoded)
-    {
-        $result = @Idn::idn_to_ascii($decoded, \IDNA_DEFAULT, \INTL_IDNA_VARIANT_2003, $info, 70324);
-        $this->assertSame($encoded, $result);
-    }
-
     public function domainNamesProvider()
     {
         return [
