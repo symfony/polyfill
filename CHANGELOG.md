@@ -1,3 +1,9 @@
+# 1.23.0
+
+  * added `CURLStringFile` to the PHP 8.1 polyfill
+  * added `enum_exists()` to the PHP 8.1 polyfill
+  * removed `INTL_IDNA_VARIANT_2003` on PHP 8
+
 # 1.22.1
 
   * always accept null values on PHP 8, as native functions do
