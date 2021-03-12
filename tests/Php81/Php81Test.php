@@ -27,4 +27,13 @@ class Php81Test extends TestCase
         $this->assertFalse(array_is_list([0 => 'a', 2 => 'b']));
         $this->assertFalse(array_is_list([1 => 'a', 2 => 'b']));
     }
+
+    /**
+     * @requires extension mysqli
+     */
+    public function testMysqliRefreshReplicaDefined()
+    {
+        $this->assertTrue(defined('MYSQLI_REFRESH_REPLICA'));
+        $this->assertSame(MYSQLI_REFRESH_SLAVE, MYSQLI_REFRESH_REPLICA);
+    }
 }
