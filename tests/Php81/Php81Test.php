@@ -27,4 +27,10 @@ class Php81Test extends TestCase
         $this->assertFalse(array_is_list([0 => 'a', 2 => 'b']));
         $this->assertFalse(array_is_list([1 => 'a', 2 => 'b']));
     }
+
+    public function testFiberThrowablesExist()
+    {
+        $this->assertTrue(class_exists('\FiberError'));
+        $this->assertTrue(class_exists('\FiberExit'));
+    }
 }
