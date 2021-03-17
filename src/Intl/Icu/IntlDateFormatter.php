@@ -68,10 +68,10 @@ abstract class IntlDateFormatter
     public const SHORT = 3;
 
     /* date format types */
-    public const RELATIVE_FULL = 4;
-    public const RELATIVE_LONG = 5;
-    public const RELATIVE_MEDIUM = 6;
-    public const RELATIVE_SHORT = 7;
+    public const RELATIVE_FULL = 128;
+    public const RELATIVE_LONG = 129;
+    public const RELATIVE_MEDIUM = 130;
+    public const RELATIVE_SHORT = 131;
 
     /* calendar formats */
     public const TRADITIONAL = 0;
@@ -244,7 +244,11 @@ abstract class IntlDateFormatter
                     $pattern = '';
                 } else {
                     $pattern = $this->defaultTimeFormats[$this->timeType];
-                    $formatted .= ' at ';
+                    if (\in_array($this->dateType, [self::RELATIVE_MEDIUM, self::RELATIVE_SHORT])) {
+                        $formatted .= ', ';
+                    } else {
+                        $formatted .= ' at ';
+                    }
                 }
             }
         }
@@ -621,7 +625,7 @@ abstract class IntlDateFormatter
      *
      * @return string
      */
-    protected function getRelativeDateFormat(int $timestamp)
+    private function getRelativeDateFormat(int $timestamp)
     {
         $today = \DateTime::createFromFormat('U', time(), $this->dateTimeZone);
         $today->setTime(0, 0, 0);
