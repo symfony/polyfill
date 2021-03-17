@@ -20,6 +20,7 @@ use Symfony\Polyfill\Intl\Icu\IntlDateFormatter;
 
 /**
  * @group class-polyfill
+ * @group time-sensitive
  */
 class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
 {

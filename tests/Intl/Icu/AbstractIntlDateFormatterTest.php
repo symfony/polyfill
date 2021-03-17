@@ -479,6 +479,16 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         date_default_timezone_set($tz);
     }
 
+    public function testFormatIgnoresPatternForRelativeDateType()
+    {
+        $formatter = $this->getDateFormatter('en', IntlDateFormatter::RELATIVE_FULL, IntlDateFormatter::FULL, new \DateTimeZone('GMT'), IntlDateFormatter::GREGORIAN, 'zzzz');
+
+        $datetime = \DateTime::createFromFormat('U', time(), new \DateTimeZone('GMT'));
+        $datetime->setTime(0, 0, 0);
+
+        $this->assertEquals('today at 12:00:00 AM Greenwich Mean Time', $formatter->format($datetime));
+    }
+
     /**
      * @dataProvider dateAndTimeTypeProvider
      */
@@ -495,10 +505,46 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
             [0, IntlDateFormatter::LONG, IntlDateFormatter::NONE, 'January 1, 1970'],
             [0, IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE, 'Jan 1, 1970'],
             [0, IntlDateFormatter::SHORT, IntlDateFormatter::NONE, '1/1/70'],
+            [0, IntlDateFormatter::RELATIVE_FULL, IntlDateFormatter::NONE, 'Thursday, January 1, 1970'],
+            [0, IntlDateFormatter::RELATIVE_LONG, IntlDateFormatter::NONE, 'January 1, 1970'],
+            [0, IntlDateFormatter::RELATIVE_MEDIUM, IntlDateFormatter::NONE, 'Jan 1, 1970'],
+            [0, IntlDateFormatter::RELATIVE_SHORT, IntlDateFormatter::NONE, '1/1/70'],
             [0, IntlDateFormatter::NONE, IntlDateFormatter::FULL, '12:00:00 AM Coordinated Universal Time'],
             [0, IntlDateFormatter::NONE, IntlDateFormatter::LONG, '12:00:00 AM UTC'],
             [0, IntlDateFormatter::NONE, IntlDateFormatter::MEDIUM, '12:00:00 AM'],
             [0, IntlDateFormatter::NONE, IntlDateFormatter::SHORT, '12:00 AM'],
+        ];
+    }
+
+    /**
+     * @dataProvider relativeDateTypeProvider
+     */
+    public function testRelativeDateType($timestamp, $datetype, $timetype, $expected)
+    {
+        $datetime = \DateTime::createFromFormat('U', $timestamp, new \DateTimeZone('UTC'));
+        $datetime->setTime(0, 0, 0);
+
+        $formatter = $this->getDateFormatter('en', $datetype, $timetype, 'UTC');
+        $this->assertSame($expected, $formatter->format($datetime));
+    }
+
+    public function relativeDateTypeProvider()
+    {
+        return [
+            [time(), IntlDateFormatter::RELATIVE_FULL, IntlDateFormatter::NONE, 'today'],
+            [time(), IntlDateFormatter::RELATIVE_LONG, IntlDateFormatter::FULL, 'today at 12:00:00 AM Coordinated Universal Time'],
+            [time(), IntlDateFormatter::RELATIVE_MEDIUM, IntlDateFormatter::LONG, 'today at 12:00:00 AM UTC'],
+            [time(), IntlDateFormatter::RELATIVE_SHORT, IntlDateFormatter::SHORT, 'today at 12:00 AM'],
+
+            [strtotime('-1 day', time()), IntlDateFormatter::RELATIVE_FULL, IntlDateFormatter::NONE, 'yesterday'],
+            [strtotime('-1 day', time()), IntlDateFormatter::RELATIVE_LONG, IntlDateFormatter::FULL, 'yesterday at 12:00:00 AM Coordinated Universal Time'],
+            [strtotime('-1 day', time()), IntlDateFormatter::RELATIVE_MEDIUM, IntlDateFormatter::LONG, 'yesterday at 12:00:00 AM UTC'],
+            [strtotime('-1 day', time()), IntlDateFormatter::RELATIVE_SHORT, IntlDateFormatter::SHORT, 'yesterday at 12:00 AM'],
+
+            [strtotime('+1 day', time()), IntlDateFormatter::RELATIVE_FULL, IntlDateFormatter::NONE, 'tomorrow'],
+            [strtotime('+1 day', time()), IntlDateFormatter::RELATIVE_LONG, IntlDateFormatter::FULL, 'tomorrow at 12:00:00 AM Coordinated Universal Time'],
+            [strtotime('+1 day', time()), IntlDateFormatter::RELATIVE_MEDIUM, IntlDateFormatter::LONG, 'tomorrow at 12:00:00 AM UTC'],
+            [strtotime('+1 day', time()), IntlDateFormatter::RELATIVE_SHORT, IntlDateFormatter::SHORT, 'tomorrow at 12:00 AM'],
         ];
     }
 
