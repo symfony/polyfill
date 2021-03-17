@@ -105,6 +105,7 @@ class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
         if (version_compare(\INTL_ICU_VERSION, '55.1', '<')) {
             $this->markTestSkipped('ICU version 55.1 is required.');
         }
+
         if (!$formatter = new \IntlDateFormatter($locale, $datetype, $timetype, $timezone, $calendar, $pattern)) {
             throw new \InvalidArgumentException(intl_get_error_message());
         }
