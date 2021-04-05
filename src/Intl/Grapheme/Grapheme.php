@@ -62,7 +62,7 @@ final class Grapheme
         $start = (int) $start;
 
         if (\GRAPHEME_EXTR_COUNT !== $type && \GRAPHEME_EXTR_MAXBYTES !== $type && \GRAPHEME_EXTR_MAXCHARS !== $type) {
-            if (80000 > \PHP_VERSION_ID) {
+            if (80000 >= \PHP_VERSION_ID) {
                 return false;
             }
 
