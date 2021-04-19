@@ -18,10 +18,20 @@ use PHPUnit\Framework\TestCase;
  */
 class CurrenciesTest extends TestCase
 {
+    /**
+     * @requires PHP 7.2
+     */
     public function testMetadata()
     {
-        $en = json_decode(file_get_contents(\dirname(__DIR__, 3).'/vendor/symfony/intl/Resources/data/currencies/en.json'), true);
-        $meta = json_decode(file_get_contents(\dirname(__DIR__, 3).'/vendor/symfony/intl/Resources/data/currencies/meta.json'), true);
+        $dataDir = \dirname(__DIR__, 3).'/vendor/symfony/intl/Resources/data/currencies/';
+
+        if (is_file($dataDir.'en.php')) {
+            $en = require $dataDir.'en.php';
+            $meta = require $dataDir.'meta.php';
+        } else {
+            $en = json_decode(file_get_contents($dataDir.'en.json'), true);
+            $meta = json_decode(file_get_contents($dataDir.'meta.json'), true);
+        }
         $data = [];
 
         foreach ($en['Names'] as $code => [$symbol, $name]) {
