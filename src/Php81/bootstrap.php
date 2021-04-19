@@ -15,6 +15,10 @@ if (\PHP_VERSION_ID >= 80100) {
     return;
 }
 
+if (defined('MYSQLI_REFRESH_SLAVE') && !defined('MYSQLI_REFRESH_REPLICA')) {
+    define('MYSQLI_REFRESH_REPLICA', MYSQLI_REFRESH_SLAVE);
+}
+
 if (!function_exists('array_is_list')) {
     function array_is_list(array $array): bool { return p\Php81::array_is_list($array); }
 }

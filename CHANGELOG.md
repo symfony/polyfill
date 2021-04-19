@@ -3,6 +3,7 @@
   * added `CURLStringFile` to the PHP 8.1 polyfill
   * added `enum_exists()` to the PHP 8.1 polyfill
   * removed `INTL_IDNA_VARIANT_2003` on PHP 8
+  * added `MYSQLI_REFRESH_REPLICA` constant to PHP 8.1 polyfill
 
 # 1.22.1
 
