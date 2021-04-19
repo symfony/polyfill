@@ -72,14 +72,11 @@ class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
     }
 
     /**
+     * @requires PHP 8
      * @dataProvider relativeDateTypeProvider
      */
     public function testRelativeDateType($timestamp, $datetype, $timetype, $expected)
     {
-        if (\PHP_VERSION_ID < 80000) {
-            $this->markTestSkipped('PHP >= 8.0.0 required for RELATIVE_* constants.');
-        }
-
         if (version_compare(\INTL_ICU_VERSION, '59.1', '<')) {
             $this->markTestSkipped('ICU version 59.1 is required.');
         }
@@ -87,12 +84,11 @@ class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
         parent::testRelativeDateType($timestamp, $datetype, $timetype, $expected);
     }
 
+    /**
+     * @requires PHP 8
+     */
     public function testFormatIgnoresPatternForRelativeDateType()
     {
-        if (\PHP_VERSION_ID < 80000) {
-            $this->markTestSkipped('PHP >= 8.0.0 required for RELATIVE_* constants.');
-        }
-
         if (version_compare(\INTL_ICU_VERSION, '59.1', '<')) {
             $this->markTestSkipped('ICU version 59.1 is required.');
         }

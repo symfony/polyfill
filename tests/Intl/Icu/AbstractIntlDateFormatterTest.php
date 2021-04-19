@@ -486,7 +486,7 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         $datetime = \DateTime::createFromFormat('U', time(), new \DateTimeZone('GMT'));
         $datetime->setTime(0, 0, 0);
 
-        $this->assertEquals('today at 12:00:00 AM Greenwich Mean Time', $formatter->format($datetime));
+        $this->assertSame('today at 12:00:00 AM Greenwich Mean Time', $formatter->format($datetime));
     }
 
     /**

@@ -77,13 +77,6 @@ abstract class IntlDateFormatter
     public const TRADITIONAL = 0;
     public const GREGORIAN = 1;
 
-    protected const RELATIVE_DATE_TYPES = [
-        self::RELATIVE_FULL,
-        self::RELATIVE_LONG,
-        self::RELATIVE_MEDIUM,
-        self::RELATIVE_SHORT,
-    ];
-
     /**
      * Patterns used to format the date when no pattern is provided.
      */
@@ -169,7 +162,7 @@ abstract class IntlDateFormatter
         $this->setPattern($pattern);
         $this->setTimeZone($timezone);
 
-        if (\in_array($this->dateType, self::RELATIVE_DATE_TYPES)) {
+        if (\in_array($this->dateType, [self::RELATIVE_FULL, self::RELATIVE_LONG, self::RELATIVE_MEDIUM, self::RELATIVE_SHORT])) {
             $this->isRelativeDateType = true;
         }
     }
@@ -236,19 +229,17 @@ abstract class IntlDateFormatter
         $pattern = $this->getPattern();
         $formatted = '';
 
-        if ($this->isRelativeDateType) {
+        if ($this->isRelativeDateType && $formatted = $this->getRelativeDateFormat($datetime)) {
             $formatted = $this->getRelativeDateFormat($datetime);
 
-            if (!empty($formatted)) {
-                if (self::NONE === $this->timeType) {
-                    $pattern = '';
+            if (self::NONE === $this->timeType) {
+                $pattern = '';
+            } else {
+                $pattern = $this->defaultTimeFormats[$this->timeType];
+                if (\in_array($this->dateType, [self::RELATIVE_MEDIUM, self::RELATIVE_SHORT])) {
+                    $formatted .= ', ';
                 } else {
-                    $pattern = $this->defaultTimeFormats[$this->timeType];
-                    if (\in_array($this->dateType, [self::RELATIVE_MEDIUM, self::RELATIVE_SHORT])) {
-                        $formatted .= ', ';
-                    } else {
-                        $formatted .= ' at ';
-                    }
+                    $formatted .= ' at ';
                 }
             }
         }
@@ -618,16 +609,9 @@ abstract class IntlDateFormatter
         return $pattern;
     }
 
-    /**
-     * Returns a relative date format for the specified timestamp.
-     *
-     * @param int $timestamp
-     *
-     * @return string
-     */
-    private function getRelativeDateFormat(int $timestamp)
+    private function getRelativeDateFormat(int $timestamp): string
     {
-        $today = \DateTime::createFromFormat('U', time(), $this->dateTimeZone);
+        $today = $this->createDateTime(time());
         $today->setTime(0, 0, 0);
 
         $datetime = $this->createDateTime($timestamp);
@@ -638,7 +622,9 @@ abstract class IntlDateFormatter
         if (false !== $interval) {
             if (0 === $interval->days) {
                 return 'today';
-            } elseif (1 === $interval->days) {
+            }
+
+            if (1 === $interval->days) {
                 return 1 === $interval->invert ? 'yesterday' : 'tomorrow';
             }
         }
