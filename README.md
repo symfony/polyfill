@@ -58,6 +58,7 @@ Polyfills are provided for:
 - the `Stringable` interface introduced in PHP 8.0;
 - the `array_is_list` function introduced in PHP 8.1;
 - the `MYSQLI_REFRESH_REPLICA` constant introduced in PHP 8.1;
+- the `CURLStringFile` class introduced in PHP 8.1;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
