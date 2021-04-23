@@ -36,7 +36,7 @@ install:
     - IF %PHP%==1 echo extension=php_intl.dll >> php.ini
     - IF %PHP%==1 echo extension=php_mbstring.dll >> php.ini
     - IF %PHP%==1 echo extension=php_ldap.dll >> php.ini
-    - appveyor DownloadFile https://github.com/composer/composer/releases/download/1.9.0/composer.phar
+    - appveyor DownloadFile https://github.com/composer/composer/releases/download/2.0.12/composer.phar
     - cd c:\projects\polyfill
     - mkdir %APPDATA%\Composer && copy /Y .github\composer-config.json %APPDATA%\Composer\config.json
     - SET COMPOSER_ROOT_VERSION=dev-main
