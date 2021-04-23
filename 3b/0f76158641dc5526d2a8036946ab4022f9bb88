@@ -1,0 +1,21 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-04-23T07:08:45Z
+
+`src/Mbstring/bootstrap.php` has the same issue btw (the test case would spot it ;) )
+
+---------------------------------------------------------------------------
+
+by webber2k6 at 2021-04-23T07:13:36Z
+
+> `src/Mbstring/bootstrap.php` has the same issue btw (the test case would spot it ;) )
+
+The function in `src/Mbstring/bootstrap.php` has no return type annotation.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-04-23T07:18:01Z
+
+> The function in src/Mbstring/bootstrap.php has no return type annotation.
+
+sure, but the native function returns a bool nonetheless, so we have to align the behavior of the polyfill.
