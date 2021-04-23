@@ -16,7 +16,7 @@ if (\PHP_VERSION_ID >= 80100) {
 }
 
 if (defined('MYSQLI_REFRESH_SLAVE') && !defined('MYSQLI_REFRESH_REPLICA')) {
-    define('MYSQLI_REFRESH_REPLICA', MYSQLI_REFRESH_SLAVE);
+    define('MYSQLI_REFRESH_REPLICA', 64);
 }
 
 if (!function_exists('array_is_list')) {
