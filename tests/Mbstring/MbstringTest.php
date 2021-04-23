@@ -552,4 +552,13 @@ class MbstringTest extends TestCase
         $this->assertSame('ab', mb_scrub("a\xE9b"));
         mb_substitute_character($subst);
     }
+
+    public function testParseStr()
+    {
+        $result = [];
+        static::assertTrue(mb_parse_str('test1=&test2=value', $result));
+        static::assertTrue(mb_parse_str(0, $result));
+        static::assertFalse(mb_parse_str('', $result));
+        static::assertFalse(mb_parse_str(null, $result));
+    }
 }
