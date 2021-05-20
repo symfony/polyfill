@@ -11,6 +11,8 @@
 
 namespace Symfony\Polyfill\Php81;
 
+use function array_values;
+
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  *
@@ -20,18 +22,6 @@ final class Php81
 {
     public static function array_is_list(array $array): bool
     {
-        if ([] === $array) {
-            return true;
-        }
-
-        $nextKey = -1;
-
-        foreach ($array as $k => $v) {
-            if ($k !== ++$nextKey) {
-                return false;
-            }
-        }
-
-        return true;
+        return $array === array_values($array);
     }
 }
