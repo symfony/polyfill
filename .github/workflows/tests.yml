@@ -12,6 +12,7 @@ jobs:
 
         env:
             COMPOSER_ROOT_VERSION: dev-main
+            SYMFONY_PHPUNIT_VERSION: 7.5
 
         strategy:
             matrix:

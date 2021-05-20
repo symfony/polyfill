@@ -11,6 +11,7 @@ init:
     - SET PATH=c:\php;%PATH%
     - SET COMPOSER_NO_INTERACTION=1
     - SET PHP=1
+    - SET SYMFONY_PHPUNIT_VERSION=7.5
 
 install:
     - cinst wget
