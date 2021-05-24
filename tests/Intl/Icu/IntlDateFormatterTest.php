@@ -74,7 +74,7 @@ class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
             $formatter->format($localtime);
         } catch (\Exception $e) {
             $this->assertInstanceOf(MethodArgumentValueNotImplementedException::class, $e);
-            $this->assertStringEndsWith('Only integer Unix timestamps and DateTime objects are supported.  Please install the "intl" extension for full localization capabilities.', $e->getMessage());
+            $this->assertStringEndsWith('Only Unix timestamps and DateTime objects are supported.  Please install the "intl" extension for full localization capabilities.', $e->getMessage());
         }
     }
 
