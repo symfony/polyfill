@@ -1,3 +1,7 @@
+# 1.23.1
+
+  * Fix `IntlDateFormatter::format()` on 32b platforms
+
 # 1.23.0
 
   * added `CURLStringFile` to the PHP 8.1 polyfill
