@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-05-20T18:10:58Z
+
+To you plan to use that in DebugClassLoader? We don't have to, since attributes don't *have* to be instantiated ;)
+
+---------------------------------------------------------------------------
+
+by derrabus at 2021-05-20T19:15:38Z
+
+`DebugClassLoader` should not instantiate the attribute and thus does not need to depend on the polyfill. I thought about adding the polyfill to components where we want to annotate methods with that attribute though.
+
+Either way, providing a polyfill for the attribute and giving app developers the opertunity to `->newInstance()` without shooting themselves in the foot is a good thing, imho. 🙂
