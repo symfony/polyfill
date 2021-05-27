@@ -1,3 +1,7 @@
+# 1.23.1
+
+  * fixed `grapheme_str(r)ipos()`
+
 # 1.23.0
 
   * added `CURLStringFile` to the PHP 8.1 polyfill
