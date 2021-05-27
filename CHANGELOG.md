@@ -4,6 +4,7 @@
   * added `enum_exists()` to the PHP 8.1 polyfill
   * added `MYSQLI_REFRESH_REPLICA` constant to PHP 8.1 polyfill
   * added `ReturnTypeWillChange` to PHP 8.1 polyfill
+  * updated Unicode maps to v13
   * removed `INTL_IDNA_VARIANT_2003` on PHP 8
   * fixed return value of `mb_parse_str()`
   * fixed `IntlDateFormatter::format()` on 32b platforms

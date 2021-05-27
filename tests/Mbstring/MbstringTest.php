@@ -254,14 +254,16 @@ class MbstringTest extends TestCase
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strtolower
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strtoupper
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_case
+     *
+     * @requires PHP 7.3
      */
     public function testStrCase()
     {
-        $this->assertSame(\PHP_VERSION_ID >= 70300 ? 'i̇' : 'i', mb_strtolower('İ'));
-        $this->assertSame('déjà σσς iiıi', p::mb_strtolower('DÉJÀ Σσς İIıi'));
+        $this->assertSame('i̇', mb_strtolower('İ'));
+        $this->assertSame('déjà σσς i̇iıi', p::mb_strtolower('DÉJÀ Σσς İIıi'));
         $this->assertSame('DÉJÀ ΣΣΣ İIII', mb_strtoupper('Déjà Σσς İIıi'));
         if (\PCRE_VERSION >= '8.10') {
-            $this->assertSame('Déjà Σσσ Iı Ii İi', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', \MB_CASE_TITLE));
+            $this->assertSame('Déjà Σσσ Iı Ii İi̇', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', \MB_CASE_TITLE));
         }
         $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
     }

@@ -14,6 +14,7 @@ namespace Symfony\Polyfill\Tests\Intl\Normalizer;
 use Normalizer as in;
 use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Intl\Normalizer\Normalizer as pn;
+use Symfony\Polyfill\Util\TestListenerTrait;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
@@ -106,6 +107,10 @@ class NormalizerTest extends TestCase
      */
     public function testNormalizeConformance()
     {
+        if (false === TestListenerTrait::$enabledPolyfills) {
+            $this->markTestSkipped('No need to test the native implementation');
+        }
+
         $t = file(__DIR__.'/NormalizationTest.txt');
         $c = [];
 
