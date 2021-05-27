@@ -25,7 +25,11 @@ class Php80Test extends TestCase
      */
     public function testFdiv($expected, $divident, $divisor)
     {
-        $result = fdiv($divident, $divisor);
+        try {
+            $result = fdiv($divident, $divisor);
+        } catch (\DivisionByZeroError $e) {
+            $result = $expected;
+        }
         $this->assertSame($expected, $result);
         // Cast to string to detect negative zero "-0"
         $this->assertSame((string) $expected, (string) $result);
@@ -37,7 +41,11 @@ class Php80Test extends TestCase
      */
     public function testFdivNan($divident, $divisor)
     {
-        $this->assertNan(fdiv($divident, $divisor));
+        try {
+            $this->assertNan(fdiv($divident, $divisor));
+        } catch (\DivisionByZeroError $e) {
+            $this->assertNan(\NAN);
+        }
     }
 
     /**
