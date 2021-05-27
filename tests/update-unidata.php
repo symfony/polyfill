@@ -7,7 +7,7 @@ require __DIR__.'/Compiler.php';
 
 @mkdir(__DIR__.'/unicode/data', 0777, true);
 
-foreach (['UnicodeData.txt', 'CompositionExclusions.txt', 'CaseFolding.txt'] as $file) {
+foreach (['UnicodeData.txt', 'CompositionExclusions.txt', 'CaseFolding.txt', 'SpecialCasing.txt'] as $file) {
     $data = file_get_contents('https://unicode.org/Public/UNIDATA/'.$file);
     file_put_contents(__DIR__.'/unicode/data/'.$file, $data);
 }

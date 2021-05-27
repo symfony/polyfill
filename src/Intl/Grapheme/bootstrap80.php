@@ -46,5 +46,5 @@ if (!function_exists('grapheme_strstr')) {
     function grapheme_strstr(?string $haystack, ?string $needle, ?bool $beforeNeedle = false): string|false { return p\Grapheme::grapheme_strstr((string) $haystack, (string) $needle, (bool) $beforeNeedle); }
 }
 if (!function_exists('grapheme_substr')) {
-    function grapheme_substr(?string $string, ?int $offset, ?int $length = null): string|false { return p\Grapheme::grapheme_substr((string) $string, (int) $offset, (int) $length); }
+    function grapheme_substr(?string $string, ?int $offset, ?int $length = null): string|false { return p\Grapheme::grapheme_substr((string) $string, (int) $offset, $length); }
 }

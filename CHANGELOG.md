@@ -1,14 +1,15 @@
-# 1.23.1
-
-  * Fix `IntlDateFormatter::format()` on 32b platforms
-
 # 1.23.0
 
   * added `CURLStringFile` to the PHP 8.1 polyfill
   * added `enum_exists()` to the PHP 8.1 polyfill
   * added `MYSQLI_REFRESH_REPLICA` constant to PHP 8.1 polyfill
+  * added `ReturnTypeWillChange` to PHP 8.1 polyfill
+  * updated Unicode maps to v13
   * removed `INTL_IDNA_VARIANT_2003` on PHP 8
   * fixed return value of `mb_parse_str()`
+  * fixed `IntlDateFormatter::format()` on 32b platforms
+  * fixed `mb_chr()` in the PHP 7.2 polyfill
+  * fixed `mb_strrchr()`, `mb_detect_order()`, `iconv_substr()`, `grapheme_substr()` on PHP 8
 
 # 1.22.1
 

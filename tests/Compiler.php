@@ -139,6 +139,25 @@ class Compiler
         }
         fclose($h);
 
+        $h = fopen(self::getFile('SpecialCasing.txt'), 'r');
+        while (false !== $m = fgets($h)) {
+            if ('#' === $m[0] || 5 !== \count($m = explode('; ', $m))) {
+                continue;
+            }
+
+            $k = self::chr(hexdec($m[0]));
+            $lower = implode('', array_map([__CLASS__, 'chr'], array_map('hexdec', explode(' ', $m[1]))));
+            $upper = implode('', array_map([__CLASS__, 'chr'], array_map('hexdec', explode(' ', $m[3]))));
+
+            if ($lower !== $k) {
+                $lowerCase[$k] = $lower;
+            }
+            if ($upper !== $k) {
+                $upperCase[$k] = $upper;
+            }
+        }
+        fclose($h);
+
         do {
             $m = 0;
 
