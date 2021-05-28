@@ -26,6 +26,10 @@ class Php81Test extends TestCase
         $this->assertFalse(array_is_list(['a' => 'b']));
         $this->assertFalse(array_is_list([0 => 'a', 2 => 'b']));
         $this->assertFalse(array_is_list([1 => 'a', 2 => 'b']));
+
+        $x = ['key' => 2, NAN];
+        unset($x['key']);
+        $this->assertTrue(array_is_list($x));
     }
 
     /**
