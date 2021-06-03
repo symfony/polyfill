@@ -71,6 +71,31 @@ class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
         parent::testDateAndTimeType($timestamp, $datetype, $timetype, $expected);
     }
 
+    /**
+     * @requires PHP 8
+     * @dataProvider relativeDateTypeProvider
+     */
+    public function testRelativeDateType($timestamp, $datetype, $timetype, $expected)
+    {
+        if (version_compare(\INTL_ICU_VERSION, '59.1', '<')) {
+            $this->markTestSkipped('ICU version 59.1 is required.');
+        }
+
+        parent::testRelativeDateType($timestamp, $datetype, $timetype, $expected);
+    }
+
+    /**
+     * @requires PHP 8
+     */
+    public function testFormatIgnoresPatternForRelativeDateType()
+    {
+        if (version_compare(\INTL_ICU_VERSION, '59.1', '<')) {
+            $this->markTestSkipped('ICU version 59.1 is required.');
+        }
+
+        parent::testFormatIgnoresPatternForRelativeDateType();
+    }
+
     protected function getDateFormatter($locale, $datetype, $timetype, $timezone = null, $calendar = IntlDateFormatter::GREGORIAN, $pattern = null)
     {
         if (version_compare(\INTL_ICU_VERSION, '55.1', '<')) {
