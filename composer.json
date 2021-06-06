@@ -37,6 +37,7 @@
         "symfony/polyfill-intl-messageformatter": "self.version",
         "symfony/polyfill-intl-idn": "self.version",
         "symfony/polyfill-intl-normalizer": "self.version",
+        "symfony/polyfill-intl-transliterator": "self.version",
         "symfony/polyfill-mbstring": "self.version",
         "symfony/polyfill-util": "self.version",
         "symfony/polyfill-uuid": "self.version",
@@ -55,6 +56,7 @@
             "src/Intl/Icu/bootstrap.php",
             "src/Intl/MessageFormatter/bootstrap.php",
             "src/Intl/Normalizer/bootstrap.php",
+            "src/Intl/Transliterator/bootstrap.php",
             "src/Mbstring/bootstrap.php"
         ],
         "classmap": [
