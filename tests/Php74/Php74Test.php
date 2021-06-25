@@ -113,6 +113,18 @@ class Php74Test extends TestCase
         $this->expectWarningMessage('The length of each segment must be greater than zero');
         mb_str_split('победа', 0);
     }
+
+    /**
+     * @covers \Symfony\Polyfill\Php74\WeakReference
+     */
+    public function testWeakReference()
+    {
+        $obj = new \stdClass();
+        $weakRef = \WeakReference::create($obj);
+        $this->assertInstanceOf(\stdClass::class, $weakRef->get());
+        unset($obj);
+        $this->assertNull($weakRef->get());
+    }
 }
 
 class A
