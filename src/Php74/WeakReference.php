@@ -1,6 +1,6 @@
 <?php
 
-namespace Symfony\Polyfill\Php74\Resources;
+namespace Symfony\Polyfill\Php74;
 
 /**
  * @author Alexandru Punga <alexpunga148@gmail.com>

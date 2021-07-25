@@ -24,6 +24,6 @@ if (!function_exists('mb_str_split') && function_exists('mb_substr')) {
 if (!function_exists('password_algos')) {
     function password_algos() { return p\Php74::password_algos(); }
 }
-if (!class_exists("WeakReference")) {
-    final class WeakReference extends p\Resources\WeakReference {}
+if (!class_exists('WeakReference')) {
+    final class WeakReference extends p\WeakReference {}
 }
