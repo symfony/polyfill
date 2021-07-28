@@ -99,6 +99,7 @@ class Php80Test extends TestCase
     public function testStrContains()
     {
         $this->assertTrue(str_contains('abc', ''));
+        $this->assertTrue(str_contains('abc', null));
         $this->assertTrue(str_contains('abc', 'a'));
         $this->assertTrue(str_contains('abc', 'bc'));
         $this->assertTrue(str_contains('abc', 'abc'));
@@ -106,6 +107,8 @@ class Php80Test extends TestCase
         $this->assertTrue(str_contains('한국어', ''));
         $this->assertTrue(str_contains('', ''));
         $this->assertFalse(str_contains('abc', 'd'));
+        $this->assertFalse(str_contains('', 'd'));
+        $this->assertFalse(str_contains(null, 'd'));
         $this->assertFalse(str_contains('abc', 'abcd'));
         $this->assertFalse(str_contains('DÉJÀ', 'à'));
         $this->assertFalse(str_contains('a', 'à'));
@@ -121,7 +124,9 @@ class Php80Test extends TestCase
         $this->assertTrue(str_starts_with($testStr, 'beginning'));
         $this->assertTrue(str_starts_with($testStr, $testStr));
         $this->assertTrue(str_starts_with($testStr, ''));
+        $this->assertTrue(str_starts_with($testStr, null));
         $this->assertTrue(str_starts_with('', ''));
+        $this->assertTrue(str_starts_with(null, ''));
         $this->assertTrue(str_starts_with("\x00", ''));
         $this->assertTrue(str_starts_with("\x00", "\x00"));
         $this->assertTrue(str_starts_with("\x00a", "\x00"));
@@ -163,7 +168,9 @@ class Php80Test extends TestCase
         $this->assertTrue(str_ends_with($testStr, $testStr));
         $this->assertFalse(str_ends_with($testStr, $testStr.$testStr));
         $this->assertTrue(str_ends_with($testStr, ''));
+        $this->assertTrue(str_ends_with($testStr, null));
         $this->assertTrue(str_ends_with('', ''));
+        $this->assertTrue(str_ends_with(null, ''));
         $this->assertFalse(str_ends_with('', ' '));
         $this->assertFalse(str_ends_with($testStr, "\x00"));
         $this->assertTrue(str_ends_with("\x00", ''));
