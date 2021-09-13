@@ -1,0 +1,96 @@
+---------------------------------------------------------------------------
+
+by derrabus at 2021-05-20T19:29:21Z
+
+Can you also include associative arrays in you comparison? My expectation would be that the current implementation performs significantly better on non-list arrays.
+
+---------------------------------------------------------------------------
+
+by boesing at 2021-05-20T19:54:42Z
+
+That is indeed correct.
+https://3v4l.org/Ef2pN
+
+Overall, the performance increase on list arrays is bigger than the loss on assoc arrays. But in the end, I don't really mind if this will get merged or not - just a thing you guys might consider.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-05-20T20:31:19Z
+
+This patch might better, WDYT?
+Note that our test suite is not correct. The patch contains a better special case from [the original RFC](https://wiki.php.net/rfc/is_list).
+```patch
+diff --git a/src/Php81/Php81.php b/src/Php81/Php81.php
+index 709c20b..8921446 100644
+--- a/src/Php81/Php81.php
++++ b/src/Php81/Php81.php
+@@ -20,7 +20,7 @@ final class Php81
+ {
+     public static function array_is_list(array $array): bool
+     {
+-        if ([] === $array) {
++        if (!$array || array_values($array) === $array) {
+             return true;
+         }
+
+diff --git a/tests/Php81/Php81Test.php b/tests/Php81/Php81Test.php
+index 17f5864..4271d0b 100644
+--- a/tests/Php81/Php81Test.php
++++ b/tests/Php81/Php81Test.php
+@@ -21,11 +21,14 @@ class Php81Test extends TestCase
+     public function testArrayIsList()
+     {
+         $this->assertTrue(array_is_list([]));
+-        $this->assertTrue(array_is_list([\NAN, 'foo', 123]));
+         $this->assertFalse(array_is_list([1 => 'a', 0 => 'b']));
+         $this->assertFalse(array_is_list(['a' => 'b']));
+         $this->assertFalse(array_is_list([0 => 'a', 2 => 'b']));
+         $this->assertFalse(array_is_list([1 => 'a', 2 => 'b']));
++
++        $x = ['key' => 2, NAN];
++        unset($x['key']);
++        $this->assertTrue(array_is_list($x));
+     }
+```
+
+---------------------------------------------------------------------------
+
+by boesing at 2021-05-20T20:41:33Z
+
+That would optimize the speed for list arrays while preserving old functionality. 👍🏻
+
+---------------------------------------------------------------------------
+
+by boesing at 2021-06-03T09:40:06Z
+
+@nicolas-grekas I've applied your suggestion. Let me know if something is missing 😊👍🏻
+
+---------------------------------------------------------------------------
+
+by boesing at 2021-07-26T21:49:54Z
+
+@derrabus @nicolas-grekas Is there any TODO left open? Please let me know if I can help with anything.
+
+---------------------------------------------------------------------------
+
+by Sanchous98 at 2021-08-20T14:21:25Z
+
+> @derrabus @nicolas-grekas Is there any TODO left open? Please let me know if I can help with anything.
+
+Could you check, if "foreach" loop could be replaced by "array_keys($array) === range(0, count($array) - 1)". I have checked and it works slightly faster. Also try a loop over array_keys($array), because now you are allocating useless variable for value every loop iteration. According to my test it is similar to comparison with range, but the first solution, I have described, is shorter, so IMHO it's more preferable
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-09-13T13:49:57Z
+
+@Sanchous98 I'm not convinced the proposals you make would be an improvement:
+
+> "array_keys($array) === range(0, count($array) - 1)"
+
+this is going to allocate two arrays
+
+> array_keys($array) vs $value
+
+this is also going to allocate an array to save a local variable which costs nothing.
+
+Please provide extensive numbers to back your claims if you think we should reconsider. For now I think the attached patch is the one we should merge.
