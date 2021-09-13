@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by Firtzberg at 2021-06-23T21:28:43Z
+
+ping
+
+---------------------------------------------------------------------------
+
+by derrabus at 2021-06-24T18:16:53Z
+
+> One of my scripts runs [`opcache_compile_file`](https://www.php.net/manual/en/function.opcache-compile-file.php) on vendor files, including symfony.
+
+As mentioned on a different issue from you, you shouldn't do that. Symfony ships classes that might require optional dependencies or a higher PHP version. Even if we apply your fix here, your script will continue to explode elsewhere.
