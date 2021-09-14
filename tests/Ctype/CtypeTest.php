@@ -13,6 +13,9 @@ namespace Symfony\Polyfill\Tests\Ctype;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @group legacy
+ */
 class CtypeTest extends TestCase
 {
     /**

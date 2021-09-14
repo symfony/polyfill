@@ -16,6 +16,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @author Ion Bazan <ion.bazan@gmail.com>
  * @author Nico Oelgart <nicoswd@gmail.com>
+ *
+ * @group legacy
  */
 class Php80Test extends TestCase
 {

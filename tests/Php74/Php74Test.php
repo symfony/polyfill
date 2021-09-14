@@ -28,7 +28,7 @@ class Php74Test extends TestCase
         $obj->dyn = 5;
         $obj->{'6'} = 6;
 
-        $this->assertSame([
+        $this->assertEqualsCanonicalizing([
             "\0".'Symfony\Polyfill\Tests\Php74\B'."\0".'priv' => 4,
             'pub' => 1,
             "\0".'*'."\0".'prot' => 2,
@@ -131,6 +131,7 @@ class AO extends ArrayObject
 {
     private $priv = 1;
 
+    #[\ReturnTypeWillChange]
     public function getFlags()
     {
         return self::ARRAY_AS_PROPS | self::STD_PROP_LIST;
