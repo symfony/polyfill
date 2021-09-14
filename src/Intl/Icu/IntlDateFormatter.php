@@ -137,6 +137,16 @@ abstract class IntlDateFormatter
             throw new MethodArgumentValueNotImplementedException(__METHOD__, 'calendar', $calendar, 'Only the GREGORIAN calendar is supported');
         }
 
+        if (\PHP_VERSION_ID >= 80100) {
+            if (null === $dateType) {
+                @trigger_error('Passing null to parameter #2 ($dateType) of type int is deprecated', \E_USER_DEPRECATED);
+            }
+
+            if (null === $timeType) {
+                @trigger_error('Passing null to parameter #3 ($timeType) of type int is deprecated', \E_USER_DEPRECATED);
+            }
+        }
+
         $this->dateType = $dateType ?? self::FULL;
         $this->timeType = $timeType ?? self::FULL;
 

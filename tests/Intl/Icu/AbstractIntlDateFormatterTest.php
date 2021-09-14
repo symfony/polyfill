@@ -43,6 +43,9 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         );
     }
 
+    /**
+     * @group legacy
+     */
     public function testConstructorWithoutDateType()
     {
         $formatter = $this->getDateFormatter('en', null, IntlDateFormatter::SHORT, 'UTC', IntlDateFormatter::GREGORIAN);
@@ -50,6 +53,9 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         $this->assertSame('EEEE, MMMM d, y \'at\' h:mm a', $formatter->getPattern());
     }
 
+    /**
+     * @group legacy
+     */
     public function testConstructorWithoutTimeType()
     {
         $formatter = $this->getDateFormatter('en', IntlDateFormatter::SHORT, null, 'UTC', IntlDateFormatter::GREGORIAN);
