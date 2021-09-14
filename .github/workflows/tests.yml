@@ -12,16 +12,19 @@ jobs:
 
         env:
             COMPOSER_ROOT_VERSION: dev-main
-            SYMFONY_PHPUNIT_VERSION: 7.5
+            SYMFONY_PHPUNIT_VERSION: 9.5
 
         strategy:
             matrix:
-                php:
-                    - '7.1'
-                    - '7.2'
-                    - '7.3'
-                    - '7.4'
-                    - '8.0'
+                include:
+                    - php: '7.1'
+                    - php: '7.2'
+                    - php: '7.3'
+                    - php: '7.4'
+                    - php: '8.0'
+                    - php: '8.1'
+                    - php: '8.2'
+                      mode: experimental
             fail-fast: false
 
         steps:
@@ -40,5 +43,13 @@ jobs:
             -   name: Install dependencies
                 run: composer --prefer-source --no-progress --ansi install
 
+            -   name: Configure for PHP <= 7.2
+                if: "${{ matrix.php <= '7.2' }}"
+                run: |
+                    echo SYMFONY_PHPUNIT_VERSION=7.5 >> $GITHUB_ENV
+
             -   name: Run tests
-                run: ./vendor/bin/simple-phpunit
+                run: |
+                    ok=0
+                    ./vendor/bin/simple-phpunit || ok=1
+                    [[ "${{ matrix.mode }}" = experimental ]] || (exit $ok)

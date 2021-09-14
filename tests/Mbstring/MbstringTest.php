@@ -440,7 +440,6 @@ class MbstringTest extends TestCase
         $this->assertSame('ÉJÀDÉJÀ', mb_stristr('DÉJÀDÉJÀ', 'é'));
         $this->assertSame('ςσb', mb_stristr('aςσb', 'ΣΣ'));
         $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é'));
-        $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é', false, 'ASCII'));
         $this->assertFalse(mb_strrchr('déjàdéjà', 'X', false, 'ASCII'));
         $this->assertSame('ÉJÀ', mb_strrichr('DÉJÀDÉJÀ', 'é'));
 
@@ -448,10 +447,15 @@ class MbstringTest extends TestCase
         $this->assertSame('D', mb_stristr('DÉJÀDÉJÀ', 'é', true));
         $this->assertSame('a', mb_stristr('aςσb', 'ΣΣ', true));
         $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true));
-        $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true, 'ASCII'));
         $this->assertFalse(mb_strrchr('déjàdéjà', 'X', true, 'ASCII'));
         $this->assertSame('DÉJÀD', mb_strrichr('DÉJÀDÉJÀ', 'é', true));
         $this->assertSame('Paris', mb_stristr('der Straße nach Paris', 'Paris'));
+
+        if (\PHP_VERSION_ID < 80100) {
+            // skip to work around https://bugs.php.net/81437
+            $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é', false, 'ASCII'));
+            $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true, 'ASCII'));
+        }
     }
 
     /**
@@ -474,7 +478,7 @@ class MbstringTest extends TestCase
         $this->assertSame('ASCII', mb_detect_encoding('abc'));
         $this->assertSame('UTF-8', mb_detect_encoding('abc', 'UTF8, ASCII'));
         $this->assertSame('ISO-8859-1', mb_detect_encoding("\xE9", ['UTF-8', 'ASCII', 'ISO-8859-1'], true));
-        $this->assertFalse(mb_detect_encoding("\xE9", ['UTF-8', 'ASCII', 'Windows-1252'], true));
+        $this->assertFalse(mb_detect_encoding("\xE9", ['UTF-8', 'ASCII'], true));
     }
 
     /**
@@ -555,6 +559,9 @@ class MbstringTest extends TestCase
         mb_substitute_character($subst);
     }
 
+    /**
+     * @group legacy
+     */
     public function testParseStr()
     {
         $result = [];

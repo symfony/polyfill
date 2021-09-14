@@ -125,6 +125,7 @@ EOPHP
 
                     $map = [
                         '?' => '',
+                        'IDNA_DEFAULT' => \PHP_VERSION_ID >= 80100 ? 'IDNA_DEFAULT' : '0',
                         'array|string|null $string' => 'array|string $string',
                         'array|string|null $from_encoding = null' => 'array|string|null $from_encoding = null',
                         'array|string|null $from_encoding' => 'array|string $from_encoding',
