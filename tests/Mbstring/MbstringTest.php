@@ -451,11 +451,8 @@ class MbstringTest extends TestCase
         $this->assertSame('DÉJÀD', mb_strrichr('DÉJÀDÉJÀ', 'é', true));
         $this->assertSame('Paris', mb_stristr('der Straße nach Paris', 'Paris'));
 
-        if (\PHP_VERSION_ID < 80100) {
-            // skip to work around https://bugs.php.net/81437
-            $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é', false, 'ASCII'));
-            $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true, 'ASCII'));
-        }
+        $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é', false, '8BIT'));
+        $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true, '8BIT'));
     }
 
     /**
