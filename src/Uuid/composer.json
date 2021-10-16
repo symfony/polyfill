@@ -18,6 +18,9 @@
     "require": {
         "php": ">=7.1"
     },
+    "provide": {
+        "ext-uuid": "*"
+    },
     "autoload": {
         "psr-4": { "Symfony\\Polyfill\\Uuid\\": "" },
         "files": [ "bootstrap.php" ]
