@@ -1,0 +1,73 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-10-16T08:53:34Z
+
+I suppose this is the same for all extensions. Can you add them all please? (ctype, iconv, etc, but not intl since the polyfill doesn't fully cover the extension.)
+
+---------------------------------------------------------------------------
+
+by cedric-anne at 2021-10-16T08:57:53Z
+
+> I suppose this is the same for all extensions. Can you add them all please? (ctype, iconv, etc, but not intl since the polyfill doesn't fully cover the extension.)
+
+Yes, for sure. I wanted to be sure that solution was OK for you before doing the same on all extensions.
+
+---------------------------------------------------------------------------
+
+by stof at 2021-10-18T07:28:56Z
+
+the mbstring polyfill should now require `ext-iconv` as it relies on it (now that the iconv polyfill can fulfill it)
+
+---------------------------------------------------------------------------
+
+by cedric-anne at 2021-10-18T07:31:14Z
+
+> the mbstring polyfill should not require `ext-iconv` as it relies on it (now that the iconv polyfill can fulfill it)
+
+I also think that the mbstring polyfill should now require `ext-iconv`. I can add it on this PR if everyone is OK with that.
+
+---------------------------------------------------------------------------
+
+by cedric-anne at 2021-10-20T20:25:57Z
+
+Hi,
+
+I made some more tests and I figured out that my first test was failing on composer v1.10, so I updated the PR description according to this.
+
+Still, it works as expected on composer v2.0 and v2.1.
+
+Result of `composer check-platform-reqs` indicates that extension is provided by the polyfill:
+```
+Checking platform requirements for packages in the vendor dir
+ext-dom        20031129    success
+ext-mbstring   *           success provided by symfony/polyfill-mbstring
+ext-xmlreader  8.0.11      success
+ext-xmlwriter  8.0.11      success
+lib-libxml     2.9.10      success
+php            8.0.11      success
+```
+
+I tested install scenario with or without lockfile and it works as expected.
+
+I also tested update scenario, and it also works as expected. Both library who requires the extension and library who provide it are sucessfully updated when a new version is available.
+
+Then, just to be sure, I tested a tricky scenario, where the v2.1.0 version of my forked polyfill would rollback its `provide` instruction. `composer` correctly handle this case. Indeed, the `composer update --dry-run`  do not propose this update, and `composer require symfony/polyfill-mbstring:^2.1` fails with following message:
+```
+./composer.json has been updated
+Running composer update symfony/polyfill-mbstring
+Loading composer repositories with package information
+Updating dependencies
+Your requirements could not be resolved to an installable set of packages.
+
+  Problem 1
+    - sabre/vobject is locked to version 4.3.5 and an update of this package was not requested.
+    - sabre/vobject 4.3.5 requires ext-mbstring * -> it is missing from your system. Install or enable PHP's mbstring extension.
+
+To enable extensions, verify that they are enabled in your .ini files:
+    -
+    - /usr/local/etc/php/conf.d/docker-php-ext-sodium.ini
+    - /usr/local/etc/php/conf.d/docker-php-ext-zip.ini
+You can also run `php --ini` inside terminal to see which files are used by PHP in CLI mode.
+
+Installation failed, reverting ./composer.json and ./composer.lock to their original content.
+```
