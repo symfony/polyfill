@@ -67,6 +67,12 @@ abstract class IntlDateFormatter
     public const MEDIUM = 2;
     public const SHORT = 3;
 
+    /* date format types */
+    public const RELATIVE_FULL = 128;
+    public const RELATIVE_LONG = 129;
+    public const RELATIVE_MEDIUM = 130;
+    public const RELATIVE_SHORT = 131;
+
     /* calendar formats */
     public const TRADITIONAL = 0;
     public const GREGORIAN = 1;
@@ -80,6 +86,10 @@ abstract class IntlDateFormatter
         self::LONG => 'MMMM d, y',
         self::MEDIUM => 'MMM d, y',
         self::SHORT => 'M/d/yy',
+        self::RELATIVE_FULL => 'EEEE, MMMM d, y',
+        self::RELATIVE_LONG => 'MMMM d, y',
+        self::RELATIVE_MEDIUM => 'MMM d, y',
+        self::RELATIVE_SHORT => 'M/d/yy',
     ];
 
     /**
@@ -114,6 +124,11 @@ abstract class IntlDateFormatter
      * @var string
      */
     private $timezoneId;
+
+    /**
+     * @var bool
+     */
+    private $isRelativeDateType = false;
 
     /**
      * @param string|null                             $locale   The locale code. The only currently supported locale is "en" (or null using the default locale, i.e. "en")
@@ -156,6 +171,10 @@ abstract class IntlDateFormatter
 
         $this->setPattern($pattern);
         $this->setTimeZone($timezone);
+
+        if (\in_array($this->dateType, [self::RELATIVE_FULL, self::RELATIVE_LONG, self::RELATIVE_MEDIUM, self::RELATIVE_SHORT], true)) {
+            $this->isRelativeDateType = true;
+        }
     }
 
     /**
@@ -221,8 +240,24 @@ abstract class IntlDateFormatter
             $datetime = $datetime->format('U');
         }
 
-        $transformer = new FullTransformer($this->getPattern(), $this->getTimeZoneId());
-        $formatted = $transformer->format($this->createDateTime($datetime));
+        $pattern = $this->getPattern();
+        $formatted = '';
+
+        if ($this->isRelativeDateType && $formatted = $this->getRelativeDateFormat($datetime)) {
+            if (self::NONE === $this->timeType) {
+                $pattern = '';
+            } else {
+                $pattern = $this->defaultTimeFormats[$this->timeType];
+                if (\in_array($this->dateType, [self::RELATIVE_MEDIUM, self::RELATIVE_SHORT], true)) {
+                    $formatted .= ', ';
+                } else {
+                    $formatted .= ' at ';
+                }
+            }
+        }
+
+        $transformer = new FullTransformer($pattern, $this->getTimeZoneId());
+        $formatted .= $transformer->format($this->createDateTime($datetime));
 
         // behave like the intl extension
         Icu::setError(Icu::U_ZERO_ERROR);
@@ -574,7 +609,7 @@ abstract class IntlDateFormatter
             $pattern = $this->defaultDateFormats[$this->dateType];
         }
         if (self::NONE !== $this->timeType) {
-            if (self::FULL === $this->dateType || self::LONG === $this->dateType) {
+            if (\in_array($this->dateType, [self::FULL, self::LONG, self::RELATIVE_FULL, self::RELATIVE_LONG], true)) {
                 $pattern .= ' \'at\' ';
             } elseif (self::NONE !== $this->dateType) {
                 $pattern .= ', ';
@@ -583,5 +618,28 @@ abstract class IntlDateFormatter
         }
 
         return $pattern;
+    }
+
+    private function getRelativeDateFormat(int $timestamp): string
+    {
+        $today = $this->createDateTime(time());
+        $today->setTime(0, 0, 0);
+
+        $datetime = $this->createDateTime($timestamp);
+        $datetime->setTime(0, 0, 0);
+
+        $interval = $today->diff($datetime);
+
+        if (false !== $interval) {
+            if (0 === $interval->days) {
+                return 'today';
+            }
+
+            if (1 === $interval->days) {
+                return 1 === $interval->invert ? 'yesterday' : 'tomorrow';
+            }
+        }
+
+        return '';
     }
 }
