@@ -1,0 +1,12 @@
+---------------------------------------------------------------------------
+
+by sebpacz at 2021-04-19T19:07:38Z
+
+@nicolas-grekas thank you for your review. I have updated the code according to your suggestions.
+
+---------------------------------------------------------------------------
+
+by stof at 2021-05-24T09:51:44Z
+
+Be aware that this won't allow you to use those constants on PHP <8 if the native implementation of intl formatters is loaded though (as we cannot patch existing classes).
+So this polyfilling is useful for code requiring PHP 8+ but wanting to make the dependency on ext-intl optional. But projects supporting PHP 7 will still need to check for existence of the feature.
