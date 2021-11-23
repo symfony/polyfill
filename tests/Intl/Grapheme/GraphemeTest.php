@@ -119,6 +119,8 @@ class GraphemeTest extends TestCase
         $this->assertSame('jà', grapheme_substr($c, -2));
         $this->assertSame('j', grapheme_substr($c, -2, -1));
         $this->assertSame('', grapheme_substr($c, -2, -2));
+
+        $this->assertSame('☎', grapheme_substr('☢☎❄', 1, 1));
     }
 
     /**
