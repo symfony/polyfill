@@ -93,9 +93,6 @@ final class Php80
         if ('' === $needle || $haystack === $needle) {
             return true;
         }
-        if ($haystack < $needle) {
-            return false;
-        }
         return false !== strpos($haystack, $needle);
     }
 
@@ -103,9 +100,6 @@ final class Php80
     {
         if ('' === $needle || $haystack === $needle) {
             return true;
-        }
-        if ($haystack < $needle) {
-            return false;
         }
         return 0 === strncmp($haystack, $needle, \strlen($needle));
     }
@@ -115,9 +109,6 @@ final class Php80
         if ('' === $needle || $haystack === $needle) {
             return true;
         }
-        if ($haystack < $needle) {
-            return false;
-        }
-        return 0 === substr_compare($haystack, $needle, -\strlen($needle));
+        return '' !== $haystack && 0 === substr_compare($haystack, $needle, -\strlen($needle));
     }
 }
