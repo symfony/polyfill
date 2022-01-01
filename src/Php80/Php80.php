@@ -90,7 +90,7 @@ final class Php80
 
     public static function str_contains(string $haystack, string $needle): bool
     {
-        return '' === $needle || false !== strpos($haystack, $needle);
+        return empty($needle) || false !== strpos($haystack, $needle);
     }
 
     public static function str_starts_with(string $haystack, string $needle): bool
@@ -100,6 +100,6 @@ final class Php80
 
     public static function str_ends_with(string $haystack, string $needle): bool
     {
-        return '' === $needle || ('' !== $haystack && 0 === substr_compare($haystack, $needle, -\strlen($needle)));
+        return 0 === substr_compare($haystack, $needle, -\strlen($needle));
     }
 }
