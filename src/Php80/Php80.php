@@ -90,16 +90,34 @@ final class Php80
 
     public static function str_contains(string $haystack, string $needle): bool
     {
-        return '' === $needle || false !== strpos($haystack, $needle);
+        if ('' === $needle || $haystack === $needle) {
+            return true;
+        }
+        if ($haystack < $needle) {
+            return false;
+        }
+        return false !== strpos($haystack, $needle);
     }
 
     public static function str_starts_with(string $haystack, string $needle): bool
     {
+        if ('' === $needle || $haystack === $needle) {
+            return true;
+        }
+        if ($haystack < $needle) {
+            return false;
+        }
         return 0 === strncmp($haystack, $needle, \strlen($needle));
     }
 
     public static function str_ends_with(string $haystack, string $needle): bool
     {
-        return '' === $needle || ('' !== $haystack && 0 === substr_compare($haystack, $needle, -\strlen($needle)));
+        if ('' === $needle || $haystack === $needle) {
+            return true;
+        }
+        if ($haystack < $needle) {
+            return false;
+        }
+        return 0 === substr_compare($haystack, $needle, -\strlen($needle));
     }
 }
