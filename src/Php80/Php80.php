@@ -100,6 +100,6 @@ final class Php80
 
     public static function str_ends_with(string $haystack, string $needle): bool
     {
-        return empty($needle) || 0 === substr_compare($haystack, $needle, -\strlen($needle));
+        return empty($needle) || (!empty($haystack) && 0 === substr_compare($haystack, $needle, -\strlen($needle));
     }
 }
