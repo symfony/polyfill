@@ -1,3 +1,15 @@
+# 1.24.0
+
+  * Indicates that polyfills provides corresponding extensions
+  * Add `IntlDateFormatter::RELATIVE_*` constants
+  * Mimic deprecation from PHP 8.1 in IntlDateFormatter
+  * Optimize `array_is_list`
+  * Workaround buggy PCRE versions
+  * Fix `iconv_mime_decode()` while using mbstring extension
+  * Fix deprecations on PHP 8.1
+  * Fix Intl Grapheme `PCRE_VERSION` comparison when version has a timestamp
+  * Fix throwing from `mb_substitute_character` on PHP >= 8
+
 # 1.23.1
 
   * Allow null in str_*() functions
