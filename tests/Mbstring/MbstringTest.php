@@ -567,4 +567,16 @@ class MbstringTest extends TestCase
         static::assertFalse(mb_parse_str('', $result));
         static::assertFalse(mb_parse_str(null, $result));
     }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_decode_mimeheader
+     */
+    public function testDecodeMimeheader()
+    {
+        $this->assertTrue(mb_internal_encoding('utf8'));
+        $this->assertSame(sprintf('Test: %s', 'проверка'), mb_decode_mimeheader('Test: =?windows-1251?B?7/Du4uXw6uA=?='));
+        $this->assertTrue(mb_internal_encoding('windows-1251'));
+        $this->assertSame(sprintf('Test: %s', base64_decode('7/Du4uXw6uA=')), mb_decode_mimeheader('Test: =?windows-1251?B?7/Du4uXw6uA=?='));
+        $this->assertTrue(mb_internal_encoding('utf8'));
+    }
 }
