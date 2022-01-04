@@ -1,0 +1,21 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-01-03T15:37:19Z
+
+In eg https://www.tutorialspoint.com/php-how-to-decode-a-mime-header-field-using-iconv-mime-decode-function
+the function is described as having 3 args.
+Can you please dig into php's history and check in which version this changed?
+
+---------------------------------------------------------------------------
+
+by stof at 2022-01-03T16:55:33Z
+
+@nicolas-grekas this is describing the iconv method, not the mb one.
+
+However, ignoring the iconv arguments entirely in the polyfill implementation looks wrong to me. That won't produce a working polyfill, as those arguments are not no-op in PHP.
+
+---------------------------------------------------------------------------
+
+by cedric-anne at 2022-01-04T08:36:58Z
+
+I added a commit to correctly handle the `encoding` parameter of `iconv_mime_decode()` method, and added some tests. I also updated the issue title and description to fit these changes.
