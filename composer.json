@@ -16,25 +16,21 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3",
-        "ircmaxell/password-compat": "~1.0",
-        "paragonie/random_compat": "~1.0|~2.0|~9.99",
-        "symfony/intl": "~2.3|~3.0|~4.0|~5.0"
+        "php": ">=7.1"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "~3.2"
+        "symfony/intl": "^4.4|^5.0|^6.0",
+        "symfony/phpunit-bridge": "^5.3|^6.0",
+        "symfony/var-dumper": "^4.4|^5.1|^6.0"
     },
     "replace": {
         "symfony/polyfill-apcu": "self.version",
         "symfony/polyfill-ctype": "self.version",
-        "symfony/polyfill-php54": "self.version",
-        "symfony/polyfill-php55": "self.version",
-        "symfony/polyfill-php56": "self.version",
-        "symfony/polyfill-php70": "self.version",
-        "symfony/polyfill-php71": "self.version",
         "symfony/polyfill-php72": "self.version",
         "symfony/polyfill-php73": "self.version",
         "symfony/polyfill-php74": "self.version",
+        "symfony/polyfill-php80": "self.version",
+        "symfony/polyfill-php81": "self.version",
         "symfony/polyfill-iconv": "self.version",
         "symfony/polyfill-intl-grapheme": "self.version",
         "symfony/polyfill-intl-icu": "self.version",
@@ -44,21 +40,16 @@
         "symfony/polyfill-intl-transliterator": "self.version",
         "symfony/polyfill-mbstring": "self.version",
         "symfony/polyfill-util": "self.version",
+        "symfony/polyfill-uuid": "self.version",
         "symfony/polyfill-xml": "self.version"
     },
     "autoload": {
         "psr-4": { "Symfony\\Polyfill\\": "src/" },
         "files": [
+            "src/bootstrap.php",
             "src/Apcu/bootstrap.php",
             "src/Ctype/bootstrap.php",
-            "src/Php54/bootstrap.php",
-            "src/Php55/bootstrap.php",
-            "src/Php56/bootstrap.php",
-            "src/Php70/bootstrap.php",
-            "src/Php71/bootstrap.php",
-            "src/Php72/bootstrap.php",
-            "src/Php73/bootstrap.php",
-            "src/Php74/bootstrap.php",
+            "src/Uuid/bootstrap.php",
             "src/Iconv/bootstrap.php",
             "src/Intl/Grapheme/bootstrap.php",
             "src/Intl/Idn/bootstrap.php",
@@ -69,17 +60,17 @@
             "src/Mbstring/bootstrap.php"
         ],
         "classmap": [
+            "src/Intl/Icu/Resources/stubs",
             "src/Intl/MessageFormatter/Resources/stubs",
             "src/Intl/Normalizer/Resources/stubs",
-            "src/Php73/Resources/stubs",
-            "src/Php70/Resources/stubs",
-            "src/Php54/Resources/stubs"
+            "src/Php80/Resources/stubs",
+            "src/Php73/Resources/stubs"
         ]
     },
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "1.12-dev"
+            "dev-main": "1.23-dev"
         }
     }
 }

@@ -16,19 +16,27 @@
         }
     ],
     "require": {
-        "php": ">=5.3.3",
-        "symfony/intl": "~2.3|~3.0|~4.0|~5.0"
+        "php": ">=7.1"
     },
     "autoload": {
-        "files": [ "bootstrap.php" ]
+        "files": [ "bootstrap.php" ],
+        "psr-4": { "Symfony\\Polyfill\\Intl\\Icu\\": "" },
+        "classmap": [ "Resources/stubs" ],
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
     },
     "suggest": {
-        "ext-intl": "For best performance"
+        "ext-intl": "For best performance and support of other locales than \"en\""
     },
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "1.12-dev"
+            "dev-main": "1.23-dev"
+        },
+        "thanks": {
+            "name": "symfony/polyfill",
+            "url": "https://github.com/symfony/polyfill"
         }
     }
 }

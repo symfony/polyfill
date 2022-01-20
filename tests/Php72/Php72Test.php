@@ -31,14 +31,14 @@ class Php72Test extends TestCase
         $s = implode('', $s);
         $e = utf8_encode($s);
 
-        $this->assertSame(\utf8_encode($s), utf8_encode($s));
-        $this->assertSame(\utf8_decode($e), utf8_decode($e));
+        $this->assertSame(utf8_encode($s), utf8_encode($s));
+        $this->assertSame(utf8_decode($e), utf8_decode($e));
         $this->assertSame('??', utf8_decode('Σ어'));
 
         $s = 444;
 
-        $this->assertSame(\utf8_encode($s), utf8_encode($s));
-        $this->assertSame(\utf8_decode($s), utf8_decode($s));
+        $this->assertSame(utf8_encode($s), utf8_encode($s));
+        $this->assertSame(utf8_decode($s), utf8_decode($s));
     }
 
     /**
@@ -47,7 +47,15 @@ class Php72Test extends TestCase
     public function testPhpOsFamily()
     {
         $this->assertTrue(\defined('PHP_OS_FAMILY'));
-        $this->assertSame(PHP_OS_FAMILY, p::php_os_family());
+        $this->assertSame(\PHP_OS_FAMILY, p::php_os_family());
+    }
+
+    public function testPhpFloat()
+    {
+        $this->assertSame(15, \PHP_FLOAT_DIG);
+        $this->assertSame(2.2204460492503E-16, \PHP_FLOAT_EPSILON);
+        $this->assertSame(2.2250738585072E-308, \PHP_FLOAT_MIN);
+        $this->assertSame(1.7976931348623157E+308, \PHP_FLOAT_MAX);
     }
 
     /**
@@ -61,9 +69,30 @@ class Php72Test extends TestCase
         var_dump($obj);
         $dump = ob_get_clean();
 
-        $this->assertContains("#$id ", $dump);
+        $this->assertStringContainsString("#$id ", $dump);
+    }
 
+    /**
+     * @covers \Symfony\Polyfill\Php72\Php72::spl_object_id
+     * @requires PHP < 8
+     */
+    public function testSplObjectIdWithInvalidType()
+    {
         $this->assertNull(@spl_object_id(123));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php72\Php72::spl_object_id
+     */
+    public function testSplObjectIdUniqueValues()
+    {
+        // Should be able to represent more than 2**16 ids on 32-bit systems.
+        $result = [];
+        for ($i = 0; $i < 70000; ++$i) {
+            $obj = new \stdClass();
+            $result[spl_object_id($obj)] = $obj;
+        }
+        $this->assertCount(70000, $result);
     }
 
     /**
@@ -75,7 +104,7 @@ class Php72Test extends TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->assertFalse(sapi_windows_vt100_support(STDIN, true));
+        $this->assertFalse(sapi_windows_vt100_support(\STDIN, true));
     }
 
     /**
@@ -87,8 +116,14 @@ class Php72Test extends TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be resource');
-        sapi_windows_vt100_support('foo', true);
+        try {
+            sapi_windows_vt100_support('foo', true);
+        } catch (\PHPUnit\Framework\Error\Warning $e) {
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 1 to be resource');
+
+            throw $e;
+        }
     }
 
     /**
@@ -100,8 +135,14 @@ class Php72Test extends TestCase
             $this->markTestSkipped('Windows only test');
         }
 
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'was not able to analyze the specified stream');
-        sapi_windows_vt100_support(fopen('php://memory', 'wb'), true);
+        try {
+            sapi_windows_vt100_support(fopen('php://memory', 'wb'), true);
+        } catch (\PHPUnit\Framework\Error\Warning $e) {
+            $this->expectWarning();
+            $this->expectWarningMessage('was not able to analyze the specified stream');
+
+            throw $e;
+        }
     }
 
     /**
@@ -116,23 +157,17 @@ class Php72Test extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Php72\Php72::stream_isatty
+     * @requires PHP < 8
      */
     public function testStreamIsattyWarnsOnInvalidInputType()
     {
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be resource');
-        stream_isatty('foo');
-    }
+        try {
+            stream_isatty('foo');
+        } catch (\PHPUnit\Framework\Error\Warning $e) {
+            $this->expectWarning();
+            $this->expectWarningMessage('expects parameter 1 to be resource');
 
-    public function setExpectedException($exception, $message = '', $code = null)
-    {
-        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
-            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
-        }
-        if (method_exists($this, 'expectException')) {
-            $this->expectException($exception);
-            $this->expectExceptionMessage($message);
-        } else {
-            parent::setExpectedException($exception, $message, $code);
+            throw $e;
         }
     }
 
@@ -156,9 +191,9 @@ class Php72Test extends TestCase
 
     public function testScrub()
     {
-        $subst = \mb_substitute_character();
-        \mb_substitute_character('none');
+        $subst = mb_substitute_character();
+        mb_substitute_character('none');
         $this->assertSame('ab', mb_scrub("a\xE9b"));
-        \mb_substitute_character($subst);
+        mb_substitute_character($subst);
     }
 }

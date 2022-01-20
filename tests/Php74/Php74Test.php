@@ -28,14 +28,14 @@ class Php74Test extends TestCase
         $obj->dyn = 5;
         $obj->{'6'} = 6;
 
-        $this->assertSame(array(
+        $this->assertEqualsCanonicalizing([
             "\0".'Symfony\Polyfill\Tests\Php74\B'."\0".'priv' => 4,
             'pub' => 1,
             "\0".'*'."\0".'prot' => 2,
             "\0".'Symfony\Polyfill\Tests\Php74\A'."\0".'priv' => 3,
             'dyn' => 5,
             6 => 6,
-        ), get_mangled_object_vars($obj));
+        ], get_mangled_object_vars($obj));
     }
 
     /**
@@ -43,24 +43,26 @@ class Php74Test extends TestCase
      */
     public function testGetMangledObjectVarsOnArrayObject()
     {
-        $ao = new AO(array('x' => 'y'));
+        $ao = new AO(['x' => 'y']);
         $ao->dyn = 2;
 
-        $this->assertSame(array(
+        $this->assertSame([
             "\0".'Symfony\Polyfill\Tests\Php74\AO'."\0".'priv' => 1,
             'dyn' => 2,
-        ), get_mangled_object_vars($ao));
+        ], get_mangled_object_vars($ao));
     }
 
     /**
      * @covers \Symfony\Polyfill\Php74\Php74::get_mangled_object_vars
+     * @requires PHP < 8
      */
     public function testGetMangledObjectVarsOnNonObject()
     {
         $this->assertNull(@get_mangled_object_vars(0));
         $this->assertNull(@get_mangled_object_vars(true));
         $this->assertNull(@get_mangled_object_vars('string'));
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'expects parameter 1 to be object');
+        $this->expectWarning();
+        $this->expectWarningMessage('expects parameter 1 to be object');
         get_mangled_object_vars(1);
     }
 
@@ -72,15 +74,15 @@ class Php74Test extends TestCase
         $algos = password_algos();
 
         if (\defined('PASSWORD_BCRYPT')) {
-            $this->assertContains(PASSWORD_BCRYPT, $algos);
+            $this->assertContains(\PASSWORD_BCRYPT, $algos);
         }
 
         if (\defined('PASSWORD_ARGON2I')) {
-            $this->assertContains(PASSWORD_ARGON2I, $algos);
+            $this->assertContains(\PASSWORD_ARGON2I, $algos);
         }
 
         if (\defined('PASSWORD_ARGON2ID')) {
-            $this->assertContains(PASSWORD_ARGON2ID, $algos);
+            $this->assertContains(\PASSWORD_ARGON2ID, $algos);
         }
     }
 
@@ -89,29 +91,27 @@ class Php74Test extends TestCase
      */
     public function testStrSplit()
     {
-        $this->assertSame(array('한', '국', '어'), mb_str_split('한국어'));
-        $this->assertSame(array('по', 'бе', 'да'), mb_str_split('победа', 2));
-        $this->assertSame(array('źre', 'bię'), mb_str_split('źrebię', 3));
-        $this->assertSame(array('źr', 'ebi', 'ę'), mb_str_split('źrebię', 3, 'ASCII'));
-        $this->assertSame(array('alpha', 'bet'), mb_str_split('alphabet', 5));
-        $this->assertFalse(@mb_str_split('победа', 0));
-        $this->assertNull(@mb_str_split(array(), 0));
-
-        $this->setExpectedException('PHPUnit\Framework\Error\Warning', 'The length of each segment must be greater than zero');
-        mb_str_split('победа', 0);
+        $this->assertSame(['한', '국', '어'], mb_str_split('한국어'));
+        $this->assertSame(['по', 'бе', 'да'], mb_str_split('победа', 2));
+        $this->assertSame(['źre', 'bię'], mb_str_split('źrebię', 3));
+        $this->assertSame(['źr', 'ebi', 'ę'], mb_str_split('źrebię', 3, 'ASCII'));
+        $this->assertSame(['alpha', 'bet'], mb_str_split('alphabet', 5));
+        $this->assertSame(['e', '́', '💩', '𐍈'], mb_str_split('é💩𐍈', 1, 'UTF-8'));
     }
 
-    public function setExpectedException($exception, $message = '', $code = null)
+    /**
+     * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
+     * @requires PHP < 8
+     */
+    public function testStrSplitWithInvalidValues()
     {
-        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
-            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
-        }
-        if (method_exists($this, 'expectException')) {
-            $this->expectException($exception);
-            $this->expectExceptionMessage($message);
-        } else {
-            parent::setExpectedException($exception, $message, $code);
-        }
+        $this->assertSame([], mb_str_split('', 1, 'UTF-8'));
+        $this->assertFalse(@mb_str_split('победа', 0));
+        $this->assertNull(@mb_str_split([], 0));
+
+        $this->expectWarning();
+        $this->expectWarningMessage('The length of each segment must be greater than zero');
+        mb_str_split('победа', 0);
     }
 }
 
@@ -131,6 +131,7 @@ class AO extends ArrayObject
 {
     private $priv = 1;
 
+    #[\ReturnTypeWillChange]
     public function getFlags()
     {
         return self::ARRAY_AS_PROPS | self::STD_PROP_LIST;

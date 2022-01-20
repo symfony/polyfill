@@ -14,6 +14,7 @@ namespace Symfony\Polyfill\Tests\Intl\Normalizer;
 use Normalizer as in;
 use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Intl\Normalizer\Normalizer as pn;
+use Symfony\Polyfill\Util\TestListenerTrait;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
@@ -31,7 +32,7 @@ class NormalizerTest extends TestCase
         $rpn = $rpn->getConstants();
         $rin = $rin->getConstants();
 
-        unset($rin['FORM_KC_CF'], $rin['NFKC_CF']);
+        unset($rin['NONE'], $rin['FORM_KC_CF'], $rin['NFKC_CF']);
 
         ksort($rpn);
         ksort($rin);
@@ -55,10 +56,9 @@ class NormalizerTest extends TestCase
         $this->assertFalse(normalizer_is_normalized($d, pn::NFC));
         $this->assertFalse(normalizer_is_normalized("\xFF"));
 
-        $this->assertFalse(pn::isNormalized($d, pn::NFD)); // The current implementation defensively says false
+        $this->assertTrue(pn::isNormalized($d, pn::NFD));
 
-        $this->assertFalse(pn::isNormalized('', pn::NONE));
-        $this->assertFalse(pn::isNormalized('', 6));
+        $this->assertFalse(pn::isNormalized('', 42));
     }
 
     /**
@@ -67,7 +67,9 @@ class NormalizerTest extends TestCase
     public function testNormalize()
     {
         $c = in::normalize('déjà', pn::NFC).in::normalize('훈쇼™', pn::NFD);
-        $this->assertSame($c, normalizer_normalize($c, pn::NONE));
+        if (\PHP_VERSION_ID < 70300) {
+            $this->assertSame($c, normalizer_normalize($c, \Normalizer::NONE));
+        }
 
         $c = 'déjà 훈쇼™';
         $d = in::normalize($c, pn::NFD);
@@ -81,7 +83,6 @@ class NormalizerTest extends TestCase
         $this->assertSame($kc, normalizer_normalize($d, pn::NFKC));
         $this->assertSame($kd, normalizer_normalize($c, pn::NFKD));
 
-        $this->assertFalse(normalizer_normalize($c, -1));
         $this->assertFalse(normalizer_normalize("\xFF"));
 
         $this->assertSame("\xcc\x83\xc3\x92\xd5\x9b", normalizer_normalize("\xcc\x83\xc3\x92\xd5\x9b"));
@@ -91,10 +92,27 @@ class NormalizerTest extends TestCase
     /**
      * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
      */
+    public function testNormalizeWithInvalidForm()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('normalizer_normalize(): Argument #2 ($form) must be a a valid normalization form');
+        }
+
+        $this->assertFalse(normalizer_normalize('foo', -1));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
+     */
     public function testNormalizeConformance()
     {
+        if (false === TestListenerTrait::$enabledPolyfills) {
+            $this->markTestSkipped('No need to test the native implementation');
+        }
+
         $t = file(__DIR__.'/NormalizationTest.txt');
-        $c = array();
+        $c = [];
 
         foreach ($t as $s) {
             $t = explode('#', $s);

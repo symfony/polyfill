@@ -26,12 +26,8 @@ class IconvTest extends TestCase
      */
     public function testIconv()
     {
-        // Native iconv() behavior varies between versions and OS for these two tests
-        // See e.g. https://bugs.php.net/52211
-        if (\PHP_VERSION_ID >= 50610) {
-            $this->assertFalse(@iconv('UTF-8', 'ISO-8859-1', 'nœud'));
-            $this->assertSame('nud', iconv('UTF-8', 'ISO-8859-1//IGNORE', 'nœud'));
-        }
+        $this->assertFalse(@iconv('UTF-8', 'ISO-8859-1', 'nœud'));
+        $this->assertSame('nud', iconv('UTF-8', 'ISO-8859-1//IGNORE', 'nœud'));
 
         $this->assertSame(utf8_decode('déjà'), iconv('CP1252', 'ISO-8859-1', utf8_decode('déjà')));
         $this->assertSame('deja noeud', p::iconv('UTF-8//ignore//IGNORE', 'US-ASCII//TRANSLIT//IGNORE//translit', 'déjà nœud'));
@@ -75,17 +71,41 @@ class IconvTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
+     * @requires PHP < 8
+     */
+    public function testIconvSubstrReturnsFalsePrePHP8()
+    {
+        $c = 'déjà';
+        $this->assertFalse(iconv_substr($c, 42, 1, 'UTF-8'));
+        $this->assertFalse(iconv_substr($c, -42, 1));
+        $this->assertFalse(iconv_substr($c, 42, 26));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
+     * @requires PHP 8
+     */
+    public function testIconvSubstrReturnsEmptyPostPHP8()
+    {
+        $c = 'déjà';
+        $this->assertSame('', iconv_substr($c, 42, 1, 'UTF-8'));
+        $this->assertSame('d', iconv_substr($c, -42, 1));
+        $this->assertSame('', iconv_substr($c, 42, 26));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_encode
      */
     public function testIconvMimeEncode()
     {
         $text = "\xE3\x83\x86\xE3\x82\xB9\xE3\x83\x88\xE3\x83\x86\xE3\x82\xB9\xE3\x83\x88";
-        $options = array(
+        $options = [
             'scheme' => 'Q',
             'input-charset' => 'UTF-8',
             'output-charset' => 'UTF-8',
             'line-length' => 30,
-        );
+        ];
 
         $this->assertSame(
             "Subject: =?UTF-8?Q?=E3=83=86?=\r\n =?UTF-8?Q?=E3=82=B9?=\r\n =?UTF-8?Q?=E3=83=88?=\r\n =?UTF-8?Q?=E3=83=86?=\r\n =?UTF-8?Q?=E3=82=B9?=\r\n =?UTF-8?Q?=E3=83=88?=",
@@ -101,9 +121,11 @@ class IconvTest extends TestCase
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?B?Kg==?= .'));
         $this->assertSame('Legal encoded-word: * .', iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .'));
         if ('\\' !== \DIRECTORY_SEPARATOR) {
-            $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
-            $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .', ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
+            $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', \ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
+            $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .', \ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
         }
+        $this->assertSame(sprintf('Test: %s', 'проверка'), iconv_mime_decode('Test: =?windows-1251?B?7/Du4uXw6uA=?=', 0, 'UTF-8'));
+        $this->assertSame(sprintf('Test: %s', base64_decode('7/Du4uXw6uA=')), iconv_mime_decode('Test: =?windows-1251?B?7/Du4uXw6uA=?=', 0, 'windows-1251'));
     }
 
     /**
@@ -112,7 +134,8 @@ class IconvTest extends TestCase
     public function testIconvMimeDecodeIllegal()
     {
         iconv_mime_decode('Legal encoded-word: =?utf-8?Q?*?= .');
-        $this->setExpectedException('PHPUnit\Framework\Error\Notice', 'Detected an illegal character in input string');
+        $this->expectNotice();
+        $this->expectNoticeMessage('Detected an illegal character in input string');
         iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .');
     }
 
@@ -130,17 +153,17 @@ X-Bar: =?cp949?B?UkU6odk=?= =?UTF-8?Q?Bar?=
 To: <test@example.com>
 HEADERS;
 
-        $result = array(
+        $result = [
             'From' => '<foo@example.com>',
             'Subject' => '=?ks_c_5601-1987?B?UkU6odk=?= Foo',
-            'X-Bar' => array(
+            'X-Bar' => [
                 'RE:☆ Foo',
                 'RE:☆Bar',
-            ),
+            ],
             'To' => '<test@example.com>',
-        );
+        ];
 
-        $this->assertSame($result, iconv_mime_decode_headers($headers, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8'));
+        $this->assertSame($result, iconv_mime_decode_headers($headers, \ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8'));
     }
 
     /**
@@ -150,11 +173,11 @@ HEADERS;
      */
     public function testIconvGetEncoding()
     {
-        $a = array(
+        $a = [
            'input_encoding' => 'UTF-8',
            'output_encoding' => 'UTF-8',
            'internal_encoding' => 'UTF-8',
-        );
+        ];
 
         foreach ($a as $t => $e) {
             $this->assertTrue(@iconv_set_encoding($t, $e));
@@ -164,18 +187,5 @@ HEADERS;
         $this->assertSame($a, iconv_get_encoding('all'));
 
         $this->assertFalse(@iconv_set_encoding('foo', 'UTF-8'));
-    }
-
-    public function setExpectedException($exception, $message = '', $code = null)
-    {
-        if (!class_exists('PHPUnit\Framework\Error\Notice')) {
-            $exception = str_replace('PHPUnit\\Framework\\Error\\', 'PHPUnit_Framework_Error_', $exception);
-        }
-        if (method_exists($this, 'expectException')) {
-            $this->expectException($exception);
-            $this->expectExceptionMessage($message);
-        } else {
-            parent::setExpectedException($exception, $message, $code);
-        }
     }
 }

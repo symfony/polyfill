@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+    push:
+    pull_request:
+
+jobs:
+
+    test:
+        name: PHPUnit Tests
+        runs-on: ubuntu-latest
+
+        env:
+            COMPOSER_ROOT_VERSION: dev-main
+            SYMFONY_PHPUNIT_VERSION: 9.5
+
+        strategy:
+            matrix:
+                include:
+                    - php: '7.1'
+                    - php: '7.2'
+                    - php: '7.3'
+                    - php: '7.4'
+                    - php: '8.0'
+                    - php: '8.1'
+                    - php: '8.2'
+                      mode: experimental
+            fail-fast: false
+
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    coverage: "none"
+                    extensions: "apcu, intl, mbstring, uuid"
+                    ini-values: "memory_limit=-1, session.gc_probability=0, apc.enable_cli=1"
+                    php-version: "${{ matrix.php }}"
+                    tools: "composer:v2"
+
+            -   name: Install dependencies
+                run: composer --prefer-source --no-progress --ansi install
+
+            -   name: Configure for PHP <= 7.2
+                if: "${{ matrix.php <= '7.2' }}"
+                run: |
+                    echo SYMFONY_PHPUNIT_VERSION=7.5 >> $GITHUB_ENV
+
+            -   name: Run tests
+                run: |
+                    ok=0
+                    ./vendor/bin/simple-phpunit || ok=1
+                    [[ "${{ matrix.mode }}" = experimental ]] || (exit $ok)

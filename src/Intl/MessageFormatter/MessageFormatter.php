@@ -46,7 +46,7 @@ namespace Symfony\Polyfill\Intl\MessageFormatter;
  *  * simple parameters
  *  * integer number parameters
  *
- * It does NOT support the ['apostrophe-friendly' syntax](http://www.php.net/manual/en/messageformatter.formatmessage.php).
+ * It does NOT support the ['apostrophe-friendly' syntax](https://php.net/MessageFormatter.formatMessage).
  * Also messages that are working with the fallback implementation are not necessarily compatible with the
  * PHP intl MessageFormatter so do not rely on the fallback if you are able to install intl extension somehow.
  *
@@ -64,29 +64,29 @@ class MessageFormatter
     private $errorCode = 0;
     private $errorMessage = '';
 
-    public function __construct($locale, $pattern)
+    public function __construct(string $locale, string $pattern)
     {
-        $this->locale = (string) $locale;
+        $this->locale = $locale;
 
         if (!$this->setPattern($pattern)) {
             throw new \IntlException('Message pattern is invalid.');
         }
     }
 
-    public static function create($locale, $pattern)
+    public static function create(string $locale, string $pattern)
     {
         $formatter = new static($locale, '-');
 
         return $formatter->setPattern($pattern) ? $formatter : null;
     }
 
-    public static function formatMessage($locale, $pattern, array $args)
+    public static function formatMessage(string $locale, string $pattern, array $values)
     {
         if (null === $formatter = self::create($locale, $pattern)) {
             return false;
         }
 
-        return $formatter->format($args);
+        return $formatter->format($values);
     }
 
     public function getLocale()
@@ -109,9 +109,8 @@ class MessageFormatter
         return $this->errorMessage;
     }
 
-    public function setPattern($pattern)
+    public function setPattern(string $pattern)
     {
-        $pattern = (string) $pattern;
         try {
             $this->tokens = self::tokenizePattern($pattern);
             $this->pattern = $pattern;
@@ -122,17 +121,17 @@ class MessageFormatter
         return true;
     }
 
-    public function format(array $args)
+    public function format(array $values)
     {
         $this->errorCode = 0;
         $this->errorMessage = '';
 
-        if (!$args) {
+        if (!$values) {
             return $this->pattern;
         }
 
         try {
-            return self::parseTokens($this->tokens, $args, $this->locale);
+            return self::parseTokens($this->tokens, $values, $this->locale);
         } catch (\DomainException $e) {
             $this->errorCode = -1;
             $this->errorMessage = $e->getMessage();
@@ -141,7 +140,7 @@ class MessageFormatter
         }
     }
 
-    public function parse($value)
+    public function parse(string $string)
     {
         $this->errorCode = -1;
         $this->errorMessage = sprintf('The PHP intl extension is required to use "MessageFormatter::%s()".', __FUNCTION__);
@@ -149,11 +148,11 @@ class MessageFormatter
         return false;
     }
 
-    private static function parseTokens(array $tokens, array $args, $locale)
+    private static function parseTokens(array $tokens, array $values, $locale)
     {
         foreach ($tokens as $i => $token) {
             if (\is_array($token)) {
-                $tokens[$i] = self::parseToken($token, $args, $locale);
+                $tokens[$i] = self::parseToken($token, $values, $locale);
             }
         }
 
@@ -163,11 +162,11 @@ class MessageFormatter
     private static function tokenizePattern($pattern)
     {
         if (false === $start = $pos = strpos($pattern, '{')) {
-            return array($pattern);
+            return [$pattern];
         }
 
         $depth = 1;
-        $tokens = array(substr($pattern, 0, $pos));
+        $tokens = [substr($pattern, 0, $pos)];
 
         while (true) {
             $open = strpos($pattern, '{', 1 + $pos);
@@ -212,13 +211,13 @@ class MessageFormatter
      *
      * @see http://icu-project.org/apiref/icu4c/classMessageFormat.html#details
      */
-    private static function parseToken(array $token, array $args, $locale)
+    private static function parseToken(array $token, array $values, $locale)
     {
-        if (!isset($args[$param = trim($token[0])])) {
+        if (!isset($values[$param = trim($token[0])])) {
             return '{'.$param.'}';
         }
 
-        $arg = $args[$param];
+        $arg = $values[$param];
         $type = isset($token[1]) ? trim($token[1]) : 'none';
         switch ($type) {
             case 'date': //XXX use DateFormatter?
@@ -229,7 +228,6 @@ class MessageFormatter
             case 'choice':
             case 'selectordinal':
                 throw new \DomainException(sprintf('The PHP intl extension is required to use the "%s" message format.', $type));
-
             case 'number':
                 $format = isset($token[2]) ? trim($token[2]) : null;
                 if (!is_numeric($arg) || (null !== $format && 'integer' !== $format)) {
@@ -267,7 +265,7 @@ class MessageFormatter
                     }
                 }
                 if (false !== $message) {
-                    return self::parseTokens(self::tokenizePattern($message), $args, $locale);
+                    return self::parseTokens(self::tokenizePattern($message), $values, $locale);
                 }
                 break;
 
@@ -294,7 +292,7 @@ class MessageFormatter
                     $selector = trim($plural[$i++]);
 
                     if (1 === $i && 0 === strncmp($selector, 'offset:', 7)) {
-                        $pos = strpos(str_replace(array("\n", "\r", "\t"), ' ', $selector), ' ', 7);
+                        $pos = strpos(str_replace(["\n", "\r", "\t"], ' ', $selector), ' ', 7);
                         $offset = (int) trim(substr($selector, 7, $pos - 7));
                         $selector = trim(substr($selector, 1 + $pos, \strlen($selector)));
                     }
@@ -306,7 +304,7 @@ class MessageFormatter
                     }
                 }
                 if (false !== $message) {
-                    return self::parseTokens(self::tokenizePattern($message), $args, $locale);
+                    return self::parseTokens(self::tokenizePattern($message), $values, $locale);
                 }
                 break;
         }

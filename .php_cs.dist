@@ -5,25 +5,31 @@ if (!file_exists(__DIR__.'/src')) {
 }
 
 return PhpCsFixer\Config::create()
-    ->setRules(array(
+    ->setRules([
         '@Symfony' => true,
         '@Symfony:risky' => true,
-        '@PHPUnit48Migration:risky' => true,
-        'php_unit_no_expectation_annotation' => false, // part of `PHPUnitXYMigration:risky` ruleset, to be enabled when PHPUnit 4.x support will be dropped, as we don't want to rewrite exceptions handling twice
-        'array_syntax' => array('syntax' => 'long'),
+        '@PHPUnit75Migration:risky' => true,
         'blank_line_before_statement' => false, // as currently, some of methods are defined as one-liners
         'braces' => false,                      // as currently, some of methods are defined as one-liners
-        'ordered_imports' => true,
-        'self_accessor' => false, // due to limitations of Late Static Binding under legacy PHP versions
-    ))
+        'php_unit_dedicate_assert' => ['target' => '5.6'],
+        'array_syntax' => ['syntax' => 'short'],
+        'fopen_flags' => false,
+        'native_constant_invocation' => true,
+        'list_syntax' => ['syntax' => 'short'],
+        'visibility_required' => ['property', 'method', 'const'],
+        'ternary_to_null_coalescing' => true,
+    ])
     ->setRiskyAllowed(true)
     ->setFinder(
         PhpCsFixer\Finder::create()
             ->in(__DIR__)
-            ->append(array(__FILE__))
-            ->exclude(array(
+            ->append([__FILE__])
+            ->exclude([
                 'src/Iconv/Resources',
+                'src/Intl/Icu/Resources',
+                'src/Intl/Idn/Resources',
+                'src/Mbstring/Resources',
                 'src/Intl/Normalizer/Resources',
-            ))
+            ])
     )
 ;
