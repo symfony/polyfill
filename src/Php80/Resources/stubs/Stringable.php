@@ -1,6 +1,6 @@
 <?php
 
-if (\PHP_VERSION_ID < 80000) {
+if (\PHP_VERSION_ID < 80000 && !interface_exists('Stringable', false)) {
     interface Stringable
     {
         /**
