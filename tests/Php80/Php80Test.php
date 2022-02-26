@@ -32,9 +32,9 @@ class Php80Test extends TestCase
         } catch (\DivisionByZeroError $e) {
             $result = $expected;
         }
-        $this->assertSame($expected, $result);
+        $this->assertEqualsWithDelta($expected, $result, 0.001);
         // Cast to string to detect negative zero "-0"
-        $this->assertSame((string) $expected, (string) $result);
+        $this->assertEquals(number_format($expected, 3), number_format($result, 3));
     }
 
     /**
