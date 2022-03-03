@@ -56,6 +56,7 @@ Polyfills are provided for:
 - the `get_resource_id` function introduced in PHP 8.0;
 - the `Attribute` class introduced in PHP 8.0;
 - the `Stringable` interface introduced in PHP 8.0;
+- the `PhpToken` class introduced in PHP 8.0 when the tokenizer extension is enabled;
 - the `array_is_list` function introduced in PHP 8.1;
 - the `MYSQLI_REFRESH_REPLICA` constant introduced in PHP 8.1;
 - the `ReturnTypeWillChange` attribute introduced in PHP 8.1;
