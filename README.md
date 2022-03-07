@@ -69,7 +69,16 @@ Compatibility notes
 ===================
 
 To write portable code between PHP5 and PHP7, some care must be taken:
-- `\*Error` exceptions must be caught before `\Exception`;
+- `\Exception` and `\*Exception` exceptions must be caught before `\Error`, `\*Error` or `\Throwable`:
+```php
+try {
+   ...
+} catch (\Exception $e) {
+  // executes in PHP>=5
+} catch (\Throwable $e) {
+  // executes in PHP>=7
+}
+```
 - after calling `error_clear_last()`, the result of `$e = error_get_last()` must be
   verified using `isset($e['message'][0])` instead of `null !== $e`.
 
