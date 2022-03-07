@@ -12,5 +12,5 @@
 use Symfony\Polyfill\Intl\MessageFormatter\MessageFormatter as p;
 
 if (!function_exists('msgfmt_format_message')) {
-    function msgfmt_format_message($locale, $pattern, array $args) { return p::formatMessage($locale, $pattern, $args); }
+    function msgfmt_format_message($locale, $pattern, array $values) { return p::formatMessage($locale, $pattern, $values); }
 }
