@@ -77,7 +77,7 @@ class PhpTokenTest extends TestCase
         $this->assertSame($token->isIgnorable(), $polyfillToken->isIgnorable());
         // ignorable token
         $token = new \PhpToken(\T_COMMENT, '// todo');
-        $polyfillToken = new PhpTokenPolyfill(\T_COMMENT, '// inline');
+        $polyfillToken = new PhpTokenPolyfill(\T_COMMENT, '// todo');
         $this->assertSame($token->isIgnorable(), $polyfillToken->isIgnorable());
     }
 }
