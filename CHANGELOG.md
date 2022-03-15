@@ -1,3 +1,7 @@
+# 1.25.1
+
+  * Fix QQQQQ date format
+
 # 1.25.0
 
   * Add `PhpToken` to the PHP 8.0 polyfill when the tokenizer extension is enabled
