@@ -36,6 +36,7 @@ Polyfills are provided for:
 - a `Binary` utility class to be used when compatibility with
   `mbstring.func_overload` is required;
 - the `spl_object_id` and `stream_isatty` functions introduced in PHP 7.2;
+- the `mb_ord`, `mb_chr` and `mb_scrub` functions introduced in PHP 7.2 from the `mbstring` extension
 - the `sapi_windows_vt100_support` function (Windows only) introduced in PHP 7.2;
 - the `PHP_FLOAT_*` constant introduced in PHP 7.2;
 - the `PHP_OS_FAMILY` constant introduced in PHP 7.2;
