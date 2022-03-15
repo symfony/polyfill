@@ -81,6 +81,12 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
         $dateTime = new \DateTime('@0');
         $dateTimeImmutable = new \DateTimeImmutable('@0');
 
+        /* https://unicode-org.atlassian.net/browse/ICU-21647 */
+        $expectedQuarterX5 = '1';
+        if (\defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '70.1', '<')) {
+            $expectedQuarterX5 = '1st quarter';
+        }
+
         $formatData = [
             /* general */
             ['y-M-d', 0, '1970-1-1'],
@@ -129,13 +135,13 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
             ['QQ', 0, '01'],
             ['QQQ', 0, 'Q1'],
             ['QQQQ', 0, '1st quarter'],
-            ['QQQQQ', 0, '1st quarter'],
+            ['QQQQQ', 0, $expectedQuarterX5],
 
             ['q', 0, '1'],
             ['qq', 0, '01'],
             ['qqq', 0, 'Q1'],
             ['qqqq', 0, '1st quarter'],
-            ['qqqqq', 0, '1st quarter'],
+            ['qqqqq', 0, $expectedQuarterX5],
 
             // 4 months
             ['Q', 7776000, '2'],
