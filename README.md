@@ -62,6 +62,8 @@ Polyfills are provided for:
 - the `enum_exists` function introduced in PHP 8.1;
 - the `MYSQLI_REFRESH_REPLICA` constant introduced in PHP 8.1;
 - the `ReturnTypeWillChange` attribute introduced in PHP 8.1;
+- the `SensitiveParameter` attribute introduced in PHP 8.2;
+- the `SensitiveParameterValue` class introduced in PHP 8.2;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
@@ -92,6 +94,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php74` for using the PHP 7.4 functions,
 - `symfony/polyfill-php80` for using the PHP 8.0 functions,
 - `symfony/polyfill-php81` for using the PHP 8.1 functions,
+- `symfony/polyfill-php82` for using the PHP 8.2 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,
