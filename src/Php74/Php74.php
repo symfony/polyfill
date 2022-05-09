@@ -60,7 +60,7 @@ final class Php74
         }
 
         if ('UTF-8' === $encoding || \in_array(strtoupper($encoding), ['UTF-8', 'UTF8'], true)) {
-            return preg_split("/(.{{$split_length}})/u", $string, null, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
+            return preg_split("/(.{{$split_length}})/u", $string, -1, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
         }
 
         $result = [];
