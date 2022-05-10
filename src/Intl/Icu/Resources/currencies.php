@@ -995,6 +995,12 @@ return array (
   array (
     0 => 'SKK',
   ),
+  'SLE' => 
+  array (
+    0 => 'SLE',
+    1 => 2,
+    2 => 0,
+  ),
   'SLL' => 
   array (
     0 => 'SLL',
@@ -1168,6 +1174,10 @@ return array (
   'VEB' => 
   array (
     0 => 'VEB',
+  ),
+  'VED' => 
+  array (
+    0 => 'VED',
   ),
   'VEF' => 
   array (
