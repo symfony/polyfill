@@ -1,6 +1,8 @@
-# 1.25.1
+# 1.26.0
 
+  * Add PHP 8.2 polyfill with SensitiveParameter and SensitiveParameterValue
   * Fix QQQQQ date format
+  * Fix passing null to `preg_split()`, throwing a deprecation on PHP 8.1
 
 # 1.25.0
 
