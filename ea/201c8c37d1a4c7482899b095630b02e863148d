@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by derrabus at 2022-04-12T13:28:52Z
+
+For reference, this PR adds polyfills introduced by this RFC: https://wiki.php.net/rfc/redact_parameters_in_back_traces
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2022-05-05T12:30:36Z
+
+Hi Folks, are you currently waiting for me here? From my side I believe I answered all questions and consider this PR finished, unless you request some changes. The build failures appear to be unrelated and should likely be fixed in a separate PR.
