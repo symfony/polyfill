@@ -9,7 +9,7 @@ This component provides features added to PHP 8.1 core:
 - [`ReturnTypeWillChange`](https://wiki.php.net/rfc/internal_method_return_types)
 
 More information can be found in the
-[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).
 
 License
 =======

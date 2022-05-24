@@ -15,7 +15,7 @@ It is limited to the "en" locale and to:
 - [`IntlDateFormatter`](https://php.net/IntlDateFormatter)
 
 More information can be found in the
-[main Polyfill README](https://github.com/symfony/polyfill/blob/master/README.md).
+[main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).
 
 License
 =======

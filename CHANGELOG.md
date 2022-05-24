@@ -1,3 +1,7 @@
+# 1.27.0
+
+  * Add `AllowDynamicProperties` to PHP 8.2 polyfill
+
 # 1.26.0
 
   * Add PHP 8.2 polyfill with SensitiveParameter and SensitiveParameterValue
