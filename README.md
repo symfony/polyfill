@@ -62,6 +62,7 @@ Polyfills are provided for:
 - the `enum_exists` function introduced in PHP 8.1;
 - the `MYSQLI_REFRESH_REPLICA` constant introduced in PHP 8.1;
 - the `ReturnTypeWillChange` attribute introduced in PHP 8.1;
+- the `AllowDynamicProperties` attribute introduced in PHP 8.2;
 - the `SensitiveParameter` attribute introduced in PHP 8.2;
 - the `SensitiveParameterValue` class introduced in PHP 8.2;
 
