@@ -1,10 +1,6 @@
-# 1.27.0
-
-  * Add `AllowDynamicProperties` to PHP 8.2 polyfill
-
 # 1.26.0
 
-  * Add PHP 8.2 polyfill with SensitiveParameter and SensitiveParameterValue
+  * Add PHP 8.2 polyfill with SensitiveParameter, SensitiveParameterValue and AllowDynamicProperties
   * Fix QQQQQ date format
   * Fix passing null to `preg_split()`, throwing a deprecation on PHP 8.1
 
