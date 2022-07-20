@@ -95,6 +95,9 @@ class PhpToken implements \Stringable
                 [$id, $text, $line] = $token;
             }
             $tokens[$index] = new static($id, $text, $line, $position);
+            if (\is_string($token)) {
+                $line += \substr_count($text, "\n");
+            }
             $position += \strlen($text);
         }
 
