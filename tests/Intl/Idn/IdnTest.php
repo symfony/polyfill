@@ -81,7 +81,13 @@ class IdnTest extends TestCase
             }
 
             [$line] = explode('#', $line);
-            [$source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus] = array_map('trim', explode(';', $line));
+            [$source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus] = preg_replace_callback(
+                '/\\\\(?:u([[:xdigit:]]{4})|x{([[:xdigit:]]{4})})/u',
+                static function (array $matches): string {
+                    return mb_chr(hexdec($matches[1]), 'utf-8');
+                },
+                array_map('trim', explode(';', $line))
+            );
 
             if ('' === $toUnicode) {
                 $toUnicode = $source;
@@ -180,16 +186,6 @@ class IdnTest extends TestCase
 
         if (null === $info) {
             $this->markTestSkipped('PHP Bug #72506.');
-        }
-
-        // There is currently a bug in the test data, where it is expected that the following 2
-        // source strings result in an empty string. However, due to the way the test files are setup
-        // it currently isn't possible to represent an empty string as an expected value. So, we
-        // skip these 2 problem tests. I have notified the Unicode Consortium about this and they
-        // have passed the information along to the spec editors.
-        // U+200C or U+200D
-        if ("\xE2\x80\x8C" === $source || "\xE2\x80\x8D" === $source) {
-            $toAsciiT = '';
         }
 
         if ($toAsciiTStatus === []) {
