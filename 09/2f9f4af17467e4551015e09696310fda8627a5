@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by Zombaya at 2022-09-27T14:13:54Z
+
+I'm experiencing the same bug as I'm upgrading my appliction to symfony 5.4.
+
+Any chance this can be merged in?  As the upstream MR has been merged and there are 3 approvals, I don't see any blockers to prevent merging.
