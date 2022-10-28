@@ -65,6 +65,7 @@ Polyfills are provided for:
 - the `AllowDynamicProperties` attribute introduced in PHP 8.2;
 - the `SensitiveParameter` attribute introduced in PHP 8.2;
 - the `SensitiveParameterValue` class introduced in PHP 8.2;
+- the `json_validate` function introduced in PHP 8.3;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
@@ -96,6 +97,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php80` for using the PHP 8.0 functions,
 - `symfony/polyfill-php81` for using the PHP 8.1 functions,
 - `symfony/polyfill-php82` for using the PHP 8.2 functions,
+- `symfony/polyfill-php83` for using the PHP 8.3 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,
