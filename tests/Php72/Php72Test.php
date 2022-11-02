@@ -50,6 +50,9 @@ class Php72Test extends TestCase
         $this->assertSame(\PHP_OS_FAMILY, p::php_os_family());
     }
 
+    /**
+     * @requires PHP <7.3
+     */
     public function testPhpFloat()
     {
         $this->assertSame(15, \PHP_FLOAT_DIG);
