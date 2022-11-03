@@ -63,7 +63,7 @@ class Php80Test extends TestCase
     public function testFilterValidateBool()
     {
         $this->assertTrue(\defined('FILTER_VALIDATE_BOOL'));
-        $this->assertSame(\FILTER_VALIDATE_BOOLEAN, FILTER_VALIDATE_BOOL);
+        $this->assertSame(\FILTER_VALIDATE_BOOLEAN, \FILTER_VALIDATE_BOOL);
     }
 
     /**
@@ -221,8 +221,8 @@ class Php80Test extends TestCase
     public function fdivProvider()
     {
         return [
-            [10/3, '10', '3'],
-            [10/3, 10.0, 3.0],
+            [10 / 3, '10', '3'],
+            [10 / 3, 10.0, 3.0],
             [-4.0, -10.0, 2.5],
             [-4.0, 10.0, -2.5],
             [\INF, 10.0, 0.0],

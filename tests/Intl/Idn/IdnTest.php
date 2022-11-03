@@ -132,7 +132,7 @@ class IdnTest extends TestCase
             $this->markTestSkipped('PHP Bug #72506.');
         }
 
-        if ($toUnicodeStatus === []) {
+        if ([] === $toUnicodeStatus) {
             $this->assertSame($toUnicode, $info['result']);
             $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
         } else {
@@ -160,7 +160,7 @@ class IdnTest extends TestCase
             $this->markTestSkipped('PHP Bug #72506.');
         }
 
-        if ($toAsciiNStatus === []) {
+        if ([] === $toAsciiNStatus) {
             $this->assertSame($toAsciiN, $info['result']);
             $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
         } else {
@@ -188,7 +188,7 @@ class IdnTest extends TestCase
             $this->markTestSkipped('PHP Bug #72506.');
         }
 
-        if ($toAsciiTStatus === []) {
+        if ([] === $toAsciiTStatus) {
             $this->assertSame($toAsciiT, $info['result']);
             $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
         } else {

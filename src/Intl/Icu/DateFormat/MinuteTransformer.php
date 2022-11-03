@@ -20,9 +20,6 @@ namespace Symfony\Polyfill\Intl\Icu\DateFormat;
  */
 class MinuteTransformer extends Transformer
 {
-    /**
-     * {@inheritdoc}
-     */
     public function format(\DateTime $dateTime, int $length): string
     {
         $minuteOfHour = (int) $dateTime->format('i');
@@ -30,17 +27,11 @@ class MinuteTransformer extends Transformer
         return $this->padLeft($minuteOfHour, $length);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getReverseMatchingRegExp(int $length): string
     {
         return 1 === $length ? '\d{1,2}' : '\d{'.$length.'}';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function extractDateOptions(string $matched, int $length): array
     {
         return [

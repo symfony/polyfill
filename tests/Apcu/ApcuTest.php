@@ -20,7 +20,7 @@ class ApcuTest extends TestCase
 {
     public static function setUpBeforeClass(): void
     {
-        if (!filter_var(ini_get('apc.enabled'), \FILTER_VALIDATE_BOOLEAN) || !filter_var(ini_get('apc.enable_cli'), \FILTER_VALIDATE_BOOLEAN)) {
+        if (!filter_var(\ini_get('apc.enabled'), \FILTER_VALIDATE_BOOLEAN) || !filter_var(\ini_get('apc.enable_cli'), \FILTER_VALIDATE_BOOLEAN)) {
             self::markTestSkipped('apc.enable_cli=1 is required.');
         }
     }
@@ -77,7 +77,7 @@ class ApcuTest extends TestCase
         $key = __CLASS__;
         $this->assertTrue(apcu_store($key, 456));
 
-        $entries = iterator_to_array(new \APCuIterator('/^'.preg_quote($key, '/').'$/', \APC_ITER_KEY | \APC_ITER_VALUE));
+        $entries = iterator_to_array(new \APCUIterator('/^'.preg_quote($key, '/').'$/', \APC_ITER_KEY | \APC_ITER_VALUE));
 
         $this->assertSame([$key], array_keys($entries));
         $this->assertSame($key, $entries[$key]['key']);
