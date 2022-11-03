@@ -32,6 +32,7 @@
         "symfony/polyfill-php80": "self.version",
         "symfony/polyfill-php81": "self.version",
         "symfony/polyfill-php82": "self.version",
+        "symfony/polyfill-php83": "self.version",
         "symfony/polyfill-iconv": "self.version",
         "symfony/polyfill-intl-grapheme": "self.version",
         "symfony/polyfill-intl-icu": "self.version",
