@@ -35,7 +35,7 @@ final class Uuid
     // https://tools.ietf.org/html/rfc4122#section-4.1.4
     // 0x01b21dd213814000 is the number of 100-ns intervals between the
     // UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
-    public const TIME_OFFSET_INT = 0x01b21dd213814000;
+    public const TIME_OFFSET_INT = 0x01B21DD213814000;
     public const TIME_OFFSET_BIN = "\x01\xb2\x1d\xd2\x13\x81\x40\x00";
     public const TIME_OFFSET_COM = "\xfe\x4d\xe2\x2d\xec\x7e\xc0\x00";
 
@@ -97,7 +97,7 @@ final class Uuid
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
-            hexdec(substr($hash, 16, 4)) & 0x3fff | 0x8000,
+            hexdec(substr($hash, 16, 4)) & 0x3FFF | 0x8000,
             // 48 bits for "node"
             substr($hash, 20, 12)
         );
@@ -140,7 +140,7 @@ final class Uuid
             // * 8 bits for "clk_seq_low",
             // WARNING: On old libuuid version, there is a bug. 0x0fff is used instead of 0x3fff
             // See https://github.com/karelzak/util-linux/commit/d6ddf07d31dfdc894eb8e7e6842aa856342c526e
-            hexdec(substr($hash, 16, 4)) & 0x3fff | 0x8000,
+            hexdec(substr($hash, 16, 4)) & 0x3FFF | 0x8000,
             // 48 bits for "node"
             substr($hash, 20, 12)
         );
@@ -369,7 +369,7 @@ final class Uuid
             // * 8 bits for "clk_seq_hi_res",
             // * 8 bits for "clk_seq_low",
             // two most significant bits holds zero and one for variant DCE1.1
-            hexdec(substr($uuid, 16, 4)) & 0x3fff | 0x8000,
+            hexdec(substr($uuid, 16, 4)) & 0x3FFF | 0x8000,
             // 48 bits for "node"
             substr($uuid, 20, 12)
         );
@@ -394,7 +394,7 @@ final class Uuid
         // https://tools.ietf.org/html/rfc4122#section-4.1.5
         // We are using a random data for the sake of simplicity: since we are
         // not able to get a super precise timeOfDay as a unique sequence
-        $clockSeq = random_int(0, 0x3fff);
+        $clockSeq = random_int(0, 0x3FFF);
 
         static $node;
         if (null === $node) {
@@ -402,15 +402,15 @@ final class Uuid
                 $node = apcu_fetch('__symfony_uuid_node');
                 if (false === $node) {
                     $node = sprintf('%06x%06x',
-                        random_int(0, 0xffffff) | 0x010000,
-                        random_int(0, 0xffffff)
+                        random_int(0, 0xFFFFFF) | 0x010000,
+                        random_int(0, 0xFFFFFF)
                     );
                     apcu_store('__symfony_uuid_node', $node);
                 }
             } else {
                 $node = sprintf('%06x%06x',
-                    random_int(0, 0xffffff) | 0x010000,
-                    random_int(0, 0xffffff)
+                    random_int(0, 0xFFFFFF) | 0x010000,
+                    random_int(0, 0xFFFFFF)
                 );
             }
         }
@@ -458,7 +458,7 @@ final class Uuid
 
     private static function toString($v)
     {
-        if (\is_string($v) || null === $v || (\is_object($v) ? method_exists($v, '__toString') : is_scalar($v))) {
+        if (\is_string($v) || null === $v || (\is_object($v) ? method_exists($v, '__toString') : \is_scalar($v))) {
             return (string) $v;
         }
 

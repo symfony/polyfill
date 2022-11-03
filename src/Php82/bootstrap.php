@@ -9,8 +9,6 @@
  * file that was distributed with this source code.
  */
 
-use Symfony\Polyfill\Php82 as p;
-
 if (\PHP_VERSION_ID >= 80200) {
     return;
 }

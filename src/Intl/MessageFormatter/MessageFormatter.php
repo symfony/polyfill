@@ -220,7 +220,7 @@ class MessageFormatter
         $arg = $values[$param];
         $type = isset($token[1]) ? trim($token[1]) : 'none';
         switch ($type) {
-            case 'date': //XXX use DateFormatter?
+            case 'date': // XXX use DateFormatter?
             case 'time':
             case 'spellout':
             case 'ordinal':
@@ -234,7 +234,7 @@ class MessageFormatter
                     throw new \DomainException('The PHP intl extension is required to use the "number" message format with non-integer values.');
                 }
 
-                $number = number_format($arg); //XXX use NumberFormatter?
+                $number = number_format($arg); // XXX use NumberFormatter?
                 if (null === $format && false !== $pos = strpos($arg, '.')) {
                     // add decimals with unknown length
                     $number .= '.'.substr($arg, $pos + 1);
@@ -269,7 +269,7 @@ class MessageFormatter
                 }
                 break;
 
-            case 'plural': //TODO make it locale-dependent based on symfony/translation rules
+            case 'plural': // TODO make it locale-dependent based on symfony/translation rules
                 /* http://icu-project.org/apiref/icu4c/classicu_1_1PluralFormat.html
                 pluralStyle = [offsetValue] (selector '{' message '}')+
                 offsetValue = "offset:" number

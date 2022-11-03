@@ -426,8 +426,7 @@ CP_STATUS;
         $bidiStep1Ltr = sprintf('/^[^%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return 'L' !== $data[1];
         })));
-        $bidiStep1Rtl = sprintf('/^[%s]/u',
-        $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $bidiStep1Rtl = sprintf('/^[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return \in_array($data[1], ['R', 'AL'], true);
         })));
 

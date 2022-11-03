@@ -20,9 +20,6 @@ namespace Symfony\Polyfill\Intl\Icu\DateFormat;
  */
 class QuarterTransformer extends Transformer
 {
-    /**
-     * {@inheritdoc}
-     */
     public function format(\DateTime $dateTime, int $length): string
     {
         $month = (int) $dateTime->format('n');
@@ -48,9 +45,6 @@ class QuarterTransformer extends Transformer
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getReverseMatchingRegExp(int $length): string
     {
         switch ($length) {
@@ -64,9 +58,6 @@ class QuarterTransformer extends Transformer
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function extractDateOptions(string $matched, int $length): array
     {
         return [];

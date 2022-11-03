@@ -139,7 +139,7 @@ class Php72Test extends TestCase
         }
 
         try {
-            sapi_windows_vt100_support(fopen('php://memory', 'wb'), true);
+            sapi_windows_vt100_support(fopen('php://memory', 'w'), true);
         } catch (\PHPUnit\Framework\Error\Warning $e) {
             $this->expectWarning();
             $this->expectWarningMessage('was not able to analyze the specified stream');
@@ -153,7 +153,7 @@ class Php72Test extends TestCase
      */
     public function testStreamIsatty()
     {
-        $fp = fopen('php://temp', 'r+b');
+        $fp = fopen('php://temp', 'r+');
         $this->assertFalse(stream_isatty($fp));
         fclose($fp);
     }
