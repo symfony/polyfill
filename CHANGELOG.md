@@ -1,3 +1,8 @@
+# 1.27.0
+
+  * Add PHP 8.2 polyfill for `json_validate()`
+  * Fix `IntlDateFormatter::formatObject()` signature
+
 # 1.26.0
 
   * Add PHP 8.2 polyfill with SensitiveParameter, SensitiveParameterValue and AllowDynamicProperties
