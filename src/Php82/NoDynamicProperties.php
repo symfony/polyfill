@@ -9,13 +9,15 @@
  * file that was distributed with this source code.
  */
 
-namespace Random;
+namespace Symfony\Polyfill\Php82;
 
-use Symfony\Polyfill\Php82\NoDynamicProperties;
-
-if (\PHP_VERSION_ID < 80200) {
-    class RandomException extends \Exception
+/**
+ * @internal
+ */
+trait NoDynamicProperties
+{
+    public function __set(string $name, $value): void
     {
-        use NoDynamicProperties;
+        throw new \Error('Cannot create dynamic property '.self::class.'::$'.$name);
     }
 }

@@ -30,7 +30,18 @@ class RandomSecureEngineTest extends TestCase
      */
     public function testGenerateLength($v)
     {
-        $this->assertSame(\PHP_INT_SIZE, strlen($v->generate()));
+        $this->assertSame(\PHP_INT_SIZE, \strlen($v->generate()));
+    }
+
+    /**
+     * @dataProvider secureEngineProvider
+     */
+    public function testCloneIsNotAllowed($v)
+    {
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage("Trying to clone an uncloneable object of class Random\Engine\Secure");
+
+        clone $v;
     }
 
     /**
@@ -39,8 +50,19 @@ class RandomSecureEngineTest extends TestCase
     public function testSerializeIsNotAllowed($v)
     {
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("Serialization of 'Random\\Engine\\Secure' is not allowed");
+        $this->expectExceptionMessage("Serialization of 'Random\Engine\Secure' is not allowed");
 
         serialize($v);
+    }
+
+    /**
+     * @dataProvider secureEngineProvider
+     */
+    public function testUnserializeIsNotAllowed($v)
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches("{Unserialization of '.*Random\\\\Engine\\\\Secure' is not allowed}");
+
+        unserialize(sprintf('O:%d:"%s":0:{}', \strlen(\get_class($v)), \get_class($v)));
     }
 }

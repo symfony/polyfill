@@ -11,29 +11,40 @@
 
 namespace Symfony\Polyfill\Php82\Random\Engine;
 
+use Random\RandomException;
+use Symfony\Polyfill\Php82\NoDynamicProperties;
+
 /**
  * @author Tim Düsterhus <tim@bastelstu.be>
+ * @author Anton Smirnov <sandfox@sandfox.me>
  *
  * @internal
  */
 class Secure
 {
-    public function __construct()
-    {
-    }
+    use NoDynamicProperties;
 
     public function generate(): string
     {
-        return \random_bytes(\PHP_INT_SIZE);
+        try {
+            return random_bytes(\PHP_INT_SIZE);
+        } catch (\Exception $e) {
+            throw new RandomException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
     }
 
     public function __sleep(): array
     {
-        throw new \Exception("Serialization of 'Random\\Engine\\Secure' is not allowed");
+        throw new \Exception("Serialization of 'Random\Engine\Secure' is not allowed");
     }
 
     public function __wakeup(): void
     {
-        throw new \Exception("Unserialization of 'Random\\Engine\\Secure' is not allowed");
+        throw new \Exception("Unserialization of 'Random\Engine\Secure' is not allowed");
+    }
+
+    public function __clone()
+    {
+        throw new \Error('Trying to clone an uncloneable object of class Random\Engine\Secure');
     }
 }
