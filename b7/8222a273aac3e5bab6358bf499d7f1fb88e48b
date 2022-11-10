@@ -1,0 +1,89 @@
+---------------------------------------------------------------------------
+
+by TimWolla at 2022-07-23T12:16:13Z
+
+> Should we wait for the discussion on mailing list to conclude? I remember Go Kudo was following up the RFC to make some suggestions?
+
+The engines and interfaces are basically set in stone now. There is not much that can be changed about them.
+
+> Also, let's add a `provide` entry to `Php82/composer.json`:
+
+No:
+- The extension is always included and cannot be compiled out.
+- This does not polyfill the entirety of the extension.
+    - Specifically the Randomizer is missing, as that one is much harder to polyfill compared to the engines if the behavior should be 100% identical (which is an important requirement).
+    - Also PcgOneseq128XslRr64 is a 128 bit unsigned engine which is very expensive to emulate with signed 64 bit integers (or even signed 32 bit integers).
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2022-09-09T09:30:47Z
+
+@TimWolla how about including `Random\Engine\Mt19937` into the polyfill? It should be possible to implement it using `mt_rand` but seeding the generator will pollute global scope - not sure if that's acceptable.
+
+---------------------------------------------------------------------------
+
+by stof at 2022-09-09T09:32:44Z
+
+> It should be possible to implement it using `mt_rand` but seeding the generator will pollute global scope - not sure if that's acceptable.
+
+This is not acceptable, as it would not actually polyfill the engine (which is separate from the `mt_rand` state as one of its main features)
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2022-09-09T09:48:03Z
+
+> This is not acceptable, as it would not actually polyfill the engine (which is separate from the `mt_rand` state as one of its main features)
+
+Indeed. More specifically it would not allow for two separate Engines to exist either.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-09-09T13:09:02Z
+
+Crazy idea: implement MT19937 by looking at https://en.wikipedia.org/wiki/Mersenne_Twister#Pseudocode and/or php-src and/or by leveraging https://github.com/ruafozy/php-mersenne-twister/ (but as optional dep if we go this way)
+
+---------------------------------------------------------------------------
+
+by stof at 2022-09-09T14:19:50Z
+
+> or by leveraging https://github.com/ruafozy/php-mersenne-twister/ (but as optional dep if we go this way)
+
+This package relies on `eval` (for no good reason, as they seems to generate code instead of writing it), which is a no-go to me as it would make that polyfill unusable on servers disabling it.
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2022-09-09T14:44:23Z
+
+> Crazy idea: implement MT19937 by looking
+
+Frankly I don't see much benefit there. Even reimplementing Mt19937 is non-obvious, because PHP only has signed integers that will convert to double instead of wrapping. Also the engines are pretty much useless without the Randomizer and you shouldn't use `Mt19937` except for compatibility purposes. I've only added `Secure`, because the implementation is trivial and the interfaces / Exceptions to type against.
+
+FWIW: This library provides an (almost) drop-in backport: https://github.com/arokettu/php-random-polyfill.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-11-03T13:12:00Z
+
+Thanks for the link to [arokettu/php-random-polyfill](https://github.com/arokettu/php-random-polyfill).
+
+Given this work, wouldn't it make sense to *not* merge this PR?
+
+What about merging arokettu/php-random-polyfill into symfony/polyfill? We'd go with a dedicated package named `symfony/polyfill-php82-random`.
+
+/cc @arokettu would that make sense to you?
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2022-11-03T13:41:29Z
+
+> Given this work, wouldn't it make sense to _not_ merge this PR?
+
+I believe there is _some value_ in having the interfaces and exceptions available, e.g. to create a package providing custom engines without pulling in the full polyfill, as the polyfill is pretty heavy.
+
+I don't have a strong preference, though.
+
+---------------------------------------------------------------------------
+
+by arokettu at 2022-11-03T18:14:02Z
+
+@nicolas-grekas I'm not opposed, but please review the code whether you really want all that crazy and hackish code in Symfony, also note https://github.com/arokettu/unsigned it depends on
