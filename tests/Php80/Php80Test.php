@@ -218,7 +218,7 @@ class Php80Test extends TestCase
         get_resource_id($value);
     }
 
-    public function fdivProvider()
+    public static function fdivProvider()
     {
         return [
             [10 / 3, '10', '3'],
@@ -240,7 +240,7 @@ class Php80Test extends TestCase
         ];
     }
 
-    public function nanFdivProvider()
+    public static function nanFdivProvider()
     {
         return [
             [0.0, 0.0],
@@ -259,7 +259,7 @@ class Php80Test extends TestCase
         ];
     }
 
-    public function invalidFloatProvider()
+    public static function invalidFloatProvider()
     {
         return [
             ['invalid', 1.0],
@@ -268,7 +268,7 @@ class Php80Test extends TestCase
         ];
     }
 
-    public function invalidResourceProvider()
+    public static function invalidResourceProvider()
     {
         return [
             [true],

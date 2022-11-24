@@ -28,7 +28,7 @@ class Php83Test extends TestCase
     /**
      * @return iterable<array{0: bool, 1: string, 2?: string, 3?: int, 4?: int}>
      */
-    public function jsonDataProvider(): iterable
+    public static function jsonDataProvider(): iterable
     {
         yield [false, '', 'Syntax error'];
         yield [false, '.', 'Syntax error'];
@@ -70,7 +70,7 @@ class Php83Test extends TestCase
     /**
      * @return iterable<array{0: int, 1: int, 2: string}>
      */
-    public function invalidOptionsProvider(): iterable
+    public static function invalidOptionsProvider(): iterable
     {
         yield [0, 0, 'json_validate(): Argument #2 ($depth) must be greater than 0'];
         yield [\PHP_INT_MAX, 0, 'json_validate(): Argument #2 ($depth) must be less than 2147483647'];

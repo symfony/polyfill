@@ -26,7 +26,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_alnum($text));
     }
 
-    public function provideValidAlnums()
+    public static function provideValidAlnums()
     {
         return [
             ['0'],
@@ -49,7 +49,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_alnum($text));
     }
 
-    public function provideInvalidAlnum()
+    public static function provideInvalidAlnum()
     {
         return [
             [[]],
@@ -81,7 +81,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_alpha($text));
     }
 
-    public function provideValidAlphas()
+    public static function provideValidAlphas()
     {
         return [
             [65],
@@ -100,7 +100,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_alpha($text));
     }
 
-    public function provideInvalidAlpha()
+    public static function provideInvalidAlpha()
     {
         return [
             [[]],
@@ -132,7 +132,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_cntrl($text));
     }
 
-    public function provideValidCntrls()
+    public static function provideValidCntrls()
     {
         return [
             [8],
@@ -151,7 +151,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_cntrl($text));
     }
 
-    public function provideInvalidCntrl()
+    public static function provideInvalidCntrl()
     {
         return [
             [[]],
@@ -185,7 +185,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_digit($text));
     }
 
-    public function provideValidDigits()
+    public static function provideValidDigits()
     {
         return [
             ['0'],
@@ -205,7 +205,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_digit($text));
     }
 
-    public function provideInvalidDigit()
+    public static function provideInvalidDigit()
     {
         return [
             [[]],
@@ -240,7 +240,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_graph($text));
     }
 
-    public function provideValidGraphs()
+    public static function provideValidGraphs()
     {
         return [
             [-129],
@@ -267,7 +267,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_graph($text));
     }
 
-    public function provideInvalidGraph()
+    public static function provideInvalidGraph()
     {
         return [
             [[]],
@@ -294,7 +294,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_lower($text));
     }
 
-    public function provideValidLowers()
+    public static function provideValidLowers()
     {
         return [
             [98],
@@ -311,7 +311,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_lower($text));
     }
 
-    public function provideInvalidLower()
+    public static function provideInvalidLower()
     {
         return [
             [[]],
@@ -342,7 +342,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_print($text));
     }
 
-    public function provideValidPrints()
+    public static function provideValidPrints()
     {
         return [
             [-129],
@@ -368,7 +368,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_print($text));
     }
 
-    public function provideInvalidPrint()
+    public static function provideInvalidPrint()
     {
         return [
             [[]],
@@ -393,7 +393,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_punct($text));
     }
 
-    public function provideValidPuncts()
+    public static function provideValidPuncts()
     {
         return [
             [43],
@@ -410,7 +410,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_punct($text));
     }
 
-    public function provideInvalidPunct()
+    public static function provideInvalidPunct()
     {
         return [
             [[]],
@@ -445,7 +445,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_space($text));
     }
 
-    public function provideValidSpaces()
+    public static function provideValidSpaces()
     {
         return [
             [32],
@@ -465,7 +465,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_space($text));
     }
 
-    public function provideInvalidSpace()
+    public static function provideInvalidSpace()
     {
         return [
             [[]],
@@ -499,7 +499,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_upper($text));
     }
 
-    public function provideValidUppers()
+    public static function provideValidUppers()
     {
         return [
             [65],
@@ -517,7 +517,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_upper($text));
     }
 
-    public function provideInvalidUpper()
+    public static function provideInvalidUpper()
     {
         return [
             [[]],
@@ -557,7 +557,7 @@ class CtypeTest extends TestCase
         $this->assertTrue(ctype_xdigit($text));
     }
 
-    public function provideValidXdigits()
+    public static function provideValidXdigits()
     {
         return [
             ['0'],
@@ -583,7 +583,7 @@ class CtypeTest extends TestCase
         $this->assertFalse(ctype_xdigit($text));
     }
 
-    public function provideInvalidXdigit()
+    public static function provideInvalidXdigit()
     {
         return [
             [[]],

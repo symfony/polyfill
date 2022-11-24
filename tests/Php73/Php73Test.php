@@ -129,7 +129,7 @@ class Php73Test extends TestCase
         $this->assertSame(2, current($array));
     }
 
-    public function arrayKeyFirstDataProvider()
+    public static function arrayKeyFirstDataProvider()
     {
         return [
             [null,  []],
@@ -148,7 +148,7 @@ class Php73Test extends TestCase
         ];
     }
 
-    public function arrayKeyLastDataProvider()
+    public static function arrayKeyLastDataProvider()
     {
         return [
             [null,  []],

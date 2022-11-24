@@ -29,43 +29,43 @@ class NumberFormatterTest extends AbstractNumberFormatterTest
     public function testConstructorWithUnsupportedLocale()
     {
         $this->expectException(MethodArgumentValueNotImplementedException::class);
-        $this->getNumberFormatter('pt_BR');
+        self::getNumberFormatter('pt_BR');
     }
 
     public function testConstructorWithUnsupportedStyle()
     {
         $this->expectException(MethodArgumentValueNotImplementedException::class);
-        $this->getNumberFormatter('en', NumberFormatter::PATTERN_DECIMAL);
+        self::getNumberFormatter('en', NumberFormatter::PATTERN_DECIMAL);
     }
 
     public function testConstructorWithPatternDifferentThanNull()
     {
         $this->expectException(MethodArgumentNotImplementedException::class);
-        $this->getNumberFormatter('en', NumberFormatter::DECIMAL, '');
+        self::getNumberFormatter('en', NumberFormatter::DECIMAL, '');
     }
 
     public function testSetAttributeWithUnsupportedAttribute()
     {
         $this->expectException(MethodArgumentValueNotImplementedException::class);
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $formatter->setAttribute(NumberFormatter::LENIENT_PARSE, 100);
     }
 
     public function testSetAttributeInvalidRoundingMode()
     {
         $this->expectException(MethodArgumentValueNotImplementedException::class);
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $formatter->setAttribute(NumberFormatter::ROUNDING_MODE, -1);
     }
 
     public function testConstructWithoutLocale()
     {
-        $this->assertInstanceOf(NumberFormatter::class, $this->getNumberFormatter(null, NumberFormatter::DECIMAL));
+        $this->assertInstanceOf(NumberFormatter::class, self::getNumberFormatter(null, NumberFormatter::DECIMAL));
     }
 
     public function testCreate()
     {
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $this->assertInstanceOf(NumberFormatter::class, $formatter::create('en', NumberFormatter::DECIMAL));
     }
 
@@ -132,20 +132,20 @@ class NumberFormatterTest extends AbstractNumberFormatterTest
     public function testGetPattern()
     {
         $this->expectException(MethodNotImplementedException::class);
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $formatter->getPattern();
     }
 
     public function testGetErrorCode()
     {
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $this->assertEquals(Icu::U_ZERO_ERROR, $formatter->getErrorCode());
     }
 
     public function testParseCurrency()
     {
         $this->expectException(MethodNotImplementedException::class);
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $currency = 'USD';
         $formatter->parseCurrency(3, $currency);
     }
@@ -153,41 +153,41 @@ class NumberFormatterTest extends AbstractNumberFormatterTest
     public function testSetPattern()
     {
         $this->expectException(MethodNotImplementedException::class);
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $formatter->setPattern('#0');
     }
 
     public function testSetSymbol()
     {
         $this->expectException(MethodNotImplementedException::class);
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $formatter->setSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL, '*');
     }
 
     public function testSetTextAttribute()
     {
         $this->expectException(MethodNotImplementedException::class);
-        $formatter = $this->getNumberFormatter('en', NumberFormatter::DECIMAL);
+        $formatter = self::getNumberFormatter('en', NumberFormatter::DECIMAL);
         $formatter->setTextAttribute(NumberFormatter::NEGATIVE_PREFIX, '-');
     }
 
-    protected function getNumberFormatter(?string $locale = 'en', string $style = null, string $pattern = null): NumberFormatter
+    protected static function getNumberFormatter(?string $locale = 'en', string $style = null, string $pattern = null): NumberFormatter
     {
         return new class($locale, $style, $pattern) extends NumberFormatter {
         };
     }
 
-    protected function getIntlErrorMessage(): string
+    protected static function getIntlErrorMessage(): string
     {
         return Icu::getErrorMessage();
     }
 
-    protected function getIntlErrorCode(): int
+    protected static function getIntlErrorCode(): int
     {
         return Icu::getErrorCode();
     }
 
-    protected function isIntlFailure($errorCode): bool
+    protected static function isIntlFailure($errorCode): bool
     {
         return Icu::isFailure($errorCode);
     }
