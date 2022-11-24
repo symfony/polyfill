@@ -76,7 +76,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_generate_sha1('not a uuid', 'foo'));
     }
 
-    public function provideCreateNoOverlapTests(): array
+    public static function provideCreateNoOverlapTests(): array
     {
         return [
             [Uuid::UUID_TYPE_RANDOM],
@@ -98,7 +98,7 @@ class UuidTest extends TestCase
         $this->assertCount($count, $uuids);
     }
 
-    public function provideIsValidTest(): array
+    public static function provideIsValidTest(): array
     {
         return [
             [true, '00000000-0000-0000-0000-000000000000'],
@@ -116,7 +116,7 @@ class UuidTest extends TestCase
         $this->assertSame($expected, uuid_is_valid($uuid));
     }
 
-    public function provideCompareTest(): array
+    public static function provideCompareTest(): array
     {
         return [
             [-1, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b', 'fa83b381-328c-46b8-8c90-4e9ba47dfa4c'],
@@ -158,7 +158,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_compare('fa83b381-328c-46b8-8c90-4e9ba47dfa4b', 'foobar'));
     }
 
-    public function provideIsNullTest(): array
+    public static function provideIsNullTest(): array
     {
         return [
             [true, '00000000-0000-0000-0000-000000000000'],
@@ -183,7 +183,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_is_null('foobar'));
     }
 
-    public function provideTypeTest(): array
+    public static function provideTypeTest(): array
     {
         return [
             [Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'],
@@ -209,7 +209,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_type('foobar'));
     }
 
-    public function provideVariantTest(): array
+    public static function provideVariantTest(): array
     {
         return [
             [Uuid::UUID_TYPE_NULL, '00000000-0000-0000-0000-000000000000'],
@@ -234,7 +234,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_variant('foobar'));
     }
 
-    public function provideTimeTest(): array
+    public static function provideTimeTest(): array
     {
         return [
             [1572444805, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
@@ -248,7 +248,7 @@ class UuidTest extends TestCase
         $this->assertSame($expected, @uuid_time($uuid));
     }
 
-    public function provideInvalidTimeTest(): array
+    public static function provideInvalidTimeTest(): array
     {
         return [
             ['foobar'],
@@ -270,7 +270,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_time($uuid));
     }
 
-    public function provideMacTest(): array
+    public static function provideMacTest(): array
     {
         return [
             ['b52d3e41ad26', '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
@@ -284,7 +284,7 @@ class UuidTest extends TestCase
         $this->assertSame($expected, @uuid_mac($uuid));
     }
 
-    public function provideInvalidMacTest(): array
+    public static function provideInvalidMacTest(): array
     {
         return [
             ['foobar'],
@@ -306,7 +306,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_mac($uuid));
     }
 
-    public function provideParseTest(): array
+    public static function provideParseTest(): array
     {
         return [
             ['00000000000000000000000000000000', '00000000-0000-0000-0000-000000000000'],
@@ -333,7 +333,7 @@ class UuidTest extends TestCase
         $this->assertFalse(@uuid_parse('foobar'));
     }
 
-    public function provideUnparseTest(): array
+    public static function provideUnparseTest(): array
     {
         return [
             ['00000000-0000-0000-0000-000000000000', pack('H*', '00000000000000000000000000000000')],
@@ -348,7 +348,7 @@ class UuidTest extends TestCase
         $this->assertSame($expected, @uuid_unparse($uuid));
     }
 
-    public function provideInvalidUnparseTest(): array
+    public static function provideInvalidUnparseTest(): array
     {
         return [
             ['foobar'],

@@ -70,7 +70,7 @@ class IdnTest extends TestCase
     /**
      * @return array<int, array{0: string, 1: string, 2: array<int, int|array<int, int>>, 3: string, 4: array<int, int|array<int, int>>, 5: string, 6: array<int, int|array<int, int>>}>
      */
-    public function getData()
+    public static function getData()
     {
         $h = fopen(__DIR__.'/IdnaTestV2.txt', 'r');
         $tests = [];
@@ -101,9 +101,9 @@ class IdnTest extends TestCase
                 $toAsciiT = $toAsciiN;
             }
 
-            $toUnicodeStatus = $this->resolveErrorCodes($toUnicodeStatus, []);
-            $toAsciiNStatus = $this->resolveErrorCodes($toAsciiNStatus, $toUnicodeStatus);
-            $toAsciiTStatus = $this->resolveErrorCodes($toAsciiTStatus, $toAsciiNStatus);
+            $toUnicodeStatus = self::resolveErrorCodes($toUnicodeStatus, []);
+            $toAsciiNStatus = self::resolveErrorCodes($toAsciiNStatus, $toUnicodeStatus);
+            $toAsciiTStatus = self::resolveErrorCodes($toAsciiTStatus, $toAsciiNStatus);
             $tests[] = [$source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus];
         }
 
@@ -284,7 +284,7 @@ class IdnTest extends TestCase
         $this->assertSame($encoded, $result);
     }
 
-    public function domainNamesProvider()
+    public static function domainNamesProvider()
     {
         return [
             [
@@ -380,7 +380,7 @@ class IdnTest extends TestCase
         ];
     }
 
-    public function domainNamesUppercaseUTS46Provider()
+    public static function domainNamesUppercaseUTS46Provider()
     {
         return [
             [
@@ -401,7 +401,7 @@ class IdnTest extends TestCase
         ];
     }
 
-    public function invalidUtf8DomainNamesProvider()
+    public static function invalidUtf8DomainNamesProvider()
     {
         return [
             [
@@ -427,7 +427,7 @@ class IdnTest extends TestCase
      *
      * @return array<int, int|array<int, int>>
      */
-    private function resolveErrorCodes($statusCodes, $inherit)
+    private static function resolveErrorCodes($statusCodes, $inherit)
     {
         if ('' === $statusCodes) {
             return $inherit;

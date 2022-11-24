@@ -19,7 +19,7 @@ use Symfony\Polyfill\Php82\SensitiveParameterValue as SensitiveParameterValuePol
  */
 class SensitiveParameterValueTest extends TestCase
 {
-    public function sensitiveParameterValueProvider()
+    public static function sensitiveParameterValueProvider()
     {
         yield [new SensitiveParameterValuePolyfill('secret')];
         yield [new \SensitiveParameterValue('secret')];

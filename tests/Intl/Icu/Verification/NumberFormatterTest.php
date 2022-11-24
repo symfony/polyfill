@@ -46,22 +46,22 @@ class NumberFormatterTest extends AbstractNumberFormatterTest
         parent::testGetTextAttribute();
     }
 
-    protected function getNumberFormatter(?string $locale = 'en', string $style = null, string $pattern = null): \NumberFormatter
+    protected static function getNumberFormatter(?string $locale = 'en', string $style = null, string $pattern = null): \NumberFormatter
     {
         return new \NumberFormatter($locale, $style, $pattern);
     }
 
-    protected function getIntlErrorMessage(): string
+    protected static function getIntlErrorMessage(): string
     {
         return intl_get_error_message();
     }
 
-    protected function getIntlErrorCode(): int
+    protected static function getIntlErrorCode(): int
     {
         return intl_get_error_code();
     }
 
-    protected function isIntlFailure($errorCode): bool
+    protected static function isIntlFailure($errorCode): bool
     {
         return intl_is_failure($errorCode);
     }

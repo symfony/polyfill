@@ -61,7 +61,7 @@ class MessageFormatterTest extends TestCase
         $this->assertEquals($expected, $result, $formatter->getErrorMessage());
     }
 
-    public function patterns()
+    public static function patterns()
     {
         $subject = 'Answer to the Ultimate Question of Life, the Universe, and Everything';
 
