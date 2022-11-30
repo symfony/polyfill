@@ -30,7 +30,7 @@ final class Php83
             throw new \ValueError('json_validate(): Argument #2 ($depth) must be greater than 0');
         }
 
-        if ($depth >= self::JSON_MAX_DEPTH) {
+        if ($depth > self::JSON_MAX_DEPTH) {
             throw new \ValueError(sprintf('json_validate(): Argument #2 ($depth) must be less than %d', self::JSON_MAX_DEPTH));
         }
 

@@ -46,6 +46,7 @@ class Php83Test extends TestCase
         yield [true, '{ "test": {"foo": "bar"}, "test2": {"foo" : "bar" }, "test3": {"foo" : "bar" } }'];
         yield [false, '{"key1":"value1", "key2":"value2"}', 'Maximum stack depth exceeded', 1];
         yield [false, "\"a\xb0b\"", 'Malformed UTF-8 characters, possibly incorrectly encoded'];
+        yield [true, '{ "test": { "foo": "bar" } }', 'No error', 2147483647];
 
         if (\defined('JSON_INVALID_UTF8_IGNORE')) {
             yield [true, "\"a\xb0b\"", 'No error', 512, \JSON_INVALID_UTF8_IGNORE];
@@ -73,8 +74,9 @@ class Php83Test extends TestCase
     public static function invalidOptionsProvider(): iterable
     {
         yield [0, 0, 'json_validate(): Argument #2 ($depth) must be greater than 0'];
-        yield [\PHP_INT_MAX, 0, 'json_validate(): Argument #2 ($depth) must be less than 2147483647'];
-
+        if (\PHP_INT_MAX > 2147483647) {
+            yield [\PHP_INT_MAX, 0, 'json_validate(): Argument #2 ($depth) must be less than 2147483647'];
+        }
         if (\defined('JSON_INVALID_UTF8_IGNORE')) {
             yield [
                 512,
