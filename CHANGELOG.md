@@ -1,3 +1,7 @@
+# 1.28.0
+
+  * Add `CURLStringFile` class introduced in PHP 8.1 (but only if PHP >= 7.4 is used)
+
 # 1.27.0
 
   * Add PHP 8.3 polyfill for `json_validate()`
