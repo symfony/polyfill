@@ -1,0 +1,67 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-02-17T07:54:09Z
+
+If we add a test case (as you, I don't know which one exactly), it should with the native one and with the polyfilled one (when curl is not installed), so that we can prove that this is really a polyfill.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2021-02-17T08:44:55Z
+
+> I'm thinking a PHP CLI server that echoes `$_FILES`, and a test that checks the returned content for file(s) that it uploaded.
+
+Sounds like a plan. You can find an example of using the CLI webserver in tests here:
+
+https://github.com/symfony/symfony/blob/6ae59a9a171695ddef5294898681c060e8c1f3fe/src/Symfony/Component/HttpFoundation/Tests/ResponseFunctionalTest.php#L22-L29
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2021-02-17T16:36:42Z
+
+Thanks a lot for the feedback.
+
+I totally forgot about the `CURLStringFile::$data` mutability, and like @nicolas-grekas said, we might (unfortunately) need to use magic methods here. I updated with `__get`, `__set` and `__isset` methods to update the `CURLStringFile::$name` if `$data` was modified. It feels a bit... yucky... to do this, but I'm looking for any suggestions.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2021-03-12T14:21:07Z
+
+Thank you so much for the help @nicolas-grekas - I have made the changes.
+I will also push a test. It passes on PHP >= 7.4, and I'm still pulling my hair on why it fails on older PHP versions.
+
+---------------------------------------------------------------------------
+
+by stof at 2021-03-12T14:32:15Z
+
+> I will also push a test. It passes on PHP >= 7.4, and I'm still pulling my hair on why it fails on older PHP versions.
+
+that's because your implementation relies on the fact that curl knows how to deal with a `CurlFile` object. But that `CurlFile` won't exist there.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2021-03-12T14:36:56Z
+
+Thank you @stof. Looking at [CURLFile doc](https://www.php.net/manual/en/class.curlfile.php), it says CURLFile should available in PHP >= 5.5. My direction is that the CLI server failed to start at all in older PHP versions.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2021-03-12T17:10:10Z
+
+I tested with a PHP 7.3 setup, it indeed turns out that the problem is that CURLFile only supports streams in PHP >= 7.4, just like @stof mentioned.
+I updated the tests and `CURLStringFile` to be only available in PHP >= 7.4, so I can mark this PR for review. All tests pass.
+
+For PHP 7.0 through 7.3, I think we _could_ get it working by temporarily writing the contents to a file, but I'm not sure if the effort is worth it. I will open the PR for review either way, and will happily work on support for older PHP versions if you think it's a worthwhile idea. 🤞🏼
+
+Thank you.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-04-19T10:07:11Z
+
+Can you please rebase?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-10-26T17:18:31Z
+
+@Ayesh can you please rebase and check @stof's comments?
