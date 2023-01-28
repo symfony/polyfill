@@ -17,7 +17,6 @@ jobs:
         strategy:
             matrix:
                 include:
-                    - php: '7.1'
                     - php: '7.2'
                     - php: '7.3'
                     - php: '7.4'
@@ -44,10 +43,10 @@ jobs:
             -   name: Install dependencies
                 run: composer --prefer-source --no-progress --ansi install
 
-            -   name: Configure for PHP <= 7.2
-                if: "${{ matrix.php <= '7.2' }}"
+            -   name: Configure for PHP 7.2
+                if: "${{ matrix.php == '7.2' }}"
                 run: |
-                    echo SYMFONY_PHPUNIT_VERSION=7.5 >> $GITHUB_ENV
+                    echo SYMFONY_PHPUNIT_VERSION=8.5 >> $GITHUB_ENV
 
             -   name: Run tests
                 run: |

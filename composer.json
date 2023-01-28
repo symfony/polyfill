@@ -16,12 +16,12 @@
         }
     ],
     "require": {
-        "php": ">=7.1"
+        "php": ">=7.2"
     },
     "require-dev": {
-        "symfony/intl": "^4.4|^5.0|^6.0",
-        "symfony/phpunit-bridge": "^5.3|^6.0",
-        "symfony/var-dumper": "^4.4|^5.1|^6.0"
+        "symfony/intl": "^5.4|^6.0",
+        "symfony/phpunit-bridge": "^6.2",
+        "symfony/var-dumper": "^5.4|^6.0"
     },
     "replace": {
         "symfony/polyfill-apcu": "self.version",

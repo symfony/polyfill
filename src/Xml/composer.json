@@ -17,7 +17,7 @@
     ],
     "abandoned": "symfony/polyfill-php72",
     "require": {
-        "php": ">=7.1",
+        "php": ">=7.2",
         "symfony/polyfill-php72": "^1.20"
     },
     "minimum-stability": "dev",

@@ -16,11 +16,7 @@
         }
     ],
     "require": {
-        "php": ">=7.1"
-    },
-    "autoload": {
-        "psr-4": { "Symfony\\Polyfill\\Php72\\": "" },
-        "files": [ "bootstrap.php" ]
+        "php": ">=7.2"
     },
     "minimum-stability": "dev",
     "extra": {

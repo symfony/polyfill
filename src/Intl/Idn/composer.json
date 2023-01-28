@@ -20,7 +20,7 @@
         }
     ],
     "require": {
-        "php": ">=7.1",
+        "php": ">=7.2",
         "symfony/polyfill-intl-normalizer": "^1.10",
         "symfony/polyfill-php72": "^1.10"
     },

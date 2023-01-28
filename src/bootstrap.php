@@ -9,10 +9,6 @@
  * file that was distributed with this source code.
  */
 
-if (\PHP_VERSION_ID < 70200) {
-    require __DIR__.'/Php72/bootstrap.php';
-}
-
 if (\PHP_VERSION_ID < 70300) {
     require __DIR__.'/Php73/bootstrap.php';
 }
