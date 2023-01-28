@@ -266,6 +266,7 @@ class MbstringTest extends TestCase
             $this->assertSame('Déjà Σσσ Iı Ii İi̇', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', \MB_CASE_TITLE));
         }
         $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
+        $this->assertSame('hi ssΐὤιմխ', p::mb_convert_case('HI ßΐᾬﬗ', p::MB_CASE_FOLD));
     }
 
     /**
