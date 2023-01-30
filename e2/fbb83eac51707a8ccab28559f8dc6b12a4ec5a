@@ -1,0 +1,32 @@
+---------------------------------------------------------------------------
+
+by alexandre-daubois at 2023-01-28T08:05:53Z
+
+Caution, [the doc](https://www.php.net/manual/en/function.mb-check-encoding.php) tells that values passed as array are validated recursively 🙂
+
+---------------------------------------------------------------------------
+
+by jeremyFreeAgent at 2023-01-28T10:45:30Z
+
+> Caution, [the doc](https://www.php.net/manual/en/function.mb-check-encoding.php) tells that values passed as array are validated recursively 🙂
+
+Thanks!
+
+---------------------------------------------------------------------------
+
+by derrabus at 2023-01-28T13:43:21Z
+
+Let's kill PHP 7.1 then, shall we? #428
+
+---------------------------------------------------------------------------
+
+by stof at 2023-01-30T16:16:44Z
+
+For PHP 7.1, we need to emulate the PHP 7.1 behavior of mbstring, which is not supporting arrays (as we cannot make a project using PHP 7.1 with native mbstring support arrays by installing the polyfill as it would not replace the native functions).
+That's totally possible to emulate (triggering the warning and returning `null`)
+
+---------------------------------------------------------------------------
+
+by jeremyFreeAgent at 2023-01-30T17:02:48Z
+
+Thank you @stof and @nicolas-grekas for the PHP < 7.2 behaviour.
