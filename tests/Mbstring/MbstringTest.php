@@ -467,6 +467,53 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_check_encoding
+     *
+     * @requires PHP 7.2
+     */
+    public function testCheckEncodingWithArrayValue()
+    {
+        $this->assertTrue(mb_check_encoding(['aςσb'], 'UTF8'));
+        $this->assertTrue(mb_check_encoding(['abc'], 'ASCII'));
+        $this->assertTrue(mb_check_encoding(["\xE9"], 'Windows-1252'));
+
+        $this->assertTrue(mb_check_encoding(['aςσb', 'abc'], 'UTF8'));
+        $this->assertTrue(mb_check_encoding(["\xE9", 'abc'], 'Windows-1252'));
+
+        $this->assertFalse(mb_check_encoding(['aςσb', "\xE9"], 'UTF8'));
+        $this->assertFalse(mb_check_encoding(['abc', "\xE9"], 'ASCII'));
+        $this->assertFalse(mb_check_encoding(['abc', 'aςσb'], 'ASCII'));
+
+        $this->assertTrue(mb_check_encoding(["\xE9" => "\xE9", 'abc' => 'abc'], 'Windows-1252'));
+        $this->assertTrue(mb_check_encoding(['aςσb' => 'aςσb', 'abc' => 'abc'], 'UTF8'));
+
+        $this->assertFalse(mb_check_encoding(['aςσb' => 'aςσb', "\xE9" => 'abc'], 'UTF8'));
+
+
+        $this->assertTrue(mb_check_encoding(['aςσb' => 'aςσb', 'abc' => ['abc', 'aςσb']], 'UTF8'));
+        $this->assertTrue(mb_check_encoding(['aςσb' => 'aςσb', 'abc' => ['abc' => 'abc', 'aςσb' => 'aςσb']], 'UTF8'));
+
+
+        $this->assertFalse(mb_check_encoding(['aςσb' => 'aςσb', 'abc' => ['abc' => 'abc', 'aςσb' => "\xE9"]], 'UTF8'));
+        $this->assertFalse(mb_check_encoding(['aςσb' => 'aςσb', 'abc' => ['abc' => 'abc', "\xE9" => 'aςσb']], 'UTF8'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_check_encoding
+     *
+     * @requires PHP < 7.2
+     */
+    public function testCheckEncodingWithArrayValueForPhpLessThan72()
+    {
+        $errorMessage = null;
+        set_error_handler(function ($type, $msg, $file, $line) use (&$errorMessage) { $errorMessage = \E_USER_WARNING === $type || \E_WARNING === $type ? $msg : null; });
+        $this->assertNull(mb_check_encoding(['aςσb'], 'UTF8'));
+        restore_error_handler();
+        $this->assertSame('mb_check_encoding() expects parameter 1 to be string, array given', $errorMessage);
+    }
+
+
+    /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_detect_encoding
      */
     public function testDetectEncoding()
