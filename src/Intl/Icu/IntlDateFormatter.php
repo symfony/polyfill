@@ -203,7 +203,7 @@ abstract class IntlDateFormatter
      *
      * @param int|string|\DateTimeInterface $datetime The timestamp to format
      *
-     * @return string|bool The formatted value or false if formatting failed
+     * @return string|false The formatted value or false if formatting failed
      *
      * @see https://php.net/intldateformatter.format
      *
