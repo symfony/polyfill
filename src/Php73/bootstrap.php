@@ -24,7 +24,7 @@ if (!function_exists('hrtime')) {
     function hrtime($as_number = false) { return p\Php73::hrtime($as_number); }
 }
 if (!function_exists('array_key_first')) {
-    function array_key_first(array $array) { foreach ($array as $key => $value) { return $key; } }
+    function array_key_first(array $array) { foreach ($array as $key => $value) { return $key; } return null; }
 }
 if (!function_exists('array_key_last')) {
     function array_key_last(array $array) { return key(array_slice($array, -1, 1, true)); }
