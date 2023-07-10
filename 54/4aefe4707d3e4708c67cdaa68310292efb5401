@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by IonBazan at 2023-07-06T06:25:49Z
+
+Might be good to add `@requires extension odbc` annotations to the tests in case someone wants to run the test suite without that extension.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2023-07-08T09:37:46Z
+
+Makes sense, done.
