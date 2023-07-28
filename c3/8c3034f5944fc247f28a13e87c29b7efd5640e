@@ -1,0 +1,43 @@
+---------------------------------------------------------------------------
+
+by Ayesh at 2023-07-06T05:51:08Z
+
+I'm sorry if I'm missing something documented elsewhere, but I wanted to ask if this should belong to Mbstring or Php83? Perhapas, before declaring polyfilled `mb_str_pad`, we should see if the `mbstring` exists either as the C extension or in the form of a polyfill by checking `function_exists('mb_substr')`?
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2023-07-06T05:57:46Z
+
+Good question - I wasn't sure because we don't check it for PHP 7.2 polyfill (`mb_chr` and `mb_ord`) but we do check it for PHP 7.4 (`mb_str_split`): https://github.com/symfony/polyfill/blob/05dfdffc0e834c216a677474fa05304db3384710/src/Php74/bootstrap.php#L21-L23
+
+I guess we can add a check for `mb_substr` if needed here.
+
+---------------------------------------------------------------------------
+
+by stof at 2023-07-06T11:47:22Z
+
+the new function should be added in 2 places
+
+- in the php 8.3 polyfill _if other mbstring functions are available_
+- in the mbstring polyfill (so that it is available for someone using PHP 8.3 natively without the native mbstring extension)
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2023-07-17T07:09:24Z
+
+PHP 7.2 and 7.1 don't seem to handle UTF-32 strings correctly when mbstring is missing 🤔
+@nicolas-grekas Should I skip those tests?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2023-07-28T08:43:28Z
+
+> PHP 7.2 and 7.1 don't seem to handle UTF-32 strings correctly when mbstring is missing
+
+that's quite possible, let's skip these yes (or fix the polyfill, but nobody uses utf32 so :shrug: )
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2023-07-28T09:00:31Z
+
+Thanks for the suggestion, @nicolas-grekas - I rebased this PR and skipped the tests for `UTF-32` on PHP <7.3
