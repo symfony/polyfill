@@ -1,5 +1,8 @@
 # 1.29.0
 
+  * Polyfill `ldap_exop_sync()`
+  * Polyfill `ldap_connect_wallet()`
+  * Polyfill `stream_context_set_options()`
   * Polyfill `odbc_connection_string_is_quoted()`
   * Polyfill `odbc_connection_string_should_quote()`
   * Polyfill `odbc_connection_string_quote()`
