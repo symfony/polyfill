@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2023-01-30T16:07:53Z
+
+Please have a look at failing tests, they might be related.
+
+---------------------------------------------------------------------------
+
+by alexandre-daubois at 2023-01-30T19:39:14Z
+
+Updated the map 👍 Removed duplicates also in Symfony: https://github.com/symfony/symfony/pull/49159, thanks for pointing this out!
+
+I'm checking the tests. they seem a bit tricky as some characters are being case folded by two chars, which introduces an offset when it comes to `stristr` for instance.
