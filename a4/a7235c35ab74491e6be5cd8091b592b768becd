@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------
+
+by derrabus at 2023-07-08T09:39:58Z
+
+LGTM. Would it make sense to add a functional test? Like, using the attribute on a class and verify that we can load it via reflection?
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2023-07-09T06:38:23Z
+
+@derrabus we don't usually do that as tests are using the autoloader generated from root `composer.json`, while `symfony/polyfill-php83` dependants will use the sub-split with its own `composer.json`. I don't think we can test that easily but I agree it is quite prone to error.
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2023-07-10T14:48:29Z
+
+Thanks for the review @nicolas-grekas - addressed the issues.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2023-07-10T14:49:49Z
+
+I'd keep the constructor if it's on the native implem, so that the reflection info is as close as possible to the native one... (can you check this aspect ?)
