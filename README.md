@@ -70,6 +70,7 @@ Polyfills are provided for:
 - the `Random\CryptoSafeEngine` interface introduced in PHP 8.2;
 - the `Random\Engine\Secure` class introduced in PHP 8.2 (check [arokettu/random-polyfill](https://packagist.org/packages/arokettu/random-polyfill) for more engines);
 - the `json_validate` function introduced in PHP 8.3;
+- the `Override` attribute introduced in PHP 8.3;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
