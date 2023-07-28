@@ -1,3 +1,9 @@
+# 1.29.0
+
+  * Polyfill `mb_str_pad()`
+  * Polyfill `#[\Override]` attribute
+  * Use full case folding when using `MB_CASE_FOLD`
+
 # 1.28.0
 
   * Add `CURLStringFile` class introduced in PHP 8.1 (but only if PHP >= 7.4 is used)
