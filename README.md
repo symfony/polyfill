@@ -69,6 +69,9 @@ Polyfills are provided for:
 - the `Random\Engine` interface introduced in PHP 8.2;
 - the `Random\CryptoSafeEngine` interface introduced in PHP 8.2;
 - the `Random\Engine\Secure` class introduced in PHP 8.2 (check [arokettu/random-polyfill](https://packagist.org/packages/arokettu/random-polyfill) for more engines);
+- the `odbc_connection_string_is_quoted` function introduced in PHP 8.2
+- the `odbc_connection_string_should_quote` function introduced in PHP 8.2
+- the `odbc_connection_string_quote` function introduced in PHP 8.2
 - the `json_validate` function introduced in PHP 8.3;
 - the `Override` attribute introduced in PHP 8.3;
 - the `mb_str_pad` function introduced in PHP 8.3;

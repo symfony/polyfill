@@ -1,5 +1,8 @@
 # 1.29.0
 
+  * Polyfill `odbc_connection_string_is_quoted()`
+  * Polyfill `odbc_connection_string_should_quote()`
+  * Polyfill `odbc_connection_string_quote()`
   * Polyfill `mb_str_pad()`
   * Polyfill `#[\Override]` attribute
   * Use full case folding when using `MB_CASE_FOLD`
