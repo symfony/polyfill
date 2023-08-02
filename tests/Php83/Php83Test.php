@@ -182,4 +182,11 @@ class Php83Test extends TestCase
             ];
         }
     }
+
+    public function testStreamContextSetOptions()
+    {
+        $context = stream_context_create();
+        $this->assertTrue(stream_context_set_options($context, ['http' => ['method' => 'POST']]));
+        $this->assertSame(['http' => ['method' => 'POST']], stream_context_get_options($context));
+    }
 }
