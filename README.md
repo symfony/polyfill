@@ -72,6 +72,7 @@ Polyfills are provided for:
 - the `odbc_connection_string_is_quoted` function introduced in PHP 8.2;
 - the `odbc_connection_string_should_quote` function introduced in PHP 8.2;
 - the `odbc_connection_string_quote` function introduced in PHP 8.2;
+- the `ini_parse_quantity` function introduced in PHP 8.2;
 - the `json_validate` function introduced in PHP 8.3;
 - the `Override` attribute introduced in PHP 8.3;
 - the `mb_str_pad` function introduced in PHP 8.3;
