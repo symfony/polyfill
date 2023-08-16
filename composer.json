@@ -70,10 +70,5 @@
             "src/Php73/Resources/stubs"
         ]
     },
-    "minimum-stability": "dev",
-    "extra": {
-        "branch-alias": {
-            "dev-main": "1.29-dev"
-        }
-    }
+    "minimum-stability": "dev"
 }

@@ -1,4 +1,4 @@
-# 1.29.0
+# 1.28.0
 
   * Polyfill `ldap_exop_sync()`
   * Polyfill `ldap_connect_wallet()`
@@ -9,10 +9,8 @@
   * Polyfill `mb_str_pad()`
   * Polyfill `#[\Override]` attribute
   * Use full case folding when using `MB_CASE_FOLD`
-
-# 1.28.0
-
   * Add `CURLStringFile` class introduced in PHP 8.1 (but only if PHP >= 7.4 is used)
+  * Add `Date*Exception/Error` classes introduced in PHP 8.3 for the Date/Time extension
 
 # 1.27.0
 

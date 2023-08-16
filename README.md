@@ -78,6 +78,7 @@ Polyfills are provided for:
 - the `ldap_exop_sync` function introduced in PHP 8.3;
 - the `ldap_connect_wallet` function introduced in PHP 8.3;
 - the `stream_context_set_options` function introduced in PHP 8.3;
+- the `Date*Exception/Error` classes introduced in PHP 8.3;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no

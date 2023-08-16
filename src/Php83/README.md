@@ -9,6 +9,7 @@ This component provides features added to PHP 8.3 core:
 - [`ldap_exop_sync`](https://wiki.php.net/rfc/deprecate_functions_with_overloaded_signatures)
 - [`ldap_connect_wallet`](https://wiki.php.net/rfc/deprecate_functions_with_overloaded_signatures)
 - [`stream_context_set_options`](https://wiki.php.net/rfc/deprecate_functions_with_overloaded_signatures)
+- [`Date*Exception/Error classes`](https://wiki.php.net/rfc/datetime-exceptions)
 
 More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).

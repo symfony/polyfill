@@ -192,14 +192,14 @@ class Php83Test extends TestCase
 
     public function testDateTimeExceptionClassesExist()
     {
-        $this->assertTrue(class_exists('\DateError'));
-        $this->assertTrue(class_exists('\DateObjectError'));
-        $this->assertTrue(class_exists('\DateRangeError'));
-        $this->assertTrue(class_exists('\DateException'));
-        $this->assertTrue(class_exists('\DateInvalidTimeZoneException'));
-        $this->assertTrue(class_exists('\DateInvalidOperationException'));
-        $this->assertTrue(class_exists('\DateMalformedStringException'));
-        $this->assertTrue(class_exists('\DateMalformedIntervalStringException'));
-        $this->assertTrue(class_exists('\DateMalformedPeriodStringException'));
+        $this->assertTrue(class_exists(\DateError::class));
+        $this->assertTrue(class_exists(\DateObjectError::class));
+        $this->assertTrue(class_exists(\DateRangeError::class));
+        $this->assertTrue(class_exists(\DateException::class));
+        $this->assertTrue(class_exists(\DateInvalidTimeZoneException::class));
+        $this->assertTrue(class_exists(\DateInvalidOperationException::class));
+        $this->assertTrue(class_exists(\DateMalformedStringException::class));
+        $this->assertTrue(class_exists(\DateMalformedIntervalStringException::class));
+        $this->assertTrue(class_exists(\DateMalformedPeriodStringException::class));
     }
 }
