@@ -189,4 +189,17 @@ class Php83Test extends TestCase
         $this->assertTrue(stream_context_set_options($context, ['http' => ['method' => 'POST']]));
         $this->assertSame(['http' => ['method' => 'POST']], stream_context_get_options($context));
     }
+
+    public function testDateTimeExceptionClassesExist()
+    {
+        $this->assertTrue(class_exists('\DateError'));
+        $this->assertTrue(class_exists('\DateObjectError'));
+        $this->assertTrue(class_exists('\DateRangeError'));
+        $this->assertTrue(class_exists('\DateException'));
+        $this->assertTrue(class_exists('\DateInvalidTimeZoneException'));
+        $this->assertTrue(class_exists('\DateInvalidOperationException'));
+        $this->assertTrue(class_exists('\DateMalformedStringException'));
+        $this->assertTrue(class_exists('\DateMalformedIntervalStringException'));
+        $this->assertTrue(class_exists('\DateMalformedPeriodStringException'));
+    }
 }
