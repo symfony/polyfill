@@ -11,7 +11,7 @@ jobs:
         runs-on: ubuntu-latest
 
         env:
-            COMPOSER_ROOT_VERSION: dev-main
+            COMPOSER_ROOT_VERSION: 1.x-dev
             SYMFONY_PHPUNIT_VERSION: 9.5
 
         strategy:
