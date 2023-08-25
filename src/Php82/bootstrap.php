@@ -30,3 +30,7 @@ if (!function_exists('odbc_connection_string_should_quote')) {
 if (!function_exists('odbc_connection_string_quote')) {
     function odbc_connection_string_quote(string $str): string { return p\Php82::odbc_connection_string_quote($str); }
 }
+
+if (!function_exists('ini_parse_quantity')) {
+    function ini_parse_quantity(string $shorthand): int { return p\Php82::ini_parse_quantity($shorthand); }
+}
