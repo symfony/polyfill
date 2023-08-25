@@ -1,0 +1,84 @@
+---------------------------------------------------------------------------
+
+by fisharebest at 2023-08-07T14:58:44Z
+
+I've done some more testing, and have one edge-case that I'm having difficulty in resolving.
+
+When using a mutliplier (e.g. 9999999999G), the code checks whether 9999999999 * 1024^3 would cause an overflow.
+If it does, it triggers a warning.
+
+But it also does the multiplication anyway!
+This overflows (using C arithmetic), and gives a meaningles answer.  e.g.
+
+```
+php > echo ini_parse_quantity('9999999999G');
+
+Warning: Invalid quantity "9999999999G": value is out of range, using overflow result for backwards compatibility in php shell code on line 1
+
+Call Stack:
+   13.7692     389672   1. {main}() php shell code:0
+   13.7696     389672   2. ini_parse_quantity($shorthand = '9999999999G') php shell code:1
+
+-7709325834783293440
+```
+
+This is probably architecture-dependent, and I don't know what tools I can use.  e.g. can I have a dependency on the `gmp_` functions?
+
+Should I continue with this PR - dispite this one (IMHO very minor) limitation - and maybe list it as a known bug.
+Or do you need a complete 100% implementation before you can accept it?
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2023-08-07T19:02:54Z
+
+> This is probably architecture-dependent, and I don't know what tools I can use. e.g. can I have a dependency on the `gmp_` functions?
+
+No, this is not arch dependent and trivial to resolve for the specific case of multiplying by a power of two. Multiplying by a power of two is equivalent to a left-shift by one. 1024 is 2^10, thus a shift of 10. `1024*1024*1024` is 2^30, thus a shift of 30:
+
+```
+var_dump(9999999999 << 30); // int(-7709325834783293440)
+```
+
+The result is specific to 64 Bit PHP, of course.
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2023-08-07T19:22:53Z
+
+Thanks @TimWolla - I was over-thinking it.
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2023-08-23T08:47:06Z
+
+Asking as a user: @fisharebest Is there some change pending from you or is this PR complete / ready for review?
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2023-08-23T10:16:05Z
+
+Sorry - this dropped off my radar.  I'll check where it is at later today.
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2023-08-23T11:25:21Z
+
+OK - I'm happy with the code now.  I've made all the requested changes, and it has 100% test coverage.
+
+The CI tests are now all failing (they worked before) - but I don't think that's anything to do with me.  The tests run locally fine.
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2023-08-23T20:28:40Z
+
+> Can you please also update the src/Php82/bootstrap.php file, the src/Php72/README one, and the root CHANGELOG one?
+
+Done.
+
+---------------------------------------------------------------------------
+
+by fisharebest at 2023-08-23T20:35:37Z
+
+Now that the CI tests are working, it looks like on PHP 7.1 - 7.2, the function is returning a `string` rather than an `int`.
+
+Give me a few minutes...
