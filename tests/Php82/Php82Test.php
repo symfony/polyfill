@@ -259,7 +259,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity(' 0 K '));
         $this->assertSame('Invalid prefix "0 ", interpreting as "0" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityNoValidLeadingDigits()
@@ -267,7 +267,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity(' foo '));
         $this->assertSame('Invalid quantity " foo ": no valid leading digits, interpreting as "0" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityUnknownMultiplier()
@@ -275,7 +275,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(2, @ini_parse_quantity(' 0b102 '));
         $this->assertSame('Invalid quantity " 0b102 ": unknown multiplier "2", interpreting as " 0b10" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityNoDigitsAfterBasePrefix()
@@ -283,7 +283,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity(' 0x '));
         $this->assertSame('Invalid quantity " 0x ": no digits after base prefix, interpreting as "0" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityInvalidPrefix()
@@ -291,7 +291,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity('0q12'));
         $this->assertSame('Invalid prefix "0q", interpreting as "0" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityInvalidQuantity()
@@ -299,7 +299,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(10240, @ini_parse_quantity(' 10 kk '));
         $this->assertSame('Invalid quantity " 10 kk ", interpreting as " 10 k" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityNoLeadingDigits()
@@ -308,7 +308,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity(' K '));
         $this->assertSame('Invalid quantity " K ": no valid leading digits, interpreting as "0" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityOutOfRange()
@@ -316,7 +316,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(-4096, @ini_parse_quantity(' 0x-4K '));
         $this->assertSame('Invalid quantity " 0x-4K ": value is out of range, using overflow result for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityOverflowTooManyDigits()
@@ -324,7 +324,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(-1, @ini_parse_quantity(' 99999999999999999999 '));
         $this->assertSame('Invalid quantity " 99999999999999999999 ": value is out of range, using overflow result for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantityOverflowWithMultiplier()
@@ -332,7 +332,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(-7709325833709551616, @ini_parse_quantity(' 10000000000G '));
         $this->assertSame('Invalid quantity " 10000000000G ": value is out of range, using overflow result for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantitySignAfterPrefixButNoDigits()
@@ -340,7 +340,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity(' 0b- '));
         $this->assertSame('Invalid quantity " 0b- ": no valid leading digits, interpreting as "0" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     public function testIniParseQuantitySpecialCharactersAreEscaped()
@@ -348,7 +348,7 @@ class Php82Test extends TestCase
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity("w-\n-\r-\t-\v-\f-\\-\x1B-\xCC-"));
         $this->assertSame('Invalid quantity "w-\\n-\\r-\\t-\\v-\\f-\\\\-\\e-\\xCC-": no valid leading digits, interpreting as "0" for backwards compatibility', error_get_last()['message']);
-        $this->assertContains(error_get_last()['type'], [E_WARNING, E_USER_WARNING]);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
     /**
@@ -357,7 +357,7 @@ class Php82Test extends TestCase
      */
     public function testIniParseQuantityUsingBruteForce()
     {
-        if (PHP_VERSION_ID < 80200) {
+        if (\PHP_VERSION_ID < 80200) {
             $this->markTestSkipped('This test requires the PHP function as a reference.');
 
             return;
@@ -365,19 +365,20 @@ class Php82Test extends TestCase
 
         // Comment these lines to run the tests.
         $this->markTestSkipped('This test is slow and should only be used for local development.');
+
         return;
 
         $fn = function (string $test): void {
             error_clear_last();
-            $x     = @ini_parse_quantity($test);
+            $x = @ini_parse_quantity($test);
             $err_x = error_get_last()['message'] ?? '';
 
             error_clear_last();
-            $y     = @ini_parse_quantity($test);
+            $y = @ini_parse_quantity($test);
             $err_y = error_get_last()['message'] ?? '';
 
-            $this->assertSame($x, $y, 'Testing "' . $test . '"');
-            $this->assertSame($err_x, $err_y, 'Testing "' . $test . '"');
+            $this->assertSame($x, $y, 'Testing "'.$test.'"');
+            $this->assertSame($err_x, $err_y, 'Testing "'.$test.'"');
         };
 
         $chars = [' ', '-', '+', '0', '1', '7', '9', 'a', 'b', 'o', 'f', 'g', 'k', 'm', 'x', 'z', '\\'];
@@ -388,22 +389,22 @@ class Php82Test extends TestCase
             $fn($char1);
 
             foreach ($chars as $char2) {
-                $fn($char1 . $char2);
+                $fn($char1.$char2);
 
                 foreach ($chars as $char3) {
-                    $fn($char1 . $char2 . $char3);
+                    $fn($char1.$char2.$char3);
 
                     foreach ($chars as $char4) {
-                        $fn($char1 . $char2 . $char3 . $char4);
+                        $fn($char1.$char2.$char3.$char4);
 
                         foreach ($chars as $char5) {
-                            $fn($char1 . $char2 . $char3 . $char4 . $char5);
+                            $fn($char1.$char2.$char3.$char4.$char5);
 
                             foreach ($chars as $char6) {
-                                $fn($char1 . $char2 . $char3 . $char4 . $char5 . $char6);
+                                $fn($char1.$char2.$char3.$char4.$char5.$char6);
 
                                 foreach ($chars as $char7) {
-                                    $fn($char1 . $char2 . $char3 . $char4 . $char5 . $char6 . $char7);
+                                    $fn($char1.$char2.$char3.$char4.$char5.$char6.$char7);
                                 }
                             }
                         }
