@@ -18,21 +18,6 @@ Polyfills are provided for:
 - the `intl_error_name`, `intl_get_error_code`, `intl_get_error_message` and
   `intl_is_failure` functions;
 - the `idn_to_ascii` and `idn_to_utf8` functions;
-- the `hex2bin` function, the `CallbackFilterIterator`,
-  `RecursiveCallbackFilterIterator` and `SessionHandlerInterface` classes
-  introduced in PHP 5.4;
-- the `array_column`, `boolval`, `json_last_error_msg` and `hash_pbkdf2`
-  functions introduced in PHP 5.5;
-- the `password_hash` and `password_*` related functions introduced in PHP 5.5,
-  provided by the `ircmaxell/password-compat` package;
-- the `hash_equals` and `ldap_escape` functions introduced in PHP 5.6;
-- the `*Error` classes, the `error_clear_last`, `preg_replace_callback_array` and
-  `intdiv` functions introduced in PHP 7.0;
-- the `random_bytes` and `random_int` functions introduced in PHP 7.0,
-  provided by the `paragonie/random_compat` package;
-- the `PHP_INT_MIN` constant introduced in PHP 7.0,
-- the `SessionUpdateTimestampHandlerInterface` interface introduced in PHP 7.0,
-- the `is_iterable` function introduced in PHP 7.1;
 - a `Binary` utility class to be used when compatibility with
   `mbstring.func_overload` is required;
 - the `spl_object_id` and `stream_isatty` functions introduced in PHP 7.2;
