@@ -797,7 +797,7 @@ final class Mbstring
         }
 
         if ('UTF-8' !== $encoding = self::getEncoding($encoding)) {
-            $s = mb_convert_encoding($s, $encoding, 'UTF-8');
+            $s = self::mb_convert_encoding($s, $encoding, 'UTF-8');
         }
 
         return $s;
@@ -806,7 +806,7 @@ final class Mbstring
     public static function mb_ord($s, $encoding = null)
     {
         if ('UTF-8' !== $encoding = self::getEncoding($encoding)) {
-            $s = mb_convert_encoding($s, 'UTF-8', $encoding);
+            $s = self::mb_convert_encoding($s, 'UTF-8', $encoding);
         }
 
         if (1 === \strlen($s)) {
