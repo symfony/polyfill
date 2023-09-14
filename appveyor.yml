@@ -40,7 +40,7 @@ install:
     - appveyor DownloadFile https://github.com/composer/composer/releases/download/2.0.12/composer.phar
     - cd c:\projects\polyfill
     - mkdir %APPDATA%\Composer && copy /Y .github\composer-config.json %APPDATA%\Composer\config.json
-    - SET COMPOSER_ROOT_VERSION=dev-main
+    - SET COMPOSER_ROOT_VERSION=1.x-dev
     - composer update --prefer-source --no-progress --ansi
 
 test_script:
