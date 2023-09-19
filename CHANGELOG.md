@@ -1,3 +1,7 @@
+# 1.28.1
+
+  * Fix loading the `ini_parse_quantity()` polyfill
+
 # 1.28.0
 
   * Polyfill `ldap_exop_sync()`
