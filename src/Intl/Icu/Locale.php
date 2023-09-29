@@ -279,7 +279,7 @@ abstract class Locale
     /**
      * Not supported. Returns an associative array of locale identifier subtags.
      *
-     * @return array Associative array with the extracted subtags
+     * @return array|null Associative array with the extracted subtags
      *
      * @see https://php.net/locale.parselocale
      *
