@@ -2,7 +2,7 @@
     "name": "symfony/polyfill",
     "type": "library",
     "description": "Symfony polyfills backporting features to lower PHP versions",
-    "keywords": ["polyfill", "shim", "compat", "compatibility"],
+    "keywords": ["polyfill", "shim", "compat", "compatibility", "dev"],
     "homepage": "https://symfony.com",
     "license": "MIT",
     "authors": [
