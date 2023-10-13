@@ -27,6 +27,14 @@ if (!function_exists('stream_context_set_options')) {
     function stream_context_set_options($context, array $options): bool { return stream_context_set_option($context, $options); }
 }
 
+if (!function_exists('str_increment')) {
+    function str_increment(string $string): string { return p\Php83::str_increment($string); }
+}
+
+if (!function_exists('str_decrement')) {
+    function str_decrement(string $string): string { return p\Php83::str_decrement($string); }
+}
+
 if (\PHP_VERSION_ID >= 80100) {
     return require __DIR__.'/bootstrap81.php';
 }
