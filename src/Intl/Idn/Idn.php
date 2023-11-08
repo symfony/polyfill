@@ -155,7 +155,6 @@ final class Idn
             'CheckJoiners' => self::INTL_IDNA_VARIANT_UTS46 === $variant && 0 !== ($options & self::IDNA_CHECK_CONTEXTJ),
             'UseSTD3ASCIIRules' => 0 !== ($options & self::IDNA_USE_STD3_RULES),
             'Transitional_Processing' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 === ($options & self::IDNA_NONTRANSITIONAL_TO_ASCII),
-            'IgnoreInvalidPunycode' => false,
             'VerifyDnsLength' => true,
         ];
         $info = new Info();
@@ -209,7 +208,6 @@ final class Idn
             'CheckBidi' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 !== ($options & self::IDNA_CHECK_BIDI),
             'CheckJoiners' => self::INTL_IDNA_VARIANT_UTS46 === $variant && 0 !== ($options & self::IDNA_CHECK_CONTEXTJ),
             'UseSTD3ASCIIRules' => 0 !== ($options & self::IDNA_USE_STD3_RULES),
-            'IgnoreInvalidPunycode' => false,
             'Transitional_Processing' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 === ($options & self::IDNA_NONTRANSITIONAL_TO_UNICODE),
         ], $info);
         $idna_info = [
@@ -359,9 +357,7 @@ final class Idn
                 try {
                     $label = self::punycodeDecode(substr($label, 4));
                 } catch (\Exception $e) {
-                    if (!$validationOptions['IgnoreInvalidPunycode']) {
-                        $info->errors |= self::ERROR_PUNYCODE;
-                    }
+                    $info->errors |= self::ERROR_PUNYCODE;
 
                     continue;
                 }
