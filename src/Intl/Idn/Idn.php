@@ -351,7 +351,7 @@ final class Idn
                 }
 
                 // Step 4.2. Attempt to convert the rest of the label to Unicode according to Punycode [RFC3492]. If
-                // that conversion fails and if not IgnoreInvalidPunycode, record that there was an error, and continue
+                // that conversion fails, record that there was an error, and continue
                 // with the next label. Otherwise replace the original label in the string by the results of the
                 // conversion.
                 try {
