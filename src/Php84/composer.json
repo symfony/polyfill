@@ -1,0 +1,35 @@
+{
+    "name": "symfony/polyfill-php84",
+    "type": "library",
+    "description": "Symfony polyfill backporting some PHP 8.4+ features to lower PHP versions",
+    "keywords": ["polyfill", "shim", "compatibility", "portable"],
+    "homepage": "https://symfony.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nicolas Grekas",
+            "email": "p@tchwork.com"
+        },
+        {
+            "name": "Symfony Community",
+            "homepage": "https://symfony.com/contributors"
+        }
+    ],
+    "require": {
+        "php": ">=7.1"
+    },
+    "autoload": {
+        "psr-4": { "Symfony\\Polyfill\\Php84\\": "" },
+        "files": [ "bootstrap.php" ]
+    },
+    "minimum-stability": "dev",
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.30-dev"
+        },
+        "thanks": {
+            "name": "symfony/polyfill",
+            "url": "https://github.com/symfony/polyfill"
+        }
+    }
+}
