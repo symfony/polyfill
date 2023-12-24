@@ -17,7 +17,7 @@
     ],
     "require": {
         "php": ">=7.1",
-        "ext-iconv": "*"
+        "symfony/polyfill-iconv": "*"
     },
     "provide": {
         "ext-mbstring": "*"
