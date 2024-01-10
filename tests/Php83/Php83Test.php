@@ -202,4 +202,124 @@ class Php83Test extends TestCase
         $this->assertTrue(class_exists(\DateMalformedIntervalStringException::class));
         $this->assertTrue(class_exists(\DateMalformedPeriodStringException::class));
     }
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::str_increment
+     *
+     * @dataProvider strIncrementProvider
+     */
+    public function testStrIncrement(string $result, string $string)
+    {
+        $this->assertSame($result, str_increment($string));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::str_decrement
+     *
+     * @dataProvider strDecrementProvider
+     */
+    public function testStrDecrement(string $result, string $string)
+    {
+        $this->assertSame($result, str_decrement($string));
+    }
+
+    public static function strIncrementProvider(): iterable
+    {
+        yield ['ABD', 'ABC'];
+        yield ['EB', 'EA'];
+        yield ['AAA', 'ZZ'];
+        yield ['Ba', 'Az'];
+        yield ['bA', 'aZ'];
+        yield ['B0', 'A9'];
+        yield ['b0', 'a9'];
+        yield ['AAa', 'Zz'];
+        yield ['aaA', 'zZ'];
+        yield ['10a', '9z'];
+        yield ['10A', '9Z'];
+        yield ['5e7', '5e6'];
+        yield ['e', 'd'];
+        yield ['E', 'D'];
+        yield ['5', '4'];
+    }
+
+    public static function strDecrementProvider(): iterable
+    {
+        yield ['Ay', 'Az'];
+        yield ['aY', 'aZ'];
+        yield ['A8', 'A9'];
+        yield ['a8', 'a9'];
+        yield ['Yz', 'Za'];
+        yield ['yZ', 'zA'];
+        yield ['Y9', 'Z0'];
+        yield ['y9', 'z0'];
+        yield ['Z', 'aA'];
+        yield ['9', 'A0'];
+        yield ['9', 'a0'];
+        yield ['9', '10'];
+        yield ['Z', '1A'];
+        yield ['z', '1a'];
+        yield ['9z', '10a'];
+        yield ['5e5', '5e6'];
+        yield ['C', 'D'];
+        yield ['c', 'd'];
+        yield ['3', '4'];
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::str_increment
+     *
+     * @dataProvider strInvalidIncrementProvider
+     */
+    public function testInvalidStrIncrement(string $errorMessage, string $string)
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage($errorMessage);
+
+        str_increment($string);
+    }
+
+
+    public static function strInvalidIncrementProvider(): iterable
+    {
+        yield ['str_increment(): Argument #1 ($string) cannot be empty', ""];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', "-cc"];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', "Z "];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', " Z"];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', "é"];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', '我喜歡雞肉'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', 'α'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', 'ω'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', 'Α'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', 'Ω'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', 'foo1.txt'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', '1f.5'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', 'foo.1.txt'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', '1.f.5'];
+    }
+
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::str_decrement
+     *
+     * @dataProvider strInvalidDecrementProvider
+     */
+    public function testInvalidStrDecrement(string $errorMessage, string $string)
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage($errorMessage);
+
+        str_decrement($string);
+    }
+
+    public static function strInvalidDecrementProvider(): iterable
+    {
+        yield ['str_decrement(): Argument #1 ($string) cannot be empty', ''];
+        yield ['str_decrement(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', '我喜歡雞肉'];
+        yield ['str_decrement(): Argument #1 ($string) "0" is out of decrement range', '0'];
+        yield ['str_decrement(): Argument #1 ($string) "a" is out of decrement range', 'a'];
+        yield ['str_decrement(): Argument #1 ($string) "A" is out of decrement range', 'A'];
+        yield ['str_decrement(): Argument #1 ($string) "00" is out of decrement range', '00'];
+        yield ['str_decrement(): Argument #1 ($string) "0a" is out of decrement range', '0a'];
+        yield ['str_decrement(): Argument #1 ($string) "0A" is out of decrement range', '0A'];
+    }
 }
