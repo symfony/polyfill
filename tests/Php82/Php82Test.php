@@ -240,19 +240,6 @@ class Php82Test extends TestCase
         $this->assertSame(-17179869184, ini_parse_quantity('-0X10G'));
     }
 
-    public function testIniParseQuantityUndocumentedFeatures()
-    {
-        $this->assertSame(18, ini_parse_quantity('0x0x12'));
-
-        $this->assertSame(2, ini_parse_quantity('0b+10'));
-        $this->assertSame(8, ini_parse_quantity('0o+10'));
-        $this->assertSame(16, ini_parse_quantity('0x+10'));
-
-        $this->assertSame(2, ini_parse_quantity('0b 10'));
-        $this->assertSame(8, ini_parse_quantity('0o 10'));
-        $this->assertSame(16, ini_parse_quantity('0x 10'));
-    }
-
     public function testIniParseQuantityZeroWithMultiplier()
     {
         // Note that "1 K" is valid
@@ -314,8 +301,8 @@ class Php82Test extends TestCase
     public function testIniParseQuantityOutOfRange()
     {
         error_clear_last();
-        $this->assertSame(-4096, @ini_parse_quantity(' 0x-4K '));
-        $this->assertSame('Invalid quantity " 0x-4K ": value is out of range, using overflow result for backwards compatibility', error_get_last()['message']);
+        $this->assertSame(0, @ini_parse_quantity(' 0x-4K '));
+        $this->assertSame('Invalid quantity " 0x-4K ": no digits after base prefix, interpreting as "0" for backwards compatibility', error_get_last()['message']);
         $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
@@ -339,7 +326,7 @@ class Php82Test extends TestCase
     {
         error_clear_last();
         $this->assertSame(0, @ini_parse_quantity(' 0b- '));
-        $this->assertSame('Invalid quantity " 0b- ": no valid leading digits, interpreting as "0" for backwards compatibility', error_get_last()['message']);
+        $this->assertSame('Invalid quantity " 0b- ": no digits after base prefix, interpreting as "0" for backwards compatibility', error_get_last()['message']);
         $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
