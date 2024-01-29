@@ -98,6 +98,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php81` for using the PHP 8.1 functions,
 - `symfony/polyfill-php82` for using the PHP 8.2 functions,
 - `symfony/polyfill-php83` for using the PHP 8.3 functions,
+- `symfony/polyfill-php84` for using the PHP 8.4 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,
