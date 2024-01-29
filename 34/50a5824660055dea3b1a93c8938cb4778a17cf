@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by stof at 2024-01-10T16:46:09Z
+
+> e.g. constructor should not accept `null` value
+
+We must accept `null` due to the way internal arguments for scalars are all accepting `null` even when not marked as nullable (see the deprecation introduced in PHP 8.1), while userland types were always stricter in that regard.
