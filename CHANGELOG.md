@@ -1,6 +1,8 @@
-# 1.28.1
+# 1.29.0
 
-  * Fix loading the `ini_parse_quantity()` polyfill
+  * Fix the `ini_parse_quantity()` polyfill
+  * Add `str_increment` and `str_decrement` functions
+  * Add `SQLite3Exception` class
 
 # 1.28.0
 
