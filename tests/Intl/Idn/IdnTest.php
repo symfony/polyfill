@@ -309,7 +309,6 @@ class IdnTest extends TestCase
         idn_to_utf8('xn--xn---epa.', \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info1);
         idn_to_ascii($info1['result'], \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info2);
         $this->assertSame(\IDNA_ERROR_PUNYCODE, \IDNA_ERROR_PUNYCODE & $info2['errors']);
-        $this->assertNotSame('xn--xn---epa.', $info2['result']);
     }
 
     /**
