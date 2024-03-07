@@ -657,6 +657,20 @@ class MbstringTest extends TestCase
         mb_str_pad($string, $length, $padString, $padType, $encoding);
     }
 
+    /**
+     * @dataProvider ucFirstDataProvider
+     */
+    public function testMbUcFirst(string $string, string $expected): void {
+        $this->assertSame($expected, mb_ucfirst($string));
+    }
+
+    /**
+     * @dataProvider lcFirstDataProvider
+     */
+    public function testMbLcFirst(string $string, string $expected): void {
+        $this->assertSame($expected, mb_lcfirst($string));
+    }
+
     public static function paddingStringProvider(): iterable
     {
         // Simple ASCII strings
@@ -726,5 +740,44 @@ class MbstringTest extends TestCase
         yield ['mb_str_pad(): Argument #3 ($pad_string) must be a non-empty string', '▶▶', 6, '', \STR_PAD_BOTH];
         yield ['mb_str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH', '▶▶', 6, ' ', 123456];
         yield ['mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "unexisting" given', '▶▶', 6, ' ', \STR_PAD_BOTH, 'unexisting'];
+    }
+
+    public static function ucFirstDataProvider(): array {
+        return [
+            ['', ''],
+            ['test', 'Test'],
+            ['TEST', 'TEST'],
+            ['TesT', 'TesT'],
+            ['ａｂ', 'Ａｂ'],
+            ['ＡＢＳ', 'ＡＢＳ'],
+            ['đắt quá!', 'Đắt quá!'],
+            ['აბგ', 'აბგ'],
+            ['ǉ', 'ǈ'],
+            ["\u{01CA}", "\u{01CB}"],
+            ["\u{01CA}\u{01CA}", "\u{01CB}\u{01CA}"],
+            ["łámał", "Łámał"],
+            // Full case-mapping and case-folding that changes the length of the string only supported
+            // in PHP > 7.3.
+            ["ßst", PHP_VERSION_ID < 70300 ? "ßst" : "Ssst"],
+        ];
+    }
+
+    public static function lcFirstDataProvider(): array {
+        return [
+            ['', ''],
+            ['test', 'test'],
+            ['Test', 'test'],
+            ['tEST', 'tEST'],
+            ['Ａｂ', 'ａｂ'],
+            ['ＡＢＳ', 'ａＢＳ'],
+            ['Đắt quá!', 'đắt quá!'],
+            ['აბგ', 'აბგ'],
+            ['ǈ', PHP_VERSION_ID < 70200 ? 'ǈ' : 'ǉ'],
+            ["\u{01CB}", PHP_VERSION_ID < 70200 ? "\u{01CB}" : "\u{01CC}"],
+            ["\u{01CA}", "\u{01CC}"],
+            ["\u{01CA}\u{01CA}", "\u{01CC}\u{01CA}"],
+            ["\u{212A}\u{01CA}", "\u{006b}\u{01CA}"],
+            ["ß", "ß"],
+        ];
     }
 }
