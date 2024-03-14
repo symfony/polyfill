@@ -25,7 +25,7 @@ class Hour1201Transformer extends HourTransformer
         return $this->padLeft($dateTime->format('g'), $length);
     }
 
-    public function normalizeHour(int $hour, string $marker = null): int
+    public function normalizeHour(int $hour, ?string $marker = null): int
     {
         if ('PM' !== $marker && 12 === $hour) {
             $hour = 0;

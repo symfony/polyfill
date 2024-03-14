@@ -23,7 +23,7 @@ class TestListenerForV9 extends TestSuite implements TestListenerInterface
     private $suite;
     private $trait;
 
-    public function __construct(TestSuite $suite = null)
+    public function __construct(?TestSuite $suite = null)
     {
         if ($suite) {
             $this->suite = $suite;
@@ -43,7 +43,7 @@ class TestListenerForV9 extends TestSuite implements TestListenerInterface
         $this->trait->addError($test, $t, $time);
     }
 
-    public function addWarning($test, Warning $e = null, float $time = null): void
+    public function addWarning($test, ?Warning $e = null, ?float $time = null): void
     {
         if (\is_string($test)) {
             parent::addWarning($test);

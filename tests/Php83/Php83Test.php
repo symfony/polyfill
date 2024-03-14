@@ -33,7 +33,7 @@ class Php83Test extends TestCase
      * @dataProvider paddingEmojiProvider
      * @dataProvider paddingEncodingProvider
      */
-    public function testMbStrPad(string $expectedResult, string $string, int $length, string $padString, int $padType, string $encoding = null): void
+    public function testMbStrPad(string $expectedResult, string $string, int $length, string $padString, int $padType, ?string $encoding = null): void
     {
         $this->assertSame($expectedResult, mb_convert_encoding(mb_str_pad($string, $length, $padString, $padType, $encoding), 'UTF-8', $encoding ?? mb_internal_encoding()));
     }
@@ -43,7 +43,7 @@ class Php83Test extends TestCase
      *
      * @dataProvider mbStrPadInvalidArgumentsProvider
      */
-    public function testMbStrPadInvalidArguments(string $expectedError, string $string, int $length, string $padString, int $padType, string $encoding = null): void
+    public function testMbStrPadInvalidArguments(string $expectedError, string $string, int $length, string $padString, int $padType, ?string $encoding = null): void
     {
         $this->expectException(\ValueError::class);
         $this->expectErrorMessage($expectedError);

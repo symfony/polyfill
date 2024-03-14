@@ -886,7 +886,7 @@ abstract class AbstractNumberFormatterTest extends TestCase
     /**
      * @return NumberFormatter|\NumberFormatter
      */
-    abstract protected static function getNumberFormatter(string $locale = 'en', string $style = null, string $pattern = null);
+    abstract protected static function getNumberFormatter(string $locale = 'en', ?string $style = null, ?string $pattern = null);
 
     abstract protected static function getIntlErrorMessage(): string;
 

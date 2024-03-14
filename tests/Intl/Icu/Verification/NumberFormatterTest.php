@@ -46,7 +46,7 @@ class NumberFormatterTest extends AbstractNumberFormatterTest
         parent::testGetTextAttribute();
     }
 
-    protected static function getNumberFormatter(?string $locale = 'en', string $style = null, string $pattern = null): \NumberFormatter
+    protected static function getNumberFormatter(?string $locale = 'en', ?string $style = null, ?string $pattern = null): \NumberFormatter
     {
         return new \NumberFormatter($locale, $style, $pattern);
     }
