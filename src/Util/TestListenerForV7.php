@@ -26,7 +26,7 @@ class TestListenerForV7 extends TestSuite implements TestListenerInterface
     private $suite;
     private $trait;
 
-    public function __construct(TestSuite $suite = null)
+    public function __construct(?TestSuite $suite = null)
     {
         if ($suite) {
             $this->suite = $suite;

@@ -635,7 +635,7 @@ class MbstringTest extends TestCase
      * @dataProvider paddingEmojiProvider
      * @dataProvider paddingEncodingProvider
      */
-    public function testMbStrPad(string $expectedResult, string $string, int $length, string $padString, int $padType, string $encoding = null): void
+    public function testMbStrPad(string $expectedResult, string $string, int $length, string $padString, int $padType, ?string $encoding = null): void
     {
         if ('UTF-32' === $encoding && \PHP_VERSION_ID < 73000) {
             $this->markTestSkipped('PHP < 7.3 doesn\'t handle UTF-32 encoding properly');
@@ -649,7 +649,7 @@ class MbstringTest extends TestCase
      *
      * @dataProvider mbStrPadInvalidArgumentsProvider
      */
-    public function testMbStrPadInvalidArguments(string $expectedError, string $string, int $length, string $padString, int $padType, string $encoding = null): void
+    public function testMbStrPadInvalidArguments(string $expectedError, string $string, int $length, string $padString, int $padType, ?string $encoding = null): void
     {
         $this->expectException(\ValueError::class);
         $this->expectErrorMessage($expectedError);

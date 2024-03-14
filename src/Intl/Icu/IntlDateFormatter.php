@@ -193,7 +193,7 @@ abstract class IntlDateFormatter
      * @throws MethodArgumentValueNotImplementedException When $locale different than "en" or null is passed
      * @throws MethodArgumentValueNotImplementedException When $calendar different than GREGORIAN is passed
      */
-    public static function create(?string $locale, ?int $dateType, ?int $timeType, $timezone = null, int $calendar = null, ?string $pattern = '')
+    public static function create(?string $locale, ?int $dateType, ?int $timeType, $timezone = null, ?int $calendar = null, ?string $pattern = '')
     {
         return new static($locale, $dateType, $timeType, $timezone, $calendar, $pattern);
     }
@@ -276,7 +276,7 @@ abstract class IntlDateFormatter
      *
      * @throws MethodNotImplementedException
      */
-    public static function formatObject($datetime, $format = null, string $locale = null)
+    public static function formatObject($datetime, $format = null, ?string $locale = null)
     {
         throw new MethodNotImplementedException(__METHOD__);
     }
