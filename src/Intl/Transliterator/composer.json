@@ -1,0 +1,35 @@
+{
+    "name": "symfony/polyfill-intl-transliterator",
+    "type": "library",
+    "description": "Symfony polyfill for intl's Transliterator class",
+    "keywords": ["polyfill", "shim", "compatibility", "portable", "intl", "transliterator"],
+    "homepage": "https://symfony.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Lars Moelleken",
+            "email": "lars@moelleken.org"
+        },
+        {
+            "name": "Symfony Community",
+            "homepage": "https://symfony.com/contributors"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3"
+    },
+    "autoload": {
+        "psr-4": { "Symfony\\Polyfill\\Intl\\Transliterator\\": "" },
+        "files": [ "bootstrap.php" ],
+        "classmap": [ "Resources/stubs" ]
+    },
+    "suggest": {
+        "ext-intl": "For best performance"
+    },
+    "minimum-stability": "dev",
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.12-dev"
+        }
+    }
+}
