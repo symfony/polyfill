@@ -284,6 +284,55 @@ class IdnTest extends TestCase
         $this->assertSame($encoded, $result);
     }
 
+    /**
+     * IDNA 15.1.0 revision 31
+     *
+     * This tests the change in "Section 4 Processing step 1. Map" which conditionally maps U+1E9E capital sharp s to
+     * "ss" if Transitional_Processing is used.
+     *
+     * @dataProvider captialSharpSProvider
+     */
+    public function testCapitalSharpSProcessing($input, $expected, $flags)
+    {
+        idn_to_utf8($input, $flags, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame($expected, $info['result']);
+    }
+
+    /**
+     * IDNA 15.1.0 revision 31
+     *
+     * This tests the additional validity check in "Section 4.1 Validity Criteria Processing step 4", which is used to
+     * disallow labels that do not round trip.
+     */
+    public function testLabelsThatDoNotRoundTripAreDisallowed()
+    {
+        idn_to_utf8('xn--xn---epa.', \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info1);
+        idn_to_ascii($info1['result'], \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info2);
+        $this->assertSame(\IDNA_ERROR_PUNYCODE, \IDNA_ERROR_PUNYCODE & $info2['errors']);
+    }
+
+    /**
+     * IDNA 15.1.0 revision 31
+     *
+     * This tests the the additional condition in "Section 4 Processing step 4.1" where a label that starts with "xn--"
+     * and contains a non-ASCII codepoint records an error and the processing steps continue with the next label.
+     */
+    public function testLabelStartingWithPunycodePrefixWithNonAsciiCharacterRecordsErrorAndIsSkipped()
+    {
+        \idn_to_utf8('xn--🌈.xn--fa-hia.de', \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame(\IDNA_ERROR_PUNYCODE, \IDNA_ERROR_PUNYCODE & $info['errors']);
+        $this->assertSame('xn--🌈.faß.de', $info['result']);
+    }
+
+    public static function captialSharpSProvider()
+    {
+        return [
+            ['Faß.de', 'fass.de', \IDNA_DEFAULT],
+            ['Faß.de', 'faß.de', \IDNA_NONTRANSITIONAL_TO_UNICODE],
+        ];
+    }
+
+
     public static function domainNamesProvider()
     {
         return [
