@@ -66,3 +66,11 @@ if (extension_loaded('mbstring')) {
         function mb_rtrim(string $string, ?string $characters = null, ?string $encoding = null): string { return p\Php84::mb_rtrim($string, $characters, $encoding); }
     }
 }
+
+if (\PHP_VERSION_ID >= 80200) {
+    return require __DIR__.'/bootstrap82.php';
+}
+
+if (extension_loaded('intl') && !function_exists('grapheme_str_split')) {
+    function grapheme_str_split(string $string, int $length = 1) { return p\Php84::grapheme_str_split($string, $length); }
+}

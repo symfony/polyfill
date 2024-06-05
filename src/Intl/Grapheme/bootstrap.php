@@ -56,3 +56,6 @@ if (!function_exists('grapheme_strstr')) {
 if (!function_exists('grapheme_substr')) {
     function grapheme_substr($string, $offset, $length = null) { return p\Grapheme::grapheme_substr($string, $offset, $length); }
 }
+if (!function_exists('grapheme_str_split')) {
+    function grapheme_str_split($string, $length = 1) { return p\Grapheme::grapheme_str_split($string, $length); }
+}

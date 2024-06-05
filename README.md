@@ -72,6 +72,7 @@ Polyfills are provided for:
 - the `Deprecated` attribute introduced in PHP 8.4;
 - the `mb_trim`, `mb_ltrim` and `mb_rtrim` functions introduced in PHP 8.4;
 - the `CURL_HTTP_VERSION_3` and `CURL_HTTP_VERSION_3ONLY` constants introduced in PHP 8.4;
+- the `grapheme_str_split` function introduced in PHP 8.4;
 - the `get_error_handler` and `get_exception_handler` functions introduced in PHP 8.5;
 - the `NoDiscard` attribute introduced in PHP 8.5;
 - the `array_first` and `array_last` functions introduced in PHP 8.5;
