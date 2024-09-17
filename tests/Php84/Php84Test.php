@@ -227,10 +227,34 @@ class Php84Test extends TestCase
         $this->assertSame($expected, mb_rtrim($string, $characters, $encoding));
     }
 
+    /**
+     * @requires PHP 8
+     */
     public function testMbTrimException()
     {
         $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('mb_trim(): Argument #3 ($encoding) must be a valid encoding, "NULL" given');
+
         mb_trim("\u{180F}", '', 'NULL');
+    }
+
+    /**
+     * @requires PHP < 8
+     */
+    public function testMbTrimExceptionOnPhp7()
+    {
+        $this->expectException(\ErrorException::class);
+        $this->expectExceptionMessage('mb_trim(): Argument #3 ($encoding) must be a valid encoding, "NULL" given');
+
+        set_error_handler(static function ($errno, $errstr, $errfile, $errline) {
+            throw new \ErrorException($errstr, $errno, $errfile, $errline);
+        });
+
+        try {
+            mb_trim("\u{180F}", '', 'NULL');
+        } finally {
+            restore_error_handler();
+        }
     }
 
     public function testMbTrimEncoding()

@@ -19,7 +19,8 @@ namespace Symfony\Polyfill\Php84;
  */
 final class Php84
 {
-    public static function mb_ucfirst(string $string, ?string $encoding = null): string
+    /** @return string|false */
+    public static function mb_ucfirst(string $string, ?string $encoding = null)
     {
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
@@ -31,8 +32,13 @@ final class Php84
             throw new \ValueError(\sprintf('mb_ucfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
-        // BC for PHP 7.3 and lower
         if (!$validEncoding) {
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error(\sprintf('mb_ucfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding), \E_USER_WARNING);
+
+                return false;
+            }
+
             throw new \ValueError(\sprintf('mb_ucfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
@@ -42,7 +48,8 @@ final class Php84
         return $firstChar.mb_substr($string, 1, null, $encoding);
     }
 
-    public static function mb_lcfirst(string $string, ?string $encoding = null): string
+    /** @return string|false */
+    public static function mb_lcfirst(string $string, ?string $encoding = null)
     {
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
@@ -54,8 +61,13 @@ final class Php84
             throw new \ValueError(\sprintf('mb_lcfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
-        // BC for PHP 7.3 and lower
         if (!$validEncoding) {
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error(\sprintf('mb_lcfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding), \E_USER_WARNING);
+
+                return false;
+            }
+
             throw new \ValueError(\sprintf('mb_lcfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
@@ -114,22 +126,26 @@ final class Php84
         return $num ** $exponent;
     }
 
-    public static function mb_trim(string $string, ?string $characters = null, ?string $encoding = null): string
+    /** @return string|false */
+    public static function mb_trim(string $string, ?string $characters = null, ?string $encoding = null)
     {
         return self::mb_internal_trim('{^[%s]+|[%1$s]+$}Du', $string, $characters, $encoding, __FUNCTION__);
     }
 
-    public static function mb_ltrim(string $string, ?string $characters = null, ?string $encoding = null): string
+    /** @return string|false */
+    public static function mb_ltrim(string $string, ?string $characters = null, ?string $encoding = null)
     {
         return self::mb_internal_trim('{^[%s]+}Du', $string, $characters, $encoding, __FUNCTION__);
     }
 
-    public static function mb_rtrim(string $string, ?string $characters = null, ?string $encoding = null): string
+    /** @return string|false */
+    public static function mb_rtrim(string $string, ?string $characters = null, ?string $encoding = null)
     {
-        return self::mb_internal_trim('{[%s]+$}Du', $string, $characters, $encoding, __FUNCTION__);
+        return self::mb_internal_trim('{[%s]+$}D', $string, $characters, $encoding, __FUNCTION__);
     }
 
-    private static function mb_internal_trim(string $regex, string $string, ?string $characters, ?string $encoding, string $function): string
+    /** @return string|false */
+    private static function mb_internal_trim(string $regex, string $string, ?string $characters, ?string $encoding, string $function)
     {
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
@@ -141,8 +157,13 @@ final class Php84
             throw new \ValueError(\sprintf('%s(): Argument #3 ($encoding) must be a valid encoding, "%s" given', $function, $encoding));
         }
 
-        // BC for PHP 7.3 and lower
         if (!$validEncoding) {
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error(\sprintf('%s(): Argument #3 ($encoding) must be a valid encoding, "%s" given', $function, $encoding), \E_USER_WARNING);
+
+                return false;
+            }
+
             throw new \ValueError(\sprintf('%s(): Argument #3 ($encoding) must be a valid encoding, "%s" given', $function, $encoding));
         }
 
