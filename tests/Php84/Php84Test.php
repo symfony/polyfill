@@ -693,4 +693,71 @@ class Php84Test extends TestCase
 
         return $cases;
     }
+
+    /**
+     * @requires extension bcmath
+     *
+     * @covers \Symfony\Polyfill\Php84\Php84::bcdivmod
+     *
+     * @dataProvider bcDivModProvider
+     */
+    public function testBcDivMod(string $num1, string $num2, ?int $scale, array $expected)
+    {
+        $this->assertSame($expected, bcdivmod($num1, $num2, $scale));
+    }
+
+    /**
+     * @requires extension bcmath
+     */
+    public function testBcDivModDivideByZero()
+    {
+        $this->expectException(\DivisionByZeroError::class);
+
+        bcdivmod('1', '0');
+    }
+
+    /**
+     * @requires extension bcmath
+     */
+    public function testBcDivModDivideByFloatingZero()
+    {
+        $this->expectException(\DivisionByZeroError::class);
+
+        bcdivmod('1', '0.00');
+    }
+
+    /**
+     * @requires PHP 8.0
+     * @requires extension bcmath
+     */
+    public function testBcDivModMalformedNumber()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('Argument #1 ($num1) is not well-formed');
+
+        bcdivmod('a', '1');
+    }
+
+    /**
+     * @requires PHP 8.0
+     * @requires extension bcmath
+     */
+    public function testBcDivModMalformedNumber2()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('Argument #2 ($num2) is not well-formed');
+
+        bcdivmod('1', 'a');
+    }
+
+    public static function bcDivModProvider(): iterable
+    {
+        yield ['1', '1', null, ['1', '0']];
+        yield ['1', '2', null, ['0', '1']];
+        yield ['5', '2', null, ['2', '1']];
+        yield ['5', '2', 0, ['2', '1']];
+        yield ['5', '2', 1, ['2', '1.0']];
+        yield ['5', '2', 2, ['2', '1.00']];
+        yield ['7.2', '3', 2, ['2', '1.20']];
+    }
 }
