@@ -72,6 +72,7 @@ Polyfills are provided for:
 - the `Deprecated` attribute introduced in PHP 8.4;
 - the `mb_trim`, `mb_ltrim` and `mb_rtrim` functions introduced in PHP 8.4;
 - the `CURL_HTTP_VERSION_3` and `CURL_HTTP_VERSION_3ONLY` constants introduced in PHP 8.4;
+- the `get_error_handler` and `get_exception_handler` functions introduced in PHP 8.5;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
@@ -105,6 +106,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php82` for using the PHP 8.2 functions,
 - `symfony/polyfill-php83` for using the PHP 8.3 functions,
 - `symfony/polyfill-php84` for using the PHP 8.4 functions,
+- `symfony/polyfill-php85` for using the PHP 8.5 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,
