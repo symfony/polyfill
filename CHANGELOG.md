@@ -1,3 +1,7 @@
+# 1.32.0
+
+  * Polyfill `get_error_handler()`  and `get_exception_handler()`
+
 # 1.31.0
 
   * Bump minimum PHP version to 7.2
