@@ -1,6 +1,11 @@
 # 1.32.0
 
-  * Polyfill `get_error_handler()`  and `get_exception_handler()`
+  * Remove the PHP 7.2 polyfill
+  * Polyfill `#[\NoDiscard]`
+  * Polyfill `fpow`
+  * Polyfill `get_error_handler()` and `get_exception_handler()`
+  * Fix `mb_rtrim` for UTF-8 text
+  * Fix Curl constants being redefined in PHP 8.4 polyfill
 
 # 1.31.0
 
