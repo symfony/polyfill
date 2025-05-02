@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by schodemeiss at 2025-04-07T16:25:54Z
+
+> Thanks, the stub is identical to the one provided in php-src: https://github.com/TimWolla/php-src/blob/d80682e753af13a89ad71ee78100ce44045f175d/Zend/zend_attributes.stub.php#L88-L97
+
+Indeed. I presumed that was the correct thing to do.
+
+Do we know when this Polyfill will be published as non-dev. I noticed it's on Packagist, but not as 1.38 (or whatever the other polyfills are).
+
+https://packagist.org/packages/symfony/polyfill-php85
