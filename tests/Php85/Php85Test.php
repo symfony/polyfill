@@ -78,6 +78,44 @@ class Php85Test extends TestCase
         $handler = new TestHandlerInvokable();
         yield [$handler, $handler];
     }
+
+    public function testArrayFirstArrayLast()
+    {
+        $this->assertNull(array_first([]));
+        $this->assertNull(array_last([]));
+
+        $array = [1, 2, 3];
+        unset($array[0], $array[1], $array[2]);
+
+        $this->assertNull(array_first([]));
+        $this->assertNull(array_last([]));
+
+
+        $this->assertSame('single element', array_first(['single element']));
+        $this->assertSame('single element', array_last(['single element']));
+
+        $str = 'hello world';
+        $this->assertSame($str, array_first([&$str, 1]));
+        $this->assertSame(1, array_last([&$str, 1]));
+
+        $this->assertSame(1, array_first([1, &$str]));
+        $this->assertSame($str, array_last([1, &$str]));
+
+        $this->assertSame(1, array_first([1 => 1, 0 => 0, 3 => 3, 2 => 2]));
+        $this->assertSame(2, array_last([1 => 1, 0 => 0, 3 => 3, 2 => 2]));
+
+        $this->assertSame('a1', array_first(['a' => 'a1', 'b' => 'b1', 'c' => 'c1']));
+        $this->assertSame('c1', array_last(['a' => 'a1', 'b' => 'b1', 'c' => 'c1']));
+
+        $this->assertSame([], array_first([100 => []]));
+        $this->assertSame([], array_last([100 => []]));
+
+        $this->assertEquals(new \stdClass(), array_first([new \stdClass, false]));
+        $this->assertFalse(array_last([new \stdClass, false]));
+
+        $this->assertTrue(array_first([true, new \stdClass]));
+        $this->assertEquals(new \stdClass(), array_last([true, new \stdClass]));
+    }
 }
 
 class TestHandler
