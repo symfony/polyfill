@@ -11,6 +11,7 @@ This component provides features added to PHP 8.4 core:
 - [`grapheme_str_split`](https://wiki.php.net/rfc/grapheme_str_split)
 - [`mb_trim`, `mb_ltrim` and `mb_rtrim`](https://wiki.php.net/rfc/mb_trim)
 - [`mb_ucfirst` and `mb_lcfirst`](https://wiki.php.net/rfc/mb_ucfirst)
+- [`ReflectionConstant`](https://github.com/php/php-src/pull/13669)
 
 More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).
