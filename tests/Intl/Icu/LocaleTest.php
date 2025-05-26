@@ -142,6 +142,17 @@ class LocaleTest extends AbstractLocaleTest
         $this->assertSame('en', $this->call('getDefault'));
     }
 
+    public function testIsRightToLeft()
+    {
+        $this->assertTrue(Locale::isRightToLeft('ar'));
+        $this->assertTrue(Locale::isRightToLeft('he'));
+        $this->assertTrue(Locale::isRightToLeft('fa'));
+        $this->assertTrue(Locale::isRightToLeft('ku-Arab'));
+        $this->assertFalse(Locale::isRightToLeft('ar-Latn'));
+        $this->assertFalse(Locale::isRightToLeft('en'));
+        $this->assertFalse(Locale::isRightToLeft(''));
+    }
+
     protected function call($methodName)
     {
         $args = \array_slice(\func_get_args(), 1);

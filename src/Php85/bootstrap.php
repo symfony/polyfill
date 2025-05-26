@@ -31,6 +31,10 @@ if (!function_exists('array_last')) {
     function array_last(array $array) { return p\Php85::array_last($array); }
 }
 
+if (!function_exists('locale_is_right_to_left')) {
+    function locale_is_right_to_left(string $locale): bool { return p\Php85::locale_is_right_to_left($locale); }
+}
+
 if (\PHP_VERSION_ID >= 80000) {
     require __DIR__.'/bootstrap80.php';
 
