@@ -340,7 +340,7 @@ abstract class NumberFormatter
      * @param int       $type Type of the formatting, one of the format type constants.
      *                        Only type NumberFormatter::TYPE_DEFAULT is currently supported.
      *
-     * @return bool|string The formatted value or false on error
+     * @return false|string The formatted value or false on error
      *
      * @see https://php.net/numberformatter.format
      *
