@@ -49,7 +49,14 @@ class TestListenerTrait
             }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
             $bootstrap = \dirname($testedClass->getFileName()).'/bootstrap';
-            $bootstrap = new \SplFileObject($bootstrap.(\PHP_VERSION_ID >= 80000 && file_exists($bootstrap.'80.php') ? '80' : '').'.php');
+            if (\PHP_VERSION_ID >= 80200 && file_exists($bootstrap.'82.php')) {
+                $bootstrap .= '82';
+            } elseif (\PHP_VERSION_ID >= 80100 && file_exists($bootstrap.'81.php')) {
+                $bootstrap .= '81';
+            } elseif (\PHP_VERSION_ID >= 80000 && file_exists($bootstrap.'80.php')) {
+                $bootstrap .= '80';
+            }
+            $bootstrap = new \SplFileObject($bootstrap.'.php');
             $newWarnings = 0;
             $defLine = null;
 
@@ -137,7 +144,7 @@ EOPHP
                     ];
 
                     if (strtr($polyfillSignature, $map) !== str_replace('?', '', $originalSignature)) {
-                        $warnings[] = TestListener::warning("Incompatible signature for PHP >= 8:\n- {$f['name']}$originalSignature\n+ {$f['name']}$polyfillSignature");
+                        $warnings[] = TestListener::warning("Incompatible signature for PHP >= 8 in {$bootstrap->getPathname()}:\n- {$f['name']}$originalSignature\n+ {$f['name']}$polyfillSignature");
                     }
                 }
             }

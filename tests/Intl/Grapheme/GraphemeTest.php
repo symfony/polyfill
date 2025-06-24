@@ -209,4 +209,34 @@ class GraphemeTest extends TestCase
         $this->assertSame('국어', grapheme_strstr('한국어', '국'));
         $this->assertSame('ÉJÀ', grapheme_stristr('DÉJÀ', 'é'));
     }
+
+    /**
+     * @dataProvider graphemeStrSplitDataProvider
+     */
+    public function testGraphemeStrSplit(string $string, int $length, array $expectedValues)
+    {
+        $this->assertSame($expectedValues, grapheme_str_split($string, $length));
+    }
+
+    public static function graphemeStrSplitDataProvider(): array
+    {
+        $cases = [
+            ['', 1, []],
+            ['PHP', 1, ['P', 'H', 'P']],
+            ['你好', 1, ['你', '好']],
+            ['අයේෂ්', 1, ['අ', 'යේ', 'ෂ්']],
+            ['สวัสดี', 2, ['สวั', 'สดี']],
+        ];
+
+        if (70300 <= PHP_VERSION_ID) {
+            $cases[] = ['土下座🙇‍♀を', 1, ["土", "下", "座", "🙇‍♀", "を"]];
+        }
+
+        // Fixed in https://github.com/PCRE2Project/pcre2/issues/410
+        if (defined('PCRE_VERSION_MAJOR') && PCRE_VERSION_MAJOR > 10 && PCRE_VERSION_MINOR > 44) {
+            $cases[] = ['👭🏻👰🏿‍♂️', 2, ['👭🏻', '👰🏿‍♂️']];
+        }
+
+        return $cases;
+    }
 }
