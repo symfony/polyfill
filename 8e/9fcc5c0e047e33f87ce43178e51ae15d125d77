@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by DanielEScherzer at 2025-05-04T21:00:26Z
+
+All failures and errors are unrelated in the PHPUnit tests (mostly mbstring and Grapheme related)
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2025-05-05T01:12:29Z
+
+Wow, I didn't think it will be possible to polyfill `ReflectionConstant`, but great job pulling it off!
+
+---------------------------------------------------------------------------
+
+by DanielEScherzer at 2025-06-22T08:59:07Z
+
+@fabpot is there anything I can do to move this forward?
