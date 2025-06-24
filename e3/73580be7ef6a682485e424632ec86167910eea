@@ -1,0 +1,49 @@
+---------------------------------------------------------------------------
+
+by Ayesh at 2024-06-05T15:29:09Z
+
+(working on the Intl changes, I'll mark the PR ready then)
+
+---------------------------------------------------------------------------
+
+by derrabus at 2024-06-05T20:58:46Z
+
+Thank you. I think, we should add this polyfill to the intl-grapheme polyfill as well.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2024-06-08T10:23:06Z
+
+Thank you @derrabus - I added polyfill and tests for `grapheme_str_split` to the Intl polyfill too.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2024-09-09T07:22:02Z
+
+Friendly ping @Ayesh :)
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2024-09-09T14:32:10Z
+
+Thank you @nicolas-grekas - really helpful comments, I addressed them and force-pushed. `\X` regex polyfill for PCRE1 is _very_ cool, it worked beautifully, 10,000 IQ regex 🤯 :)
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2024-09-09T14:42:58Z
+
+One last push, thank you for being patient with this 💜
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2024-09-09T14:48:25Z
+
+So we have a test failure on PHP 7.2 :)
+Maybe we should remove the corresponding test case? The fallback regexp doesn't account for ZWJ emojis IIRC
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2024-09-09T15:25:41Z
+
+Perfect, fixed.
+So far, we exclude this ZW joiner case on PHP 7.2, and a known buggy PCRE2 \X capture on PCRE2 < 10.44 regardless of the PHP version.
