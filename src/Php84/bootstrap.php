@@ -67,6 +67,12 @@ if (extension_loaded('mbstring')) {
     }
 }
 
+if (extension_loaded('bcmath')) {
+    if (!function_exists('bcdivmod')) {
+        function bcdivmod(string $num1, string $num2, ?int $scale = null): ?array { return p\Php84::bcdivmod($num1, $num2, $scale); }
+    }
+}
+
 if (\PHP_VERSION_ID >= 80200) {
     return require __DIR__.'/bootstrap82.php';
 }
