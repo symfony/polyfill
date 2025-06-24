@@ -1,0 +1,42 @@
+---------------------------------------------------------------------------
+
+by mtarld at 2025-05-09T08:34:11Z
+
+I'm afraid that the current `array_last` implementation doesn't work with associative arrays.
+Indeed:
+```php
+var_dump(array_slice(['a' => 2, 'b' => 1], -1, 1)[0]);
+```
+outputs a warning telling `Undefined array key 0`, whereas it should dump `1`.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-05-09T08:37:20Z
+
+I guess array_key_last should be used then
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2025-05-09T08:41:08Z
+
+@nicolas-grekas is it OK to bump the minimum PHP version to 7.3? If we have array_key_first/last, it would make this much more cleaner.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-05-09T08:44:55Z
+
+Ah right, then current(array_slice()) should do it
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2025-05-09T10:22:48Z
+
+Updated with `current(array_slice)`, and the other change suggestions from Nicolas. Thanks.
+
+---------------------------------------------------------------------------
+
+by stof at 2025-06-23T14:09:01Z
+
+> is it OK to bump the minimum PHP version to 7.3? If we have array_key_first/last, it would make this much more cleaner.
+
+We could depend on the polyfill-73 package
