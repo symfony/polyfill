@@ -33,4 +33,18 @@ final class Php85
 
         return $handler;
     }
+
+    public static function array_first(array $array)
+    {
+        foreach ($array as $value) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    public static function array_last(array $array)
+    {
+        return $array ? current(array_slice($array, -1)) : null;
+    }
 }
