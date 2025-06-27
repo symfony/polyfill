@@ -11,10 +11,6 @@
 
 use Symfony\Polyfill\Intl\Grapheme as p;
 
-if (extension_loaded('intl')) {
-    return;
-}
-
 if (\PHP_VERSION_ID >= 80000) {
     return require __DIR__.'/bootstrap80.php';
 }

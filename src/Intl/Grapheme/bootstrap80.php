@@ -11,6 +11,14 @@
 
 use Symfony\Polyfill\Intl\Grapheme as p;
 
+if (!function_exists('grapheme_str_split')) {
+    function grapheme_str_split(string $string, int $length = 1): array|false { return p\Grapheme::grapheme_str_split($string, $length); }
+}
+
+if (extension_loaded('intl')) {
+    return;
+}
+
 if (!defined('GRAPHEME_EXTR_COUNT')) {
     define('GRAPHEME_EXTR_COUNT', 0);
 }
@@ -47,7 +55,4 @@ if (!function_exists('grapheme_strstr')) {
 }
 if (!function_exists('grapheme_substr')) {
     function grapheme_substr(?string $string, ?int $offset, ?int $length = null): string|false { return p\Grapheme::grapheme_substr((string) $string, (int) $offset, $length); }
-}
-if (!function_exists('grapheme_str_split')) {
-    function grapheme_str_split(string $string, int $length = 1): array|false { return p\Grapheme::grapheme_str_split($string, $length); }
 }
