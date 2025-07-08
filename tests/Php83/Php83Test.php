@@ -141,6 +141,7 @@ class Php83Test extends TestCase
         yield [true, '{ "": { "": "" } }'];
         yield [true, '{ "test": {"foo": "bar"}, "test2": {"foo" : "bar" }, "test2": {"foo" : "bar" } }'];
         yield [true, '{ "test": {"foo": "bar"}, "test2": {"foo" : "bar" }, "test3": {"foo" : "bar" } }'];
+        yield [true, '{ "\u0000null": "test" }'];
         yield [false, '{"key1":"value1", "key2":"value2"}', 'Maximum stack depth exceeded', 1];
         yield [false, "\"a\xb0b\"", 'Malformed UTF-8 characters, possibly incorrectly encoded'];
         yield [true, '{ "test": { "foo": "bar" } }', 'No error', 2147483647];
