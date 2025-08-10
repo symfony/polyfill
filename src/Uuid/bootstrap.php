@@ -52,6 +52,9 @@ if (!defined('UUID_TYPE_RANDOM')) {
 if (!defined('UUID_TYPE_SHA1')) {
     define('UUID_TYPE_SHA1', 5);
 }
+if (!defined('UUID_TYPE_TIME_V6')) {
+    define('UUID_TYPE_TIME_V6', 6);
+}
 if (!defined('UUID_TYPE_NULL')) {
     define('UUID_TYPE_NULL', -1);
 }

@@ -29,6 +29,7 @@ final class Uuid
     public const UUID_TYPE_NAME = 1; // Deprecated alias
     public const UUID_TYPE_RANDOM = 4;
     public const UUID_TYPE_SHA1 = 5;
+    public const UUID_TYPE_TIME_V6 = 6;
     public const UUID_TYPE_NULL = -1;
     public const UUID_TYPE_INVALID = -42;
 
@@ -51,6 +52,8 @@ final class Uuid
             case self::UUID_TYPE_NAME:
             case self::UUID_TYPE_TIME:
                 return self::uuid_generate_time();
+            case self::UUID_TYPE_TIME_V6:
+                return self::uuid_generate_time_v6();
             case self::UUID_TYPE_DCE:
             case self::UUID_TYPE_RANDOM:
             case self::UUID_TYPE_DEFAULT:
@@ -269,24 +272,31 @@ final class Uuid
         }
 
         $parsed = self::parse($uuid);
+        $time = null;
 
-        if (self::UUID_TYPE_TIME !== ($parsed['version'] ?? null)) {
-            if (80000 > \PHP_VERSION_ID) {
-                return false;
-            }
+        switch($parsed['version'] ?? null) {
+            case self::UUID_TYPE_TIME_V6:
+                $time = $parsed['time'];
+                $time = '0' . substr($time, -8) . substr($time, 4, 4) . substr($time, 1, 3);
+            case self::UUID_TYPE_TIME:
+                $time = $time ?: $parsed['time'];
 
-            throw new \ValueError('uuid_time(): Argument #1 ($uuid) UUID DCE TIME expected');
+                if (\PHP_INT_SIZE >= 8) {
+                    return intdiv(hexdec($time) - self::TIME_OFFSET_INT, 10000000);
+                }
+
+                $time = str_pad(hex2bin($time), 8, "\0", \STR_PAD_LEFT);
+                $time = self::binaryAdd($time, self::TIME_OFFSET_COM);
+                $time[0] = $time[0] & "\x7F";
+
+                return (int) substr(self::toDecimal($time), 0, -7);
+            default:
+                if (80000 > \PHP_VERSION_ID) {
+                    return false;
+                }
+
+                throw new \ValueError('uuid_time(): Argument #1 ($uuid) UUID DCE TIME expected');
         }
-
-        if (\PHP_INT_SIZE >= 8) {
-            return intdiv(hexdec($parsed['time']) - self::TIME_OFFSET_INT, 10000000);
-        }
-
-        $time = str_pad(hex2bin($parsed['time']), 8, "\0", \STR_PAD_LEFT);
-        $time = self::binaryAdd($time, self::TIME_OFFSET_COM);
-        $time[0] = $time[0] & "\x7F";
-
-        return (int) substr(self::toDecimal($time), 0, -7);
     }
 
     public static function uuid_mac($uuid)
@@ -425,6 +435,52 @@ final class Uuid
             // 16 bits for "time_hi_and_version",
             // four most significant bits holds version number 1
             substr($time, -15, 3),
+
+            // 16 bits:
+            // * 8 bits for "clk_seq_hi_res",
+            // * 8 bits for "clk_seq_low",
+            // two most significant bits holds zero and one for variant DCE1.1
+            $clockSeq | 0x8000,
+
+            // 48 bits for "node"
+            $node
+        );
+    }
+
+    /**
+     * @see https://www.rfc-editor.org/rfc/rfc9562.html#section-5.6
+     */
+    private static function uuid_generate_time_v6()
+    {
+        $time = microtime(false);
+        $time = substr($time, 11).substr($time, 2, 7);
+
+        if (\PHP_INT_SIZE >= 8) {
+            $time = str_pad(dechex($time + self::TIME_OFFSET_INT), 16, '0', \STR_PAD_LEFT);
+        } else {
+            $time = str_pad(self::toBinary($time), 8, "\0", \STR_PAD_LEFT);
+            $time = self::binaryAdd($time, self::TIME_OFFSET_BIN);
+            $time = bin2hex($time);
+        }
+
+        $clockSeq = random_int(0, 0x3FFF);
+
+        // rfc9562 discourages using static node for v6
+        $node = sprintf('%06x%06x',
+            random_int(0, 0xFFFFFF) | 0x010000,
+            random_int(0, 0xFFFFFF)
+        );
+
+        return sprintf('%08s-%04s-6%03s-%04x-%012s',
+            // 32 bits for "time_high"
+            substr($time, 1, 8),
+
+            // 16 bits for "time_mid"
+            substr($time, 9, 4),
+
+            // 16 bits for "time_low_and_version",
+            // four most significant bits holds version number 6
+            substr($time, 13, 3),
 
             // 16 bits:
             // * 8 bits for "clk_seq_hi_res",

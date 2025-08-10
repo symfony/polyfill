@@ -23,7 +23,8 @@ class UuidTest extends TestCase
 
     public function testCreateTime()
     {
-        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', uuid_create(\UUID_TYPE_TIME));
+        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', uuid_create(\UUID_TYPE_TIME));
+        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-6[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', uuid_create(\UUID_TYPE_TIME_V6));
     }
 
     public function testGenerateMd5()
@@ -81,6 +82,7 @@ class UuidTest extends TestCase
         return [
             [Uuid::UUID_TYPE_RANDOM],
             [Uuid::UUID_TYPE_TIME],
+            [Uuid::UUID_TYPE_TIME_V6],
         ];
     }
 
@@ -190,6 +192,8 @@ class UuidTest extends TestCase
             [Uuid::UUID_TYPE_RANDOM, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
             [Uuid::UUID_TYPE_TIME, 'dbc6260f-e9cc-11e9-8dac-9cb6d0897f07'],
             [Uuid::UUID_TYPE_TIME, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
+            [Uuid::UUID_TYPE_TIME_V6, '26092b71-bc5f-6d06-9bce-59bbad3c99ad'],
+            [Uuid::UUID_TYPE_TIME_V6, '18058902-5fe0-633c-a72d-e9e7a022f779']
         ];
     }
 
@@ -239,6 +243,8 @@ class UuidTest extends TestCase
         return [
             [1572444805, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
             [1572445677, '77ffc38a-fb21-11e9-b46a-3c7de2fa99cb'],
+            [4910517298, '26092b71-bc5f-6d06-9bce-59bbad3c99ad'],
+            [-1400916268, '180588fb-6471-6e20-96f3-b175966dcfeb']
         ];
     }
 
