@@ -1,3 +1,11 @@
+# 1.33.0
+
+  * Add polyfill for `ReflectionConstant`
+  * Add polyfill for `bcdivmod()`
+  * Add polyfill for `grapheme_str_split()`
+  * Add polyfills for `array_first()` and `array_last()`
+  * Fix `json_validate()` with properties containing a NUL byte
+
 # 1.32.0
 
   * Remove the PHP 7.2 polyfill
