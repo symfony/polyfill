@@ -1,0 +1,6 @@
+---------------------------------------------------------------------------
+
+by DanielEScherzer at 2025-08-20T10:12:52Z
+
+Failures seem unrelated, I'll go debug the segfault from the 8.5 tests
+Update: as far as I can tell seems to just be memory exhaustion, can I request that the job be re-run with debug logs enabled?
