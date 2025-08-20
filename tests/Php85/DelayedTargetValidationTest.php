@@ -11,78 +11,76 @@
 
 namespace Symfony\Polyfill\Tests\Php85;
 
-use Attribute;
-use DelayedTargetValidation;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use ReflectionClassConstant;
-use ReflectionFunction;
-use ReflectionMethod;
-use ReflectionParameter;
-use ReflectionProperty;
 
-#[DelayedTargetValidation]
-class HasAttribute {
-	#[DelayedTargetValidation]
-	private $prop;
+#[\DelayedTargetValidation]
+class HasAttribute
+{
+    #[\DelayedTargetValidation]
+    private $prop;
 
-	#[DelayedTargetValidation]
-	public const FOO = 'BAR';
+    #[\DelayedTargetValidation]
+    public const FOO = 'BAR';
 
-	#[DelayedTargetValidation]
-	public function __construct(
-		#[DelayedTargetValidation] $param
-	) {}
+    #[\DelayedTargetValidation]
+    public function __construct(
+        #[\DelayedTargetValidation] $param,
+    ) {
+    }
 }
 
-#[DelayedTargetValidation]
-function globalFunc() {}
+#[\DelayedTargetValidation]
+function globalFunc()
+{
+}
 
 /**
  * @author Daniel Scherzer <daniel.e.scherzer@gmail.com>
+ *
  * @requires PHP >= 8.0
  */
 class DelayedTargetValidationTest extends TestCase
 {
     public function testAttributeAttribute()
     {
-		$ref = new ReflectionClass(\DelayedTargetValidation::class);
-		$attributes = $ref->getAttributes();
-		$this->assertCount(1, $attributes);
-		$attribute = $attributes[0];
-		$this->assertSame('Attribute', $attribute->getName());
-		$args = $attribute->getArguments();
-		$this->assertCount(1, $args);
-		$this->assertSame(Attribute::TARGET_ALL, $args[0]);
+        $ref = new \ReflectionClass(\DelayedTargetValidation::class);
+        $attributes = $ref->getAttributes();
+        $this->assertCount(1, $attributes);
+        $attribute = $attributes[0];
+        $this->assertSame('Attribute', $attribute->getName());
+        $args = $attribute->getArguments();
+        $this->assertCount(1, $args);
+        $this->assertSame(\Attribute::TARGET_ALL, $args[0]);
         $this->expectException(\ReflectionException::class);
         $this->expectExceptionMessage('Constant "missing" does not exist');
         new \ReflectionConstant('missing');
     }
 
-	/**
-	 * @dataProvider provideReflectionInstances
-	 */
-	public function testTargetValidation($reflectionSource)
-	{
-		$attributes = $reflectionSource->getAttributes();
-		$this->assertCount(1, $attributes);
-		$attrib = $attributes[0];
-		$this->assertSame('DelayedTargetValidation', $attrib->getName());
-		$this->assertSame([], $attrib->getArguments());
-		$this->assertInstanceOf(
-			DelayedTargetValidation::class,
-			$attrib->newInstance()
-		);
-	}
+    /**
+     * @dataProvider provideReflectionInstances
+     */
+    public function testTargetValidation($reflectionSource)
+    {
+        $attributes = $reflectionSource->getAttributes();
+        $this->assertCount(1, $attributes);
+        $attrib = $attributes[0];
+        $this->assertSame('DelayedTargetValidation', $attrib->getName());
+        $this->assertSame([], $attrib->getArguments());
+        $this->assertInstanceOf(
+            \DelayedTargetValidation::class,
+            $attrib->newInstance()
+        );
+    }
 
-	public static function provideReflectionInstances() {
-		yield 'Class' => [ new ReflectionClass(HasAttribute::class) ];
-		yield 'Property' => [ new ReflectionProperty(HasAttribute::class, 'prop')];
-		yield 'Class constant' => [ new ReflectionClassConstant(HasAttribute::class, 'FOO')];
-		yield 'Method' => [ new ReflectionMethod(HasAttribute::class, '__construct')];
-		yield 'Parameter' => [
-			new ReflectionParameter([HasAttribute::class, '__construct'], 'param')
-		];
-		yield 'Function' => [ new ReflectionFunction(__NAMESPACE__ . '\\globalFunc') ];
-	}
+    public static function provideReflectionInstances()
+    {
+        yield 'Class' => [new \ReflectionClass(HasAttribute::class)];
+        yield 'Property' => [new \ReflectionProperty(HasAttribute::class, 'prop')];
+        yield 'Class constant' => [new \ReflectionClassConstant(HasAttribute::class, 'FOO')];
+        yield 'Method' => [new \ReflectionMethod(HasAttribute::class, '__construct')];
+        yield 'Parameter' => [
+            new \ReflectionParameter([HasAttribute::class, '__construct'], 'param'),
+        ];
+        yield 'Function' => [new \ReflectionFunction(__NAMESPACE__.'\\globalFunc')];
+    }
 }

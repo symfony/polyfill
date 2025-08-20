@@ -16,8 +16,8 @@ use PHPUnit\Framework\TestCase;
 class Php85Test extends TestCase
 {
     /**
-    * @dataProvider provideHandler
-    */
+     * @dataProvider provideHandler
+     */
     public function testGetErrorHandler($expected, $handler): void
     {
         set_error_handler($handler);
@@ -36,8 +36,8 @@ class Php85Test extends TestCase
     }
 
     /**
-    * @dataProvider provideHandler
-    */
+     * @dataProvider provideHandler
+     */
     public function testGetExceptionHandler($expected, $handler): void
     {
         set_exception_handler($handler);
@@ -53,7 +53,6 @@ class Php85Test extends TestCase
     public function testExceptionStableReturnValue(): void
     {
         $this->assertSame(get_exception_handler(), get_exception_handler());
-
     }
 
     public static function provideHandler()
@@ -90,7 +89,6 @@ class Php85Test extends TestCase
         $this->assertNull(array_first([]));
         $this->assertNull(array_last([]));
 
-
         $this->assertSame('single element', array_first(['single element']));
         $this->assertSame('single element', array_last(['single element']));
 
@@ -110,21 +108,28 @@ class Php85Test extends TestCase
         $this->assertSame([], array_first([100 => []]));
         $this->assertSame([], array_last([100 => []]));
 
-        $this->assertEquals(new \stdClass(), array_first([new \stdClass, false]));
-        $this->assertFalse(array_last([new \stdClass, false]));
+        $this->assertEquals(new \stdClass(), array_first([new \stdClass(), false]));
+        $this->assertFalse(array_last([new \stdClass(), false]));
 
-        $this->assertTrue(array_first([true, new \stdClass]));
-        $this->assertEquals(new \stdClass(), array_last([true, new \stdClass]));
+        $this->assertTrue(array_first([true, new \stdClass()]));
+        $this->assertEquals(new \stdClass(), array_last([true, new \stdClass()]));
     }
 }
 
 class TestHandler
 {
-    public static function handleStatic() {}
-    public function handle() {}
+    public static function handleStatic()
+    {
+    }
+
+    public function handle()
+    {
+    }
 }
 
 class TestHandlerInvokable
 {
-    public function __invoke() {}
+    public function __invoke()
+    {
+    }
 }
