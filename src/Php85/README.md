@@ -7,6 +7,8 @@ This component provides features added to PHP 8.5 core:
 - [`NoDiscard`](https://wiki.php.net/rfc/marking_return_value_as_important)
 - [`array_first` and `array_last`](https://wiki.php.net/rfc/array_first_last)
 - [`DelayedTargetValidation`](https://wiki.php.net/rfc/delayedtargetvalidation_attribute)
+- `FILTER_THROW_ON_FAILURE`, `\Filter\FilterException`, and
+`\Filter\FilterFailedException` (see [RFC](https://wiki.php.net/rfc/filter_throw_on_failure))
 
 More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).

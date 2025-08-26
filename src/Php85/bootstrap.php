@@ -30,3 +30,7 @@ if (!function_exists('array_first')) {
 if (!function_exists('array_last')) {
     function array_last(array $array) { return p\Php85::array_last($array); }
 }
+
+if (!defined('FILTER_THROW_ON_FAILURE')) {
+    define('FILTER_THROW_ON_FAILURE', 0x10000000);
+}

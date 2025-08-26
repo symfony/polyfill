@@ -114,6 +114,15 @@ class Php85Test extends TestCase
         $this->assertTrue(array_first([true, new \stdClass()]));
         $this->assertEquals(new \stdClass(), array_last([true, new \stdClass()]));
     }
+
+    public function testFilterThrowFlagValue()
+    {
+        // Make sure that the polyfill matches the real value, as of the
+        // initial implementation in
+        // https://github.com/php/php-src/commit/0b326dcbabe11e227f911bbde967b74fcada9e5a
+        $this->assertTrue(defined('FILTER_THROW_ON_FAILURE'));
+        $this->assertSame(0x10000000, FILTER_THROW_ON_FAILURE);
+    }
 }
 
 class TestHandler

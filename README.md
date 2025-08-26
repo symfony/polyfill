@@ -79,6 +79,8 @@ Polyfills are provided for:
 - the `NoDiscard` attribute introduced in PHP 8.5;
 - the `array_first` and `array_last` functions introduced in PHP 8.5;
 - the `DelayedTargetValidation` attribute introduced in PHP 8.5;
+- the `FILTER_THROW_ON_FAILURE` constant introduced in PHP 8.5;
+- the `\Filter\FilterException` and `\Filter\FilterFailedException` classes introduced in PHP 8.5;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
