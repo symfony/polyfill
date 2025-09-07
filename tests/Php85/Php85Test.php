@@ -115,7 +115,8 @@ class Php85Test extends TestCase
         $this->assertEquals(new \stdClass(), array_last([true, new \stdClass()]));
     }
 
-    public function testPhpBuildDate(){
+    public function testPhpBuildDate()
+    {
         $date = PHP_BUILD_DATE;
         $this->assertMatchesRegularExpression(
             '/^[A-Za-z]{3} \d{1,2} \d{4} \d{2}:\d{2}:\d{2}$/',
