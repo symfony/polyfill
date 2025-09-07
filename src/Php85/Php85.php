@@ -56,6 +56,6 @@ final class Php85
 
         preg_match('@Build Date(?:( => | </td><td class="v">))(?<buildtime>[A-Za-z]{3} (?: \d|\d\d) \d{4} \d{2}:\d{2}:\d{2})@', $info, $matches);
 
-        return $matches['buildtime'];
+        return $matches['buildtime'] ?? '';
     }
 }
