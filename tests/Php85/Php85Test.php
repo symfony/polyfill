@@ -114,6 +114,16 @@ class Php85Test extends TestCase
         $this->assertTrue(array_first([true, new \stdClass()]));
         $this->assertEquals(new \stdClass(), array_last([true, new \stdClass()]));
     }
+
+    public function testLocaleIsRightToLeft()
+    {
+        $this->assertFalse(locale_is_right_to_left('en'));
+        $this->assertFalse(locale_is_right_to_left(''));
+        $this->assertTrue(locale_is_right_to_left('ar'));
+        $this->assertTrue(locale_is_right_to_left('ar-US'));
+        $this->assertTrue(locale_is_right_to_left('he_IL'));
+        $this->assertTrue(locale_is_right_to_left('ar-XY'));
+    }
 }
 
 class TestHandler

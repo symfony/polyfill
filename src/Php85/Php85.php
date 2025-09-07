@@ -47,4 +47,9 @@ final class Php85
     {
         return $array ? current(array_slice($array, -1)) : null;
     }
+
+    public static function locale_is_right_to_left(string $locale): bool 
+    {
+        return (bool) preg_match('/^(?:ar|he|fa|ur|ps|sd|ug|ckb|yi|dv|ku_arab|ku-arab)(?:[_-].*)?$/i', $locale);
+    }
 }
