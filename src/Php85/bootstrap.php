@@ -15,6 +15,10 @@ if (\PHP_VERSION_ID >= 80500) {
     return;
 }
 
+if(!defined('PHP_BUILD_DATE')){
+    define('PHP_BUILD_DATE', p\Php85::php_build_date());
+}
+
 if (!function_exists('get_error_handler')) {
     function get_error_handler(): ?callable { return p\Php85::get_error_handler(); }
 }

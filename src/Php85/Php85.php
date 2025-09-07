@@ -47,4 +47,15 @@ final class Php85
     {
         return $array ? current(array_slice($array, -1)) : null;
     }
+
+    public static function php_build_date()
+    {
+        ob_start();
+        phpinfo(INFO_GENERAL);
+        $info = ob_get_clean();
+
+        preg_match('@Build Date(?:( => | </td><td class="v">))(?<buildtime>[A-Za-z]{3} (?: \d|\d\d) \d{4} \d{2}:\d{2}:\d{2})@', $info, $matches);
+
+        return $matches['buildtime'];
+    }
 }

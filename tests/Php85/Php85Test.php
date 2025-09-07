@@ -114,6 +114,15 @@ class Php85Test extends TestCase
         $this->assertTrue(array_first([true, new \stdClass()]));
         $this->assertEquals(new \stdClass(), array_last([true, new \stdClass()]));
     }
+
+    public function testPhpBuildDate(){
+        $date = PHP_BUILD_DATE;
+        $this->assertMatchesRegularExpression(
+            '/^[A-Za-z]{3} \d{1,2} \d{4} \d{2}:\d{2}:\d{2}$/',
+            $date,
+            "The build date format is invalid: $date"
+        );
+    }
 }
 
 class TestHandler
