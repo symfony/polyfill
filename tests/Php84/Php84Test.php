@@ -760,4 +760,930 @@ class Php84Test extends TestCase
         yield ['5', '2', 2, ['2', '1.00']];
         yield ['7.2', '3', 2, ['2', '1.20']];
     }
+
+    /**
+     * @dataProvider bcCeilProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcCeil(string $expected, string $num)
+    {
+        $result = \bcceil($num);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcCeilProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcceil.phpt
+        yield ['0', '0'];
+        yield ['0', '0.00'];
+        yield ['0', '-0'];
+        yield ['0', '-0.00'];
+        yield ['1', '0.01'];
+        yield ['1', '0.000000000000000000000000000000000000000001'];
+        yield ['0', '-0.01'];
+        yield ['0', '-0.000000000000000000000000000000000000000001'];
+        yield ['1', '1'];
+        yield ['1', '1.0000'];
+        yield ['2', '1.0001'];
+        yield ['100001', '100000.000000000000000000000000000000000000000001'];
+        yield ['-1', '-1'];
+        yield ['-1', '-1.0000'];
+        yield ['-1', '-1.0001'];
+        yield ['-100000', '-100000.000000000000000000000000000000000000000001'];
+    }
+
+    /**
+     * @dataProvider bcCeilProviderError
+     *
+     * @requires extension bcmath
+     */
+    public function testBcCeilError(string $num)
+    {
+        $this->expectError();
+        $this->expectErrorMessage('bcceil(): Argument #1 ($num) is not well-formed');
+        \bcceil($num);
+    }
+
+    public static function bcCeilProviderError(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcceil_error.phpt
+        yield ['hoge'];
+        yield ['0.00.1'];
+    }
+
+    /**
+     * @dataProvider bcFloorProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcFloor(string $expected, string $num)
+    {
+        $result = \bcfloor($num);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcFloorProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcfloor.phpt
+        yield ['0', '0'];
+        yield ['0', '0.00'];
+        yield ['0', '-0'];
+        yield ['0', '-0.00'];
+        yield ['0', '0.01'];
+        yield ['0', '0.000000000000000000000000000000000000000001'];
+        yield ['-1', '-0.01'];
+        yield ['-1', '-0.000000000000000000000000000000000000000001'];
+        yield ['1', '1'];
+        yield ['1', '1.0000'];
+        yield ['1', '1.0001'];
+        yield ['100000', '100000.000000000000000000000000000000000000000001'];
+        yield ['-1', '-1'];
+        yield ['-1', '-1.0000'];
+        yield ['-2', '-1.0001'];
+        yield ['-100001', '-100000.000000000000000000000000000000000000000001'];
+    }
+
+    /**
+     * @dataProvider bcFloorProviderError
+     *
+     * @requires extension bcmath
+     */
+    public function testBcFloorError(string $num)
+    {
+        $this->expectError();
+        $this->expectErrorMessage('bcfloor(): Argument #1 ($num) is not well-formed');
+        \bcfloor($num);
+    }
+
+    public static function bcFloorProviderError(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcfloor_error.phpt
+        yield ['hoge'];
+        yield ['0.00.1'];
+    }
+
+    /**
+     * @dataProvider bcRoundAllProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundAll($mode, string $num, string $expected)
+    {
+        $result = \bcround($num, 0, $mode);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundAllProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_all.phpt
+        yield [\RoundingMode::HalfAwayFromZero, '1.0', '1'];
+        yield [\RoundingMode::HalfAwayFromZero, '-1.0', '-1'];
+        yield [\RoundingMode::HalfAwayFromZero, '1.2', '1'];
+        yield [\RoundingMode::HalfAwayFromZero, '-1.2', '-1'];
+        yield [\RoundingMode::HalfAwayFromZero, '1.7', '2'];
+        yield [\RoundingMode::HalfAwayFromZero, '-1.7', '-2'];
+        yield [\RoundingMode::HalfAwayFromZero, '1.5', '2'];
+        yield [\RoundingMode::HalfAwayFromZero, '-1.5', '-2'];
+        yield [\RoundingMode::HalfAwayFromZero, '2.5', '3'];
+        yield [\RoundingMode::HalfAwayFromZero, '-2.5', '-3'];
+        yield [\RoundingMode::HalfTowardsZero, '1.0', '1'];
+        yield [\RoundingMode::HalfTowardsZero, '-1.0', '-1'];
+        yield [\RoundingMode::HalfTowardsZero, '1.2', '1'];
+        yield [\RoundingMode::HalfTowardsZero, '-1.2', '-1'];
+        yield [\RoundingMode::HalfTowardsZero, '1.7', '2'];
+        yield [\RoundingMode::HalfTowardsZero, '-1.7', '-2'];
+        yield [\RoundingMode::HalfTowardsZero, '1.5', '1'];
+        yield [\RoundingMode::HalfTowardsZero, '-1.5', '-1'];
+        yield [\RoundingMode::HalfTowardsZero, '2.5', '2'];
+        yield [\RoundingMode::HalfTowardsZero, '-2.5', '-2'];
+        yield [\RoundingMode::HalfEven, '1.0', '1'];
+        yield [\RoundingMode::HalfEven, '-1.0', '-1'];
+        yield [\RoundingMode::HalfEven, '1.2', '1'];
+        yield [\RoundingMode::HalfEven, '-1.2', '-1'];
+        yield [\RoundingMode::HalfEven, '1.7', '2'];
+        yield [\RoundingMode::HalfEven, '-1.7', '-2'];
+        yield [\RoundingMode::HalfEven, '1.5', '2'];
+        yield [\RoundingMode::HalfEven, '-1.5', '-2'];
+        yield [\RoundingMode::HalfEven, '2.5', '2'];
+        yield [\RoundingMode::HalfEven, '-2.5', '-2'];
+        yield [\RoundingMode::HalfOdd, '1.0', '1'];
+        yield [\RoundingMode::HalfOdd, '-1.0', '-1'];
+        yield [\RoundingMode::HalfOdd, '1.2', '1'];
+        yield [\RoundingMode::HalfOdd, '-1.2', '-1'];
+        yield [\RoundingMode::HalfOdd, '1.7', '2'];
+        yield [\RoundingMode::HalfOdd, '-1.7', '-2'];
+        yield [\RoundingMode::HalfOdd, '1.5', '1'];
+        yield [\RoundingMode::HalfOdd, '-1.5', '-1'];
+        yield [\RoundingMode::HalfOdd, '2.5', '3'];
+        yield [\RoundingMode::HalfOdd, '-2.5', '-3'];
+        yield [\RoundingMode::TowardsZero, '1.0', '1'];
+        yield [\RoundingMode::TowardsZero, '-1.0', '-1'];
+        yield [\RoundingMode::TowardsZero, '1.2', '1'];
+        yield [\RoundingMode::TowardsZero, '-1.2', '-1'];
+        yield [\RoundingMode::TowardsZero, '1.7', '1'];
+        yield [\RoundingMode::TowardsZero, '-1.7', '-1'];
+        yield [\RoundingMode::TowardsZero, '1.5', '1'];
+        yield [\RoundingMode::TowardsZero, '-1.5', '-1'];
+        yield [\RoundingMode::TowardsZero, '2.5', '2'];
+        yield [\RoundingMode::TowardsZero, '-2.5', '-2'];
+        yield [\RoundingMode::AwayFromZero, '1.0', '1'];
+        yield [\RoundingMode::AwayFromZero, '-1.0', '-1'];
+        yield [\RoundingMode::AwayFromZero, '1.2', '2'];
+        yield [\RoundingMode::AwayFromZero, '-1.2', '-2'];
+        yield [\RoundingMode::AwayFromZero, '1.7', '2'];
+        yield [\RoundingMode::AwayFromZero, '-1.7', '-2'];
+        yield [\RoundingMode::AwayFromZero, '1.5', '2'];
+        yield [\RoundingMode::AwayFromZero, '-1.5', '-2'];
+        yield [\RoundingMode::AwayFromZero, '2.5', '3'];
+        yield [\RoundingMode::AwayFromZero, '-2.5', '-3'];
+        yield [\RoundingMode::NegativeInfinity, '1.0', '1'];
+        yield [\RoundingMode::NegativeInfinity, '-1.0', '-1'];
+        yield [\RoundingMode::NegativeInfinity, '1.2', '1'];
+        yield [\RoundingMode::NegativeInfinity, '-1.2', '-2'];
+        yield [\RoundingMode::NegativeInfinity, '1.7', '1'];
+        yield [\RoundingMode::NegativeInfinity, '-1.7', '-2'];
+        yield [\RoundingMode::NegativeInfinity, '1.5', '1'];
+        yield [\RoundingMode::NegativeInfinity, '-1.5', '-2'];
+        yield [\RoundingMode::NegativeInfinity, '2.5', '2'];
+        yield [\RoundingMode::NegativeInfinity, '-2.5', '-3'];
+        yield [\RoundingMode::PositiveInfinity, '1.0', '1'];
+        yield [\RoundingMode::PositiveInfinity, '-1.0', '-1'];
+        yield [\RoundingMode::PositiveInfinity, '1.2', '2'];
+        yield [\RoundingMode::PositiveInfinity, '-1.2', '-1'];
+        yield [\RoundingMode::PositiveInfinity, '1.7', '2'];
+        yield [\RoundingMode::PositiveInfinity, '-1.7', '-1'];
+        yield [\RoundingMode::PositiveInfinity, '1.5', '2'];
+        yield [\RoundingMode::PositiveInfinity, '-1.5', '-1'];
+        yield [\RoundingMode::PositiveInfinity, '2.5', '3'];
+        yield [\RoundingMode::PositiveInfinity, '-2.5', '-2'];
+    }
+
+    /**
+     * @dataProvider bcRoundAwayFromZeroProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundAwayFromZero(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::AwayFromZero);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundAwayFromZeroProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_away_from_zero.phpt
+        yield ['1.1', 0, '2'];
+        yield ['1.2', 0, '2'];
+        yield ['1.3', 0, '2'];
+        yield ['1.4', 0, '2'];
+        yield ['1.6', 0, '2'];
+        yield ['1.7', 0, '2'];
+        yield ['1.8', 0, '2'];
+        yield ['1.9', 0, '2'];
+        yield ['-1.1', 0, '-2'];
+        yield ['-1.2', 0, '-2'];
+        yield ['-1.3', 0, '-2'];
+        yield ['-1.4', 0, '-2'];
+        yield ['-1.6', 0, '-2'];
+        yield ['-1.7', 0, '-2'];
+        yield ['-1.8', 0, '-2'];
+        yield ['-1.9', 0, '-2'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '1000'];
+        yield ['-0.01', -3, '-1000'];
+        yield ['50', -2, '100'];
+        yield ['-50', -2, '-100'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1240'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1240'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3500'];
+        yield ['3450.0000', -2, '3500'];
+        yield ['3450.0001', -2, '3500'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3500'];
+        yield ['-3450.0000', -2, '-3500'];
+        yield ['-3450.0001', -2, '-3500'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1236'];
+        yield ['1235.5', 0, '1236'];
+        yield ['1235.500001', 0, '1236'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1236'];
+        yield ['-1235.5', 0, '-1236'];
+        yield ['-1235.500001', 0, '-1236'];
+        yield ['0.0001', 0, '1'];
+        yield ['0.5', 0, '1'];
+        yield ['0.5000', 0, '1'];
+        yield ['0.5001', 0, '1'];
+        yield ['-0.0001', 0, '-1'];
+        yield ['-0.5', 0, '-1'];
+        yield ['-0.5000', 0, '-1'];
+        yield ['-0.5001', 0, '-1'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.5'];
+        yield ['28.45', 1, '28.5'];
+        yield ['28.4500001', 1, '28.5'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.5'];
+        yield ['-28.45', 1, '-28.5'];
+        yield ['-28.4500001', 1, '-28.5'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '154.0'];
+        yield ['153.95', 1, '154.0'];
+        yield ['153.9500001', 1, '154.0'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-154.0'];
+        yield ['-153.95', 1, '-154.0'];
+        yield ['-153.9500001', 1, '-154.0'];
+        yield ['0.000001', 3, '0.001'];
+        yield ['0.0005', 3, '0.001'];
+        yield ['0.000500', 3, '0.001'];
+        yield ['0.000501', 3, '0.001'];
+        yield ['-0.000001', 3, '-0.001'];
+        yield ['-0.0005', 3, '-0.001'];
+        yield ['-0.000500', 3, '-0.001'];
+        yield ['-0.000501', 3, '-0.001'];
+    }
+
+    /**
+     * @dataProvider bcRoundCeilingProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundCeiling(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::PositiveInfinity);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundCeilingProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_ceiling.phpt
+        yield ['1.1', 0, '2'];
+        yield ['1.2', 0, '2'];
+        yield ['1.3', 0, '2'];
+        yield ['1.4', 0, '2'];
+        yield ['1.6', 0, '2'];
+        yield ['1.7', 0, '2'];
+        yield ['1.8', 0, '2'];
+        yield ['1.9', 0, '2'];
+        yield ['-1.1', 0, '-1'];
+        yield ['-1.2', 0, '-1'];
+        yield ['-1.3', 0, '-1'];
+        yield ['-1.4', 0, '-1'];
+        yield ['-1.6', 0, '-1'];
+        yield ['-1.7', 0, '-1'];
+        yield ['-1.8', 0, '-1'];
+        yield ['-1.9', 0, '-1'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '1000'];
+        yield ['-0.01', -3, '0'];
+        yield ['50', -2, '100'];
+        yield ['-50', -2, '0'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1240'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1230'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3500'];
+        yield ['3450.0000', -2, '3500'];
+        yield ['3450.0001', -2, '3500'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3400'];
+        yield ['-3450.0000', -2, '-3400'];
+        yield ['-3450.0001', -2, '-3400'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1236'];
+        yield ['1235.5', 0, '1236'];
+        yield ['1235.500001', 0, '1236'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1235'];
+        yield ['-1235.5', 0, '-1235'];
+        yield ['-1235.500001', 0, '-1235'];
+        yield ['0.0001', 0, '1'];
+        yield ['0.5', 0, '1'];
+        yield ['0.5000', 0, '1'];
+        yield ['0.5001', 0, '1'];
+        yield ['-0.0001', 0, '0'];
+        yield ['-0.5', 0, '0'];
+        yield ['-0.5000', 0, '0'];
+        yield ['-0.5001', 0, '0'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.5'];
+        yield ['28.45', 1, '28.5'];
+        yield ['28.4500001', 1, '28.5'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.4'];
+        yield ['-28.45', 1, '-28.4'];
+        yield ['-28.4500001', 1, '-28.4'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '154.0'];
+        yield ['153.95', 1, '154.0'];
+        yield ['153.9500001', 1, '154.0'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-153.9'];
+        yield ['-153.95', 1, '-153.9'];
+        yield ['-153.9500001', 1, '-153.9'];
+        yield ['0.000001', 3, '0.001'];
+        yield ['0.0005', 3, '0.001'];
+        yield ['0.000500', 3, '0.001'];
+        yield ['0.000501', 3, '0.001'];
+        yield ['-0.000001', 3, '0.000'];
+        yield ['-0.0005', 3, '0.000'];
+        yield ['-0.000500', 3, '0.000'];
+        yield ['-0.000501', 3, '0.000'];
+    }
+
+    /**
+     * @dataProvider bcRoundFloorProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundFloor(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::NegativeInfinity);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundFloorProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_floor.phpt
+        yield ['1.1', 0, '1'];
+        yield ['1.2', 0, '1'];
+        yield ['1.3', 0, '1'];
+        yield ['1.4', 0, '1'];
+        yield ['1.6', 0, '1'];
+        yield ['1.7', 0, '1'];
+        yield ['1.8', 0, '1'];
+        yield ['1.9', 0, '1'];
+        yield ['-1.1', 0, '-2'];
+        yield ['-1.2', 0, '-2'];
+        yield ['-1.3', 0, '-2'];
+        yield ['-1.4', 0, '-2'];
+        yield ['-1.6', 0, '-2'];
+        yield ['-1.7', 0, '-2'];
+        yield ['-1.8', 0, '-2'];
+        yield ['-1.9', 0, '-2'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '0'];
+        yield ['-0.01', -3, '-1000'];
+        yield ['50', -2, '0'];
+        yield ['-50', -2, '-100'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1230'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1240'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3400'];
+        yield ['3450.0000', -2, '3400'];
+        yield ['3450.0001', -2, '3400'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3500'];
+        yield ['-3450.0000', -2, '-3500'];
+        yield ['-3450.0001', -2, '-3500'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1235'];
+        yield ['1235.5', 0, '1235'];
+        yield ['1235.500001', 0, '1235'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1236'];
+        yield ['-1235.5', 0, '-1236'];
+        yield ['-1235.500001', 0, '-1236'];
+        yield ['0.0001', 0, '0'];
+        yield ['0.5', 0, '0'];
+        yield ['0.5000', 0, '0'];
+        yield ['0.5001', 0, '0'];
+        yield ['-0.0001', 0, '-1'];
+        yield ['-0.5', 0, '-1'];
+        yield ['-0.5000', 0, '-1'];
+        yield ['-0.5001', 0, '-1'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.4'];
+        yield ['28.45', 1, '28.4'];
+        yield ['28.4500001', 1, '28.4'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.5'];
+        yield ['-28.45', 1, '-28.5'];
+        yield ['-28.4500001', 1, '-28.5'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '153.9'];
+        yield ['153.95', 1, '153.9'];
+        yield ['153.9500001', 1, '153.9'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-154.0'];
+        yield ['-153.95', 1, '-154.0'];
+        yield ['-153.9500001', 1, '-154.0'];
+        yield ['0.000001', 3, '0.000'];
+        yield ['0.0005', 3, '0.000'];
+        yield ['0.000500', 3, '0.000'];
+        yield ['0.000501', 3, '0.000'];
+        yield ['-0.000001', 3, '-0.001'];
+        yield ['-0.0005', 3, '-0.001'];
+        yield ['-0.000500', 3, '-0.001'];
+        yield ['-0.000501', 3, '-0.001'];
+    }
+
+    /**
+     * @dataProvider bcRoundHalfDownProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundHalfDownFloor(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::HalfTowardsZero);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundHalfDownProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_half_down.phpt
+        yield ['1.1', 0, '1'];
+        yield ['1.2', 0, '1'];
+        yield ['1.3', 0, '1'];
+        yield ['1.4', 0, '1'];
+        yield ['1.6', 0, '2'];
+        yield ['1.7', 0, '2'];
+        yield ['1.8', 0, '2'];
+        yield ['1.9', 0, '2'];
+        yield ['-1.1', 0, '-1'];
+        yield ['-1.2', 0, '-1'];
+        yield ['-1.3', 0, '-1'];
+        yield ['-1.4', 0, '-1'];
+        yield ['-1.6', 0, '-2'];
+        yield ['-1.7', 0, '-2'];
+        yield ['-1.8', 0, '-2'];
+        yield ['-1.9', 0, '-2'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '0'];
+        yield ['-0.01', -3, '0'];
+        yield ['50', -2, '0'];
+        yield ['-50', -2, '0'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1230'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1230'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3400'];
+        yield ['3450.0000', -2, '3400'];
+        yield ['3450.0001', -2, '3500'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3400'];
+        yield ['-3450.0000', -2, '-3400'];
+        yield ['-3450.0001', -2, '-3500'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1235'];
+        yield ['1235.5', 0, '1235'];
+        yield ['1235.500001', 0, '1236'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1235'];
+        yield ['-1235.5', 0, '-1235'];
+        yield ['-1235.500001', 0, '-1236'];
+        yield ['0.0001', 0, '0'];
+        yield ['0.5', 0, '0'];
+        yield ['0.5000', 0, '0'];
+        yield ['0.5001', 0, '1'];
+        yield ['-0.0001', 0, '0'];
+        yield ['-0.5', 0, '0'];
+        yield ['-0.5000', 0, '0'];
+        yield ['-0.5001', 0, '-1'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.4'];
+        yield ['28.45', 1, '28.4'];
+        yield ['28.4500001', 1, '28.5'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.4'];
+        yield ['-28.45', 1, '-28.4'];
+        yield ['-28.4500001', 1, '-28.5'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '153.9'];
+        yield ['153.95', 1, '153.9'];
+        yield ['153.9500001', 1, '154.0'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-153.9'];
+        yield ['-153.95', 1, '-153.9'];
+        yield ['-153.9500001', 1, '-154.0'];
+        yield ['0.000001', 3, '0.000'];
+        yield ['0.0005', 3, '0.000'];
+        yield ['0.000500', 3, '0.000'];
+        yield ['0.000501', 3, '0.001'];
+        yield ['-0.000001', 3, '0.000'];
+        yield ['-0.0005', 3, '0.000'];
+        yield ['-0.000500', 3, '0.000'];
+        yield ['-0.000501', 3, '-0.001'];
+    }
+
+    /**
+     * @dataProvider bcRoundHalfEvenProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundHalfEvenFloor(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::HalfEven);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundHalfEvenProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_half_even.phpt
+        yield ['1.1', 0, '1'];
+        yield ['1.2', 0, '1'];
+        yield ['1.3', 0, '1'];
+        yield ['1.4', 0, '1'];
+        yield ['1.6', 0, '2'];
+        yield ['1.7', 0, '2'];
+        yield ['1.8', 0, '2'];
+        yield ['1.9', 0, '2'];
+        yield ['-1.1', 0, '-1'];
+        yield ['-1.2', 0, '-1'];
+        yield ['-1.3', 0, '-1'];
+        yield ['-1.4', 0, '-1'];
+        yield ['-1.6', 0, '-2'];
+        yield ['-1.7', 0, '-2'];
+        yield ['-1.8', 0, '-2'];
+        yield ['-1.9', 0, '-2'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '0'];
+        yield ['-0.01', -3, '0'];
+        yield ['50', -2, '0'];
+        yield ['-50', -2, '0'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1240'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1240'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3400'];
+        yield ['3450.0000', -2, '3400'];
+        yield ['3450.0001', -2, '3500'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3400'];
+        yield ['-3450.0000', -2, '-3400'];
+        yield ['-3450.0001', -2, '-3500'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1235'];
+        yield ['1235.5', 0, '1236'];
+        yield ['1235.500001', 0, '1236'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1235'];
+        yield ['-1235.5', 0, '-1236'];
+        yield ['-1235.500001', 0, '-1236'];
+        yield ['0.0001', 0, '0'];
+        yield ['0.5', 0, '0'];
+        yield ['0.5000', 0, '0'];
+        yield ['0.5001', 0, '1'];
+        yield ['-0.0001', 0, '0'];
+        yield ['-0.5', 0, '0'];
+        yield ['-0.5000', 0, '0'];
+        yield ['-0.5001', 0, '-1'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.4'];
+        yield ['28.45', 1, '28.4'];
+        yield ['28.4500001', 1, '28.5'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.4'];
+        yield ['-28.45', 1, '-28.4'];
+        yield ['-28.4500001', 1, '-28.5'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '153.9'];
+        yield ['153.95', 1, '154.0'];
+        yield ['153.9500001', 1, '154.0'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-153.9'];
+        yield ['-153.95', 1, '-154.0'];
+        yield ['-153.9500001', 1, '-154.0'];
+        yield ['0.000001', 3, '0.000'];
+        yield ['0.0005', 3, '0.000'];
+        yield ['0.000500', 3, '0.000'];
+        yield ['0.000501', 3, '0.001'];
+        yield ['-0.000001', 3, '0.000'];
+        yield ['-0.0005', 3, '0.000'];
+        yield ['-0.000500', 3, '0.000'];
+        yield ['-0.000501', 3, '-0.001'];
+    }
+
+    /**
+     * @dataProvider bcRoundHalfOddProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundHalfOddFloor(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::HalfOdd);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundHalfOddProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_half_odd.phpt
+        yield ['1.1', 0, '1'];
+        yield ['1.2', 0, '1'];
+        yield ['1.3', 0, '1'];
+        yield ['1.4', 0, '1'];
+        yield ['1.6', 0, '2'];
+        yield ['1.7', 0, '2'];
+        yield ['1.8', 0, '2'];
+        yield ['1.9', 0, '2'];
+        yield ['-1.1', 0, '-1'];
+        yield ['-1.2', 0, '-1'];
+        yield ['-1.3', 0, '-1'];
+        yield ['-1.4', 0, '-1'];
+        yield ['-1.6', 0, '-2'];
+        yield ['-1.7', 0, '-2'];
+        yield ['-1.8', 0, '-2'];
+        yield ['-1.9', 0, '-2'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '0'];
+        yield ['-0.01', -3, '0'];
+        yield ['50', -2, '100'];
+        yield ['-50', -2, '-100'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1230'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1230'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3400'];
+        yield ['3450.0000', -2, '3500'];
+        yield ['3450.0001', -2, '3500'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3400'];
+        yield ['-3450.0000', -2, '-3500'];
+        yield ['-3450.0001', -2, '-3500'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1235'];
+        yield ['1235.5', 0, '1235'];
+        yield ['1235.500001', 0, '1236'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1235'];
+        yield ['-1235.5', 0, '-1235'];
+        yield ['-1235.500001', 0, '-1236'];
+        yield ['0.0001', 0, '0'];
+        yield ['0.5', 0, '1'];
+        yield ['0.5000', 0, '1'];
+        yield ['0.5001', 0, '1'];
+        yield ['-0.0001', 0, '0'];
+        yield ['-0.5', 0, '-1'];
+        yield ['-0.5000', 0, '-1'];
+        yield ['-0.5001', 0, '-1'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.4'];
+        yield ['28.45', 1, '28.5'];
+        yield ['28.4500001', 1, '28.5'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.4'];
+        yield ['-28.45', 1, '-28.5'];
+        yield ['-28.4500001', 1, '-28.5'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '153.9'];
+        yield ['153.95', 1, '153.9'];
+        yield ['153.9500001', 1, '154.0'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-153.9'];
+        yield ['-153.95', 1, '-153.9'];
+        yield ['-153.9500001', 1, '-154.0'];
+        yield ['0.000001', 3, '0.000'];
+        yield ['0.0005', 3, '0.001'];
+        yield ['0.000500', 3, '0.001'];
+        yield ['0.000501', 3, '0.001'];
+        yield ['-0.000001', 3, '0.000'];
+        yield ['-0.0005', 3, '-0.001'];
+        yield ['-0.000500', 3, '-0.001'];
+        yield ['-0.000501', 3, '-0.001'];
+    }
+
+    /**
+     * @dataProvider bcRoundHalfUpProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundHalfUpFloor(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::HalfAwayFromZero);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundHalfUpProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_half_up.phpt
+        yield ['1.1', 0, '1'];
+        yield ['1.2', 0, '1'];
+        yield ['1.3', 0, '1'];
+        yield ['1.4', 0, '1'];
+        yield ['1.6', 0, '2'];
+        yield ['1.7', 0, '2'];
+        yield ['1.8', 0, '2'];
+        yield ['1.9', 0, '2'];
+        yield ['-1.1', 0, '-1'];
+        yield ['-1.2', 0, '-1'];
+        yield ['-1.3', 0, '-1'];
+        yield ['-1.4', 0, '-1'];
+        yield ['-1.6', 0, '-2'];
+        yield ['-1.7', 0, '-2'];
+        yield ['-1.8', 0, '-2'];
+        yield ['-1.9', 0, '-2'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '0'];
+        yield ['-0.01', -3, '0'];
+        yield ['50', -2, '100'];
+        yield ['-50', -2, '-100'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1240'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1240'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3400'];
+        yield ['3450.0000', -2, '3500'];
+        yield ['3450.0001', -2, '3500'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3400'];
+        yield ['-3450.0000', -2, '-3500'];
+        yield ['-3450.0001', -2, '-3500'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1235'];
+        yield ['1235.5', 0, '1236'];
+        yield ['1235.500001', 0, '1236'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1235'];
+        yield ['-1235.5', 0, '-1236'];
+        yield ['-1235.500001', 0, '-1236'];
+        yield ['0.0001', 0, '0'];
+        yield ['0.5', 0, '1'];
+        yield ['0.5000', 0, '1'];
+        yield ['0.5001', 0, '1'];
+        yield ['-0.0001', 0, '0'];
+        yield ['-0.5', 0, '-1'];
+        yield ['-0.5000', 0, '-1'];
+        yield ['-0.5001', 0, '-1'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.4'];
+        yield ['28.45', 1, '28.5'];
+        yield ['28.4500001', 1, '28.5'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.4'];
+        yield ['-28.45', 1, '-28.5'];
+        yield ['-28.4500001', 1, '-28.5'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '153.9'];
+        yield ['153.95', 1, '154.0'];
+        yield ['153.9500001', 1, '154.0'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-153.9'];
+        yield ['-153.95', 1, '-154.0'];
+        yield ['-153.9500001', 1, '-154.0'];
+        yield ['0.000001', 3, '0.000'];
+        yield ['0.0005', 3, '0.001'];
+        yield ['0.000500', 3, '0.001'];
+        yield ['0.000501', 3, '0.001'];
+        yield ['-0.000001', 3, '0.000'];
+        yield ['-0.0005', 3, '-0.001'];
+        yield ['-0.000500', 3, '-0.001'];
+        yield ['-0.000501', 3, '-0.001'];
+    }
+
+    /**
+     * @dataProvider bcRoundTowardZeroProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRoundTowardZeroFloor(string $num, int $precision, string $expected)
+    {
+        $result = \bcround($num, $precision, \RoundingMode::TowardsZero);
+        $this->assertEquals($expected, $result);
+    }
+
+    public static function bcRoundTowardZeroProvider(): iterable
+    {
+        // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcround_toward_zero.phpt
+        yield ['1.1', 0, '1'];
+        yield ['1.2', 0, '1'];
+        yield ['1.3', 0, '1'];
+        yield ['1.4', 0, '1'];
+        yield ['1.6', 0, '1'];
+        yield ['1.7', 0, '1'];
+        yield ['1.8', 0, '1'];
+        yield ['1.9', 0, '1'];
+        yield ['-1.1', 0, '-1'];
+        yield ['-1.2', 0, '-1'];
+        yield ['-1.3', 0, '-1'];
+        yield ['-1.4', 0, '-1'];
+        yield ['-1.6', 0, '-1'];
+        yield ['-1.7', 0, '-1'];
+        yield ['-1.8', 0, '-1'];
+        yield ['-1.9', 0, '-1'];
+        yield ['0', -3, '0'];
+        yield ['0.01', -3, '0'];
+        yield ['-0.01', -3, '0'];
+        yield ['50', -2, '0'];
+        yield ['-50', -2, '0'];
+        yield ['1230', -1, '1230'];
+        yield ['1235', -1, '1230'];
+        yield ['-1230', -1, '-1230'];
+        yield ['-1235', -1, '-1230'];
+        yield ['3400.0000', -2, '3400'];
+        yield ['3400.0001', -2, '3400'];
+        yield ['3450.0000', -2, '3400'];
+        yield ['3450.0001', -2, '3400'];
+        yield ['-3400.0000', -2, '-3400'];
+        yield ['-3400.0001', -2, '-3400'];
+        yield ['-3450.0000', -2, '-3400'];
+        yield ['-3450.0001', -2, '-3400'];
+        yield ['1235', 0, '1235'];
+        yield ['1235.0', 0, '1235'];
+        yield ['1235.000001', 0, '1235'];
+        yield ['1235.5', 0, '1235'];
+        yield ['1235.500001', 0, '1235'];
+        yield ['-1235', 0, '-1235'];
+        yield ['-1235.0', 0, '-1235'];
+        yield ['-1235.000001', 0, '-1235'];
+        yield ['-1235.5', 0, '-1235'];
+        yield ['-1235.500001', 0, '-1235'];
+        yield ['0.0001', 0, '0'];
+        yield ['0.5', 0, '0'];
+        yield ['0.5000', 0, '0'];
+        yield ['0.5001', 0, '0'];
+        yield ['-0.0001', 0, '0'];
+        yield ['-0.5', 0, '0'];
+        yield ['-0.5000', 0, '0'];
+        yield ['-0.5001', 0, '0'];
+        yield ['28.40', 1, '28.4'];
+        yield ['28.4000001', 1, '28.4'];
+        yield ['28.45', 1, '28.4'];
+        yield ['28.4500001', 1, '28.4'];
+        yield ['-28.40', 1, '-28.4'];
+        yield ['-28.4000001', 1, '-28.4'];
+        yield ['-28.45', 1, '-28.4'];
+        yield ['-28.4500001', 1, '-28.4'];
+        yield ['153.90', 1, '153.9'];
+        yield ['153.9000001', 1, '153.9'];
+        yield ['153.95', 1, '153.9'];
+        yield ['153.9500001', 1, '153.9'];
+        yield ['-153.90', 1, '-153.9'];
+        yield ['-153.9000001', 1, '-153.9'];
+        yield ['-153.95', 1, '-153.9'];
+        yield ['-153.9500001', 1, '-153.9'];
+        yield ['0.000001', 3, '0.000'];
+        yield ['0.0005', 3, '0.000'];
+        yield ['0.000500', 3, '0.000'];
+        yield ['0.000501', 3, '0.000'];
+        yield ['-0.000001', 3, '0.000'];
+        yield ['-0.0005', 3, '0.000'];
+        yield ['-0.000500', 3, '0.000'];
+        yield ['-0.000501', 3, '0.000'];
+    }
 }

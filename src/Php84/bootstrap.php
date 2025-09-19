@@ -15,7 +15,7 @@ if (\PHP_VERSION_ID >= 80400) {
     return;
 }
 
-if (defined('CURL_VERSION_HTTP3') || PHP_VERSION_ID < 80200 && function_exists('curl_version') && curl_version()['version'] >= 0x074200) { // libcurl >= 7.66.0
+if (defined('CURL_VERSION_HTTP3') || \PHP_VERSION_ID < 80200 && function_exists('curl_version') && curl_version()['version'] >= 0x074200) { // libcurl >= 7.66.0
     if (!defined('CURL_HTTP_VERSION_3')) {
         define('CURL_HTTP_VERSION_3', 30);
     }
@@ -68,8 +68,20 @@ if (extension_loaded('mbstring')) {
 }
 
 if (extension_loaded('bcmath')) {
+    if (!function_exists('bcceil')) {
+        function bcceil(string $num): string { return p\Php84::bcceil($num); }
+    }
     if (!function_exists('bcdivmod')) {
         function bcdivmod(string $num1, string $num2, ?int $scale = null): ?array { return p\Php84::bcdivmod($num1, $num2, $scale); }
+    }
+    if (!function_exists('bcfloor')) {
+        function bcfloor(string $num): string { return p\Php84::bcfloor($num); }
+    }
+    if (!function_exists('bcround')) {
+        /**
+         * @param \RoundingMode|\RoundingMode::* $mode
+         */
+        function bcround(string $num, int $precision = 0, $mode = RoundingMode::HalfAwayFromZero): string { return p\Php84::bcround($num, $precision, $mode); }
     }
 }
 
