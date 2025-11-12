@@ -625,7 +625,7 @@ abstract class AbstractNumberFormatterTest extends TestCase
         $currencyFormatter = static::getNumberFormatter('en', NumberFormatter::CURRENCY);
 
         $r = new \ReflectionProperty('Symfony\Polyfill\Intl\Icu\NumberFormatter', 'enSymbols');
-        $r->setAccessible(true);
+        \PHP_VERSION_ID < 80100 && $r->setAccessible(true);
         $expected = $r->getValue();
 
         for ($i = 0; $i <= 17; ++$i) {
@@ -644,7 +644,7 @@ abstract class AbstractNumberFormatterTest extends TestCase
         $currencyFormatter = static::getNumberFormatter('en', NumberFormatter::CURRENCY);
 
         $r = new \ReflectionProperty('Symfony\Polyfill\Intl\Icu\NumberFormatter', 'enTextAttributes');
-        $r->setAccessible(true);
+        \PHP_VERSION_ID < 80100 && $r->setAccessible(true);
         $expected = $r->getValue();
 
         for ($i = 0; $i <= 5; ++$i) {
