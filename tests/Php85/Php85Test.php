@@ -114,6 +114,12 @@ class Php85Test extends TestCase
         $this->assertTrue(array_first([true, new \stdClass()]));
         $this->assertEquals(new \stdClass(), array_last([true, new \stdClass()]));
     }
+
+    public function testFilterExceptionClassesExist()
+    {
+        $this->assertTrue(class_exists(\Filter\FilterException::class));
+        $this->assertTrue(class_exists(\Filter\FilterFailedException::class));
+    }
 }
 
 class TestHandler
