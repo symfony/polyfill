@@ -82,6 +82,7 @@ Polyfills are provided for:
 - the `DelayedTargetValidation` attribute introduced in PHP 8.5;
 - the `Filter\FilterException` class introduced in PHP 8.5;
 - the `Filter\FilterFailedException` class introduced in PHP 8.5;
+- the `grapheme_levenshtein` function introduced in PHP 8.5;
 - the `clamp` function introduced in PHP 8.6;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
