@@ -19,5 +19,8 @@
         "polyfill-mbstring": "src/Mbstring",
         "polyfill-util": "src/Util",
         "polyfill-uuid": "src/Uuid"
+    },
+    "defaults": {
+        "git_constraint": "<1.8.2"
     }
 }
