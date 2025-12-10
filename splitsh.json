@@ -1,0 +1,23 @@
+{
+    "subtrees": {
+        "polyfill-apcu": "src/Apcu",
+        "polyfill-ctype": "src/Ctype",
+        "polyfill-php73": "src/Php73",
+        "polyfill-php74": "src/Php74",
+        "polyfill-php80": "src/Php80",
+        "polyfill-php81": "src/Php81",
+        "polyfill-php82": "src/Php82",
+        "polyfill-php83": "src/Php83",
+        "polyfill-php84": "src/Php84",
+        "polyfill-php85": "src/Php85",
+        "polyfill-iconv": "src/Iconv",
+        "polyfill-intl-grapheme": "src/Intl/Grapheme",
+        "polyfill-intl-icu": "src/Intl/Icu",
+        "polyfill-intl-idn": "src/Intl/Idn",
+        "polyfill-intl-messageformatter": "src/Intl/MessageFormatter",
+        "polyfill-intl-normalizer": "src/Intl/Normalizer",
+        "polyfill-mbstring": "src/Mbstring",
+        "polyfill-util": "src/Util",
+        "polyfill-uuid": "src/Uuid"
+    }
+}
