@@ -29,9 +29,19 @@ class CollatorTest extends AbstractCollatorTest
 
     public function testCompare()
     {
-        $this->expectException(MethodNotImplementedException::class);
         $collator = $this->getCollator('en');
-        $collator->compare('a', 'b');
+        $this->assertEquals(-1, $collator->compare('a', 'b'));
+        $this->assertEquals(0, $collator->compare('a', 'a'));
+        $this->assertEquals(1, $collator->compare('b', 'a'));
+
+        // case-insensitive base ordering
+        $this->assertLessThan(0, $collator->compare('a', 'B'));
+        $this->assertLessThan(0, $collator->compare('A', 'b'));
+        $this->assertGreaterThan(0, $collator->compare('Z', 'a'));
+
+        // lowercase before uppercase tie-breaking
+        $this->assertLessThan(0, $collator->compare('a', 'A'));
+        $this->assertGreaterThan(0, $collator->compare('ABC', 'abc'));
     }
 
     public function testGetAttribute()
