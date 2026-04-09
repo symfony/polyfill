@@ -26,6 +26,7 @@
     "replace": {
         "symfony/polyfill-apcu": "self.version",
         "symfony/polyfill-ctype": "self.version",
+        "symfony/polyfill-deepclone": "self.version",
         "symfony/polyfill-php73": "self.version",
         "symfony/polyfill-php74": "self.version",
         "symfony/polyfill-php80": "self.version",
@@ -50,6 +51,7 @@
             "src/bootstrap.php",
             "src/Apcu/bootstrap.php",
             "src/Ctype/bootstrap.php",
+            "src/DeepClone/bootstrap.php",
             "src/Uuid/bootstrap.php",
             "src/Iconv/bootstrap.php",
             "src/Intl/Grapheme/bootstrap.php",
@@ -60,6 +62,7 @@
             "src/Mbstring/bootstrap.php"
         ],
         "classmap": [
+            "src/DeepClone/Resources/stubs",
             "src/Intl/Icu/Resources/stubs",
             "src/Intl/MessageFormatter/Resources/stubs",
             "src/Intl/Normalizer/Resources/stubs",
