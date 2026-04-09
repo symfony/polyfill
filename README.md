@@ -8,6 +8,7 @@ used when portability across PHP versions and extensions is desired.
 Polyfills are provided for:
 - the `apcu` extension when the legacy `apc` extension is installed;
 - the `ctype` extension when PHP is compiled without ctype;
+- the `deepclone` extension (`deepclone_to_array` and `deepclone_from_array` functions);
 - the `mbstring` and `iconv` extensions;
 - the `uuid` extension;
 - the `MessageFormatter` class and the `msgfmt_format_message` functions;
@@ -99,6 +100,7 @@ When using [Composer](https://getcomposer.org/) to manage your dependencies, you
 should **not** `require` the `symfony/polyfill` package, but the standalone ones:
 - `symfony/polyfill-apcu` for using the `apcu_*` functions,
 - `symfony/polyfill-ctype` for using the ctype functions,
+- `symfony/polyfill-deepclone` for using the `deepclone_*` functions,
 - `symfony/polyfill-php54` for using the PHP 5.4 functions,
 - `symfony/polyfill-php55` for using the PHP 5.5 functions,
 - `symfony/polyfill-php56` for using the PHP 5.6 functions,

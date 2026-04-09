@@ -1,3 +1,7 @@
+# 1.34.0
+
+  * Add polyfill for `ext-deepclone`
+
 # 1.33.0
 
   * Add polyfill for `ReflectionConstant`
