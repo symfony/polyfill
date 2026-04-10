@@ -13,6 +13,7 @@ It is limited to the "en" locale and to:
 - [`NumberFormatter`](https://php.net/NumberFormatter)
 - [`Locale`](https://php.net/Locale)
 - [`IntlDateFormatter`](https://php.net/IntlDateFormatter)
+- [`IntlListFormatter`](https://php.net/IntlListFormatter)
 
 More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).
