@@ -2,6 +2,7 @@
     "subtrees": {
         "polyfill-apcu": "src/Apcu",
         "polyfill-ctype": "src/Ctype",
+        "polyfill-deepclone": "src/DeepClone",
         "polyfill-php73": "src/Php73",
         "polyfill-php74": "src/Php74",
         "polyfill-php80": "src/Php80",
