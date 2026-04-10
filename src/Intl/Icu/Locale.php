@@ -41,6 +41,28 @@ abstract class Locale
     public const GRANDFATHERED_LANG_TAG = 'grandfathered';
     public const PRIVATE_TAG = 'private';
 
+    private const RTL_SCRIPTS = [
+        'Adlm' => true, 'Arab' => true, 'Armi' => true, 'Hebr' => true,
+        'Mand' => true, 'Mani' => true, 'Mend' => true, 'Nkoo' => true,
+        'Orkh' => true, 'Phnx' => true, 'Rohg' => true, 'Samr' => true,
+        'Syrc' => true, 'Thaa' => true, 'Yezi' => true,
+    ];
+
+    private const LANG_TO_SCRIPT = [
+        'ar' => 'Arab',
+        'ckb' => 'Arab',
+        'dv' => 'Thaa',
+        'fa' => 'Arab',
+        'he' => 'Hebr',
+        'ku' => 'Arab',
+        'nqo' => 'Nkoo',
+        'ps' => 'Arab',
+        'sd' => 'Arab',
+        'ug' => 'Arab',
+        'ur' => 'Arab',
+        'yi' => 'Hebr',
+    ];
+
     /**
      * Not supported. Returns the best available locale based on HTTP "Accept-Language" header according to RFC 2616.
      *
@@ -306,5 +328,23 @@ abstract class Locale
         }
 
         return true;
+    }
+
+    public static function isRightToLeft(string $locale): bool
+    {
+        if ('' === $locale) {
+            return false;
+        }
+
+        $parts = preg_split('/[_-]/', $locale);
+        $language = strtolower($parts[0]);
+
+        foreach ($parts as $part) {
+            if (4 === \strlen($part) && ctype_alpha($part)) {
+                return isset(self::RTL_SCRIPTS[ucfirst(strtolower($part))]);
+            }
+        }
+
+        return isset(self::LANG_TO_SCRIPT[$language]) && isset(self::RTL_SCRIPTS[self::LANG_TO_SCRIPT[$language]]);
     }
 }

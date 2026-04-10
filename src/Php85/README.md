@@ -9,6 +9,7 @@ This component provides features added to PHP 8.5 core:
 - [`DelayedTargetValidation`](https://wiki.php.net/rfc/delayedtargetvalidation_attribute)
 - [`Filter\FilterException class`](https://wiki.php.net/rfc/filter_throw_on_failure)
 - [`Filter\FilterFailedException class`](https://wiki.php.net/rfc/filter_throw_on_failure)
+- [`locale_is_right_to_left`](https://php.watch/versions/8.5/locale_is_right_to_left-Locale-isRightToleft)
 
 More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).

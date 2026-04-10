@@ -18,7 +18,7 @@ class Php85Test extends TestCase
     /**
      * @dataProvider provideHandler
      */
-    public function testGetErrorHandler($expected, $handler): void
+    public function testGetErrorHandler($expected, $handler)
     {
         set_error_handler($handler);
         try {
@@ -30,7 +30,7 @@ class Php85Test extends TestCase
         $this->assertSame($expected, $result);
     }
 
-    public function testErrorStableReturnValue(): void
+    public function testErrorStableReturnValue()
     {
         $this->assertSame(get_error_handler(), get_error_handler());
     }
@@ -38,7 +38,7 @@ class Php85Test extends TestCase
     /**
      * @dataProvider provideHandler
      */
-    public function testGetExceptionHandler($expected, $handler): void
+    public function testGetExceptionHandler($expected, $handler)
     {
         set_exception_handler($handler);
         try {
@@ -50,7 +50,7 @@ class Php85Test extends TestCase
         $this->assertSame($expected, $result);
     }
 
-    public function testExceptionStableReturnValue(): void
+    public function testExceptionStableReturnValue()
     {
         $this->assertSame(get_exception_handler(), get_exception_handler());
     }
@@ -119,6 +119,37 @@ class Php85Test extends TestCase
     {
         $this->assertTrue(class_exists(\Filter\FilterException::class));
         $this->assertTrue(class_exists(\Filter\FilterFailedException::class));
+    }
+
+    public function testLocaleIsRightToLeft()
+    {
+        $this->assertTrue(locale_is_right_to_left('ar'));
+        $this->assertTrue(locale_is_right_to_left('he'));
+        $this->assertTrue(locale_is_right_to_left('fa'));
+        $this->assertTrue(locale_is_right_to_left('ur'));
+        $this->assertTrue(locale_is_right_to_left('ps'));
+        $this->assertTrue(locale_is_right_to_left('sd'));
+        $this->assertTrue(locale_is_right_to_left('ug'));
+        $this->assertTrue(locale_is_right_to_left('ckb'));
+        $this->assertTrue(locale_is_right_to_left('yi'));
+        $this->assertTrue(locale_is_right_to_left('dv'));
+        $this->assertTrue(locale_is_right_to_left('nqo'));
+
+        // Explicit RTL script subtag
+        $this->assertTrue(locale_is_right_to_left('ku_Arab'));
+        $this->assertTrue(locale_is_right_to_left('ku-arab'));
+        $this->assertTrue(locale_is_right_to_left('ar-EG'));
+
+        // Explicit LTR script subtag overrides language default
+        $this->assertFalse(locale_is_right_to_left('ar-Latn'));
+        $this->assertFalse(locale_is_right_to_left('he-Latn'));
+
+        // LTR locales
+        $this->assertFalse(locale_is_right_to_left('en'));
+        $this->assertFalse(locale_is_right_to_left('fr'));
+        $this->assertFalse(locale_is_right_to_left('de'));
+        $this->assertFalse(locale_is_right_to_left('zh'));
+        $this->assertFalse(locale_is_right_to_left(''));
     }
 }
 
