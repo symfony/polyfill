@@ -13,6 +13,10 @@ namespace Symfony\Polyfill\Tests\DeepClone;
 
 use PHPUnit\Framework\TestCase;
 
+if (\PHP_VERSION_ID >= 80100) {
+    require __DIR__.'/fixtures.php';
+}
+
 /**
  * @requires PHP 8.1
  */
@@ -917,9 +921,7 @@ class DeepCloneTest extends TestCase
     public function testDocBehaviorsAnonymousClassIsRejected()
     {
         $this->expectException(\DeepClone\NotInstantiableException::class);
-        deepclone_to_array(new class {
-            public int $x = 1;
-        });
+        deepclone_to_array(eval('return new class { public int $x = 1; };'));
     }
 
     public function testDocBehaviorsSplFileInfoIsRejected()
@@ -972,8 +974,6 @@ class DeepCloneTest extends TestCase
         $this->assertTrue(is_subclass_of(\DeepClone\NotInstantiableException::class, \InvalidArgumentException::class));
         $this->assertTrue(is_subclass_of(\DeepClone\ClassNotFoundException::class, \InvalidArgumentException::class));
     }
-
-    // ── $allowedClasses tests ──────────────────────────────────────────
 
     public function testToArrayAllowedClassesRejectsDisallowed()
     {
@@ -1043,124 +1043,43 @@ class DeepCloneTest extends TestCase
         $c = deepclone_from_array($d, ['stdClass']);
         $this->assertSame(1, $c->x);
     }
-}
 
-// ─────────────────────────────────────────────────────────────────────────
-// Fixtures
-// ─────────────────────────────────────────────────────────────────────────
-
-enum DeepCloneColor
-{
-    case Red;
-    case Blue;
-}
-
-enum DeepCloneSuit: string
-{
-    case Hearts = 'H';
-    case Spades = 'S';
-}
-
-class ClosureFixture
-{
-    public function instanceMethod(): string { return 'instance'; }
-    public static function staticMethod(): string { return 'static'; }
-    private function privateMethod(): string { return 'private'; }
-    public function getPrivateClosure(): \Closure { return \Closure::fromCallable([$this, 'privateMethod']); }
-}
-
-class DeepCloneFinalError extends \Error {}
-
-class DeepCloneSerializeFixture
-{
-    public function __construct(public string $name = '', public int $val = 0) {}
-    public function __serialize(): array { return ['n' => $this->name, 'v' => $this->val]; }
-    public function __unserialize(array $data): void { $this->name = $data['n']; $this->val = $data['v']; }
-}
-
-class DeepCloneWakeupFixture
-{
-    public string $status = 'sleeping';
-    public function __wakeup(): void { $this->status = 'awake'; }
-}
-
-class DeepCloneSleepFixture
-{
-    public string $keep = '';
-    public string $skip = '';
-    public function __sleep(): array { return ['keep']; }
-}
-
-class DeepCloneParentNoUnser
-{
-    private string $foo = 'foo';
-}
-
-class DeepCloneChildNoUnser extends DeepCloneParentNoUnser
-{
-    public string $baz = '';
-    private string $bar = '';
-    public function __serialize(): array { return ['foo' => 'foo', 'baz' => 'ccc', 'bar' => 'ddd']; }
-}
-
-class DeepCloneUnserOnly
-{
-    public string $foo = '';
-    public function __unserialize(array $data): void { $this->foo = $data['foo'] ?? ''; }
-}
-
-class DeepCloneSleepPrivate
-{
-    public string $good = '';
-    protected string $foo = '';
-    private string $bar = '';
-
-    public function __sleep(): array
+    /**
+     * @requires extension mongodb
+     */
+    public function testMongoDbBsonRoundTrip()
     {
-        return ['good', 'foo', "\0*\0foo", "\0".self::class."\0bar"];
-    }
+        $roundtrip = static function (mixed $value): bool {
+            $clone = deepclone_from_array(deepclone_to_array($value));
 
-    public function setAll(string $g, string $f, string $b): void
-    {
-        $this->good = $g;
-        $this->foo = $f;
-        $this->bar = $b;
-    }
-}
+            return serialize($clone) === serialize($value);
+        };
 
-class DeepCloneParentSleep
-{
-    private string $secret = '';
-}
+        // Stateless types
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\MinKey()));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\MaxKey()));
 
-class DeepCloneChildSleep extends DeepCloneParentSleep
-{
-    public string $pub = '';
-    // __sleep returns unmangled "secret" — should NOT match parent's private.
-    public function __sleep(): array { return ['pub', 'secret']; }
-}
+        // Value types carrying state via __serialize / __unserialize
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011')));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Binary("\x00\x01\x02\x03", \MongoDB\BSON\Binary::TYPE_GENERIC)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Binary(random_bytes(16), \MongoDB\BSON\Binary::TYPE_UUID)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\UTCDateTime(1000)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Regex('^foo', 'i')));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Decimal128('3.14159265358979323846')));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Int64(\PHP_INT_MAX)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Timestamp(1, 1234567890)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Javascript('function(x) { return x; }')));
+        $this->assertTrue($roundtrip(\MongoDB\BSON\Document::fromPHP(['_id' => new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011'), 'n' => 1])));
+        $this->assertTrue($roundtrip(\MongoDB\BSON\PackedArray::fromPHP([new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011'), 42])));
 
-class DeepCloneParentClass
-{
-    public string $pub = 'pub_default';
-    protected int $prot = 0;
-    private string $priv = 'parent_priv';
-
-    public function setProt(int $v): void { $this->prot = $v; }
-    public function setPriv(string $v): void { $this->priv = $v; }
-}
-
-class DeepCloneChildClass extends DeepCloneParentClass
-{
-    private string $childPriv = 'child_default';
-    public function setChildPriv(string $v): void { $this->childPriv = $v; }
-}
-
-class DeepCloneReadonlyFixture
-{
-    public function __construct(
-        public readonly string $name,
-        public readonly int $value,
-    ) {
+        // Shared references: two properties pointing to the same BSON object
+        $oid = new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011');
+        $obj = new \stdClass();
+        $obj->a = $oid;
+        $obj->b = $oid;
+        $clone = deepclone_from_array(deepclone_to_array($obj));
+        $this->assertEquals($clone->a, $clone->b);   // same value
+        $this->assertSame($clone->a, $clone->b);     // object identity preserved in the graph
+        $this->assertNotSame($clone->a, $oid);       // but distinct from the original
     }
 }

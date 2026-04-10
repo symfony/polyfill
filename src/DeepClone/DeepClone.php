@@ -32,6 +32,7 @@ final class DeepClone
     private static array $prototypes = [];
     private static array $cloneable = [];
     private static array $instantiableWithoutConstructor = [];
+    private static array $needsFullUnserialize = [];
     private static array $hydrators = [];
     private static array $scopeMaps = [];
     private static array $protos = [];
@@ -651,7 +652,9 @@ final class DeepClone
                 throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
             }
 
-            if (self::$cloneable[$class]) {
+            if (self::$needsFullUnserialize[$class] ?? false) {
+                $objects[$id] = null; // placeholder — finalized below or in states loop
+            } elseif (self::$cloneable[$class]) {
                 $objects[$id] = clone self::$prototypes[$class];
             } elseif (self::$instantiableWithoutConstructor[$class]) {
                 $objects[$id] = self::$reflectors[$class]->newInstanceWithoutConstructor();
@@ -662,6 +665,20 @@ final class DeepClone
             } else {
                 $objects[$id] = unserialize('O:'.\strlen($class).':"'.$class.'":0:{}');
             }
+        }
+
+        // Eagerly finalize deferred objects whose state has no object-ref masks,
+        // so they are real instances when the properties loop resolves references to them.
+        foreach ($states as $state) {
+            if (!\is_array($state) || null !== $objects[$state[0]] || isset($state[2])) {
+                continue;
+            }
+            $class = $objectMeta[$state[0]][0];
+            $ser = serialize($state[1] ?? []);
+            if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
+                throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
+            }
+            $objects[$state[0]] = $obj;
         }
 
         foreach ($refMasks as $k => $m) {
@@ -735,7 +752,18 @@ final class DeepClone
                 if ($zid < 0 || $zid >= $numObjects) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references unknown object id '.$zid);
                 }
-                $obj = $objects[$zid];
+                if (null === $obj = $objects[$zid]) {
+                    // Internal final class with __unserialize that rejects empty unserialize
+                    // reconstruct via the full O: serialization form (same as PHP's unserialize).
+                    $class = $objectMeta[$zid][0];
+                    $resolvedProps = isset($state[2]) ? self::resolveWithMask($sprops, $state[2], $objects, $refs) : $sprops;
+                    $ser = serialize($resolvedProps);
+                    if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
+                        throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
+                    }
+                    $objects[$zid] = $obj;
+                    continue;
+                }
                 $objClass = $obj::class;
                 if (!method_exists($obj, '__unserialize')) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references object id '.$zid.' whose class '.$objClass.' has no __unserialize() method');
@@ -993,10 +1021,18 @@ final class DeepClone
                         if (__FILE__ !== $e->getFile()) {
                             throw $e;
                         }
-                        throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.', 0, $e);
+                        if (!method_exists($class, '__unserialize')) {
+                            throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.', 0, $e);
+                        }
+                        self::$needsFullUnserialize[$class] = true;
+                        $proto = null;
                     }
                     if (false === $proto) {
-                        throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
+                        if (!method_exists($class, '__unserialize')) {
+                            throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
+                        }
+                        self::$needsFullUnserialize[$class] = true;
+                        $proto = null;
                     }
                 }
             }
