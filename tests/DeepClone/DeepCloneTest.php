@@ -1044,6 +1044,31 @@ class DeepCloneTest extends TestCase
         $this->assertSame(1, $c->x);
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // deepclone_rule_a_probe.phpt — final internal classes without serialization API
+    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * @requires extension tidy
+     */
+    public function testTidyNodeRoundTrip()
+    {
+        $tidy = new \tidy();
+        $tidy->parseString('<p><b>hello</b></p>', [], 'utf8');
+        $b = $tidy->body()->child[0]->child[0]; // <b> node
+
+        $clone = deepclone_from_array(deepclone_to_array($b));
+
+        $this->assertInstanceOf(\tidyNode::class, $clone);
+        $this->assertNotSame($b, $clone);
+        $this->assertSame($b->name, $clone->name);
+        $this->assertSame($b->value, $clone->value);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // deepclone_mongodb.phpt — MongoDB BSON types round-trip
+    // ─────────────────────────────────────────────────────────────────────
+
     /**
      * @requires extension mongodb
      */
