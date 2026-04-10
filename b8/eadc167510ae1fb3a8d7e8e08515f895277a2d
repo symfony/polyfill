@@ -1,0 +1,45 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-11-19T09:30:30Z
+
+That would be for PHP 8.6, isn't it?
+
+---------------------------------------------------------------------------
+
+by kylekatarnls at 2025-11-19T09:34:05Z
+
+> That would be for PHP 8.6, isn't it?
+
+Correct, moving it.
+
+---------------------------------------------------------------------------
+
+by kylekatarnls at 2025-12-19T08:43:41Z
+
+https://github.com/php/php-src/pull/19434 is merged (will land in PHP 8.6)
+
+---------------------------------------------------------------------------
+
+by kylekatarnls at 2026-02-25T16:20:53Z
+
+Hello @fabpot @nicolas-grekas, do you need anything else for this?
+
+---------------------------------------------------------------------------
+
+by lyrixx at 2026-03-02T15:28:40Z
+
+Failures seems related:
+```
+e 2 errors:
+
+1) Symfony\Polyfill\Tests\Php86\Php86Test::testClamp
+TypeError: Argument 1 passed to Symfony\Polyfill\Tests\Php86\clamp() must be an instance of Symfony\Polyfill\Tests\Php86\mixed, integer given, called in /home/runner/work/polyfill/polyfill/tests/Php86/Php86Test.php on line 20
+
+/home/runner/work/polyfill/polyfill/tests/Php86/Php86Test.php:20
+
+2) Symfony\Polyfill\Tests\Php86\Php86Test::testClamp
+TypeError: Polyfills enabled, Argument 1 passed to Symfony\Polyfill\Tests\Php86\clamp() must be an instance of Symfony\Polyfill\Tests\Php86\mixed, integer given, called in /home/runner/work/polyfill/polyfill/tests/Php86/Php86Test.php on line 20
+
+/home/runner/work/polyfill/polyfill/tests/Php86/Php86Test.php:20
+
+```
