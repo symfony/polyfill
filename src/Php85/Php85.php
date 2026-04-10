@@ -45,6 +45,6 @@ final class Php85
 
     public static function array_last(array $array)
     {
-        return $array ? current(array_slice($array, -1)) : null;
+        return $array ? current(\array_slice($array, -1)) : null;
     }
 }
