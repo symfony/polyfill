@@ -228,15 +228,72 @@ class GraphemeTest extends TestCase
             ['สวัสดี', 2, ['สวั', 'สดี']],
         ];
 
-        if (70300 <= PHP_VERSION_ID) {
-            $cases[] = ['土下座🙇‍♀を', 1, ["土", "下", "座", "🙇‍♀", "を"]];
+        if (70300 <= \PHP_VERSION_ID) {
+            $cases[] = ['土下座🙇‍♀を', 1, ['土', '下', '座', '🙇‍♀', 'を']];
         }
 
         // Fixed in https://github.com/PCRE2Project/pcre2/issues/410
-        if (defined('PCRE_VERSION_MAJOR') && PCRE_VERSION_MAJOR > 10 && PCRE_VERSION_MINOR > 44) {
+        if (\defined('PCRE_VERSION_MAJOR') && \PCRE_VERSION_MAJOR > 10 && \PCRE_VERSION_MINOR > 44) {
             $cases[] = ['👭🏻👰🏿‍♂️', 2, ['👭🏻', '👰🏿‍♂️']];
         }
 
         return $cases;
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     *
+     * @dataProvider provideGraphemeLevenshtein
+     */
+    public function testGraphemeLevenshtein(int $expected, string $s1, string $s2, int $insertionCost = 1, int $replacementCost = 1, int $deletionCost = 1)
+    {
+        $this->assertSame($expected, grapheme_levenshtein($s1, $s2, $insertionCost, $replacementCost, $deletionCost));
+    }
+
+    public static function provideGraphemeLevenshtein(): array
+    {
+        return [
+            [0, '', ''],
+            [0, 'abc', 'abc'],
+            [1, 'abc', 'abd'],
+            [3, 'kitten', 'sitting'],
+            [3, 'abc', ''],
+            [3, '', 'abc'],
+            [3, 'foo', 'foobar'],
+
+            // multibyte
+            [0, '한국어', '한국어'],
+            [1, '한국어', '한국'],
+            [1, '한', '국'],
+
+            // custom costs
+            [2, 'a', 'b', 1, 2, 1],
+            [3, 'a', '', 1, 1, 3],
+            [5, '', 'a', 5, 1, 1],
+
+            // emoji (single codepoint)
+            [0, '😊', '😊'],
+            [1, '😊', '😂'],
+        ];
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     */
+    public function testGraphemeLevenshteinInvalidUtf8()
+    {
+        $this->assertFalse(grapheme_levenshtein("\xFF", 'a'));
+        $this->assertFalse(grapheme_levenshtein('a', "\xFF"));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     *
+     * @requires PHP 8
+     */
+    public function testGraphemeLevenshteinNegativeCost()
+    {
+        $this->expectException(\ValueError::class);
+        grapheme_levenshtein('a', 'b', -1);
     }
 }
