@@ -40,6 +40,14 @@ jobs:
                     php-version: "${{ matrix.php }}"
                     tools: "composer:v2"
 
+            -   name: Install ext-deepclone via PIE
+                if: ${{ matrix.php >= '8.2' }}
+                run: |
+                    curl -sLO https://github.com/php/pie/releases/latest/download/pie.phar
+                    sudo php pie.phar install symfony/deepclone
+                    php --ri deepclone || echo "extension=deepclone" | sudo tee "$(php -r 'echo PHP_CONFIG_FILE_SCAN_DIR;')/99-deepclone.ini"
+                    php -m | grep -q deepclone && echo "deepclone loaded" || echo "deepclone NOT loaded"
+
             -   name: Install dependencies
                 run: |
                     composer --prefer-source --no-progress --ansi install
