@@ -42,13 +42,38 @@ class Php83Test extends TestCase
      * @covers \Symfony\Polyfill\Php83\Php83::mb_str_pad
      *
      * @dataProvider mbStrPadInvalidArgumentsProvider
+     *
+     * @requires PHP 8
      */
     public function testMbStrPadInvalidArguments(string $expectedError, string $string, int $length, string $padString, int $padType, ?string $encoding = null)
     {
         $this->expectException(\ValueError::class);
-        $this->expectErrorMessage($expectedError);
+        $this->expectExceptionMessage($expectedError);
 
         mb_str_pad($string, $length, $padString, $padType, $encoding);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::mb_str_pad
+     *
+     * @dataProvider mbStrPadInvalidArgumentsProvider
+     *
+     * @requires PHP < 8
+     */
+    public function testMbStrPadInvalidArgumentsOnPhp7(string $expectedError, string $string, int $length, string $padString, int $padType, ?string $encoding = null)
+    {
+        $this->expectException(\ErrorException::class);
+        $this->expectExceptionMessage($expectedError);
+
+        set_error_handler(static function ($errno, $errstr, $errfile, $errline) {
+            throw new \ErrorException($errstr, $errno, $errfile, $errline);
+        });
+
+        try {
+            mb_str_pad($string, $length, $padString, $padType, $encoding);
+        } finally {
+            restore_error_handler();
+        }
     }
 
     public static function paddingStringProvider(): iterable
