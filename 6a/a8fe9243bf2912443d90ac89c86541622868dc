@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by stof at 2025-11-19T17:15:02Z
+
+The conditional class using features not supported on PHP 8.0 must be extracted in a separate file that is loaded conditionally. Otherwise, you will still get a parse error on the file (the `if` doing a PHP version check is resolved at runtime, not before parsing the PHP syntax. It is not a preprocessor macro of C)
+
+---------------------------------------------------------------------------
+
+by Seldaek at 2025-11-19T19:39:00Z
+
+Ok I see.. Then I'm not sure I'll find time for this right now if it gets more complex sorry but got a whole lot of other stuff on my plate.
