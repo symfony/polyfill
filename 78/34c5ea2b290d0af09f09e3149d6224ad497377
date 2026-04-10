@@ -1,0 +1,31 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-04-10T12:49:50Z
+
+(failures unrelated FTR)
+
+---------------------------------------------------------------------------
+
+by stof at 2026-04-10T12:52:01Z
+
+@nicolas-grekas could you add ext-deepclone in the CI setup ?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-04-10T13:28:24Z
+
+> add ext-deepclone in the CI setup
+
+done! (and extension tagged as v0.1.0)
+
+---------------------------------------------------------------------------
+
+by stof at 2026-04-10T13:36:54Z
+
+the CI reports some issues: https://github.com/symfony/polyfill/actions/runs/24245098617/job/70789203397?pr=561#step:6:745
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-04-10T13:45:32Z
+
+Artifacts of the way we run the test suite, nothing to care about here.
