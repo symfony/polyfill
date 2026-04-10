@@ -287,7 +287,7 @@ final class DeepClone
         $numClasses = \count($classes);
 
         if (null !== $allowedClasses) {
-            $allowed = \array_change_key_case(\array_flip($allowedClasses));
+            $allowed = array_change_key_case(array_flip($allowedClasses));
             foreach ($classes as $cls) {
                 if (!isset($allowed[strtolower($cls)])) {
                     throw new \ValueError('deepclone_from_array(): class "'.$cls.'" is not allowed');
@@ -387,6 +387,7 @@ final class DeepClone
         if (\is_object($value)) {
             return $value::class;
         }
+
         return match (true) {
             \is_int($value) => 'int',
             \is_float($value) => 'float',
@@ -786,11 +787,13 @@ final class DeepClone
                 if ($prepared >= $numObjects) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "prepared" references unknown object id '.$prepared);
                 }
+
                 return $objects[$prepared];
             }
             if (!isset($refs[-$prepared])) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "prepared" references unknown ref id '.(-$prepared));
             }
+
             return $refs[-$prepared];
         }
 
@@ -811,11 +814,13 @@ final class DeepClone
                 if (!isset($objects[$value])) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown object id '.$value);
                 }
+
                 return $objects[$value];
             }
             if (!isset($refs[-$value])) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.(-$value));
             }
+
             return $refs[-$value];
         }
 
@@ -827,6 +832,7 @@ final class DeepClone
             if (!isset($refs[$rid])) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.$rid);
             }
+
             return $refs[$rid];
         }
 

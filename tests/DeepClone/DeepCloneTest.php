@@ -789,7 +789,7 @@ class DeepCloneTest extends TestCase
         $d = deepclone_to_array($o);
 
         // All properties at defaults → properties empty or minimal.
-        $this->assertTrue(empty($d['properties']) || $d['properties'] === []);
+        $this->assertTrue(empty($d['properties']) || [] === $d['properties']);
     }
 
     public function testReadonlyProperties()
@@ -970,7 +970,7 @@ class DeepCloneTest extends TestCase
     {
         $this->expectException(\DeepClone\NotInstantiableException::class);
         $this->expectExceptionMessage('stream resource');
-        deepclone_to_array(STDIN);
+        deepclone_to_array(\STDIN);
     }
 
     public function testExceptionClassesExtendInvalidArgumentException()

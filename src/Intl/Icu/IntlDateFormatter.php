@@ -225,7 +225,7 @@ abstract class IntlDateFormatter
         // behave like the intl extension
         $argumentError = null;
         if (!\is_int($datetime) && !$datetime instanceof \DateTimeInterface) {
-            $argumentError = sprintf('datefmt_format: string \'%s\' is not numeric, which would be required for it to be a valid date', $datetime);
+            $argumentError = \sprintf('datefmt_format: string \'%s\' is not numeric, which would be required for it to be a valid date', $datetime);
         }
 
         if (null !== $argumentError) {

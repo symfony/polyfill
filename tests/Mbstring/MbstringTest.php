@@ -622,9 +622,9 @@ class MbstringTest extends TestCase
     public function testDecodeMimeheader()
     {
         $this->assertTrue(mb_internal_encoding('utf8'));
-        $this->assertSame(sprintf('Test: %s', 'проверка'), mb_decode_mimeheader('Test: =?windows-1251?B?7/Du4uXw6uA=?='));
+        $this->assertSame(\sprintf('Test: %s', 'проверка'), mb_decode_mimeheader('Test: =?windows-1251?B?7/Du4uXw6uA=?='));
         $this->assertTrue(mb_internal_encoding('windows-1251'));
-        $this->assertSame(sprintf('Test: %s', base64_decode('7/Du4uXw6uA=')), mb_decode_mimeheader('Test: =?windows-1251?B?7/Du4uXw6uA=?='));
+        $this->assertSame(\sprintf('Test: %s', base64_decode('7/Du4uXw6uA=')), mb_decode_mimeheader('Test: =?windows-1251?B?7/Du4uXw6uA=?='));
         $this->assertTrue(mb_internal_encoding('utf8'));
     }
 

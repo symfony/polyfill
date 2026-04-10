@@ -135,7 +135,7 @@ class IdnTest extends TestCase
 
         if ([] === $toUnicodeStatus) {
             $this->assertSame($toUnicode, $info['result']);
-            $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
+            $this->assertSame(0, $info['errors'], \sprintf('Expected no errors, but found %d.', $info['errors']));
         } else {
             $this->assertNotSame(0, $info['errors'], 'Expected to find errors, but found none.');
         }
@@ -167,7 +167,7 @@ class IdnTest extends TestCase
 
         if ([] === $toAsciiNStatus) {
             $this->assertSame($toAsciiN, $info['result']);
-            $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
+            $this->assertSame(0, $info['errors'], \sprintf('Expected no errors, but found %d.', $info['errors']));
         } else {
             $this->assertNotSame(0, $info['errors'], 'Expected to find errors, but found none.');
         }
@@ -199,7 +199,7 @@ class IdnTest extends TestCase
 
         if ([] === $toAsciiTStatus) {
             $this->assertSame($toAsciiT, $info['result']);
-            $this->assertSame(0, $info['errors'], sprintf('Expected no errors, but found %d.', $info['errors']));
+            $this->assertSame(0, $info['errors'], \sprintf('Expected no errors, but found %d.', $info['errors']));
         } else {
             $this->assertNotSame(0, $info['errors'], 'Expected to find errors, but found none.');
         }
@@ -518,7 +518,7 @@ class IdnTest extends TestCase
             }
 
             if (!isset(self::$ERROR_CODE_MAP[$match])) {
-                throw new \RuntimeException(sprintf('Unhandled error code %s.', $match));
+                throw new \RuntimeException(\sprintf('Unhandled error code %s.', $match));
             }
 
             $errors[] = self::$ERROR_CODE_MAP[$match];

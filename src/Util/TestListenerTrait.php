@@ -93,15 +93,15 @@ class TestListenerTrait
                         throw new \ReflectionException();
                     }
                     if ('idn_to_ascii' === $f['name'] || 'idn_to_utf8' === $f['name']) {
-                        $defLine = sprintf('return PHP_VERSION_ID < 80000 && INTL_IDNA_VARIANT_2003 === $variant ? \\%s($domain, $options, $variant) : \\%1$s%s', $f['name'], $f['args']);
+                        $defLine = \sprintf('return PHP_VERSION_ID < 80000 && INTL_IDNA_VARIANT_2003 === $variant ? \\%s($domain, $options, $variant) : \\%1$s%s', $f['name'], $f['args']);
                     } elseif (false !== strpos($f['signature'], '&') && 'idn_to_ascii' !== $f['name'] && 'idn_to_utf8' !== $f['name']) {
-                        $defLine = sprintf('return \\%s%s', $f['name'], $f['args']);
+                        $defLine = \sprintf('return \\%s%s', $f['name'], $f['args']);
                     } else {
-                        $defLine = sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
+                        $defLine = \sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
                     }
                 } catch (\ReflectionException $e) {
                     $r = null;
-                    $defLine = sprintf("throw new \\%s('Internal function not found: %s')", SkippedTestError::class, $f['name']);
+                    $defLine = \sprintf("throw new \\%s('Internal function not found: %s')", SkippedTestError::class, $f['name']);
                 }
 
                 eval(<<<EOPHP

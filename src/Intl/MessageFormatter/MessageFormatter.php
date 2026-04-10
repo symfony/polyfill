@@ -143,7 +143,7 @@ class MessageFormatter
     public function parse(string $string)
     {
         $this->errorCode = -1;
-        $this->errorMessage = sprintf('The PHP intl extension is required to use "MessageFormatter::%s()".', __FUNCTION__);
+        $this->errorMessage = \sprintf('The PHP intl extension is required to use "MessageFormatter::%s()".', __FUNCTION__);
 
         return false;
     }
@@ -227,7 +227,7 @@ class MessageFormatter
             case 'duration':
             case 'choice':
             case 'selectordinal':
-                throw new \DomainException(sprintf('The PHP intl extension is required to use the "%s" message format.', $type));
+                throw new \DomainException(\sprintf('The PHP intl extension is required to use the "%s" message format.', $type));
             case 'number':
                 $format = isset($token[2]) ? trim($token[2]) : null;
                 if (!is_numeric($arg) || (null !== $format && 'integer' !== $format)) {

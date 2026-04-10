@@ -24,7 +24,7 @@ class MethodArgumentValueNotImplementedException extends NotImplementedException
      */
     public function __construct(string $methodName, string $argName, $argValue, string $additionalMessage = '')
     {
-        $message = sprintf(
+        $message = \sprintf(
             'The %s() method\'s argument $%s value %s behavior is not implemented.%s',
             $methodName,
             $argName,

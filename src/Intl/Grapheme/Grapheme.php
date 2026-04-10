@@ -52,7 +52,7 @@ final class Grapheme
 
         if (!\is_scalar($s)) {
             $hasError = false;
-            set_error_handler(function () use (&$hasError) { $hasError = true; });
+            set_error_handler(static function () use (&$hasError) { $hasError = true; });
             $next = substr($s, $start);
             restore_error_handler();
             if ($hasError) {

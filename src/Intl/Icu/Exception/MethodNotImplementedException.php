@@ -21,6 +21,6 @@ class MethodNotImplementedException extends NotImplementedException
      */
     public function __construct(string $methodName)
     {
-        parent::__construct(sprintf('The %s() is not implemented.', $methodName));
+        parent::__construct(\sprintf('The %s() is not implemented.', $methodName));
     }
 }

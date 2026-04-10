@@ -53,7 +53,7 @@ class MonthTransformer extends Transformer
     public function __construct()
     {
         if (0 === \count(self::$shortMonths)) {
-            self::$shortMonths = array_map(function ($month) {
+            self::$shortMonths = array_map(static function ($month) {
                 return substr($month, 0, 3);
             }, self::$months);
 

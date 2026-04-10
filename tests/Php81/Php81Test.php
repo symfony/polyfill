@@ -34,6 +34,7 @@ class Php81Test extends TestCase
 
     /**
      * @requires extension mysqli
+     *
      * @group legacy
      */
     public function testMysqliRefreshReplicaDefined()

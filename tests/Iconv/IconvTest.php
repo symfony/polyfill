@@ -121,8 +121,8 @@ class IconvTest extends TestCase
             $this->assertSame('Illegal encoded-word:  .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q??= .', \ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
             $this->assertSame('Illegal encoded-word: .', iconv_mime_decode('Illegal encoded-word: =?utf-8?Q?'.\chr(0xA1).'?= .', \ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
         }
-        $this->assertSame(sprintf('Test: %s', 'проверка'), iconv_mime_decode('Test: =?windows-1251?B?7/Du4uXw6uA=?=', 0, 'UTF-8'));
-        $this->assertSame(sprintf('Test: %s', base64_decode('7/Du4uXw6uA=')), iconv_mime_decode('Test: =?windows-1251?B?7/Du4uXw6uA=?=', 0, 'windows-1251'));
+        $this->assertSame(\sprintf('Test: %s', 'проверка'), iconv_mime_decode('Test: =?windows-1251?B?7/Du4uXw6uA=?=', 0, 'UTF-8'));
+        $this->assertSame(\sprintf('Test: %s', base64_decode('7/Du4uXw6uA=')), iconv_mime_decode('Test: =?windows-1251?B?7/Du4uXw6uA=?=', 0, 'windows-1251'));
     }
 
     /**
@@ -172,9 +172,9 @@ HEADERS;
     public function testIconvGetEncoding()
     {
         $a = [
-           'input_encoding' => 'UTF-8',
-           'output_encoding' => 'UTF-8',
-           'internal_encoding' => 'UTF-8',
+            'input_encoding' => 'UTF-8',
+            'output_encoding' => 'UTF-8',
+            'internal_encoding' => 'UTF-8',
         ];
 
         foreach ($a as $t => $e) {

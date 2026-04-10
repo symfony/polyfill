@@ -32,7 +32,7 @@ final class Php83
         }
 
         if ($depth > self::JSON_MAX_DEPTH) {
-            throw new \ValueError(sprintf('json_validate(): Argument #2 ($depth) must be less than %d', self::JSON_MAX_DEPTH));
+            throw new \ValueError(\sprintf('json_validate(): Argument #2 ($depth) must be less than %d', self::JSON_MAX_DEPTH));
         }
 
         json_decode($json, true, $depth, $flags);
@@ -53,12 +53,12 @@ final class Php83
         try {
             $validEncoding = @mb_check_encoding('', $encoding);
         } catch (\ValueError $e) {
-            throw new \ValueError(sprintf('mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "%s" given', $encoding));
+            throw new \ValueError(\sprintf('mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
         // BC for PHP 7.3 and lower
         if (!$validEncoding) {
-            throw new \ValueError(sprintf('mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "%s" given', $encoding));
+            throw new \ValueError(\sprintf('mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
         if (mb_strlen($pad_string, $encoding) <= 0) {
@@ -135,7 +135,7 @@ final class Php83
         }
 
         if (preg_match('/\A(?:0[aA0]?|[aA])\z/', $string)) {
-            throw new \ValueError(sprintf('str_decrement(): Argument #1 ($string) "%s" is out of decrement range', $string));
+            throw new \ValueError(\sprintf('str_decrement(): Argument #1 ($string) "%s" is out of decrement range', $string));
         }
 
         if (!\in_array(substr($string, -1), ['A', 'a', '0'], true)) {

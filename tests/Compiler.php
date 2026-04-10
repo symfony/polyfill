@@ -402,18 +402,18 @@ CP_STATUS;
 
             foreach ($data as $codePoints) {
                 if ($codePoints[0][0] !== $codePoints[0][1]) {
-                    $out .= sprintf('\x{%04X}-\x{%04X}', $codePoints[0][0], $codePoints[0][1]);
+                    $out .= \sprintf('\x{%04X}-\x{%04X}', $codePoints[0][0], $codePoints[0][1]);
 
                     continue;
                 }
 
-                $out .= sprintf('\x{%04X}', $codePoints[0][0]);
+                $out .= \sprintf('\x{%04X}', $codePoints[0][0]);
             }
 
             return $out;
         };
         usort($bidiData, $cpSort);
-        $rtlLabel = sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $rtlLabel = \sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return \in_array($data[1], ['R', 'AL', 'AN'], true);
         })));
 
@@ -423,22 +423,22 @@ CP_STATUS;
         // Because any code point not explicitly listed in DerivedBidiClass.txt is considered to have the
         // 'L' property, we negate a character class matching all code points explicitly listed in
         // DerivedBidiClass.txt minus the ones explicitly marked as 'L'.
-        $bidiStep1Ltr = sprintf('/^[^%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $bidiStep1Ltr = \sprintf('/^[^%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return 'L' !== $data[1];
         })));
-        $bidiStep1Rtl = sprintf('/^[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $bidiStep1Rtl = \sprintf('/^[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return \in_array($data[1], ['R', 'AL'], true);
         })));
 
         // Step 2. In an RTL label, only characters with the Bidi properties R, AL, AN, EN, ES, CS, ET, ON,
         // BN, or NSM are allowed.
-        $bidiStep2 = sprintf('/[^%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $bidiStep2 = \sprintf('/[^%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return \in_array($data[1], ['R', 'AL', 'AN', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM'], true);
         })));
 
         // Step 3. In an RTL label, the end of the label must be a character with Bidi property R, AL, EN,
         // or AN, followed by zero or more characters with Bidi property NSM.
-        $bidiStep3 = sprintf(
+        $bidiStep3 = \sprintf(
             '/[%s][%s]*$/u',
             $buildCharClass(array_filter($bidiData, static function (array $data): bool {
                 return \in_array($data[1], ['R', 'AL', 'EN', 'AN'], true);
@@ -449,10 +449,10 @@ CP_STATUS;
         );
 
         // Step 4. In an RTL label, if an EN is present, no AN may be present, and vice versa.
-        $bidiStep4EN = sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $bidiStep4EN = \sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return 'EN' === $data[1];
         })));
-        $bidiStep4AN = sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $bidiStep4AN = \sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return 'AN' === $data[1];
         })));
 
@@ -463,7 +463,7 @@ CP_STATUS;
         // 'L' property, we create a character class matching all code points explicitly listed in
         // DerivedBidiClass.txt minus the ones explicitly marked as 'L', 'EN', 'ES', 'CS', 'ET', 'ON',
         // 'BN', or 'NSM'.
-        $bidiStep5 = sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
+        $bidiStep5 = \sprintf('/[%s]/u', $buildCharClass(array_filter($bidiData, static function (array $data): bool {
             return !\in_array($data[1], ['L', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM'], true);
         })));
 
@@ -473,7 +473,7 @@ CP_STATUS;
         // Again, because any code point not explicitly listed in DerivedBidiClass.txt is considered to
         // have the 'L' property, we negate a character class matching all code points explicitly listed in
         // DerivedBidiClass.txt to match characters with the 'L' and 'EN' property.
-        $bidiStep6 = sprintf(
+        $bidiStep6 = \sprintf(
             '/[^%s][%s]*$/u',
             $buildCharClass(array_filter($bidiData, static function (array $data): bool {
                 return !\in_array($data[1], ['L', 'EN'], true);
@@ -502,7 +502,7 @@ CP_STATUS;
 
         fclose($handle);
         usort($generalCategories, $cpSort);
-        $combiningMarks = sprintf('/^[%s]/u', $buildCharClass(array_filter($generalCategories, static function (array $data) {
+        $combiningMarks = \sprintf('/^[%s]/u', $buildCharClass(array_filter($generalCategories, static function (array $data) {
             return \in_array($data[1], ['Mc', 'Me', 'Mn'], true);
         })));
         unset($generalCategories);
@@ -529,7 +529,7 @@ CP_STATUS;
         // ((Joining_Type:{L,D})(Joining_Type:T)*\u200C(Joining_Type:T)*(Joining_Type:{R,D}))
         // We use a capturing group around the first portion of the regex so we can count the byte length
         // of the match and increment preg_match's offset accordingly.
-        $zwnj = sprintf(
+        $zwnj = \sprintf(
             '/([%1$s%2$s][%3$s]*\x{200C}[%3$s]*)[%4$s%2$s]/u',
             $buildCharClass(array_filter($joiningTypes, static function (array $data): bool {
                 return 'L' === $data[1];

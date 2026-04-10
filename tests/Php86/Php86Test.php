@@ -74,8 +74,8 @@ class Php86Test extends TestCase
                 1.3,
             ],
             [
-                [M_PI, -INF, INF],
-                M_PI,
+                [\M_PI, -\INF, \INF],
+                \M_PI,
             ],
             [
                 ['a', 'c', 'g'],
@@ -152,11 +152,11 @@ class Php86Test extends TestCase
     {
         return [
             [
-                [4, NAN, 6],
+                [4, \NAN, 6],
                 'clamp(): Argument #2 ($min) must not be NAN',
             ],
             [
-                [7, 6, NAN],
+                [7, 6, \NAN],
                 'clamp(): Argument #3 ($max) must not be NAN',
             ],
             [

@@ -63,6 +63,6 @@ class RandomSecureEngineTest extends TestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessageMatches("{Unserialization of '.*Random\\\\Engine\\\\Secure' is not allowed}");
 
-        unserialize(sprintf('O:%d:"%s":0:{}', \strlen(\get_class($v)), \get_class($v)));
+        unserialize(\sprintf('O:%d:"%s":0:{}', \strlen(\get_class($v)), \get_class($v)));
     }
 }

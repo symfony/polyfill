@@ -71,10 +71,10 @@ class Php84Test extends TestCase
     {
         $ch = curl_init();
 
-        $this->assertIsBool(curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_3));
+        $this->assertIsBool(curl_setopt($ch, \CURLOPT_HTTP_VERSION, \CURL_HTTP_VERSION_3));
 
-        if (defined('CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256')) {
-            $this->assertIsBool(curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_3ONLY));
+        if (\defined('CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256')) {
+            $this->assertIsBool(curl_setopt($ch, \CURLOPT_HTTP_VERSION, \CURL_HTTP_VERSION_3ONLY));
         }
     }
 
@@ -121,11 +121,11 @@ class Php84Test extends TestCase
 
     public static function arrayFindDataProvider(): array
     {
-        $callable = function ($value): bool {
+        $callable = static function ($value): bool {
             return \strlen($value) > 2;
         };
 
-        $callableKey = function ($value, $key): bool {
+        $callableKey = static function ($value, $key): bool {
             return is_numeric($key);
         };
 
@@ -140,11 +140,11 @@ class Php84Test extends TestCase
 
     public static function arrayFindKeyDataProvider(): array
     {
-        $callable = function ($value): bool {
+        $callable = static function ($value): bool {
             return \strlen($value) > 2;
         };
 
-        $callableKey = function ($value, $key): bool {
+        $callableKey = static function ($value, $key): bool {
             return is_numeric($key);
         };
 
@@ -159,11 +159,11 @@ class Php84Test extends TestCase
 
     public static function arrayAnyDataProvider(): array
     {
-        $callable = function ($value): bool {
+        $callable = static function ($value): bool {
             return \strlen($value) > 2;
         };
 
-        $callableKey = function ($value, $key): bool {
+        $callableKey = static function ($value, $key): bool {
             return is_numeric($key);
         };
 
@@ -179,11 +179,11 @@ class Php84Test extends TestCase
 
     public static function arrayAllDataProvider(): array
     {
-        $callable = function ($value): bool {
+        $callable = static function ($value): bool {
             return \strlen($value) > 2;
         };
 
-        $callableKey = function ($value, $key): bool {
+        $callableKey = static function ($value, $key): bool {
             return is_numeric($key);
         };
 
@@ -340,22 +340,22 @@ class Php84Test extends TestCase
         // Cases tested in https://github.com/php/php-src/blob/php-8.4.2/ext/standard/tests/math/fpow.phpt
         yield [0, 0, 1];
         yield [0, 1, 0];
-        yield [0, -1, INF];
+        yield [0, -1, \INF];
         yield [0, 1.0, 0];
-        yield [0, -1.0, INF];
+        yield [0, -1.0, \INF];
         yield [0, 2, 0];
-        yield [0, -2, INF];
+        yield [0, -2, \INF];
         yield [0, 2.1, 0];
-        yield [0, -2.1, INF];
+        yield [0, -2.1, \INF];
         yield [0, 0.1, 0];
-        yield [0, -0.1, INF];
+        yield [0, -0.1, \INF];
         yield [0, 0.0, 1];
         yield [0, -0.0, 1];
         yield [0, 10, 0];
-        yield [0, -10, INF];
-        yield [0, INF, 0];
-        yield [0, -INF, INF];
-        yield [0, NAN, NAN];
+        yield [0, -10, \INF];
+        yield [0, \INF, 0];
+        yield [0, -\INF, \INF];
+        yield [0, \NAN, \NAN];
         yield [1, 0, 1];
         yield [1, 1, 1];
         yield [1, -1, 1];
@@ -371,9 +371,9 @@ class Php84Test extends TestCase
         yield [1, -0.0, 1];
         yield [1, 10, 1];
         yield [1, -10, 1];
-        yield [1, INF, 1];
-        yield [1, -INF, 1];
-        yield [1, NAN, 1];
+        yield [1, \INF, 1];
+        yield [1, -\INF, 1];
+        yield [1, \NAN, 1];
         yield [-1, 0, 1];
         yield [-1, 1, -1];
         yield [-1, -1, -1];
@@ -381,17 +381,17 @@ class Php84Test extends TestCase
         yield [-1, -1.0, -1];
         yield [-1, 2, 1];
         yield [-1, -2, 1];
-        yield [-1, 2.1, NAN];
-        yield [-1, -2.1, NAN];
-        yield [-1, 0.1, NAN];
-        yield [-1, -0.1, NAN];
+        yield [-1, 2.1, \NAN];
+        yield [-1, -2.1, \NAN];
+        yield [-1, 0.1, \NAN];
+        yield [-1, -0.1, \NAN];
         yield [-1, 0.0, 1];
         yield [-1, -0.0, 1];
         yield [-1, 10, 1];
         yield [-1, -10, 1];
-        yield [-1, INF, 1];
-        yield [-1, -INF, 1];
-        yield [-1, NAN, NAN];
+        yield [-1, \INF, 1];
+        yield [-1, -\INF, 1];
+        yield [-1, \NAN, \NAN];
         yield [1.0, 0, 1];
         yield [1.0, 1, 1];
         yield [1.0, -1, 1];
@@ -407,9 +407,9 @@ class Php84Test extends TestCase
         yield [1.0, -0.0, 1];
         yield [1.0, 10, 1];
         yield [1.0, -10, 1];
-        yield [1.0, INF, 1];
-        yield [1.0, -INF, 1];
-        yield [1.0, NAN, 1];
+        yield [1.0, \INF, 1];
+        yield [1.0, -\INF, 1];
+        yield [1.0, \NAN, 1];
         yield [-1.0, 0, 1];
         yield [-1.0, 1, -1];
         yield [-1.0, -1, -1];
@@ -417,17 +417,17 @@ class Php84Test extends TestCase
         yield [-1.0, -1.0, -1];
         yield [-1.0, 2, 1];
         yield [-1.0, -2, 1];
-        yield [-1.0, 2.1, NAN];
-        yield [-1.0, -2.1, NAN];
-        yield [-1.0, 0.1, NAN];
-        yield [-1.0, -0.1, NAN];
+        yield [-1.0, 2.1, \NAN];
+        yield [-1.0, -2.1, \NAN];
+        yield [-1.0, 0.1, \NAN];
+        yield [-1.0, -0.1, \NAN];
         yield [-1.0, 0.0, 1];
         yield [-1.0, -0.0, 1];
         yield [-1.0, 10, 1];
         yield [-1.0, -10, 1];
-        yield [-1.0, INF, 1];
-        yield [-1.0, -INF, 1];
-        yield [-1.0, NAN, NAN];
+        yield [-1.0, \INF, 1];
+        yield [-1.0, -\INF, 1];
+        yield [-1.0, \NAN, \NAN];
         yield [2, 0, 1];
         yield [2, 1, 2];
         yield [2, -1, 0.5];
@@ -443,9 +443,9 @@ class Php84Test extends TestCase
         yield [2, -0.0, 1];
         yield [2, 10, 1024];
         yield [2, -10, 0.0009765625];
-        yield [2, INF, INF];
-        yield [2, -INF, 0];
-        yield [2, NAN, NAN];
+        yield [2, \INF, \INF];
+        yield [2, -\INF, 0];
+        yield [2, \NAN, \NAN];
         yield [-2, 0, 1];
         yield [-2, 1, -2];
         yield [-2, -1, -0.5];
@@ -453,17 +453,17 @@ class Php84Test extends TestCase
         yield [-2, -1.0, -0.5];
         yield [-2, 2, 4];
         yield [-2, -2, 0.25];
-        yield [-2, 2.1, NAN];
-        yield [-2, -2.1, NAN];
-        yield [-2, 0.1, NAN];
-        yield [-2, -0.1, NAN];
+        yield [-2, 2.1, \NAN];
+        yield [-2, -2.1, \NAN];
+        yield [-2, 0.1, \NAN];
+        yield [-2, -0.1, \NAN];
         yield [-2, 0.0, 1];
         yield [-2, -0.0, 1];
         yield [-2, 10, 1024];
         yield [-2, -10, 0.0009765625];
-        yield [-2, INF, INF];
-        yield [-2, -INF, 0];
-        yield [-2, NAN, NAN];
+        yield [-2, \INF, \INF];
+        yield [-2, -\INF, 0];
+        yield [-2, \NAN, \NAN];
         yield [2.1, 0, 1];
         yield [2.1, 1, 2.1];
         yield [2.1, -1, 0.47619047619048];
@@ -479,9 +479,9 @@ class Php84Test extends TestCase
         yield [2.1, -0.0, 1];
         yield [2.1, 10, 1667.9880978201];
         yield [2.1, -10, 0.0005995246616609];
-        yield [2.1, INF, INF];
-        yield [2.1, -INF, 0];
-        yield [2.1, NAN, NAN];
+        yield [2.1, \INF, \INF];
+        yield [2.1, -\INF, 0];
+        yield [2.1, \NAN, \NAN];
         yield [-2.1, 0, 1];
         yield [-2.1, 1, -2.1];
         yield [-2.1, -1, -0.47619047619048];
@@ -489,17 +489,17 @@ class Php84Test extends TestCase
         yield [-2.1, -1.0, -0.47619047619048];
         yield [-2.1, 2, 4.41];
         yield [-2.1, -2, 0.22675736961451];
-        yield [-2.1, 2.1, NAN];
-        yield [-2.1, -2.1, NAN];
-        yield [-2.1, 0.1, NAN];
-        yield [-2.1, -0.1, NAN];
+        yield [-2.1, 2.1, \NAN];
+        yield [-2.1, -2.1, \NAN];
+        yield [-2.1, 0.1, \NAN];
+        yield [-2.1, -0.1, \NAN];
         yield [-2.1, 0.0, 1];
         yield [-2.1, -0.0, 1];
         yield [-2.1, 10, 1667.9880978201];
         yield [-2.1, -10, 0.0005995246616609];
-        yield [-2.1, INF, INF];
-        yield [-2.1, -INF, 0];
-        yield [-2.1, NAN, NAN];
+        yield [-2.1, \INF, \INF];
+        yield [-2.1, -\INF, 0];
+        yield [-2.1, \NAN, \NAN];
         yield [0.1, 0, 1];
         yield [0.1, 1, 0.1];
         yield [0.1, -1, 10];
@@ -515,9 +515,9 @@ class Php84Test extends TestCase
         yield [0.1, -0.0, 1];
         yield [0.1, 10, 1.0E-10];
         yield [0.1, -10, 10000000000];
-        yield [0.1, INF, 0];
-        yield [0.1, -INF, INF];
-        yield [0.1, NAN, NAN];
+        yield [0.1, \INF, 0];
+        yield [0.1, -\INF, \INF];
+        yield [0.1, \NAN, \NAN];
         yield [-0.1, 0, 1];
         yield [-0.1, 1, -0.1];
         yield [-0.1, -1, -10];
@@ -525,53 +525,53 @@ class Php84Test extends TestCase
         yield [-0.1, -1.0, -10];
         yield [-0.1, 2, 0.01];
         yield [-0.1, -2, 100];
-        yield [-0.1, 2.1, NAN];
-        yield [-0.1, -2.1, NAN];
-        yield [-0.1, 0.1, NAN];
-        yield [-0.1, -0.1, NAN];
+        yield [-0.1, 2.1, \NAN];
+        yield [-0.1, -2.1, \NAN];
+        yield [-0.1, 0.1, \NAN];
+        yield [-0.1, -0.1, \NAN];
         yield [-0.1, 0.0, 1];
         yield [-0.1, -0.0, 1];
         yield [-0.1, 10, 1.0E-10];
         yield [-0.1, -10, 10000000000];
-        yield [-0.1, INF, 0];
-        yield [-0.1, -INF, INF];
-        yield [-0.1, NAN, NAN];
+        yield [-0.1, \INF, 0];
+        yield [-0.1, -\INF, \INF];
+        yield [-0.1, \NAN, \NAN];
         yield [0.0, 0, 1];
         yield [0.0, 1, 0];
-        yield [0.0, -1, INF];
+        yield [0.0, -1, \INF];
         yield [0.0, 1.0, 0];
-        yield [0.0, -1.0, INF];
+        yield [0.0, -1.0, \INF];
         yield [0.0, 2, 0];
-        yield [0.0, -2, INF];
+        yield [0.0, -2, \INF];
         yield [0.0, 2.1, 0];
-        yield [0.0, -2.1, INF];
+        yield [0.0, -2.1, \INF];
         yield [0.0, 0.1, 0];
-        yield [0.0, -0.1, INF];
+        yield [0.0, -0.1, \INF];
         yield [0.0, 0.0, 1];
         yield [0.0, -0.0, 1];
         yield [0.0, 10, 0];
-        yield [0.0, -10, INF];
-        yield [0.0, INF, 0];
-        yield [0.0, -INF, INF];
-        yield [0.0, NAN, NAN];
+        yield [0.0, -10, \INF];
+        yield [0.0, \INF, 0];
+        yield [0.0, -\INF, \INF];
+        yield [0.0, \NAN, \NAN];
         yield [-0.0, 0, 1];
         yield [-0.0, 1, -0.0];
-        yield [-0.0, -1, -INF];
+        yield [-0.0, -1, -\INF];
         yield [-0.0, 1.0, -0.0];
-        yield [-0.0, -1.0, -INF];
+        yield [-0.0, -1.0, -\INF];
         yield [-0.0, 2, 0];
-        yield [-0.0, -2, INF];
+        yield [-0.0, -2, \INF];
         yield [-0.0, 2.1, 0];
-        yield [-0.0, -2.1, INF];
+        yield [-0.0, -2.1, \INF];
         yield [-0.0, 0.1, 0];
-        yield [-0.0, -0.1, INF];
+        yield [-0.0, -0.1, \INF];
         yield [-0.0, 0.0, 1];
         yield [-0.0, -0.0, 1];
         yield [-0.0, 10, 0];
-        yield [-0.0, -10, INF];
-        yield [-0.0, INF, 0];
-        yield [-0.0, -INF, INF];
-        yield [-0.0, NAN, NAN];
+        yield [-0.0, -10, \INF];
+        yield [-0.0, \INF, 0];
+        yield [-0.0, -\INF, \INF];
+        yield [-0.0, \NAN, \NAN];
         yield [10, 0, 1];
         yield [10, 1, 10];
         yield [10, -1, 0.1];
@@ -587,9 +587,9 @@ class Php84Test extends TestCase
         yield [10, -0.0, 1];
         yield [10, 10, 10000000000];
         yield [10, -10, 1.0E-10];
-        yield [10, INF, INF];
-        yield [10, -INF, 0];
-        yield [10, NAN, NAN];
+        yield [10, \INF, \INF];
+        yield [10, -\INF, 0];
+        yield [10, \NAN, \NAN];
         yield [-10, 0, 1];
         yield [-10, 1, -10];
         yield [-10, -1, -0.1];
@@ -597,71 +597,71 @@ class Php84Test extends TestCase
         yield [-10, -1.0, -0.1];
         yield [-10, 2, 100];
         yield [-10, -2, 0.01];
-        yield [-10, 2.1, NAN];
-        yield [-10, -2.1, NAN];
-        yield [-10, 0.1, NAN];
-        yield [-10, -0.1, NAN];
+        yield [-10, 2.1, \NAN];
+        yield [-10, -2.1, \NAN];
+        yield [-10, 0.1, \NAN];
+        yield [-10, -0.1, \NAN];
         yield [-10, 0.0, 1];
         yield [-10, -0.0, 1];
         yield [-10, 10, 10000000000];
         yield [-10, -10, 1.0E-10];
-        yield [-10, INF, INF];
-        yield [-10, -INF, 0];
-        yield [-10, NAN, NAN];
-        yield [INF, 0, 1];
-        yield [INF, 1, INF];
-        yield [INF, -1, 0];
-        yield [INF, 1.0, INF];
-        yield [INF, -1.0, 0];
-        yield [INF, 2, INF];
-        yield [INF, -2, 0];
-        yield [INF, 2.1, INF];
-        yield [INF, -2.1, 0];
-        yield [INF, 0.1, INF];
-        yield [INF, -0.1, 0];
-        yield [INF, 0.0, 1];
-        yield [INF, -0.0, 1];
-        yield [INF, 10, INF];
-        yield [INF, -10, 0];
-        yield [INF, INF, INF];
-        yield [INF, -INF, 0];
-        yield [INF, NAN, NAN];
-        yield [-INF, 0, 1];
-        yield [-INF, 1, -INF];
-        yield [-INF, -1, -0.0];
-        yield [-INF, 1.0, -INF];
-        yield [-INF, -1.0, -0.0];
-        yield [-INF, 2, INF];
-        yield [-INF, -2, 0];
-        yield [-INF, 2.1, INF];
-        yield [-INF, -2.1, 0];
-        yield [-INF, 0.1, INF];
-        yield [-INF, -0.1, 0];
-        yield [-INF, 0.0, 1];
-        yield [-INF, -0.0, 1];
-        yield [-INF, 10, INF];
-        yield [-INF, -10, 0];
-        yield [-INF, INF, INF];
-        yield [-INF, -INF, 0];
-        yield [-INF, NAN, NAN];
-        yield [NAN, 0, 1];
-        yield [NAN, 1, NAN];
-        yield [NAN, -1, NAN];
-        yield [NAN, 1.0, NAN];
-        yield [NAN, -1.0, NAN];
-        yield [NAN, 2, NAN];
-        yield [NAN, -2, NAN];
-        yield [NAN, 2.1, NAN];
-        yield [NAN, -2.1, NAN];
-        yield [NAN, 0.1, NAN];
-        yield [NAN, -0.1, NAN];
-        yield [NAN, 0.0, 1];
-        yield [NAN, -0.0, 1];
-        yield [NAN, 10, NAN];
-        yield [NAN, -10, NAN];
-        yield [NAN, INF, NAN];
-        yield [NAN, -INF, NAN];
-        yield [NAN, NAN, NAN];
+        yield [-10, \INF, \INF];
+        yield [-10, -\INF, 0];
+        yield [-10, \NAN, \NAN];
+        yield [\INF, 0, 1];
+        yield [\INF, 1, \INF];
+        yield [\INF, -1, 0];
+        yield [\INF, 1.0, \INF];
+        yield [\INF, -1.0, 0];
+        yield [\INF, 2, \INF];
+        yield [\INF, -2, 0];
+        yield [\INF, 2.1, \INF];
+        yield [\INF, -2.1, 0];
+        yield [\INF, 0.1, \INF];
+        yield [\INF, -0.1, 0];
+        yield [\INF, 0.0, 1];
+        yield [\INF, -0.0, 1];
+        yield [\INF, 10, \INF];
+        yield [\INF, -10, 0];
+        yield [\INF, \INF, \INF];
+        yield [\INF, -\INF, 0];
+        yield [\INF, \NAN, \NAN];
+        yield [-\INF, 0, 1];
+        yield [-\INF, 1, -\INF];
+        yield [-\INF, -1, -0.0];
+        yield [-\INF, 1.0, -\INF];
+        yield [-\INF, -1.0, -0.0];
+        yield [-\INF, 2, \INF];
+        yield [-\INF, -2, 0];
+        yield [-\INF, 2.1, \INF];
+        yield [-\INF, -2.1, 0];
+        yield [-\INF, 0.1, \INF];
+        yield [-\INF, -0.1, 0];
+        yield [-\INF, 0.0, 1];
+        yield [-\INF, -0.0, 1];
+        yield [-\INF, 10, \INF];
+        yield [-\INF, -10, 0];
+        yield [-\INF, \INF, \INF];
+        yield [-\INF, -\INF, 0];
+        yield [-\INF, \NAN, \NAN];
+        yield [\NAN, 0, 1];
+        yield [\NAN, 1, \NAN];
+        yield [\NAN, -1, \NAN];
+        yield [\NAN, 1.0, \NAN];
+        yield [\NAN, -1.0, \NAN];
+        yield [\NAN, 2, \NAN];
+        yield [\NAN, -2, \NAN];
+        yield [\NAN, 2.1, \NAN];
+        yield [\NAN, -2.1, \NAN];
+        yield [\NAN, 0.1, \NAN];
+        yield [\NAN, -0.1, \NAN];
+        yield [\NAN, 0.0, 1];
+        yield [\NAN, -0.0, 1];
+        yield [\NAN, 10, \NAN];
+        yield [\NAN, -10, \NAN];
+        yield [\NAN, \INF, \NAN];
+        yield [\NAN, -\INF, \NAN];
+        yield [\NAN, \NAN, \NAN];
     }
 
     /**
@@ -682,12 +682,12 @@ class Php84Test extends TestCase
             ['สวัสดี', 2, ['สวั', 'สดี']],
         ];
 
-        if (70300 <= PHP_VERSION_ID) {
-            $cases[] = ['土下座🙇‍♀を', 1, ["土", "下", "座", "🙇‍♀", "を"]];
+        if (70300 <= \PHP_VERSION_ID) {
+            $cases[] = ['土下座🙇‍♀を', 1, ['土', '下', '座', '🙇‍♀', 'を']];
         }
 
         // Fixed in https://github.com/PCRE2Project/pcre2/issues/410
-        if (defined('PCRE_VERSION_MAJOR') && 10 < PCRE_VERSION_MAJOR && 44 < PCRE_VERSION_MINOR) {
+        if (\defined('PCRE_VERSION_MAJOR') && 10 < \PCRE_VERSION_MAJOR && 44 < \PCRE_VERSION_MINOR) {
             $cases[] = ['👭🏻👰🏿‍♂️', 2, ['👭🏻', '👰🏿‍♂️']];
         }
 
@@ -768,7 +768,7 @@ class Php84Test extends TestCase
      */
     public function testBcCeil(string $expected, string $num)
     {
-        $result = \bcceil($num);
+        $result = bcceil($num);
         $this->assertEquals($expected, $result);
     }
 
@@ -797,12 +797,13 @@ class Php84Test extends TestCase
      * @dataProvider bcCeilProviderError
      *
      * @requires extension bcmath
+     * @requires PHP 8.2
      */
     public function testBcCeilError(string $num)
     {
         $this->expectError();
         $this->expectErrorMessage('bcceil(): Argument #1 ($num) is not well-formed');
-        \bcceil($num);
+        bcceil($num);
     }
 
     public static function bcCeilProviderError(): iterable
@@ -819,7 +820,7 @@ class Php84Test extends TestCase
      */
     public function testBcFloor(string $expected, string $num)
     {
-        $result = \bcfloor($num);
+        $result = bcfloor($num);
         $this->assertEquals($expected, $result);
     }
 
@@ -848,12 +849,13 @@ class Php84Test extends TestCase
      * @dataProvider bcFloorProviderError
      *
      * @requires extension bcmath
+     * @requires PHP 8.2
      */
     public function testBcFloorError(string $num)
     {
         $this->expectError();
         $this->expectErrorMessage('bcfloor(): Argument #1 ($num) is not well-formed');
-        \bcfloor($num);
+        bcfloor($num);
     }
 
     public static function bcFloorProviderError(): iterable
@@ -870,7 +872,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundAll($mode, string $num, string $expected)
     {
-        $result = \bcround($num, 0, $mode);
+        $result = bcround($num, 0, $mode);
         $this->assertEquals($expected, $result);
     }
 
@@ -966,7 +968,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundAwayFromZero(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::AwayFromZero);
+        $result = bcround($num, $precision, \RoundingMode::AwayFromZero);
         $this->assertEquals($expected, $result);
     }
 
@@ -1057,7 +1059,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundCeiling(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::PositiveInfinity);
+        $result = bcround($num, $precision, \RoundingMode::PositiveInfinity);
         $this->assertEquals($expected, $result);
     }
 
@@ -1148,7 +1150,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundFloor(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::NegativeInfinity);
+        $result = bcround($num, $precision, \RoundingMode::NegativeInfinity);
         $this->assertEquals($expected, $result);
     }
 
@@ -1239,7 +1241,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundHalfDownFloor(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::HalfTowardsZero);
+        $result = bcround($num, $precision, \RoundingMode::HalfTowardsZero);
         $this->assertEquals($expected, $result);
     }
 
@@ -1330,7 +1332,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundHalfEvenFloor(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::HalfEven);
+        $result = bcround($num, $precision, \RoundingMode::HalfEven);
         $this->assertEquals($expected, $result);
     }
 
@@ -1421,7 +1423,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundHalfOddFloor(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::HalfOdd);
+        $result = bcround($num, $precision, \RoundingMode::HalfOdd);
         $this->assertEquals($expected, $result);
     }
 
@@ -1512,7 +1514,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundHalfUpFloor(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::HalfAwayFromZero);
+        $result = bcround($num, $precision, \RoundingMode::HalfAwayFromZero);
         $this->assertEquals($expected, $result);
     }
 
@@ -1603,7 +1605,7 @@ class Php84Test extends TestCase
      */
     public function testBcRoundTowardZeroFloor(string $num, int $precision, string $expected)
     {
-        $result = \bcround($num, $precision, \RoundingMode::TowardsZero);
+        $result = bcround($num, $precision, \RoundingMode::TowardsZero);
         $this->assertEquals($expected, $result);
     }
 

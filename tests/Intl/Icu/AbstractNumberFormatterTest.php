@@ -97,7 +97,7 @@ abstract class AbstractNumberFormatterTest extends TestCase
         }
 
         $formatter = static::getNumberFormatter('en', NumberFormatter::CURRENCY);
-        $this->assertEquals(sprintf($expected, $symbol), $formatter->formatCurrency($value, $currency));
+        $this->assertEquals(\sprintf($expected, $symbol), $formatter->formatCurrency($value, $currency));
     }
 
     public static function formatCurrencyWithCurrencyStyleCostaRicanColonsRoundingProvider()
@@ -115,7 +115,7 @@ abstract class AbstractNumberFormatterTest extends TestCase
     public function testFormatCurrencyWithCurrencyStyleBrazilianRealRounding($value, $currency, $symbol, $expected)
     {
         $formatter = static::getNumberFormatter('en', NumberFormatter::CURRENCY);
-        $this->assertEquals(sprintf($expected, $symbol), $formatter->formatCurrency($value, $currency));
+        $this->assertEquals(\sprintf($expected, $symbol), $formatter->formatCurrency($value, $currency));
     }
 
     public static function formatCurrencyWithCurrencyStyleBrazilianRealRoundingProvider()
@@ -146,7 +146,7 @@ abstract class AbstractNumberFormatterTest extends TestCase
         }
 
         $formatter = static::getNumberFormatter('en', NumberFormatter::CURRENCY);
-        $this->assertEquals(sprintf($expected, $symbol), $formatter->formatCurrency($value, $currency));
+        $this->assertEquals(\sprintf($expected, $symbol), $formatter->formatCurrency($value, $currency));
     }
 
     public static function formatCurrencyWithCurrencyStyleSwissRoundingProvider()

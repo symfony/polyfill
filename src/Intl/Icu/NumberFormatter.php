@@ -261,7 +261,7 @@ abstract class NumberFormatter
         }
 
         if (!\in_array($style, self::$supportedStyles)) {
-            $message = sprintf('The available styles are: %s.', implode(', ', array_keys(self::$supportedStyles)));
+            $message = \sprintf('The available styles are: %s.', implode(', ', array_keys(self::$supportedStyles)));
             throw new MethodArgumentValueNotImplementedException(__METHOD__, 'style', $style, $message);
         }
 
@@ -352,7 +352,7 @@ abstract class NumberFormatter
         // The original NumberFormatter does not support this format type
         if (self::TYPE_CURRENCY === $type) {
             if (\PHP_VERSION_ID >= 80000) {
-                throw new \ValueError(sprintf('The format type must be a NumberFormatter::TYPE_* constant (%s given).', $type));
+                throw new \ValueError(\sprintf('The format type must be a NumberFormatter::TYPE_* constant (%s given).', $type));
             }
 
             trigger_error(__METHOD__.'(): Unsupported format type '.$type, \E_USER_WARNING);
@@ -361,7 +361,7 @@ abstract class NumberFormatter
         }
 
         if (self::CURRENCY === $this->style) {
-            throw new NotImplementedException(sprintf('"%s()" method does not support the formatting of currencies (instance with CURRENCY style). "%s".', __METHOD__, NotImplementedException::INTL_INSTALL_MESSAGE));
+            throw new NotImplementedException(\sprintf('"%s()" method does not support the formatting of currencies (instance with CURRENCY style). "%s".', __METHOD__, NotImplementedException::INTL_INSTALL_MESSAGE));
         }
 
         // Only the default type is supported.
@@ -496,7 +496,7 @@ abstract class NumberFormatter
     {
         if (self::TYPE_DEFAULT === $type || self::TYPE_CURRENCY === $type) {
             if (\PHP_VERSION_ID >= 80000) {
-                throw new \ValueError(sprintf('The format type must be a NumberFormatter::TYPE_* constant (%d given).', $type));
+                throw new \ValueError(\sprintf('The format type must be a NumberFormatter::TYPE_* constant (%d given).', $type));
             }
 
             trigger_error(__METHOD__.'(): Unsupported format type '.$type, \E_USER_WARNING);
@@ -553,7 +553,7 @@ abstract class NumberFormatter
     public function setAttribute(int $attribute, $value)
     {
         if (!\in_array($attribute, self::$supportedAttributes)) {
-            $message = sprintf(
+            $message = \sprintf(
                 'The available attributes are: %s',
                 implode(', ', array_keys(self::$supportedAttributes))
             );
@@ -562,7 +562,7 @@ abstract class NumberFormatter
         }
 
         if (self::$supportedAttributes['ROUNDING_MODE'] === $attribute && $this->isInvalidRoundingMode($value)) {
-            $message = sprintf(
+            $message = \sprintf(
                 'The supported values for ROUNDING_MODE are: %s',
                 implode(', ', array_keys(self::$roundingModes))
             );

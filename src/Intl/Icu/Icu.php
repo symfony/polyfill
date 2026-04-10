@@ -108,10 +108,10 @@ abstract class Icu
     public static function setError(int $code, string $message = '')
     {
         if (!isset(self::$errorCodes[$code])) {
-            throw new \InvalidArgumentException(sprintf('No such error code: "%s".', $code));
+            throw new \InvalidArgumentException(\sprintf('No such error code: "%s".', $code));
         }
 
-        self::$errorMessage = $message ? sprintf('%s: %s', $message, self::$errorCodes[$code]) : self::$errorCodes[$code];
+        self::$errorMessage = $message ? \sprintf('%s: %s', $message, self::$errorCodes[$code]) : self::$errorCodes[$code];
         self::$errorCode = $code;
     }
 }
