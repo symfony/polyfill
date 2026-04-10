@@ -35,7 +35,7 @@ jobs:
                 uses: shivammathur/setup-php@v2
                 with:
                     coverage: "none"
-                    extensions: "apcu, intl-73.2, mbstring, odbc, uuid"
+                    extensions: "apcu, intl-73.2, mbstring, odbc, uuid, mongodb"
                     ini-values: "memory_limit=-1, session.gc_probability=0, apc.enable_cli=1"
                     php-version: "${{ matrix.php }}"
                     tools: "composer:v2"
