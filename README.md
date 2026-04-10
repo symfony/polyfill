@@ -86,6 +86,7 @@ Polyfills are provided for:
 - the `grapheme_levenshtein` function introduced in PHP 8.5;
 - the `locale_is_right_to_left` function introduced in PHP 8.5;
 - the `clamp` function introduced in PHP 8.6;
+- the `ARRAY_FILTER_USE_VALUE` constant introduced in PHP 8.6;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
