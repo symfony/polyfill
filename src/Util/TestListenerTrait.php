@@ -163,7 +163,7 @@ EOPHP
     {
         if (false !== self::$enabledPolyfills) {
             $r = new \ReflectionProperty('Exception', 'message');
-            $r->setAccessible(true);
+            \PHP_VERSION_ID < 80100 && $r->setAccessible(true);
             $r->setValue($e, 'Polyfills enabled, '.$r->getValue($e));
         }
     }
