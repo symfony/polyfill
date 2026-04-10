@@ -1041,6 +1041,44 @@ class DeepCloneTest extends TestCase
         $c = deepclone_from_array($d, ['stdClass']);
         $this->assertSame(1, $c->x);
     }
+
+    /**
+     * @requires extension mongodb
+     */
+    public function testMongoDbBsonRoundTrip()
+    {
+        $roundtrip = static function (mixed $value): bool {
+            $clone = deepclone_from_array(deepclone_to_array($value));
+            return serialize($clone) === serialize($value);
+        };
+
+        // Stateless types
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\MinKey()));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\MaxKey()));
+
+        // Value types carrying state via __serialize / __unserialize
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011')));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Binary("\x00\x01\x02\x03", \MongoDB\BSON\Binary::TYPE_GENERIC)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Binary(random_bytes(16), \MongoDB\BSON\Binary::TYPE_UUID)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\UTCDateTime(1000)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Regex('^foo', 'i')));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Decimal128('3.14159265358979323846')));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Int64(\PHP_INT_MAX)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Timestamp(1, 1234567890)));
+        $this->assertTrue($roundtrip(new \MongoDB\BSON\Javascript('function(x) { return x; }')));
+        $this->assertTrue($roundtrip(\MongoDB\BSON\Document::fromPHP(['_id' => new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011'), 'n' => 1])));
+        $this->assertTrue($roundtrip(\MongoDB\BSON\PackedArray::fromPHP([new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011'), 42])));
+
+        // Shared references: two properties pointing to the same BSON object
+        $oid = new \MongoDB\BSON\ObjectId('507f1f77bcf86cd799439011');
+        $obj = new \stdClass();
+        $obj->a = $oid;
+        $obj->b = $oid;
+        $clone = deepclone_from_array(deepclone_to_array($obj));
+        $this->assertEquals($clone->a, $clone->b);   // same value
+        $this->assertSame($clone->a, $clone->b);     // object identity preserved in the graph
+        $this->assertNotSame($clone->a, $oid);       // but distinct from the original
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
