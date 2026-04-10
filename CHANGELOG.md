@@ -1,6 +1,19 @@
 # 1.34.0
 
-  * Add polyfill for `ext-deepclone`
+  * Add polyfill for the `symfony/deepclone` extension
+  * Add polyfill for `clamp()`
+  * Add polyfill for `bcround()`, `bcceil()` and `bcfloor()`
+  * Add polyfill for `grapheme_levenshtein()`
+  * Add polyfill for `#[DelayedTargetValidation]`
+  * Add polyfill for `Filter\FilterException` and `Filter\FilterFailedException`
+  * Add polyfill for `IntlListFormatter` to ICU polyfill
+  * Add polyfill for `locale_is_right_to_left()`
+  * Add polyfill for PDO driver specific subclasses
+  * Fix PHP 8.5 deprecations
+  * Fix ctype deprecations on PHP 8.1+
+  * Fix PHP 7.2 compatibility of the `#[Deprecated]` polyfill
+  * Fix mbstring polyfill must not raise value errors on PHP 7
+  * Fix `bcdiv()` handling of `DivisionByZeroError`
 
 # 1.33.0
 
