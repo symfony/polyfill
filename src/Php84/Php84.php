@@ -28,12 +28,12 @@ final class Php84
         try {
             $validEncoding = @mb_check_encoding('', $encoding);
         } catch (\ValueError $e) {
-            throw new \ValueError(sprintf('mb_ucfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
+            throw new \ValueError(\sprintf('mb_ucfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
         // BC for PHP 7.3 and lower
         if (!$validEncoding) {
-            throw new \ValueError(sprintf('mb_ucfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
+            throw new \ValueError(\sprintf('mb_ucfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
         $firstChar = mb_substr($string, 0, 1, $encoding);
@@ -51,12 +51,12 @@ final class Php84
         try {
             $validEncoding = @mb_check_encoding('', $encoding);
         } catch (\ValueError $e) {
-            throw new \ValueError(sprintf('mb_lcfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
+            throw new \ValueError(\sprintf('mb_lcfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
         // BC for PHP 7.3 and lower
         if (!$validEncoding) {
-            throw new \ValueError(sprintf('mb_lcfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
+            throw new \ValueError(\sprintf('mb_lcfirst(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $encoding));
         }
 
         $firstChar = mb_substr($string, 0, 1, $encoding);
@@ -138,12 +138,12 @@ final class Php84
         try {
             $validEncoding = @mb_check_encoding('', $encoding);
         } catch (\ValueError $e) {
-            throw new \ValueError(sprintf('%s(): Argument #3 ($encoding) must be a valid encoding, "%s" given', $function, $encoding));
+            throw new \ValueError(\sprintf('%s(): Argument #3 ($encoding) must be a valid encoding, "%s" given', $function, $encoding));
         }
 
         // BC for PHP 7.3 and lower
         if (!$validEncoding) {
-            throw new \ValueError(sprintf('%s(): Argument #3 ($encoding) must be a valid encoding, "%s" given', $function, $encoding));
+            throw new \ValueError(\sprintf('%s(): Argument #3 ($encoding) must be a valid encoding, "%s" given', $function, $encoding));
         }
 
         if ('' === $characters) {
@@ -166,7 +166,7 @@ final class Php84
             $characters = preg_quote($characters);
         }
 
-        $string = preg_replace(sprintf($regex, $characters), '', $string);
+        $string = preg_replace(\sprintf($regex, $characters), '', $string);
 
         if ('UTF-8' === $encoding) {
             return $string;
@@ -189,7 +189,7 @@ final class Php84
             ? '\X'
             : '(?:\r\n|(?:[ -~\x{200C}\x{200D}]|[ᆨ-ᇹ]+|[ᄀ-ᅟ]*(?:[가개갸걔거게겨계고과괘괴교구궈궤귀규그긔기까깨꺄꺠꺼께껴꼐꼬꽈꽤꾀꾜꾸꿔꿰뀌뀨끄끠끼나내냐냬너네녀녜노놔놰뇌뇨누눠눼뉘뉴느늬니다대댜댸더데뎌뎨도돠돼되됴두둬뒈뒤듀드듸디따때땨떄떠떼뗘뗴또똬뙈뙤뚀뚜뚸뛔뛰뜌뜨띄띠라래랴럐러레려례로롸뢔뢰료루뤄뤠뤼류르릐리마매먀먜머메며몌모뫄뫠뫼묘무뭐뭬뮈뮤므믜미바배뱌뱨버베벼볘보봐봬뵈뵤부붜붸뷔뷰브븨비빠빼뺘뺴뻐뻬뼈뼤뽀뽜뽸뾔뾰뿌뿨쀄쀠쀼쁘쁴삐사새샤섀서세셔셰소솨쇄쇠쇼수숴쉐쉬슈스싀시싸쌔쌰썌써쎄쎠쎼쏘쏴쐐쐬쑈쑤쒀쒜쒸쓔쓰씌씨아애야얘어에여예오와왜외요우워웨위유으의이자재쟈쟤저제져졔조좌좨죄죠주줘줴쥐쥬즈즤지짜째쨔쨰쩌쩨쪄쪠쪼쫘쫴쬐쬬쭈쭤쮀쮜쮸쯔쯰찌차채챠챼처체쳐쳬초촤쵀최쵸추춰췌취츄츠츼치카캐캬컈커케켜켸코콰쾌쾨쿄쿠쿼퀘퀴큐크킈키타태탸턔터테텨톄토톼퇘퇴툐투퉈퉤튀튜트틔티파패퍄퍠퍼페펴폐포퐈퐤푀표푸풔풰퓌퓨프픠피하해햐햬허헤혀혜호화홰회효후훠훼휘휴흐희히]?[ᅠ-ᆢ]+|[가-힣])[ᆨ-ᇹ]*|[ᄀ-ᅟ]+|[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}])[\p{Mn}\p{Me}\x{09BE}\x{09D7}\x{0B3E}\x{0B57}\x{0BBE}\x{0BD7}\x{0CC2}\x{0CD5}\x{0CD6}\x{0D3E}\x{0D57}\x{0DCF}\x{0DDF}\x{200C}\x{200D}\x{1D165}\x{1D16E}-\x{1D172}]*|[\p{Cc}\p{Cf}\p{Zl}\p{Zp}])';
 
-        if (!preg_match_all('/'. $regex .'/u', $string, $matches)) {
+        if (!preg_match_all('/'.$regex.'/u', $string, $matches)) {
             return false;
         }
 
@@ -205,13 +205,219 @@ final class Php84
         return $chunks;
     }
 
+    public static function bcceil(string $num): string
+    {
+        if (!is_numeric($num)) {
+            throw new \ValueError('bcceil(): Argument #1 ($num) is not well-formed');
+        }
+
+        return self::bcround($num, 0, \RoundingMode::PositiveInfinity);
+    }
+
     public static function bcdivmod(string $num1, string $num2, ?int $scale = null): ?array
     {
-        if (null === $quot = \bcdiv($num1, $num2, 0)) {
+        if (null === $quot = bcdiv($num1, $num2, 0)) {
             return null;
         }
-        $scale = $scale ?? (\PHP_VERSION_ID >= 70300 ? \bcscale() : (ini_get('bcmath.scale') ?: 0));
+        $scale = $scale ?? (\PHP_VERSION_ID >= 70300 ? bcscale() : (\ini_get('bcmath.scale') ?: 0));
 
-        return [$quot, \bcmod($num1, $num2, $scale)];
+        return [$quot, bcmod($num1, $num2, $scale)];
+    }
+
+    public static function bcfloor(string $num): string
+    {
+        if (!is_numeric($num)) {
+            throw new \ValueError('bcfloor(): Argument #1 ($num) is not well-formed');
+        }
+
+        return self::bcround($num, 0, \RoundingMode::NegativeInfinity);
+    }
+
+    /**
+     * @param \RoundingMode|\RoundingMode::* $mode
+     */
+    public static function bcround(string $num, int $precision = 0, $mode = \RoundingMode::HalfAwayFromZero): string
+    {
+        if (!is_numeric($num)) {
+            throw new \ValueError('bcround(): Argument #1 ($num) is not well-formed');
+        }
+
+        $sign = 1;
+        if ('' !== $num && ('-' === $num[0] || '+' === $num[0])) {
+            if ('-' === $num[0]) {
+                $sign = -1;
+            }
+
+            $num = substr($num, 1);
+        }
+
+        if (false !== strpos($num, '.')) {
+            [$intPart, $fracPart] = array_pad(explode('.', $num, 2), 2, '');
+        } else {
+            $intPart = $num;
+            $fracPart = '';
+        }
+
+        if ('' === $intPart) {
+            $intPart = '0';
+        }
+
+        $intPart = self::trimLeadingZeros($intPart);
+        $fracPart = (string) $fracPart;
+
+        if ($precision >= 0) {
+            $fracLength = \strlen($fracPart);
+
+            if ($precision <= $fracLength) {
+                $scaledInt = $intPart.(string) substr($fracPart, 0, $precision);
+                $scaledFrac = (string) substr($fracPart, $precision);
+            } else {
+                $scaledInt = $intPart.$fracPart.str_repeat('0', $precision - $fracLength);
+                $scaledFrac = '';
+            }
+        } else {
+            $shift = -$precision;
+            $intLength = \strlen($intPart);
+
+            if ($shift <= $intLength) {
+                $splitPos = $intLength - $shift;
+                $scaledInt = substr($intPart, 0, $splitPos);
+                $scaledInt = '' === $scaledInt ? '0' : $scaledInt;
+                $scaledFrac = substr($intPart, $splitPos).$fracPart;
+            } else {
+                $scaledInt = '0';
+                $scaledFrac = str_repeat('0', $shift - $intLength).$intPart.$fracPart;
+            }
+        }
+
+        $roundedInt = self::roundIntegerPart($scaledInt, $scaledFrac, $sign, $mode);
+        $isZero = '' === trim($roundedInt, '0');
+        $absResult = self::formatRoundedDigits($roundedInt, $precision);
+
+        if (-1 === $sign && !$isZero) {
+            $absResult = '-'.$absResult;
+        }
+
+        return $absResult;
+    }
+
+    private static function roundIntegerPart(string $intPart, string $fracPart, int $sign, $mode): string
+    {
+        $intPart = self::trimLeadingZeros($intPart);
+
+        if ('' === $fracPart || '' === trim($fracPart, '0')) {
+            return $intPart;
+        }
+
+        $firstDigit = $fracPart[0];
+        $tail = (string) substr($fracPart, 1);
+        $tailNonZero = '' !== trim($tail, '0');
+        $isGreaterThanHalf = $firstDigit > '5' || ('5' === $firstDigit && $tailNonZero);
+        $isExactlyHalf = '5' === $firstDigit && !$tailNonZero;
+        $shouldIncrease = false;
+
+        switch ($mode) {
+            case \RoundingMode::TowardsZero:
+                break;
+
+            case \RoundingMode::AwayFromZero:
+                $shouldIncrease = true;
+                break;
+
+            case \RoundingMode::PositiveInfinity:
+                $shouldIncrease = $sign > 0;
+                break;
+
+            case \RoundingMode::NegativeInfinity:
+                $shouldIncrease = $sign < 0;
+                break;
+
+            case \RoundingMode::HalfAwayFromZero:
+                $shouldIncrease = $isGreaterThanHalf || $isExactlyHalf;
+                break;
+
+            case \RoundingMode::HalfTowardsZero:
+                $shouldIncrease = $isGreaterThanHalf;
+                break;
+
+            case \RoundingMode::HalfEven:
+                if ($isGreaterThanHalf) {
+                    $shouldIncrease = true;
+                } elseif ($isExactlyHalf && 1 === self::lastDigit($intPart) % 2) {
+                    $shouldIncrease = true;
+                }
+                break;
+
+            case \RoundingMode::HalfOdd:
+                if ($isGreaterThanHalf) {
+                    $shouldIncrease = true;
+                } elseif ($isExactlyHalf && 0 === self::lastDigit($intPart) % 2) {
+                    $shouldIncrease = true;
+                }
+                break;
+        }
+
+        if ($shouldIncrease) {
+            $intPart = self::incrementDigits($intPart);
+        }
+
+        return self::trimLeadingZeros($intPart);
+    }
+
+    private static function formatRoundedDigits(string $roundedInt, int $precision): string
+    {
+        if ($precision > 0) {
+            if (\strlen($roundedInt) <= $precision) {
+                $roundedInt = str_pad($roundedInt, $precision + 1, '0', \STR_PAD_LEFT);
+            }
+
+            $intDigits = substr($roundedInt, 0, -$precision);
+            $fracDigits = substr($roundedInt, -$precision);
+
+            $intDigits = self::trimLeadingZeros('' === $intDigits ? '0' : $intDigits);
+            $fracDigits = str_pad($fracDigits, $precision, '0', \STR_PAD_LEFT);
+
+            return $intDigits.'.'.$fracDigits;
+        }
+
+        if (0 === $precision) {
+            return self::trimLeadingZeros($roundedInt);
+        }
+
+        $shift = -$precision;
+        $digits = $roundedInt.str_repeat('0', $shift);
+
+        return self::trimLeadingZeros($digits);
+    }
+
+    private static function incrementDigits(string $digits): string
+    {
+        $digits = '' === $digits ? '0' : $digits;
+        $index = \strlen($digits) - 1;
+        $result = $digits;
+        $carry = 1;
+
+        while ($index >= 0 && $carry) {
+            $value = \ord($result[$index]) - 48 + $carry;
+            $carry = $value >= 10 ? 1 : 0;
+            $result[$index] = \chr(48 + ($value % 10));
+            --$index;
+        }
+
+        return $carry ? '1'.$result : $result;
+    }
+
+    private static function trimLeadingZeros(string $digits): string
+    {
+        $digits = ltrim($digits, '0');
+
+        return '' === $digits ? '0' : $digits;
+    }
+
+    private static function lastDigit(string $digits): int
+    {
+        $length = \strlen($digits);
+
+        return $length ? \ord($digits[$length - 1]) - 48 : 0;
     }
 }
