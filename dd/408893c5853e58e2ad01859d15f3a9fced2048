@@ -1,0 +1,39 @@
+---------------------------------------------------------------------------
+
+by Ayesh at 2025-06-28T19:30:39Z
+
+// cc @BogdanUngureanu, I could use your inputs/review here :)
+
+---------------------------------------------------------------------------
+
+by stof at 2025-06-30T07:37:18Z
+
+This should be added in symfony/polyfill-intl-icu (with the other formatters) instead of being a new package IMO
+
+> It only supports `en` locale. However, PHP applications that require this package can extend the namespaced polyfill
+> (`\Symfony\Polyfill\Intl\ListFormatter\IntlListFormatter`) and add their own list patterns by extending the static variable (`\Symfony\Polyfill\Intl\ListFormatter\IntlListFormatter::$listPatterns`) that holds these patterns.
+
+Extending the internal class is not covered by BC and is not a supported use case.
+Projects wanting the full support for ICU formatting should install ext-intl.
+
+---------------------------------------------------------------------------
+
+by stof at 2025-09-19T16:44:05Z
+
+@Ayesh do you plan to finish this PR (by taking review comments into account) ?
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2025-09-19T17:11:57Z
+
+Thank you for your review Christophe. I will try and submit fixed addressing the reviewed points by this weekend.
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2025-09-22T09:01:02Z
+
+Thank you for your reviews.
+
+I changed the PR, so that this now proposes to add `IntlListFormatter` to the ICU package. I also agree that it makes more sense, as opposed to having a separate installable package.
+
+I also made it so that the class is self-contained, and not extendable anymore (making `protected` elements `private`, formatting pattern changed to a const, etc).
