@@ -1,0 +1,61 @@
+---------------------------------------------------------------------------
+
+by jnoordsij at 2025-10-16T13:00:51Z
+
+> Should we add the static connect method to every child class, since we can polyfill it there? How does this method behave when given a DSN for another driver and when it's called on a child class?
+
+We could, but that feels a bit off to me. The whole idea of the `PDO::connect` static method is that it is able to detect the type of driver and thus subclass to use from the provided dsn, making it generic. Calling e.g. `\Pdo\Mysqlite::connect(...)` instead of just `new \Pdo\Mysqlite(...)` makes little sense to me, and probably should not be something to actively encourage in any userland code?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-10-16T13:12:37Z
+
+About the connect method on child classes, I'd still add it, for completness of the polyfill
+
+---------------------------------------------------------------------------
+
+by jnoordsij at 2025-10-16T13:51:17Z
+
+I probably will look into the last bits next week; if anyone is eager to finalize on the `connect` method or think of additional tests to throw in here, feel free to add them.
+
+---------------------------------------------------------------------------
+
+by derrabus at 2025-10-16T14:04:53Z
+
+> Calling e.g. `\Pdo\Mysqlite::connect(...)` instead of just `new \Pdo\Mysqlite(...)` makes little sense to me, and probably should not be something to actively encourage in any userland code?
+
+But if you are on PHP 8.4, would you really call the constructor of those subclasses instead of `PDO::connect()`? So either way, we're encouraging userland code that is different with the polyfill than with the real thing, mainly because we cannot polyfill `PDO::connect()`. 😕
+
+---------------------------------------------------------------------------
+
+by jnoordsij at 2025-10-20T09:09:03Z
+
+> But if you are on PHP 8.4, would you really call the constructor of those subclasses instead of `PDO::connect()`? So either way, we're encouraging userland code that is different with the polyfill than with the real thing, mainly because we cannot polyfill `PDO::connect()`. 😕
+
+To be fair, if one is currently only using something like `new PDO("sqlite:foo");`, then migrating towards `new Pdo\Sqlite("sqlite:foo");` does not seem like a weird strategy to me. In particular for projects were the driver class is already predetermined and you want to have the added benefit of stricter types for static analysis, one could prefer this over `PDO::connect` which will from a static point of view only ever return `PDO`. However I do agree that the main usecase would still be to used `PDO::connect`, which unfortunately is not something we can provide.
+
+---------------------------------------------------------------------------
+
+by jnoordsij at 2025-10-20T09:25:14Z
+
+I think this should be complete now as is. Additional feature-like tests could be nice, but on the other hand are probably very hard to implement in practice without any real database and I think the current set should suffice to prove this should work in practice. In particular the migration towards 'polyfilled' constants should be very safe to do with this.
+
+---------------------------------------------------------------------------
+
+by jnoordsij at 2025-11-12T08:43:05Z
+
+@nicolas-grekas with PHP 8.5 stable coming up next week, is there any chance of aiming to review and release this somewhere within that timeframe?
+
+---------------------------------------------------------------------------
+
+by jnoordsij at 2025-11-12T10:41:10Z
+
+> Can you please proceed with these CS changes on all classes?
+
+Done!
+
+---------------------------------------------------------------------------
+
+by jnoordsij at 2026-04-10T15:38:35Z
+
+Rebased to fix conflicts
