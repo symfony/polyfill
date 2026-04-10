@@ -25,6 +25,7 @@ jobs:
                     - php: '8.3'
                     - php: '8.4'
                     - php: '8.5'
+                    - php: '8.6'
             fail-fast: false
 
         steps:
@@ -44,7 +45,7 @@ jobs:
                 if: ${{ matrix.php >= '8.2' }}
                 run: |
                     curl -sLO https://github.com/php/pie/releases/latest/download/pie.phar
-                    sudo php pie.phar install symfony/deepclone
+                    sudo BOX_REQUIREMENT_CHECKER=0 php pie.phar install symfony/deepclone
                     php --ri deepclone || echo "extension=deepclone" | sudo tee "$(php -r 'echo PHP_CONFIG_FILE_SCAN_DIR;')/99-deepclone.ini"
                     php -m | grep -q deepclone && echo "deepclone loaded" || echo "deepclone NOT loaded"
 
