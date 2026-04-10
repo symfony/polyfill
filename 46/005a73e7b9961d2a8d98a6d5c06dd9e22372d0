@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by stof at 2025-06-24T14:07:01Z
+
+our `Locale` polyfill in `symfony/polyfill-intl-icu` should also support `Locale::isRightToLeft` to support the case of projects requiring PHP 8.5+ but making ext-intl optional thanks to the polyfill (copying the same implementation there).
