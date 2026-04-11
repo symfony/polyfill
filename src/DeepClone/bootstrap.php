@@ -15,9 +15,6 @@ if (extension_loaded('deepclone')) {
     return;
 }
 
-if (!function_exists('deepclone_to_array')) {
-    function deepclone_to_array(mixed $value, ?array $allowedClasses = null): array { return p\DeepClone::deepclone_to_array($value, $allowedClasses); }
-}
-if (!function_exists('deepclone_from_array')) {
-    function deepclone_from_array(array $data, ?array $allowedClasses = null): mixed { return p\DeepClone::deepclone_from_array($data, $allowedClasses); }
+if (\PHP_VERSION_ID >= 80200) {
+    require __DIR__.'/bootstrap82.php';
 }

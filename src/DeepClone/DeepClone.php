@@ -33,16 +33,17 @@ final class DeepClone
     private static array $instantiableWithoutConstructor = [];
     private static array $needsFullUnserialize = [];
     private static array $hydrators = [];
+    private static array $simpleHydrators = [];
     private static array $scopeMaps = [];
     private static array $protos = [];
     private static array $classInfo = [];
     private static \stdClass $sentinel;
 
     /**
-     * @param list<string>|null $allowedClasses Classes that may be serialized
-     *                                          (null = all, [] = none)
+     * @param list<string>|null $allowed_classes Classes that may be serialized
+     *                                           (null = all, [] = none)
      */
-    public static function deepclone_to_array(mixed $value, ?array $allowedClasses = null): array
+    public static function deepclone_to_array(mixed $value, ?array $allowed_classes = null): array
     {
         if (\is_resource($value)) {
             throw new \DeepClone\NotInstantiableException('Type "'.get_resource_type($value).' resource" is not instantiable.');
@@ -53,11 +54,11 @@ final class DeepClone
         }
 
         $allowedSet = null;
-        if (null !== $allowedClasses) {
+        if (null !== $allowed_classes) {
             $allowedSet = [];
-            foreach ($allowedClasses as $cls) {
+            foreach ($allowed_classes as $cls) {
                 if (!\is_string($cls)) {
-                    throw new \ValueError('deepclone_to_array(): Argument $allowedClasses must be an array of class names, '.self::valueName($cls).' given');
+                    throw new \ValueError('deepclone_to_array(): Argument $allowed_classes must be an array of class names, '.self::valueName($cls).' given');
                 }
                 $allowedSet[strtolower($cls)] = true;
             }
@@ -242,10 +243,10 @@ final class DeepClone
     }
 
     /**
-     * @param list<string>|null $allowedClasses Classes that may be instantiated
-     *                                          (null = all, [] = none)
+     * @param list<string>|null $allowed_classes Classes that may be instantiated
+     *                                           (null = all, [] = none)
      */
-    public static function deepclone_from_array(array $data, ?array $allowedClasses = null): mixed
+    public static function deepclone_from_array(array $data, ?array $allowed_classes = null): mixed
     {
         if (\array_key_exists('value', $data)) {
             return $data['value'];
@@ -286,8 +287,8 @@ final class DeepClone
         }
         $numClasses = \count($classes);
 
-        if (null !== $allowedClasses) {
-            $allowed = array_change_key_case(array_flip($allowedClasses));
+        if (null !== $allowed_classes) {
+            $allowed = array_change_key_case(array_flip($allowed_classes));
             foreach ($classes as $cls) {
                 if (!isset($allowed[strtolower($cls)])) {
                     throw new \ValueError('deepclone_from_array(): class "'.$cls.'" is not allowed');
@@ -365,8 +366,104 @@ final class DeepClone
             $data['refs'] ?? [],
             $data['mask'] ?? null,
             $data['refMasks'] ?? [],
-            $allowedClasses,
+            $allowed_classes,
         );
+    }
+
+    public static function deepclone_hydrate(object|string $object_or_class, array $scoped_vars = [], array $mangled_vars = []): object
+    {
+        if (\is_string($object_or_class)) {
+            if (!\array_key_exists($object_or_class, self::$cloneable)) {
+                self::getClassReflector($object_or_class);
+            }
+            $r = self::$reflectors[$object_or_class] ?? new \ReflectionClass($object_or_class);
+            if (self::$cloneable[$object_or_class]) {
+                $object = clone self::$prototypes[$object_or_class];
+            } elseif (self::$instantiableWithoutConstructor[$object_or_class]) {
+                $object = $r->newInstanceWithoutConstructor();
+            } elseif (null === self::$prototypes[$object_or_class]) {
+                throw new \DeepClone\NotInstantiableException('Class "'.$object_or_class.'" is not instantiable.');
+            } elseif ($r->implementsInterface('Serializable') && !method_exists($object_or_class, '__unserialize')) {
+                $object = unserialize('C:'.\strlen($object_or_class).':"'.$object_or_class.'":0:{}');
+            } else {
+                $object = unserialize('O:'.\strlen($object_or_class).':"'.$object_or_class.'":0:{}');
+            }
+        } else {
+            $r = null;
+            $object = $object_or_class;
+        }
+
+        if ($mangled_vars) {
+            $class = $object::class;
+            $r ??= new \ReflectionClass($class);
+
+            foreach ($mangled_vars as $name => &$value) {
+                if (!\is_string($name)) {
+                    throw new \ValueError('deepclone_hydrate(): Argument #3 ($mangled_vars) must have only string keys');
+                }
+                if ("\0" === $name) {
+                    $scoped_vars[$class][$name] = &$value;
+                    continue;
+                }
+                if (str_starts_with($name, "\0")) {
+                    $sep = strpos($name, "\0", 1);
+                    if (false === $sep) {
+                        continue;
+                    }
+                    $scopeName = substr($name, 1, $sep - 1);
+                    $realName = substr($name, $sep + 1);
+
+                    if (\str_contains($realName, "\0")) {
+                        throw new \ValueError('deepclone_hydrate(): Argument #3 ($mangled_vars) contains an invalid mangled key');
+                    }
+
+                    if ('*' === $scopeName) {
+                        $scopeName = $r->hasProperty($realName) ? $r->getProperty($realName)->class : $class;
+                    }
+                } else {
+                    $realName = $name;
+                    $scopeName = $r->hasProperty($name) ? $r->getProperty($name)->class : $class;
+                }
+
+                $scoped_vars[$scopeName][$realName] = &$value;
+            }
+            unset($value);
+        }
+
+        $obj_class = $object::class;
+        foreach ($scoped_vars as $scope => $properties) {
+            if (!\is_array($properties)) {
+                throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) must have only array values, %s given for key "%s"', get_debug_type($properties), $scope));
+            }
+            if ('stdClass' !== $scope && $scope !== $obj_class && (!is_a($obj_class, $scope, true) || interface_exists($scope, false))) {
+                throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) scope "%s" is not a parent of "%s"', $scope, $obj_class));
+            }
+            if (isset($properties["\0"]) && \is_array($properties["\0"])) {
+                $special = $properties["\0"];
+                unset($properties["\0"]);
+
+                if ($object instanceof \SplObjectStorage) {
+                    for ($i = 0, $c = \count($special); $i + 1 < $c; $i += 2) {
+                        $object[$special[$i]] = $special[$i + 1];
+                    }
+                } elseif ($object instanceof \ArrayObject || $object instanceof \ArrayIterator) {
+                    (new \ReflectionClass($object))->getConstructor()->invokeArgs($object, $special);
+                }
+            }
+            foreach ($properties as $name => $v) {
+                if (!\is_string($name)) {
+                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) scope "%s" must have only string keys', $scope));
+                }
+                if (\str_contains($name, "\0")) {
+                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) scope "%s" contains an invalid property name; use bare property names in $scoped_vars, or pass mangled keys via $mangled_vars', $scope));
+                }
+            }
+            if ($properties) {
+                (self::$simpleHydrators[$scope] ??= self::getSimpleHydrator($scope))($properties, $object);
+            }
+        }
+
+        return $object;
     }
 
     /**
@@ -1002,7 +1099,7 @@ final class DeepClone
 
         if ($instantiableWithoutConstructor) {
             $proto = $reflector->newInstanceWithoutConstructor();
-        } elseif (!$isClass || $reflector->isAbstract()) {
+        } elseif (!$isClass || $reflector->isAbstract() || $reflector->isEnum()) {
             throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
         } elseif ($reflector->name !== $class) {
             $reflector = self::$reflectors[$name = $reflector->name] ??= self::getClassReflector($name, false, $cloneable);
@@ -1180,6 +1277,123 @@ final class DeepClone
                 foreach ($values as $i => $v) {
                     $objects[$i]->$name = $v;
                 }
+            }
+        };
+    }
+
+    private static function getSimpleHydrator(string $class): \Closure
+    {
+        $baseHydrator = self::$simpleHydrators['stdClass'] ??= static function ($properties, $object) {
+            foreach ($properties as $name => &$value) {
+                $object->$name = $value;
+                $object->$name = &$value;
+            }
+        };
+
+        switch ($class) {
+            case 'stdClass':
+                return $baseHydrator;
+
+            case 'TypeError':
+                $class = 'Error';
+                break;
+
+            case 'ErrorException':
+                $class = 'Exception';
+                break;
+
+            case 'SplObjectStorage':
+                return static function ($properties, $object) {
+                    foreach ($properties as $name => &$value) {
+                        if ("\0" !== $name) {
+                            $object->$name = $value;
+                            $object->$name = &$value;
+                            continue;
+                        }
+                        for ($i = 0; $i < \count($value); ++$i) {
+                            $object[$value[$i]] = $value[++$i];
+                        }
+                    }
+                };
+        }
+
+        if (!class_exists($class) && !interface_exists($class, false) && !trait_exists($class, false)) {
+            throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
+        }
+        $classReflector = new \ReflectionClass($class);
+
+        switch ($class) {
+            case 'ArrayIterator':
+            case 'ArrayObject':
+                $constructor = $classReflector->getConstructor()->invokeArgs(...);
+
+                return static function ($properties, $object) use ($constructor) {
+                    foreach ($properties as $name => &$value) {
+                        if ("\0" === $name) {
+                            $constructor($object, $value);
+                        } else {
+                            $object->$name = $value;
+                            $object->$name = &$value;
+                        }
+                    }
+                };
+        }
+
+        if (!$classReflector->isInternal()) {
+            $notByRef = new \stdClass();
+            foreach ($classReflector->getProperties() as $propertyReflector) {
+                if ($propertyReflector->isStatic()) {
+                    continue;
+                }
+                if (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
+                    $notByRef->{$propertyReflector->name} = $propertyReflector->setRawValue(...);
+                } elseif ($propertyReflector->isReadOnly()) {
+                    $notByRef->{$propertyReflector->name} = static function ($object, $value) use ($propertyReflector) {
+                        if (!$propertyReflector->isInitialized($object)) {
+                            $propertyReflector->setValue($object, $value);
+                        }
+                    };
+                }
+            }
+
+            return (function ($properties, $object) {
+                $notByRef = (array) $this;
+
+                foreach ($properties as $name => &$value) {
+                    if (!$noRef = $notByRef[$name] ?? false) {
+                        $object->$name = $value;
+                        $object->$name = &$value;
+                    } elseif (true !== $noRef) {
+                        $noRef($object, $value);
+                    } else {
+                        $object->$name = $value;
+                    }
+                }
+            })->bindTo($notByRef, $class);
+        }
+
+        if ($classReflector->name !== $class) {
+            return self::$simpleHydrators[$classReflector->name] ??= self::getSimpleHydrator($classReflector->name);
+        }
+
+        $propertySetters = [];
+        foreach ($classReflector->getProperties() as $propertyReflector) {
+            if (!$propertyReflector->isStatic()) {
+                $propertySetters[$propertyReflector->name] = $propertyReflector->setValue(...);
+            }
+        }
+
+        if (!$propertySetters) {
+            return $baseHydrator;
+        }
+
+        return static function ($properties, $object) use ($propertySetters) {
+            foreach ($properties as $name => $value) {
+                if ($setValue = $propertySetters[$name] ?? null) {
+                    $setValue($object, $value);
+                    continue;
+                }
+                $object->$name = $value;
             }
         };
     }
