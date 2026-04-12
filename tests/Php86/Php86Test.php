@@ -35,7 +35,7 @@ class Php86Test extends TestCase
 
     public function testClampNanReturn(): void
     {
-        $this->assertTrue(is_nan(clamp(NAN, 4, 6)));
+        $this->assertNan(clamp(\NAN, 4, 6));
     }
 
     public static function provideValidClampInput(): array
@@ -172,5 +172,15 @@ class Php86Test extends TestCase
                 'clamp(): Argument #2 ($min) must be smaller than or equal to argument #3 ($max)',
             ],
         ];
+    }
+
+    /**
+     * @requires PHP 8.1
+     */
+    public function testSortDirectionEnum()
+    {
+        $this->assertTrue(enum_exists(\SortDirection::class), 'SortDirection enum exists');
+        $this->assertInstanceOf(\UnitEnum::class, \SortDirection::Ascending);
+        $this->assertInstanceOf(\UnitEnum::class, \SortDirection::Descending);
     }
 }
