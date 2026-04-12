@@ -15,6 +15,10 @@ if (\PHP_VERSION_ID >= 80600) {
     return;
 }
 
+if (!defined('ARRAY_FILTER_USE_VALUE')) {
+    define('ARRAY_FILTER_USE_VALUE', 0);
+}
+
 if (\PHP_VERSION_ID >= 80000) {
     return require __DIR__.'/bootstrap80.php';
 }
