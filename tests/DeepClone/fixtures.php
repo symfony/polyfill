@@ -185,3 +185,63 @@ class DeepCloneReadonlyFixture
     ) {
     }
 }
+
+class HydrateFoo
+{
+    protected $prot;
+    private $priv;
+    public readonly int $ro;
+}
+
+#[\AllowDynamicProperties]
+class HydrateBar extends HydrateFoo
+{
+    private $priv;
+}
+
+class HydrateBase
+{
+    private string $secret = '';
+    public function getSecret(): string { return $this->secret; }
+}
+
+class HydrateChild extends HydrateBase
+{
+    protected int $num = 0;
+    public string $pub = '';
+    public function getNum(): int { return $this->num; }
+}
+
+class HydrateReadonly
+{
+    public string $status = 'new';
+    private readonly int $value;
+    public function __construct(int $value) { $this->value = $value; }
+    public function getValue(): int { return $this->value; }
+}
+
+class HydrateGP
+{
+    private string $secret = '';
+    public function getSecret(): string { return $this->secret; }
+}
+
+class HydrateP extends HydrateGP
+{
+    private int $mid = 0;
+    public function getMid(): int { return $this->mid; }
+}
+
+class HydrateC extends HydrateP
+{
+    public string $pub = '';
+}
+
+enum HydrateColor
+{
+    case Red;
+}
+
+trait HydrateTrait
+{
+}

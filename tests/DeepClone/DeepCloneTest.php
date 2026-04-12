@@ -22,10 +22,6 @@ if (\PHP_VERSION_ID >= 80100) {
  */
 class DeepCloneTest extends TestCase
 {
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_to_array.phpt — wire-format shape assertions
-    // ─────────────────────────────────────────────────────────────────────
-
     public function testToArrayIntIsStatic()
     {
         $this->assertSame(['value' => 42], deepclone_to_array(42));
@@ -161,10 +157,6 @@ class DeepCloneTest extends TestCase
 
         $this->assertSame($big, $d['properties']['stdClass']['data'][0]);
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_from_array.phpt — happy-path reconstruction
-    // ─────────────────────────────────────────────────────────────────────
 
     public function testFromArrayScalarInt()
     {
@@ -314,10 +306,6 @@ class DeepCloneTest extends TestCase
         $this->assertSame(1, $c2[1]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_from_array_validation.phpt — malformed-payload rejection
-    // ─────────────────────────────────────────────────────────────────────
-
     public function testFromArrayRejectsMissingClasses()
     {
         $this->expectException(\ValueError::class);
@@ -437,10 +425,6 @@ class DeepCloneTest extends TestCase
         deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => -99]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_closures.phpt
-    // ─────────────────────────────────────────────────────────────────────
-
     public function testClosureGlobalFunctionWireFormat()
     {
         $d = deepclone_to_array(\Closure::fromCallable('strlen'));
@@ -497,10 +481,6 @@ class DeepCloneTest extends TestCase
         $this->assertSame('private', $clone());
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_datetime.phpt
-    // ─────────────────────────────────────────────────────────────────────
-
     public function testDateTimeRoundTrip()
     {
         $dt = \DateTime::createFromFormat('U', '0');
@@ -543,10 +523,6 @@ class DeepCloneTest extends TestCase
         $this->assertInstanceOf(\DateInterval::class, $clone);
         $this->assertSame(7, $clone->d);
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_enums.phpt
-    // ─────────────────────────────────────────────────────────────────────
 
     public function testEnumIsStaticValue()
     {
@@ -595,10 +571,6 @@ class DeepCloneTest extends TestCase
         $this->assertSame(DeepCloneColor::Blue, $clone[1]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_error_scope.phpt
-    // ─────────────────────────────────────────────────────────────────────
-
     public function testErrorPropertiesStayUnderErrorScope()
     {
         $e = new \Error('test');
@@ -636,10 +608,6 @@ class DeepCloneTest extends TestCase
         $this->assertSame('round-trip', $clone->getMessage());
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_serialize.phpt — __serialize / __unserialize / __wakeup / __sleep
-    // ─────────────────────────────────────────────────────────────────────
-
     public function testSerializeMethodWireFormatAndRoundTrip()
     {
         $o = new DeepCloneSerializeFixture('test', 42);
@@ -676,10 +644,6 @@ class DeepCloneTest extends TestCase
         $this->assertArrayHasKey('keep', $d['properties']['stdClass']);
         $this->assertArrayNotHasKey('skip', $d['properties']['stdClass']);
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_serialize_edge.phpt
-    // ─────────────────────────────────────────────────────────────────────
 
     public function testSerializeWithoutUnserializeScopedProperties()
     {
@@ -751,10 +715,6 @@ class DeepCloneTest extends TestCase
         $this->assertArrayNotHasKey('Symfony\\Polyfill\\Tests\\DeepClone\\DeepCloneParentSleep', $d['properties'] ?? []);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_typed_objects.phpt — visibility + inheritance + readonly
-    // ─────────────────────────────────────────────────────────────────────
-
     public function testTypedObjectParentClass()
     {
         $o = new DeepCloneParentClass();
@@ -800,10 +760,6 @@ class DeepCloneTest extends TestCase
         $this->assertSame('test', $clone->name);
         $this->assertSame(42, $clone->value);
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // deepclone_doc_behaviors.phpt
-    // ─────────────────────────────────────────────────────────────────────
 
     public function testDocBehaviorsMissingClassThrowsClassNotFound()
     {
@@ -1102,5 +1058,328 @@ class DeepCloneTest extends TestCase
         $this->assertNotSame($b, $clone);
         $this->assertSame($b->name, $clone->name);
         $this->assertSame($b->value, $clone->value);
+    }
+
+    public function testHydrateScopedInstantiate()
+    {
+        $obj = deepclone_hydrate(HydrateChild::class, [
+            HydrateBase::class => ['secret' => 'hidden'],
+            HydrateChild::class => ['num' => 42],
+            'stdClass' => ['pub' => 'visible'],
+        ]);
+
+        $this->assertInstanceOf(HydrateChild::class, $obj);
+        $this->assertSame('hidden', $obj->getSecret());
+        $this->assertSame(42, $obj->getNum());
+        $this->assertSame('visible', $obj->pub);
+    }
+
+    public function testHydrateScopedExistingObject()
+    {
+        $existing = new HydrateChild();
+        $result = deepclone_hydrate($existing, [
+            HydrateBase::class => ['secret' => 'updated'],
+            'stdClass' => ['pub' => 'changed'],
+        ]);
+
+        $this->assertSame($existing, $result);
+        $this->assertSame('updated', $result->getSecret());
+        $this->assertSame('changed', $result->pub);
+        $this->assertSame(0, $result->getNum());
+    }
+
+    public function testHydrateScopedStdClass()
+    {
+        $o = deepclone_hydrate('stdClass', ['stdClass' => ['x' => 1, 'y' => 'hi']]);
+
+        $this->assertSame(1, $o->x);
+        $this->assertSame('hi', $o->y);
+    }
+
+    public function testHydrateSplObjectStorage()
+    {
+        $s = new \SplObjectStorage();
+        $o1 = new \stdClass();
+        $o2 = new \stdClass();
+
+        $result = deepclone_hydrate($s, ['stdClass' => ["\0" => [$o1, 'info1', $o2, 'info2']]]);
+
+        $this->assertSame($s, $result);
+        $this->assertSame(2, $result->count());
+        $result->rewind();
+        $this->assertSame($o1, $result->current());
+        $this->assertSame('info1', $result->getInfo());
+    }
+
+    public function testHydrateArrayObject()
+    {
+        $ao = deepclone_hydrate('ArrayObject', [
+            'stdClass' => ["\0" => [['x' => 1, 'y' => 2], \ArrayObject::ARRAY_AS_PROPS]],
+        ]);
+
+        $this->assertInstanceOf(\ArrayObject::class, $ao);
+        $this->assertSame(1, $ao['x']);
+        $this->assertTrue($ao->getFlags() === \ArrayObject::ARRAY_AS_PROPS);
+    }
+
+    public function testHydrateArrayIterator()
+    {
+        $ai = deepclone_hydrate('ArrayIterator', [
+            'stdClass' => ["\0" => [['a', 'b', 'c']]],
+        ]);
+
+        $this->assertInstanceOf(\ArrayIterator::class, $ai);
+        $this->assertCount(3, $ai);
+    }
+
+    public function testHydrateFlatStdClass()
+    {
+        $this->assertEquals((object) ['p' => 123], deepclone_hydrate('stdClass', [], ['p' => 123]));
+    }
+
+    public function testHydrateFlatCaseInsensitiveClass()
+    {
+        $this->assertEquals((object) ['p' => 123], deepclone_hydrate('STDcLASS', [], ['p' => 123]));
+    }
+
+    public function testHydrateFlatArrayObject()
+    {
+        $this->assertEquals(new \ArrayObject([123]), deepclone_hydrate(\ArrayObject::class, [], ["\0" => [[123]]]));
+    }
+
+    public function testHydrateFlatSplObjectStorage()
+    {
+        $o1 = new \stdClass();
+        $s = deepclone_hydrate('SplObjectStorage', [], ["\0" => [$o1, 'data']]);
+
+        $this->assertSame(1, $s->count());
+    }
+
+    public function testHydrateFlatInheritanceMixed()
+    {
+        $actual = (array) deepclone_hydrate(HydrateBar::class, [HydrateFoo::class => ['priv' => 234]], [
+            'dyn' => 456, 'ro' => 567, 'prot' => 345, 'priv' => 123,
+        ]);
+        ksort($actual);
+
+        $expected = [
+            "\0*\0prot" => 345,
+            "\0".HydrateBar::class."\0priv" => 123,
+            "\0".HydrateFoo::class."\0priv" => 234,
+            'dyn' => 456,
+            'ro' => 567,
+        ];
+
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testHydrateFlatMangledKeys()
+    {
+        $expected = [
+            "\0*\0prot" => 345,
+            "\0".HydrateBar::class."\0priv" => 123,
+            "\0".HydrateFoo::class."\0priv" => 234,
+            'dyn' => 456,
+            'ro' => 567,
+        ];
+
+        $actual = (array) deepclone_hydrate(HydrateBar::class, [], $expected);
+        ksort($actual);
+
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testHydrateFlatExceptionTrace()
+    {
+        $e = deepclone_hydrate('Exception', [], ['trace' => [234]]);
+
+        $this->assertSame([234], $e->getTrace());
+    }
+
+    public function testHydrateFlatReadonlyInitialized()
+    {
+        $obj = new HydrateReadonly(123);
+        $obj = deepclone_hydrate($obj, [], ['value' => 456, 'status' => 'hydrated']);
+
+        // C ext overwrites via OBJ_PROP; polyfill respects readonly
+        if (\extension_loaded('deepclone')) {
+            $this->assertSame(456, $obj->getValue());
+        } else {
+            $this->assertSame(123, $obj->getValue());
+        }
+        $this->assertSame('hydrated', $obj->status);
+    }
+
+    public function testHydrateFlatReadonlyUninitialized()
+    {
+        $obj = deepclone_hydrate(HydrateReadonly::class, [HydrateReadonly::class => ['value' => 456]]);
+
+        $this->assertSame(456, $obj->getValue());
+    }
+
+    public function testHydratePhpReferences()
+    {
+        $properties = ['p1' => 1];
+        $properties['p2'] = &$properties['p1'];
+
+        $obj = deepclone_hydrate('stdClass', [], $properties);
+
+        $this->assertSame(1, $obj->p1);
+        $this->assertSame(1, $obj->p2);
+
+        $properties['p1'] = 2;
+        $this->assertSame(2, $obj->p1);
+        $this->assertSame(2, $obj->p2);
+    }
+
+    public function testHydrateScopedReferences()
+    {
+        $v = 'hello';
+        $obj = deepclone_hydrate('stdClass', ['stdClass' => ['x' => &$v, 'y' => &$v]]);
+
+        $v = 'world';
+        $this->assertSame('world', $obj->x);
+        $this->assertSame('world', $obj->y);
+    }
+
+    public function testHydrateClassNotFound()
+    {
+        $this->expectException(\DeepClone\ClassNotFoundException::class);
+        $this->expectExceptionMessage('NoSuchClass99');
+        deepclone_hydrate('NoSuchClass99');
+    }
+
+    public function testHydrateAbstractClass()
+    {
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        $this->expectExceptionMessage('SplHeap');
+        deepclone_hydrate('SplHeap');
+    }
+
+    public function testHydrateInterface()
+    {
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        $this->expectExceptionMessage('Throwable');
+        deepclone_hydrate('Throwable');
+    }
+
+    public function testHydrateNoArgInstantiate()
+    {
+        $o = deepclone_hydrate('stdClass');
+
+        $this->assertInstanceOf(\stdClass::class, $o);
+    }
+
+    public function testHydrateEnum()
+    {
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        deepclone_hydrate(HydrateColor::class);
+    }
+
+    public function testHydrateTrait()
+    {
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        deepclone_hydrate(HydrateTrait::class);
+    }
+
+    public function testHydrateGrandparentPrivate()
+    {
+        $o = deepclone_hydrate(HydrateC::class, [], [
+            "\0".HydrateGP::class."\0secret" => 'gp_val',
+            "\0".HydrateP::class."\0mid" => 42,
+            'pub' => 'hi',
+        ]);
+
+        $this->assertSame('gp_val', $o->getSecret());
+        $this->assertSame(42, $o->getMid());
+        $this->assertSame('hi', $o->pub);
+    }
+
+    public function testHydrateBothParamsOverwrite()
+    {
+        $o = deepclone_hydrate('stdClass', ['stdClass' => ['x' => 'from_scoped']], ['x' => 'from_flat']);
+
+        $this->assertSame('from_flat', $o->x);
+    }
+
+    public function testHydrateIntegerKeyInProperties()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('string keys');
+        deepclone_hydrate('stdClass', [], [0 => 'val']);
+    }
+
+    public function testHydrateNonArrayInScopedProperties()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('array values');
+        deepclone_hydrate('stdClass', ['stdClass' => 'not-array']);
+    }
+
+    public function testHydrateReflectorSubclass()
+    {
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        deepclone_hydrate('ReflectionClass');
+    }
+
+    public function testHydrateClosure()
+    {
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        deepclone_hydrate('Closure');
+    }
+
+    public function testHydrateSplFileInfo()
+    {
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        deepclone_hydrate('SplFileInfo');
+    }
+
+    public function testHydrateNulInScopedPropertyName()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('invalid property name');
+        deepclone_hydrate('stdClass', ['stdClass' => ["foo\0bar" => 'val']]);
+    }
+
+    public function testHydrateNulInMangledKeyProperty()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('invalid mangled key');
+        deepclone_hydrate('stdClass', [], ["\0*\0foo\0bar" => 'val']);
+    }
+
+    public function testHydrateIntegerKeyInsideScope()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('string keys');
+        deepclone_hydrate('stdClass', ['stdClass' => [0 => 'val']]);
+    }
+
+    public function testHydrateMangledKeyInsideScope()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('mangled key');
+        deepclone_hydrate('stdClass', ['stdClass' => ["\0stdClass\0x" => 'val']]);
+    }
+
+    public function testHydrateInterfaceAsScope()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('not a parent');
+        deepclone_hydrate(\ArrayObject::class, ['IteratorAggregate' => ['x' => 1]]);
+    }
+
+    public function testHydrateUnrelatedScope()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('not a parent');
+        deepclone_hydrate('stdClass', ['SplHeap' => ['x' => 1]]);
+    }
+
+    public function testHydrateNonExistingScope()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('not a parent');
+        deepclone_hydrate('stdClass', ['NonExistent' => ['x' => 1]]);
     }
 }

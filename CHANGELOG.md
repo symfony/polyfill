@@ -1,3 +1,7 @@
+# 1.35.0
+
+  * Add polyfill for `deepclone_hydrate()`
+
 # 1.34.0
 
   * Add polyfill for the `symfony/deepclone` extension
