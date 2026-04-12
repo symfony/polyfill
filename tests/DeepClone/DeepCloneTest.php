@@ -1155,6 +1155,21 @@ class DeepCloneTest extends TestCase
         $this->assertSame(1, $s->count());
     }
 
+    public function testHydrateScopedArrayObjectOwnClass()
+    {
+        $ao = deepclone_hydrate('ArrayObject', ['ArrayObject' => ["\0" => [[456]]]]);
+
+        $this->assertSame(456, $ao[0]);
+    }
+
+    public function testHydrateScopedSplObjectStorageOwnClass()
+    {
+        $o1 = new \stdClass();
+        $s = deepclone_hydrate('SplObjectStorage', ['SplObjectStorage' => ["\0" => [$o1, 'info']]]);
+
+        $this->assertSame(1, $s->count());
+    }
+
     public function testHydrateFlatInheritanceMixed()
     {
         $actual = (array) deepclone_hydrate(HydrateBar::class, [HydrateFoo::class => ['priv' => 234]], [
