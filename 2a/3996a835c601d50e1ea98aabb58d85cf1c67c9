@@ -1,0 +1,39 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-04-10T20:26:19Z
+
+Sure but what's the use case? I think we rejected adding such consts in the past, didn't we?
+
+---------------------------------------------------------------------------
+
+by stof at 2026-04-10T21:16:29Z
+
+If the behavior enabled by that constant in `array_filter` does not work when using the polyfill on older versions, it is better to *not* polyfill the constant so that code can detect the availability of the relevant feature by checking whether the constant is defined (instead of having to detect whether `array_filter` supports that constant).
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2026-04-10T21:20:22Z
+
+Yeah you are right this wouldn't be the most useful polyfill.
+
+With a const declared, it will be possible to safely call `array_filter` with `$mode = ARRAY_FILTER_USE_VALUE` across all PHP versions:
+
+```php
+array_filter($arr, $fn, ARRAY_FILTER_USE_VALUE);
+```
+
+`ARRAY_FILTER_USE_VALUE` is the default value, so this declaration makes it a less meaningful.
+
+Please feel free to close this if you think there's no tangible benefit polyflling this constant. I would totally trust your judgement :)
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2026-04-10T21:22:34Z
+
+> If the behavior enabled by that constant in array_filter does not work when using the polyfill on older versions, it is better to not polyfill the constant so that code can detect the availability of the relevant feature by checking whether the constant is defined (instead of having to detect whether array_filter supports that constant).
+
+Right, this is true. If the feature doesn't work, we really shouldn't polyfill it.
+
+In this case, however, with the constant declared, you can call `array_filter($a, $b, ARRAY_FILTER_USE_VALUE)`, and it _will_ work across all PHP versions.
+
+The only change in PHP 8.6 is that the default value `$mode = 0` is now set to the new constant (bearing `0`) `ARRAY_FILTER_USE_VALUE`.  But like I said in the other reply, it is the default value, which makes this a bit less useful.
