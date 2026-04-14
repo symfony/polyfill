@@ -1,6 +1,9 @@
 # 1.35.0
 
   * Add polyfill for `deepclone_hydrate()`
+  * Add polyfill for `ARRAY_FILTER_USE_VALUE` constant
+  * Add polyfill for the `SortDirection` enum
+  * Fix cache poisoning in `DeepClone` polyfill
 
 # 1.34.0
 
