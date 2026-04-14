@@ -1450,4 +1450,59 @@ class DeepCloneTest extends TestCase
         $this->expectExceptionMessage('not a parent');
         deepclone_hydrate('stdClass', ['NonExistent' => ['x' => 1]]);
     }
+
+    public function testFromArrayRejectsUnloadedScope()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('scope "NoSuchScope"');
+        deepclone_from_array([
+            'classes' => ScopeChild::class,
+            'objectMeta' => 1,
+            'prepared' => 0,
+            'properties' => ['NoSuchScope' => ['pub' => [0 => 1]]],
+        ]);
+    }
+
+    public function testHydrateRejectsMangledKeyWithEmptyClass()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('invalid mangled key');
+        deepclone_hydrate('stdClass', [], ["\0\0x" => 1]);
+    }
+
+    public function testHydrateRejectsMangledKeyNoSecondNul()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('invalid mangled key');
+        deepclone_hydrate('stdClass', [], ["\0broken" => 1]);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateInvokesSetHookForVirtualProperty()
+    {
+        $h = deepclone_hydrate(HookedProps::class, [HookedProps::class => ['x' => 5]]);
+        $this->assertSame(6, $h->x);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testRoundtripOnlyWritesBackingStorage()
+    {
+        $orig = new HookedProps();
+        $orig->x = 20;
+        $clone = deepclone_from_array(deepclone_to_array($orig));
+        $this->assertSame(21, $clone->x);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateBypassesSetHookForNonVirtualProperty()
+    {
+        $h = deepclone_hydrate(HookedBackingProps::class, [HookedBackingProps::class => ['x' => 7]]);
+        $this->assertSame(7, $h->x);
+    }
 }

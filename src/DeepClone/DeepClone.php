@@ -407,8 +407,9 @@ final class DeepClone
                 }
                 if (str_starts_with($name, "\0")) {
                     $sep = strpos($name, "\0", 1);
-                    if (false === $sep) {
-                        continue;
+                    // Reject: no second NUL, or empty class name (second NUL right after first)
+                    if (false === $sep || 1 === $sep) {
+                        throw new \ValueError('deepclone_hydrate(): Argument #3 ($mangled_vars) contains an invalid mangled key');
                     }
                     $scopeName = substr($name, 1, $sep - 1);
                     $realName = substr($name, $sep + 1);
@@ -792,6 +793,9 @@ final class DeepClone
             if (!\is_array($scopeProps)) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" entry for scope "'.$scope.'" must be of type array, '.self::valueName($scopeProps).' given');
             }
+            if ('stdClass' !== $scope && !class_exists($scope, false)) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" scope "'.$scope.'" is not a loaded class name');
+            }
             $resolveScope = null;
             if (isset($resolve[$scope])) {
                 if (!\is_array($resolve[$scope])) {
@@ -827,6 +831,9 @@ final class DeepClone
                             }
                             $scopeProps[$name][$id] = $objects[$v];
                         } else {
+                            if (\PHP_INT_MIN === $v) {
+                                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
+                            }
                             if (!isset($refs[-$v])) {
                                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.(-$v));
                             }
@@ -928,6 +935,9 @@ final class DeepClone
             if (!\is_int($value)) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, hard-ref value must be of type int, '.self::valueName($value).' given');
             }
+            if ($value >= 0 || \PHP_INT_MIN === $value) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
+            }
             $rid = -$value;
             if (!isset($refs[$rid])) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.$rid);
@@ -972,6 +982,9 @@ final class DeepClone
                 $slot = $value[$k] ?? null;
                 if (!\is_int($slot)) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, hard-ref slot must be of type int, '.self::valueName($slot).' given');
+                }
+                if ($slot >= 0 || \PHP_INT_MIN === $slot) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
                 }
                 $rid = -$slot;
                 if (!isset($refs[$rid])) {
@@ -1344,7 +1357,7 @@ final class DeepClone
                     continue;
                 }
                 if (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
-                    $notByRef->{$propertyReflector->name} = $propertyReflector->setRawValue(...);
+                    $notByRef->{$propertyReflector->name} = $propertyReflector->isVirtual() ? true : $propertyReflector->setRawValue(...);
                 } elseif ($propertyReflector->isReadOnly()) {
                     $notByRef->{$propertyReflector->name} = static function ($object, $value) use ($propertyReflector) {
                         if (!$propertyReflector->isInitialized($object)) {

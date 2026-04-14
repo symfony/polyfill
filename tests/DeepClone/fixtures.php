@@ -302,3 +302,34 @@ enum HydrateColor
 trait HydrateTrait
 {
 }
+
+class ScopeParent
+{
+    public int $pub = 0;
+}
+
+class ScopeChild extends ScopeParent
+{
+    protected int $sealed = 0;
+    public int $child = 0;
+}
+
+if (\PHP_VERSION_ID >= 80400) {
+    eval(<<<'PHP'
+namespace Symfony\Polyfill\Tests\DeepClone;
+
+class HookedProps {
+    private int $backing = 0;
+    public int $x {
+        get => $this->backing;
+        set(int $value) { $this->backing = $value + 1; }
+    }
+}
+
+class HookedBackingProps {
+    public int $x = 0 {
+        set(int $value) { $this->x = $value * 10; }
+    }
+}
+PHP);
+}
