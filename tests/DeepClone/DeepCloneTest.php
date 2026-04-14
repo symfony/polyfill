@@ -1349,6 +1349,20 @@ class DeepCloneTest extends TestCase
         deepclone_hydrate('SplFileInfo');
     }
 
+    public function testCacheIsolationBetweenScopeHydratorAndClassReflector()
+    {
+        $child = new CacheIsolationChild();
+        $child->pub = 'hi';
+        $child->setPriv('override');
+        deepclone_from_array(deepclone_to_array($child));
+
+        $p = new CacheIsolationParent();
+        $p->setPriv('direct');
+        $clone = deepclone_from_array(deepclone_to_array($p));
+
+        $this->assertSame('direct', $clone->getPriv());
+    }
+
     public function testHydrateNulInScopedPropertyName()
     {
         $this->expectException(\ValueError::class);

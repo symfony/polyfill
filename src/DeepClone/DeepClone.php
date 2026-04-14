@@ -1221,12 +1221,7 @@ final class DeepClone
                 };
         }
 
-        if (!$classReflector = self::$reflectors[$class] ?? null) {
-            if (!class_exists($class) && !interface_exists($class, false) && !trait_exists($class, false)) {
-                throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
-            }
-            $classReflector = self::$reflectors[$class] = new \ReflectionClass($class);
-        }
+        $classReflector = self::$reflectors[$class] ??= self::getClassReflector($class);
 
         switch ($class) {
             case 'ArrayIterator':

@@ -199,6 +199,18 @@ class HydrateBar extends HydrateFoo
     private $priv;
 }
 
+class CacheIsolationParent
+{
+    private string $priv = 'def';
+    public function getPriv(): string { return $this->priv; }
+    public function setPriv(string $v): void { $this->priv = $v; }
+}
+
+class CacheIsolationChild extends CacheIsolationParent
+{
+    public string $pub = '';
+}
+
 class HydrateBase
 {
     private string $secret = '';
