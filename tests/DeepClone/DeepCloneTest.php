@@ -1349,6 +1349,45 @@ class DeepCloneTest extends TestCase
         deepclone_hydrate('SplFileInfo');
     }
 
+    public function testRoundtripWithAbstractParentScope()
+    {
+        $o = new AbstractScopeChild('entity');
+        $o->setSecret('changed');
+        $clone = deepclone_from_array(deepclone_to_array($o));
+
+        $this->assertSame('entity', $clone->sourceEntity);
+    }
+
+    public function testRoundtripWithPrivatePropertyOnAbstractParent()
+    {
+        $o = new AbstractWithPrivateChild();
+        $o->set('changed');
+        $o->pub = 'hello';
+        $clone = deepclone_from_array(deepclone_to_array($o));
+
+        $this->assertSame('changed', $clone->get());
+        $this->assertSame('hello', $clone->pub);
+    }
+
+    public function testSleepSilentlySkipsUninitializedTypedProperty()
+    {
+        $o = new AbstractScopeChild('entity');
+        $errors = [];
+        set_error_handler(function ($_, $msg) use (&$errors) {
+            $errors[] = $msg;
+
+            return true;
+        });
+
+        try {
+            deepclone_to_array($o);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $errors);
+    }
+
     public function testCacheIsolationBetweenScopeHydratorAndClassReflector()
     {
         $child = new CacheIsolationChild();

@@ -1,3 +1,7 @@
+# 1.35.1
+
+  * Fix PHP warning for `__sleep()`-listed uninitialized declared properties
+
 # 1.35.0
 
   * Add polyfill for `deepclone_hydrate()`

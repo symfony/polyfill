@@ -665,6 +665,9 @@ final class DeepClone
             }
             if ($sleep) {
                 foreach ($sleep as $n => $v) {
+                    if (\is_string($n) && $reflector->hasProperty($n)) {
+                        continue;
+                    }
                     trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', $n), \E_USER_NOTICE);
                 }
             }
@@ -1221,7 +1224,7 @@ final class DeepClone
                 };
         }
 
-        $classReflector = self::$reflectors[$class] ??= self::getClassReflector($class);
+        $classReflector = self::$reflectors[$class] ?? new \ReflectionClass($class);
 
         switch ($class) {
             case 'ArrayIterator':
