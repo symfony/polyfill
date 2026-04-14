@@ -211,6 +211,51 @@ class CacheIsolationChild extends CacheIsolationParent
     public string $pub = '';
 }
 
+abstract class AbstractScopeBase
+{
+    public string $sourceEntity;
+    public string $mappedBy;
+    private string $secret = 'def';
+
+    public function __sleep(): array
+    {
+        return ['sourceEntity', 'mappedBy'];
+    }
+
+    public function setSecret(string $v): void
+    {
+        $this->secret = $v;
+    }
+}
+
+class AbstractScopeChild extends AbstractScopeBase
+{
+    public function __construct(string $src)
+    {
+        $this->sourceEntity = $src;
+    }
+}
+
+abstract class AbstractWithPrivate
+{
+    private string $secret = 'default';
+
+    public function set(string $v): void
+    {
+        $this->secret = $v;
+    }
+
+    public function get(): string
+    {
+        return $this->secret;
+    }
+}
+
+class AbstractWithPrivateChild extends AbstractWithPrivate
+{
+    public string $pub = '';
+}
+
 class HydrateBase
 {
     private string $secret = '';
