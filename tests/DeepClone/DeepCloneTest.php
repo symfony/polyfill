@@ -1599,6 +1599,45 @@ class DeepCloneTest extends TestCase
         deepclone_hydrate(\stdClass::class, [], [], 1 << 30);
     }
 
+    public function testHydrateFlagsMutuallyExclusiveThrows()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('mutually exclusive');
+        deepclone_hydrate(\stdClass::class, [], [], \DEEPCLONE_HYDRATE_CALL_HOOKS | \DEEPCLONE_HYDRATE_NO_LAZY_INIT);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateNoLazyInitSkipsInitializer()
+    {
+        $rc = new \ReflectionClass(TypedInt::class);
+        $initRan = 0;
+        $ghost = $rc->newLazyGhost(function (TypedInt $o) use (&$initRan) {
+            ++$initRan;
+            $o->x = 1;
+        });
+        deepclone_hydrate($ghost, [TypedInt::class => ['x' => 99]], [], \DEEPCLONE_HYDRATE_NO_LAZY_INIT);
+        $this->assertSame(0, $initRan);
+        $this->assertSame(99, $ghost->x);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateDefaultFlagRunsLazyInitializer()
+    {
+        $rc = new \ReflectionClass(TypedInt::class);
+        $initRan = 0;
+        $ghost = $rc->newLazyGhost(function (TypedInt $o) use (&$initRan) {
+            ++$initRan;
+            $o->x = 1;
+        });
+        deepclone_hydrate($ghost, [TypedInt::class => ['x' => 99]]);
+        $this->assertSame(1, $initRan);
+        $this->assertSame(99, $ghost->x);
+    }
+
     public function testHydrateReadonlyIdempotentSkipsSameValue()
     {
         $obj = new HydrateReadonly(123);

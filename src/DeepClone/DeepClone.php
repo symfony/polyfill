@@ -372,8 +372,11 @@ final class DeepClone
 
     public static function deepclone_hydrate(object|string $object_or_class, array $scoped_vars = [], array $mangled_vars = [], int $flags = 0): object
     {
-        if ($flags & ~\DEEPCLONE_HYDRATE_CALL_HOOKS) {
+        if ($flags & ~(\DEEPCLONE_HYDRATE_CALL_HOOKS | \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
             throw new \ValueError('deepclone_hydrate(): Argument #4 ($flags) contains unknown bits');
+        }
+        if (($flags & \DEEPCLONE_HYDRATE_CALL_HOOKS) && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
+            throw new \ValueError('deepclone_hydrate(): Argument #4 ($flags) DEEPCLONE_HYDRATE_CALL_HOOKS and DEEPCLONE_HYDRATE_NO_LAZY_INIT are mutually exclusive');
         }
 
         if (\is_string($object_or_class)) {
@@ -464,8 +467,26 @@ final class DeepClone
                 }
             }
             if ($properties) {
-                $cacheKey = $scope.':'.$flags;
-                (self::$simpleHydrators[$cacheKey] ??= self::getSimpleHydrator($scope, $flags))($properties, $object);
+                /* Fast path: NO_LAZY_INIT only matters when the target is a
+                 * lazy ghost/proxy with uninitialized lazy props. Otherwise
+                 * the default (setRawValue-style) hydrator yields identical
+                 * results without paying for per-prop ReflectionProperty
+                 * dispatch. */
+                $effectiveFlags = $flags;
+                if (\PHP_VERSION_ID >= 80400 && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
+                    /* Read-only fallback: don't write into self::$reflectors —
+                     * that map is only safe to populate via getClassReflector(),
+                     * which sets up the companion $cloneable / $prototypes /
+                     * $instantiableWithoutConstructor entries. */
+                    $rc = self::$reflectors[$obj_class] ?? new \ReflectionClass($obj_class);
+                    if (!$rc->isUninitializedLazyObject($object)) {
+                        $effectiveFlags = $flags & ~\DEEPCLONE_HYDRATE_NO_LAZY_INIT;
+                    }
+                }
+                /* Only flag-decorate the cache key when needed; the common
+                 * default-flags path stays a single hash lookup. */
+                $cacheKey = $effectiveFlags ? $scope.':'.$effectiveFlags : $scope;
+                (self::$simpleHydrators[$cacheKey] ??= self::getSimpleHydrator($scope, $effectiveFlags))($properties, $object);
             }
         }
 
@@ -1300,6 +1321,7 @@ final class DeepClone
     private static function getSimpleHydrator(string $class, int $flags = 0): \Closure
     {
         $callHooks = (bool) ($flags & \DEEPCLONE_HYDRATE_CALL_HOOKS);
+        $noLazyInit = \PHP_VERSION_ID >= 80400 && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT);
         $baseHydrator = self::$simpleHydrators['stdClass'] ??= static function ($properties, $object) {
             foreach ($properties as $name => &$value) {
                 $object->$name = $value;
@@ -1362,6 +1384,16 @@ final class DeepClone
             $backedEnum = [];
             foreach ($classReflector->getProperties() as $propertyReflector) {
                 if ($propertyReflector->isStatic()) {
+                    continue;
+                }
+                if ($noLazyInit && !$propertyReflector->isVirtual()) {
+                    /* NO_LAZY_INIT: delegate to
+                     * ReflectionProperty::setRawValueWithoutLazyInitialization
+                     * which clears IS_PROP_LAZY, skips the initializer, and
+                     * realizes the object when the last lazy prop is set.
+                     * Virtual hooked props fall through to the engine (which
+                     * rejects setRawValueWithoutLazyInitialization on virtual). */
+                    $notByRef->{$propertyReflector->name} = $propertyReflector->setRawValueWithoutLazyInitialization(...);
                     continue;
                 }
                 if (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
