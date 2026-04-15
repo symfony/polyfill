@@ -406,7 +406,10 @@ final class DeepClone
                 $hasRefs = false;
                 if ($flags & \DEEPCLONE_HYDRATE_PRESERVE_REFS) {
                     foreach ($properties as $k => $_) {
-                        if (\ReflectionReference::fromArrayElement($properties, $k)) { $hasRefs = true; break; }
+                        if (\ReflectionReference::fromArrayElement($properties, $k)) {
+                            $hasRefs = true;
+                            break;
+                        }
                     }
                 }
                 (self::$simpleHydrators[$class] ??= self::getSimpleHydrator($class))($properties, $object, $hasRefs);
@@ -444,7 +447,7 @@ final class DeepClone
                     $scopeName = substr($name, 1, $sep - 1);
                     $realName = substr($name, $sep + 1);
 
-                    if (\str_contains($realName, "\0")) {
+                    if (str_contains($realName, "\0")) {
                         throw new \ValueError('deepclone_hydrate(): Argument #2 ($vars) in MANGLED_VARS mode contains an invalid mangled key');
                     }
 
@@ -491,7 +494,10 @@ final class DeepClone
                 $hasRefs = false;
                 if ($flags & \DEEPCLONE_HYDRATE_PRESERVE_REFS) {
                     foreach ($properties as $k => $_) {
-                        if (\ReflectionReference::fromArrayElement($properties, $k)) { $hasRefs = true; break; }
+                        if (\ReflectionReference::fromArrayElement($properties, $k)) {
+                            $hasRefs = true;
+                            break;
+                        }
                     }
                 }
 
@@ -508,20 +514,6 @@ final class DeepClone
         }
 
         return $object;
-    }
-
-    /**
-     * @internal
-     *
-     * Cold path invoked from the generated hydrator closures to report a
-     * property name that is not a string or contains a NUL byte.
-     */
-    public static function throwInvalidPropName(mixed $name, string $scope): never
-    {
-        if (!\is_string($name)) {
-            throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" must have only string keys', $scope));
-        }
-        throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" contains an invalid property name; use bare property names in scoped mode, or pass DEEPCLONE_HYDRATE_MANGLED_VARS in $flags', $scope));
     }
 
     /**
@@ -1357,17 +1349,11 @@ final class DeepClone
         $baseHydrator = self::$simpleHydrators['stdClass'] ??= static function ($properties, $object, $hasRefs) {
             if ($hasRefs) {
                 foreach ($properties as $name => &$value) {
-                    if (!\is_string($name) || \str_contains($name, "\0")) {
-                        DeepClone::throwInvalidPropName($name, 'stdClass');
-                    }
                     $object->$name = $value;
                     $object->$name = &$value;
                 }
             } else {
                 foreach ($properties as $name => $value) {
-                    if (!\is_string($name) || \str_contains($name, "\0")) {
-                        DeepClone::throwInvalidPropName($name, 'stdClass');
-                    }
                     $object->$name = $value;
                 }
             }
@@ -1447,8 +1433,7 @@ final class DeepClone
                     $notByRef[$propertyReflector->name] = static function ($object, $value) use ($propertyReflector) {
                         // Idempotent rehydrate: skip same-value writes that the engine would reject.
                         if ($propertyReflector->isInitialized($object)
-                            && $propertyReflector->getValue($object) === $value)
-                        {
+                            && $propertyReflector->getValue($object) === $value) {
                             return;
                         }
                         $propertyReflector->setValue($object, $value);
@@ -1476,9 +1461,6 @@ final class DeepClone
                 return \Closure::bind(static function ($properties, $object, $hasRefs) use ($notByRef, $scope): void {
                     if ($hasRefs) {
                         foreach ($properties as $name => &$value) {
-                            if (!\is_string($name) || \str_contains($name, "\0")) {
-                                DeepClone::throwInvalidPropName($name, $scope);
-                            }
                             if (!$noRef = $notByRef[$name] ?? false) {
                                 $object->$name = $value;
                                 $object->$name = &$value;
@@ -1490,9 +1472,6 @@ final class DeepClone
                         }
                     } else {
                         foreach ($properties as $name => $value) {
-                            if (!\is_string($name) || \str_contains($name, "\0")) {
-                                DeepClone::throwInvalidPropName($name, $scope);
-                            }
                             if (!$noRef = $notByRef[$name] ?? false) {
                                 $object->$name = $value;
                             } elseif (true !== $noRef) {
@@ -1508,9 +1487,6 @@ final class DeepClone
                 return \Closure::bind(static function ($properties, $object, $hasRefs) use ($notByRef, $unsetOnNull, $scope): void {
                     if ($hasRefs) {
                         foreach ($properties as $name => &$value) {
-                            if (!\is_string($name) || \str_contains($name, "\0")) {
-                                DeepClone::throwInvalidPropName($name, $scope);
-                            }
                             if (null === $value && isset($unsetOnNull[$name])) {
                                 unset($object->$name);
                                 continue;
@@ -1526,9 +1502,6 @@ final class DeepClone
                         }
                     } else {
                         foreach ($properties as $name => $value) {
-                            if (!\is_string($name) || \str_contains($name, "\0")) {
-                                DeepClone::throwInvalidPropName($name, $scope);
-                            }
                             if (null === $value && isset($unsetOnNull[$name])) {
                                 unset($object->$name);
                                 continue;
@@ -1548,9 +1521,6 @@ final class DeepClone
             return \Closure::bind(static function ($properties, $object, $hasRefs) use ($notByRef, $unsetOnNull, $backedEnum, $scope): void {
                 if ($hasRefs) {
                     foreach ($properties as $name => &$value) {
-                        if (!\is_string($name) || \str_contains($name, "\0")) {
-                            DeepClone::throwInvalidPropName($name, $scope);
-                        }
                         if (null === $value && isset($unsetOnNull[$name])) {
                             unset($object->$name);
                             continue;
@@ -1569,9 +1539,6 @@ final class DeepClone
                     }
                 } else {
                     foreach ($properties as $name => $value) {
-                        if (!\is_string($name) || \str_contains($name, "\0")) {
-                            DeepClone::throwInvalidPropName($name, $scope);
-                        }
                         if (null === $value && isset($unsetOnNull[$name])) {
                             unset($object->$name);
                             continue;

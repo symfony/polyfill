@@ -1400,11 +1400,12 @@ class DeepCloneTest extends TestCase
         $this->assertSame('direct', $clone->getPriv());
     }
 
-    public function testHydrateNulInScopedPropertyName()
+    public function testHydrateNulInMiddleOfPropertyNameMatchesUnserialize()
     {
-        $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('invalid property name');
-        deepclone_hydrate('stdClass', ['stdClass' => ["foo\0bar" => 'val']]);
+        // Matches unserialize(): NUL in the middle of a dynamic property name
+        // is silently accepted — the engine stores the raw name.
+        $o = deepclone_hydrate('stdClass', ['stdClass' => ["foo\0bar" => 'val']]);
+        $this->assertSame('val', ((array) $o)["foo\0bar"]);
     }
 
     public function testHydrateNulInMangledKeyProperty()
@@ -1414,18 +1415,12 @@ class DeepCloneTest extends TestCase
         deepclone_hydrate('stdClass', ["\0*\0foo\0bar" => 'val'], \DEEPCLONE_HYDRATE_MANGLED_VARS);
     }
 
-    public function testHydrateIntegerKeyInsideScope()
+    public function testHydrateIntegerKeyInsideScopeMatchesUnserialize()
     {
-        $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('string keys');
-        deepclone_hydrate('stdClass', ['stdClass' => [0 => 'val']]);
-    }
-
-    public function testHydrateMangledKeyInsideScope()
-    {
-        $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('DEEPCLONE_HYDRATE_MANGLED_VARS');
-        deepclone_hydrate('stdClass', ['stdClass' => ["\0stdClass\0x" => 'val']]);
+        // Matches unserialize(): integer keys coerce to string on dynamic
+        // property access; no pre-validation rejects them.
+        $o = deepclone_hydrate('stdClass', ['stdClass' => [0 => 'val']]);
+        $this->assertSame('val', $o->{'0'});
     }
 
     public function testHydrateInterfaceAsScope()
