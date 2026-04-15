@@ -1455,9 +1455,25 @@ final class DeepClone
 
             $scope = $class;
 
-            // Three variants × ref-preserving vs ref-less, so the common (no-refs) hot path skips
-            // the by-ref double-write and the per-iteration checks that can't trip.
+            // Four variants. When the class has no hooked/readonly/unsetOnNull/backedEnum
+            // props, the hottest path skips the $notByRef table lookup entirely. Each
+            // hasRefs branch is hoisted out of the loop so it's branch-predicted once.
             if (!$unsetOnNull && !$backedEnum) {
+                if (!$notByRef) {
+                    return \Closure::bind(static function ($properties, $object, $hasRefs): void {
+                        if ($hasRefs) {
+                            foreach ($properties as $name => &$value) {
+                                $object->$name = $value;
+                                $object->$name = &$value;
+                            }
+                        } else {
+                            foreach ($properties as $name => $value) {
+                                $object->$name = $value;
+                            }
+                        }
+                    }, null, $class);
+                }
+
                 return \Closure::bind(static function ($properties, $object, $hasRefs) use ($notByRef, $scope): void {
                     if ($hasRefs) {
                         foreach ($properties as $name => &$value) {
