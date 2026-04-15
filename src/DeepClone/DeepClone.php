@@ -370,8 +370,12 @@ final class DeepClone
         );
     }
 
-    public static function deepclone_hydrate(object|string $object_or_class, array $scoped_vars = [], array $mangled_vars = []): object
+    public static function deepclone_hydrate(object|string $object_or_class, array $scoped_vars = [], array $mangled_vars = [], int $flags = 0): object
     {
+        if ($flags & ~\DEEPCLONE_HYDRATE_CALL_HOOKS) {
+            throw new \ValueError('deepclone_hydrate(): Argument #4 ($flags) contains unknown bits');
+        }
+
         if (\is_string($object_or_class)) {
             if (!\array_key_exists($object_or_class, self::$cloneable)) {
                 self::getClassReflector($object_or_class);
@@ -460,7 +464,8 @@ final class DeepClone
                 }
             }
             if ($properties) {
-                (self::$simpleHydrators[$scope] ??= self::getSimpleHydrator($scope))($properties, $object);
+                $cacheKey = $scope.':'.$flags;
+                (self::$simpleHydrators[$cacheKey] ??= self::getSimpleHydrator($scope, $flags))($properties, $object);
             }
         }
 
@@ -1292,8 +1297,9 @@ final class DeepClone
         };
     }
 
-    private static function getSimpleHydrator(string $class): \Closure
+    private static function getSimpleHydrator(string $class, int $flags = 0): \Closure
     {
+        $callHooks = (bool) ($flags & \DEEPCLONE_HYDRATE_CALL_HOOKS);
         $baseHydrator = self::$simpleHydrators['stdClass'] ??= static function ($properties, $object) {
             foreach ($properties as $name => &$value) {
                 $object->$name = $value;
@@ -1357,7 +1363,13 @@ final class DeepClone
                     continue;
                 }
                 if (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
-                    $notByRef->{$propertyReflector->name} = $propertyReflector->isVirtual() ? true : $propertyReflector->setRawValue(...);
+                    if ($propertyReflector->isVirtual()) {
+                        $notByRef->{$propertyReflector->name} = true;
+                    } else {
+                        $notByRef->{$propertyReflector->name} = $callHooks
+                            ? $propertyReflector->setValue(...)
+                            : $propertyReflector->setRawValue(...);
+                    }
                 } elseif ($propertyReflector->isReadOnly()) {
                     $notByRef->{$propertyReflector->name} = $propertyReflector->setValue(...);
                 }

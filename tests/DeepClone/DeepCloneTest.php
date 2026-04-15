@@ -1573,4 +1573,30 @@ class DeepCloneTest extends TestCase
             'properties' => [TypedInt::class => ['x' => [0 => 'hello']]],
         ]);
     }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateFlagCallHooksInvokesSetHook()
+    {
+        $o = deepclone_hydrate(HookedBackingProps::class, [HookedBackingProps::class => ['x' => 7]], [], \DEEPCLONE_HYDRATE_CALL_HOOKS);
+        $this->assertSame(70, $o->x);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateDefaultFlagBypassesSetHook()
+    {
+        $o = deepclone_hydrate(HookedBackingProps::class, [HookedBackingProps::class => ['x' => 7]]);
+        $this->assertSame(7, $o->x);
+    }
+
+    public function testHydrateFlagsUnknownBitThrows()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('unknown bits');
+        deepclone_hydrate(\stdClass::class, [], [], 1 << 30);
+    }
+
 }
