@@ -21,6 +21,15 @@ if (!function_exists('deepclone_to_array')) {
 if (!function_exists('deepclone_from_array')) {
     function deepclone_from_array(array $data, ?array $allowed_classes = null): mixed { return p\DeepClone::deepclone_from_array($data, $allowed_classes); }
 }
+if (!defined('DEEPCLONE_HYDRATE_CALL_HOOKS')) {
+    define('DEEPCLONE_HYDRATE_CALL_HOOKS', 1 << 0);
+}
+if (!defined('DEEPCLONE_HYDRATE_NO_LAZY_INIT')) {
+    define('DEEPCLONE_HYDRATE_NO_LAZY_INIT', 1 << 1);
+}
+if (!defined('DEEPCLONE_HYDRATE_MANGLED_VARS')) {
+    define('DEEPCLONE_HYDRATE_MANGLED_VARS', 1 << 2);
+}
 if (!function_exists('deepclone_hydrate')) {
-    function deepclone_hydrate(object|string $object_or_class, array $scoped_vars = [], array $mangled_vars = []): object { return p\DeepClone::deepclone_hydrate($object_or_class, $scoped_vars, $mangled_vars); }
+    function deepclone_hydrate(object|string $object_or_class, array $vars = [], int $flags = 0): object { return p\DeepClone::deepclone_hydrate($object_or_class, $vars, $flags); }
 }

@@ -277,6 +277,16 @@ class HydrateReadonly
     public function getValue(): int { return $this->value; }
 }
 
+class HydrateReadonlyObject
+{
+    public function __construct(public readonly \stdClass $o) {}
+}
+
+class HydrateNullableInt
+{
+    public ?int $y = 7;
+}
+
 class HydrateGP
 {
     private string $secret = '';
@@ -301,4 +311,87 @@ enum HydrateColor
 
 trait HydrateTrait
 {
+}
+
+enum DeepCloneHydrateSuit: string { case Hearts = 'H'; case Spades = 'S'; }
+enum DeepCloneHydrateSize: int    { case Small = 1;   case Large = 2;   }
+
+class WithBackedEnums
+{
+    public DeepCloneHydrateSuit $s = DeepCloneHydrateSuit::Hearts;
+    public ?DeepCloneHydrateSuit $ns = DeepCloneHydrateSuit::Hearts;
+    public DeepCloneHydrateSize $n = DeepCloneHydrateSize::Small;
+}
+
+class TypedInt
+{
+    public int $x = 0;
+}
+
+class TypedReadonly
+{
+    public readonly int $v;
+}
+
+class PrivShadowA
+{
+    private string $x = 'a_init';
+    public function get(): string { return $this->x; }
+}
+
+class PrivShadowB extends PrivShadowA
+{
+    private string $x = 'b_init';
+    public function getChild(): string { return $this->x; }
+}
+
+class ScopeParent
+{
+    public int $pub = 0;
+}
+
+class ScopeChild extends ScopeParent
+{
+    protected int $sealed = 0;
+    public int $child = 0;
+}
+
+if (\PHP_VERSION_ID >= 80400) {
+    eval(<<<'PHP'
+namespace Symfony\Polyfill\Tests\DeepClone;
+
+class HookedProps {
+    private int $backing = 0;
+    public int $x {
+        get => $this->backing;
+        set(int $value) { $this->backing = $value + 1; }
+    }
+}
+
+class HookedBackingProps {
+    public int $x = 0 {
+        set(int $value) { $this->x = $value * 10; }
+    }
+}
+
+class HookedEnumMatchingParam {
+    public DeepCloneHydrateSuit $s = DeepCloneHydrateSuit::Hearts {
+        set(DeepCloneHydrateSuit $value) { $this->s = $value; }
+    }
+}
+
+class HookedEnumWiderParam {
+    public static ?string $lastRaw = null;
+    public DeepCloneHydrateSuit $s = DeepCloneHydrateSuit::Hearts {
+        set(DeepCloneHydrateSuit|string $value) {
+            if (\is_string($value)) {
+                self::$lastRaw = 'raw:'.$value;
+                $this->s = DeepCloneHydrateSuit::from($value);
+            } else {
+                $this->s = $value;
+            }
+        }
+    }
+}
+PHP);
 }
