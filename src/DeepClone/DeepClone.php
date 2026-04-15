@@ -1359,11 +1359,7 @@ final class DeepClone
                 if (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
                     $notByRef->{$propertyReflector->name} = $propertyReflector->isVirtual() ? true : $propertyReflector->setRawValue(...);
                 } elseif ($propertyReflector->isReadOnly()) {
-                    $notByRef->{$propertyReflector->name} = static function ($object, $value) use ($propertyReflector) {
-                        if (!$propertyReflector->isInitialized($object)) {
-                            $propertyReflector->setValue($object, $value);
-                        }
-                    };
+                    $notByRef->{$propertyReflector->name} = $propertyReflector->setValue(...);
                 }
             }
 

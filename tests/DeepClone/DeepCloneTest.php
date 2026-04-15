@@ -1214,15 +1214,13 @@ class DeepCloneTest extends TestCase
     public function testHydrateFlatReadonlyInitialized()
     {
         $obj = new HydrateReadonly(123);
-        $obj = deepclone_hydrate($obj, [], ['value' => 456, 'status' => 'hydrated']);
-
-        // C ext overwrites via OBJ_PROP; polyfill respects readonly
-        if (\extension_loaded('deepclone')) {
-            $this->assertSame(456, $obj->getValue());
-        } else {
-            $this->assertSame(123, $obj->getValue());
+        try {
+            deepclone_hydrate($obj, [], ['value' => 456]);
+            $this->fail('Expected Error on readonly overwrite');
+        } catch (\Error $e) {
+            $this->assertStringContainsString('readonly', $e->getMessage());
         }
-        $this->assertSame('hydrated', $obj->status);
+        $this->assertSame(123, $obj->getValue());
     }
 
     public function testHydrateFlatReadonlyUninitialized()
@@ -1542,5 +1540,37 @@ class DeepCloneTest extends TestCase
         deepclone_hydrate($b, [], ["\0".PrivShadowA::class."\0x" => 'parent_targeted']);
         $this->assertSame('parent_targeted', $b->get());
         $this->assertSame('b_init', $b->getChild());
+    }
+
+    public function testHydrateTypedPropTypeMismatchThrows()
+    {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('type int');
+        deepclone_hydrate(TypedInt::class, [TypedInt::class => ['x' => 'hello']]);
+    }
+
+    public function testHydrateTypedPropCoercesNonStrict()
+    {
+        $o = deepclone_hydrate(TypedInt::class, [TypedInt::class => ['x' => '42']]);
+        $this->assertSame(42, $o->x);
+    }
+
+    public function testHydrateReadonlyTypedMismatchThrows()
+    {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('type int');
+        deepclone_hydrate(TypedReadonly::class, [TypedReadonly::class => ['v' => 'nope']]);
+    }
+
+    public function testFromArrayTypedPropMismatchThrows()
+    {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('type int');
+        deepclone_from_array([
+            'classes' => TypedInt::class,
+            'objectMeta' => 1,
+            'prepared' => 0,
+            'properties' => [TypedInt::class => ['x' => [0 => 'hello']]],
+        ]);
     }
 }

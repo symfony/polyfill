@@ -303,6 +303,16 @@ trait HydrateTrait
 {
 }
 
+class TypedInt
+{
+    public int $x = 0;
+}
+
+class TypedReadonly
+{
+    public readonly int $v;
+}
+
 class PrivShadowA
 {
     private string $x = 'a_init';
