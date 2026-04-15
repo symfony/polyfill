@@ -1599,4 +1599,33 @@ class DeepCloneTest extends TestCase
         deepclone_hydrate(\stdClass::class, [], [], 1 << 30);
     }
 
+    public function testHydrateReadonlyIdempotentSkipsSameValue()
+    {
+        $obj = new HydrateReadonly(123);
+        $obj = deepclone_hydrate($obj, [HydrateReadonly::class => ['value' => 123]]);
+        $this->assertSame(123, $obj->getValue());
+    }
+
+    public function testHydrateReadonlyDifferentValueThrows()
+    {
+        $obj = new HydrateReadonly(123);
+        try {
+            deepclone_hydrate($obj, [HydrateReadonly::class => ['value' => 456]]);
+            $this->fail('Expected Error on readonly overwrite');
+        } catch (\Error $e) {
+            $this->assertStringContainsString('readonly', $e->getMessage());
+        }
+        $this->assertSame(123, $obj->getValue());
+    }
+
+    public function testHydrateReadonlyObjectIdentityIsSkipped()
+    {
+        $inner = new \stdClass();
+        $host = new class ($inner) {
+            public function __construct(public readonly \stdClass $o) {}
+        };
+        $class = $host::class;
+        $host = deepclone_hydrate($host, [$class => ['o' => $inner]]);
+        $this->assertSame($inner, $host->o);
+    }
 }

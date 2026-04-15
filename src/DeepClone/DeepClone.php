@@ -1371,7 +1371,17 @@ final class DeepClone
                             : $propertyReflector->setRawValue(...);
                     }
                 } elseif ($propertyReflector->isReadOnly()) {
-                    $notByRef->{$propertyReflector->name} = $propertyReflector->setValue(...);
+                    $notByRef->{$propertyReflector->name} = static function ($object, $value) use ($propertyReflector) {
+                        /* Idempotent hydrate: if the readonly slot already holds
+                         * the same value (===), silently skip. Avoids "Cannot
+                         * modify readonly property" on no-op rehydration. */
+                        if ($propertyReflector->isInitialized($object)
+                            && $propertyReflector->getValue($object) === $value)
+                        {
+                            return;
+                        }
+                        $propertyReflector->setValue($object, $value);
+                    };
                 }
             }
 
