@@ -1,3 +1,7 @@
+# 1.37.0
+
+  * Polyfill deepclone v0.4.0
+
 # 1.36.0
 
   * Polyfill deepclone v0.3.0
