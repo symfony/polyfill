@@ -1628,4 +1628,33 @@ class DeepCloneTest extends TestCase
         $host = deepclone_hydrate($host, [$class => ['o' => $inner]]);
         $this->assertSame($inner, $host->o);
     }
+
+    public function testHydrateNullIntoNonNullableTypedUnsetsSlot()
+    {
+        $o = new TypedInt();
+        $o = deepclone_hydrate($o, [TypedInt::class => ['x' => null]]);
+        $this->assertFalse((new \ReflectionProperty(TypedInt::class, 'x'))->isInitialized($o));
+    }
+
+    public function testHydrateNullIntoNullableTypedKeepsNull()
+    {
+        $o = new class {
+            public ?int $y = 7;
+        };
+        $class = $o::class;
+        deepclone_hydrate($o, [$class => ['y' => null]]);
+        $this->assertNull($o->y);
+    }
+
+    public function testHydrateCallHooksDoesNotUnsetOnNull()
+    {
+        $o = new TypedInt();
+        try {
+            deepclone_hydrate($o, [TypedInt::class => ['x' => null]], [], \DEEPCLONE_HYDRATE_CALL_HOOKS);
+            $this->fail('Expected TypeError under CALL_HOOKS');
+        } catch (\TypeError $e) {
+            $this->assertStringContainsString('type int', $e->getMessage());
+        }
+        $this->assertSame(0, $o->x);
+    }
 }

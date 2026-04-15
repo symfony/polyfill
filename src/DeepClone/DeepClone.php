@@ -1358,6 +1358,7 @@ final class DeepClone
 
         if (!$classReflector->isInternal()) {
             $notByRef = new \stdClass();
+            $unsetOnNull = [];
             foreach ($classReflector->getProperties() as $propertyReflector) {
                 if ($propertyReflector->isStatic()) {
                     continue;
@@ -1382,13 +1383,23 @@ final class DeepClone
                         }
                         $propertyReflector->setValue($object, $value);
                     };
+                } elseif (!$callHooks && ($type = $propertyReflector->getType()) && !$type->allowsNull()) {
+                    /* null into a non-nullable typed slot: unset (restore
+                     * uninitialized state) instead of raising TypeError.
+                     * Not applied under CALL_HOOKS. The actual unset runs in
+                     * the bound closure below so scope is preserved. */
+                    $unsetOnNull[$propertyReflector->name] = true;
                 }
             }
 
-            return (function ($properties, $object) {
+            return (function ($properties, $object) use ($unsetOnNull) {
                 $notByRef = (array) $this;
 
                 foreach ($properties as $name => &$value) {
+                    if (null === $value && isset($unsetOnNull[$name])) {
+                        unset($object->$name);
+                        continue;
+                    }
                     if (!$noRef = $notByRef[$name] ?? false) {
                         $object->$name = $value;
                         $object->$name = &$value;
