@@ -27,6 +27,9 @@ if (!defined('DEEPCLONE_HYDRATE_CALL_HOOKS')) {
 if (!defined('DEEPCLONE_HYDRATE_NO_LAZY_INIT')) {
     define('DEEPCLONE_HYDRATE_NO_LAZY_INIT', 1 << 1);
 }
+if (!defined('DEEPCLONE_HYDRATE_MANGLED_VARS')) {
+    define('DEEPCLONE_HYDRATE_MANGLED_VARS', 1 << 2);
+}
 if (!function_exists('deepclone_hydrate')) {
-    function deepclone_hydrate(object|string $object_or_class, array $scoped_vars = [], array $mangled_vars = [], int $flags = 0): object { return p\DeepClone::deepclone_hydrate($object_or_class, $scoped_vars, $mangled_vars, $flags); }
+    function deepclone_hydrate(object|string $object_or_class, array $vars = [], int $flags = 0): object { return p\DeepClone::deepclone_hydrate($object_or_class, $vars, $flags); }
 }

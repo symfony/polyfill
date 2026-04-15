@@ -277,6 +277,16 @@ class HydrateReadonly
     public function getValue(): int { return $this->value; }
 }
 
+class HydrateReadonlyObject
+{
+    public function __construct(public readonly \stdClass $o) {}
+}
+
+class HydrateNullableInt
+{
+    public ?int $y = 7;
+}
+
 class HydrateGP
 {
     private string $secret = '';

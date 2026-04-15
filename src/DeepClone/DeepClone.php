@@ -370,43 +370,49 @@ final class DeepClone
         );
     }
 
-    public static function deepclone_hydrate(object|string $object_or_class, array $scoped_vars = [], array $mangled_vars = [], int $flags = 0): object
+    public static function deepclone_hydrate(object|string $object_or_class, array $vars = [], int $flags = 0): object
     {
-        if ($flags & ~(\DEEPCLONE_HYDRATE_CALL_HOOKS | \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
-            throw new \ValueError('deepclone_hydrate(): Argument #4 ($flags) contains unknown bits');
+        if ($flags & ~(\DEEPCLONE_HYDRATE_CALL_HOOKS | \DEEPCLONE_HYDRATE_NO_LAZY_INIT | \DEEPCLONE_HYDRATE_MANGLED_VARS)) {
+            throw new \ValueError('deepclone_hydrate(): Argument #3 ($flags) contains unknown bits');
         }
         if (($flags & \DEEPCLONE_HYDRATE_CALL_HOOKS) && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
-            throw new \ValueError('deepclone_hydrate(): Argument #4 ($flags) DEEPCLONE_HYDRATE_CALL_HOOKS and DEEPCLONE_HYDRATE_NO_LAZY_INIT are mutually exclusive');
+            throw new \ValueError('deepclone_hydrate(): Argument #3 ($flags) DEEPCLONE_HYDRATE_CALL_HOOKS and DEEPCLONE_HYDRATE_NO_LAZY_INIT are mutually exclusive');
         }
 
-        if (\is_string($object_or_class)) {
-            if (!\array_key_exists($object_or_class, self::$cloneable)) {
-                self::getClassReflector($object_or_class);
-            }
-            $r = self::$reflectors[$object_or_class] ?? new \ReflectionClass($object_or_class);
-            if (self::$cloneable[$object_or_class]) {
-                $object = clone self::$prototypes[$object_or_class];
-            } elseif (self::$instantiableWithoutConstructor[$object_or_class]) {
+        if ($flags & \DEEPCLONE_HYDRATE_MANGLED_VARS) {
+            $mangled_vars = $vars;
+            $scoped_vars = [];
+        } else {
+            $scoped_vars = $vars;
+            $mangled_vars = [];
+        }
+
+        if (\is_string($class = $object_or_class)) {
+            $r = self::$reflectors[$class] ??= self::getClassReflector($class);
+            if (self::$cloneable[$class]) {
+                $object = clone self::$prototypes[$class];
+            } elseif (self::$instantiableWithoutConstructor[$class]) {
                 $object = $r->newInstanceWithoutConstructor();
-            } elseif (null === self::$prototypes[$object_or_class]) {
-                throw new \DeepClone\NotInstantiableException('Class "'.$object_or_class.'" is not instantiable.');
-            } elseif ($r->implementsInterface('Serializable') && !method_exists($object_or_class, '__unserialize')) {
-                $object = unserialize('C:'.\strlen($object_or_class).':"'.$object_or_class.'":0:{}');
+            } elseif (null === self::$prototypes[$class]) {
+                throw new \DeepClone\NotInstantiableException('Class "'.$class.'" is not instantiable.');
+            } elseif ($r->implementsInterface('Serializable') && !method_exists($class, '__unserialize')) {
+                $object = unserialize('C:'.\strlen($class).':"'.$class.'":0:{}');
             } else {
-                $object = unserialize('O:'.\strlen($object_or_class).':"'.$object_or_class.'":0:{}');
+                $object = unserialize('O:'.\strlen($class).':"'.$class.'":0:{}');
             }
         } else {
             $r = null;
             $object = $object_or_class;
+            $class = $object::class;
         }
 
         if ($mangled_vars) {
-            $class = $object::class;
-            $r ??= new \ReflectionClass($class);
+            // self::$reflectors must be populated via getClassReflector() (companion caches), so read with ??.
+            $r ??= self::$reflectors[$class] ?? new \ReflectionClass($class);
 
             foreach ($mangled_vars as $name => &$value) {
                 if (!\is_string($name)) {
-                    throw new \ValueError('deepclone_hydrate(): Argument #3 ($mangled_vars) must have only string keys');
+                    throw new \ValueError('deepclone_hydrate(): Argument #2 ($vars) in MANGLED_VARS mode must have only string keys');
                 }
                 if ("\0" === $name) {
                     $scoped_vars[$class][$name] = &$value;
@@ -416,13 +422,13 @@ final class DeepClone
                     $sep = strpos($name, "\0", 1);
                     // Reject: no second NUL, or empty class name (second NUL right after first)
                     if (false === $sep || 1 === $sep) {
-                        throw new \ValueError('deepclone_hydrate(): Argument #3 ($mangled_vars) contains an invalid mangled key');
+                        throw new \ValueError('deepclone_hydrate(): Argument #2 ($vars) in MANGLED_VARS mode contains an invalid mangled key');
                     }
                     $scopeName = substr($name, 1, $sep - 1);
                     $realName = substr($name, $sep + 1);
 
                     if (\str_contains($realName, "\0")) {
-                        throw new \ValueError('deepclone_hydrate(): Argument #3 ($mangled_vars) contains an invalid mangled key');
+                        throw new \ValueError('deepclone_hydrate(): Argument #2 ($vars) in MANGLED_VARS mode contains an invalid mangled key');
                     }
 
                     if ('*' === $scopeName) {
@@ -438,13 +444,16 @@ final class DeepClone
             unset($value);
         }
 
-        $obj_class = $object::class;
         foreach ($scoped_vars as $scope => $properties) {
             if (!\is_array($properties)) {
-                throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) must have only array values, %s given for key "%s"', get_debug_type($properties), $scope));
+                throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) must have only array values, %s given for key "%s"', get_debug_type($properties), $scope));
             }
-            if ('stdClass' !== $scope && $scope !== $obj_class && (!is_a($obj_class, $scope, true) || interface_exists($scope, false))) {
-                throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) scope "%s" is not a parent of "%s"', $scope, $obj_class));
+            if ('stdClass' !== $scope && $scope !== $class && (!is_a($class, $scope, true) || interface_exists($scope, false))) {
+                throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" is not a parent of "%s"', $scope, $class));
+            }
+            // Footgun: NUL-prefixed scope key almost certainly means a missing DEEPCLONE_HYDRATE_MANGLED_VARS flag.
+            if ('' !== $scope && "\0" === $scope[0]) {
+                throw new \ValueError('deepclone_hydrate(): Argument #2 ($vars) contains a NUL-prefixed key — pass DEEPCLONE_HYDRATE_MANGLED_VARS in the $flags argument to interpret $vars as a flat mangled-key array');
             }
             if (isset($properties["\0"]) && \is_array($properties["\0"])) {
                 $special = $properties["\0"];
@@ -455,37 +464,27 @@ final class DeepClone
                         $object[$special[$i]] = $special[$i + 1];
                     }
                 } elseif ($object instanceof \ArrayObject || $object instanceof \ArrayIterator) {
-                    (new \ReflectionClass($object))->getConstructor()->invokeArgs($object, $special);
+                    $r ??= self::$reflectors[$class] ?? new \ReflectionClass($class);
+                    $r->getConstructor()->invokeArgs($object, $special);
                 }
             }
             foreach ($properties as $name => $v) {
                 if (!\is_string($name)) {
-                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) scope "%s" must have only string keys', $scope));
+                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" must have only string keys', $scope));
                 }
                 if (\str_contains($name, "\0")) {
-                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($scoped_vars) scope "%s" contains an invalid property name; use bare property names in $scoped_vars, or pass mangled keys via $mangled_vars', $scope));
+                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" contains an invalid property name; use bare property names in scoped mode, or pass DEEPCLONE_HYDRATE_MANGLED_VARS in $flags', $scope));
                 }
             }
             if ($properties) {
-                /* Fast path: NO_LAZY_INIT only matters when the target is a
-                 * lazy ghost/proxy with uninitialized lazy props. Otherwise
-                 * the default (setRawValue-style) hydrator yields identical
-                 * results without paying for per-prop ReflectionProperty
-                 * dispatch. */
-                $effectiveFlags = $flags;
+                $effectiveFlags = $flags & \DEEPCLONE_HYDRATE_CALL_HOOKS;
                 if (\PHP_VERSION_ID >= 80400 && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
-                    /* Read-only fallback: don't write into self::$reflectors —
-                     * that map is only safe to populate via getClassReflector(),
-                     * which sets up the companion $cloneable / $prototypes /
-                     * $instantiableWithoutConstructor entries. */
-                    $rc = self::$reflectors[$obj_class] ?? new \ReflectionClass($obj_class);
-                    if (!$rc->isUninitializedLazyObject($object)) {
-                        $effectiveFlags = $flags & ~\DEEPCLONE_HYDRATE_NO_LAZY_INIT;
+                    $r ??= self::$reflectors[$class] ?? new \ReflectionClass($class);
+                    if ($r->isUninitializedLazyObject($object)) {
+                        $effectiveFlags |= \DEEPCLONE_HYDRATE_NO_LAZY_INIT;
                     }
                 }
-                /* Only flag-decorate the cache key when needed; the common
-                 * default-flags path stays a single hash lookup. */
-                $cacheKey = $effectiveFlags ? $scope.':'.$effectiveFlags : $scope;
+                $cacheKey = $effectiveFlags ? $effectiveFlags.$scope : $scope;
                 (self::$simpleHydrators[$cacheKey] ??= self::getSimpleHydrator($scope, $effectiveFlags))($properties, $object);
             }
         }
@@ -1263,6 +1262,7 @@ final class DeepClone
                 };
         }
 
+        // self::$reflectors must be populated via getClassReflector() (companion caches), so read with ??.
         $classReflector = self::$reflectors[$class] ?? new \ReflectionClass($class);
 
         switch ($class) {
@@ -1387,12 +1387,7 @@ final class DeepClone
                     continue;
                 }
                 if ($noLazyInit && !$propertyReflector->isVirtual()) {
-                    /* NO_LAZY_INIT: delegate to
-                     * ReflectionProperty::setRawValueWithoutLazyInitialization
-                     * which clears IS_PROP_LAZY, skips the initializer, and
-                     * realizes the object when the last lazy prop is set.
-                     * Virtual hooked props fall through to the engine (which
-                     * rejects setRawValueWithoutLazyInitialization on virtual). */
+                    // Virtual hooked props fall through — setRawValueWithoutLazyInitialization rejects them.
                     $notByRef->{$propertyReflector->name} = $propertyReflector->setRawValueWithoutLazyInitialization(...);
                     continue;
                 }
@@ -1406,9 +1401,7 @@ final class DeepClone
                     }
                 } elseif ($propertyReflector->isReadOnly()) {
                     $notByRef->{$propertyReflector->name} = static function ($object, $value) use ($propertyReflector) {
-                        /* Idempotent hydrate: if the readonly slot already holds
-                         * the same value (===), silently skip. Avoids "Cannot
-                         * modify readonly property" on no-op rehydration. */
+                        // Idempotent rehydrate: skip same-value writes that the engine would reject.
                         if ($propertyReflector->isInitialized($object)
                             && $propertyReflector->getValue($object) === $value)
                         {
@@ -1417,21 +1410,11 @@ final class DeepClone
                         $propertyReflector->setValue($object, $value);
                     };
                 } elseif (($type = $propertyReflector->getType()) && !$type->allowsNull()) {
-                    /* null into a non-nullable typed slot: unset (restore
-                     * uninitialized state) instead of raising TypeError.
-                     * Reached only via the elseif chain, so hooked props are
-                     * already excluded — the gate is per-prop, non-hooked
-                     * typed props in a CALL_HOOKS-mode scope still get the
-                     * forgiving treatment. The unset runs in the bound
-                     * closure below so scope is preserved. */
+                    // null → uninitialized; hooked props are already filtered above.
                     $unsetOnNull[$propertyReflector->name] = true;
                 }
 
-                /* Backed-enum cast: when the prop is typed with a single
-                 * (possibly nullable) backed enum, scalar payload values
-                 * matching the enum's backing type are cast to the case.
-                 * Decision rests on the property type only — hook presence
-                 * and CALL_HOOKS mode don't change it. */
+                // Property-type-only decision: hook presence and CALL_HOOKS don't influence it.
                 if (($t = $propertyReflector->getType()) instanceof \ReflectionNamedType
                     && !$t->isBuiltin()
                     && enum_exists($enumName = $t->getName())
@@ -1441,10 +1424,7 @@ final class DeepClone
                 }
             }
 
-            /* Three closure variants by which forgiving rules apply to the
-             * scope's properties. Each variant skips per-iteration checks for
-             * rules that can never trip — keeps the lean baseline when no
-             * forgiving feature is actually in play. */
+            // Three variants so the lean path skips per-iteration checks that can't trip.
             if (!$unsetOnNull && !$backedEnum) {
                 return (function ($properties, $object) {
                     $notByRef = (array) $this;
