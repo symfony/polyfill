@@ -1646,15 +1646,75 @@ class DeepCloneTest extends TestCase
         $this->assertNull($o->y);
     }
 
-    public function testHydrateCallHooksDoesNotUnsetOnNull()
+    public function testHydrateCallHooksStillUnsetsOnNullForNonHookedProps()
     {
+        // Per-prop gate: TypedInt::$x is not hooked, so A2 still applies
+        // even under CALL_HOOKS.
         $o = new TypedInt();
-        try {
-            deepclone_hydrate($o, [TypedInt::class => ['x' => null]], [], \DEEPCLONE_HYDRATE_CALL_HOOKS);
-            $this->fail('Expected TypeError under CALL_HOOKS');
-        } catch (\TypeError $e) {
-            $this->assertStringContainsString('type int', $e->getMessage());
-        }
-        $this->assertSame(0, $o->x);
+        $o = deepclone_hydrate($o, [TypedInt::class => ['x' => null]], [], \DEEPCLONE_HYDRATE_CALL_HOOKS);
+        $this->assertFalse((new \ReflectionProperty(TypedInt::class, 'x'))->isInitialized($o));
+    }
+
+    public function testHydrateStringCastToBackedEnum()
+    {
+        $o = deepclone_hydrate(WithBackedEnums::class, [WithBackedEnums::class => ['s' => 'S']]);
+        $this->assertSame(DeepCloneHydrateSuit::Spades, $o->s);
+    }
+
+    public function testHydrateIntCastToBackedEnum()
+    {
+        $o = deepclone_hydrate(WithBackedEnums::class, [WithBackedEnums::class => ['n' => 2]]);
+        $this->assertSame(DeepCloneHydrateSize::Large, $o->n);
+    }
+
+    public function testHydrateNullableBackedEnumKeepsNull()
+    {
+        $o = deepclone_hydrate(WithBackedEnums::class, [WithBackedEnums::class => ['ns' => null]]);
+        $this->assertNull($o->ns);
+    }
+
+    public function testHydrateNullableBackedEnumCastsScalar()
+    {
+        $o = deepclone_hydrate(WithBackedEnums::class, [WithBackedEnums::class => ['ns' => 'S']]);
+        $this->assertSame(DeepCloneHydrateSuit::Spades, $o->ns);
+    }
+
+    public function testHydrateUnknownEnumValueThrows()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('not a valid backing value for enum');
+        deepclone_hydrate(WithBackedEnums::class, [WithBackedEnums::class => ['s' => 'X']]);
+    }
+
+    public function testHydrateEnumCastStillAppliesToNonHookedPropsUnderCallHooks()
+    {
+        // Per-prop gate: WithBackedEnums::$s has no set hook, so A3 still
+        // applies even under CALL_HOOKS.
+        $o = deepclone_hydrate(WithBackedEnums::class, [WithBackedEnums::class => ['s' => 'S']], [], \DEEPCLONE_HYDRATE_CALL_HOOKS);
+        $this->assertSame(DeepCloneHydrateSuit::Spades, $o->s);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateEnumCastAppliesToHookedPropUnderCallHooks()
+    {
+        // Property-type-only rule: the cast is decided from the prop type,
+        // not the hook signature. The hook receives the enum case.
+        $o = deepclone_hydrate(HookedEnumMatchingParam::class, [HookedEnumMatchingParam::class => ['s' => 'S']], [], \DEEPCLONE_HYDRATE_CALL_HOOKS);
+        $this->assertSame(DeepCloneHydrateSuit::Spades, $o->s);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateEnumCastAppliesEvenWhenHookParamIsWider()
+    {
+        // Wider hook signature `set(Suit|string $v)` doesn't change the
+        // hydrate decision: cast first, hook receives the enum case via
+        // its non-string union arm.
+        $o = deepclone_hydrate(HookedEnumWiderParam::class, [HookedEnumWiderParam::class => ['s' => 'S']], [], \DEEPCLONE_HYDRATE_CALL_HOOKS);
+        $this->assertSame(DeepCloneHydrateSuit::Spades, $o->s);
+        $this->assertNull(HookedEnumWiderParam::$lastRaw);
     }
 }

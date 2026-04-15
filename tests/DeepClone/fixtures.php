@@ -303,6 +303,16 @@ trait HydrateTrait
 {
 }
 
+enum DeepCloneHydrateSuit: string { case Hearts = 'H'; case Spades = 'S'; }
+enum DeepCloneHydrateSize: int    { case Small = 1;   case Large = 2;   }
+
+class WithBackedEnums
+{
+    public DeepCloneHydrateSuit $s = DeepCloneHydrateSuit::Hearts;
+    public ?DeepCloneHydrateSuit $ns = DeepCloneHydrateSuit::Hearts;
+    public DeepCloneHydrateSize $n = DeepCloneHydrateSize::Small;
+}
+
 class TypedInt
 {
     public int $x = 0;
@@ -351,6 +361,26 @@ class HookedProps {
 class HookedBackingProps {
     public int $x = 0 {
         set(int $value) { $this->x = $value * 10; }
+    }
+}
+
+class HookedEnumMatchingParam {
+    public DeepCloneHydrateSuit $s = DeepCloneHydrateSuit::Hearts {
+        set(DeepCloneHydrateSuit $value) { $this->s = $value; }
+    }
+}
+
+class HookedEnumWiderParam {
+    public static ?string $lastRaw = null;
+    public DeepCloneHydrateSuit $s = DeepCloneHydrateSuit::Hearts {
+        set(DeepCloneHydrateSuit|string $value) {
+            if (\is_string($value)) {
+                self::$lastRaw = 'raw:'.$value;
+                $this->s = DeepCloneHydrateSuit::from($value);
+            } else {
+                $this->s = $value;
+            }
+        }
     }
 }
 PHP);

@@ -1359,6 +1359,7 @@ final class DeepClone
         if (!$classReflector->isInternal()) {
             $notByRef = new \stdClass();
             $unsetOnNull = [];
+            $backedEnum = [];
             foreach ($classReflector->getProperties() as $propertyReflector) {
                 if ($propertyReflector->isStatic()) {
                     continue;
@@ -1383,22 +1384,80 @@ final class DeepClone
                         }
                         $propertyReflector->setValue($object, $value);
                     };
-                } elseif (!$callHooks && ($type = $propertyReflector->getType()) && !$type->allowsNull()) {
+                } elseif (($type = $propertyReflector->getType()) && !$type->allowsNull()) {
                     /* null into a non-nullable typed slot: unset (restore
                      * uninitialized state) instead of raising TypeError.
-                     * Not applied under CALL_HOOKS. The actual unset runs in
-                     * the bound closure below so scope is preserved. */
+                     * Reached only via the elseif chain, so hooked props are
+                     * already excluded — the gate is per-prop, non-hooked
+                     * typed props in a CALL_HOOKS-mode scope still get the
+                     * forgiving treatment. The unset runs in the bound
+                     * closure below so scope is preserved. */
                     $unsetOnNull[$propertyReflector->name] = true;
+                }
+
+                /* Backed-enum cast: when the prop is typed with a single
+                 * (possibly nullable) backed enum, scalar payload values
+                 * matching the enum's backing type are cast to the case.
+                 * Decision rests on the property type only — hook presence
+                 * and CALL_HOOKS mode don't change it. */
+                if (($t = $propertyReflector->getType()) instanceof \ReflectionNamedType
+                    && !$t->isBuiltin()
+                    && enum_exists($enumName = $t->getName())
+                    && null !== ($backingType = (new \ReflectionEnum($enumName))->getBackingType())
+                ) {
+                    $backedEnum[$propertyReflector->name] = $enumName;
                 }
             }
 
-            return (function ($properties, $object) use ($unsetOnNull) {
+            /* Three closure variants by which forgiving rules apply to the
+             * scope's properties. Each variant skips per-iteration checks for
+             * rules that can never trip — keeps the lean baseline when no
+             * forgiving feature is actually in play. */
+            if (!$unsetOnNull && !$backedEnum) {
+                return (function ($properties, $object) {
+                    $notByRef = (array) $this;
+                    foreach ($properties as $name => &$value) {
+                        if (!$noRef = $notByRef[$name] ?? false) {
+                            $object->$name = $value;
+                            $object->$name = &$value;
+                        } elseif (true !== $noRef) {
+                            $noRef($object, $value);
+                        } else {
+                            $object->$name = $value;
+                        }
+                    }
+                })->bindTo($notByRef, $class);
+            }
+            if (!$backedEnum) {
+                return (function ($properties, $object) use ($unsetOnNull) {
+                    $notByRef = (array) $this;
+                    foreach ($properties as $name => &$value) {
+                        if (null === $value && isset($unsetOnNull[$name])) {
+                            unset($object->$name);
+                            continue;
+                        }
+                        if (!$noRef = $notByRef[$name] ?? false) {
+                            $object->$name = $value;
+                            $object->$name = &$value;
+                        } elseif (true !== $noRef) {
+                            $noRef($object, $value);
+                        } else {
+                            $object->$name = $value;
+                        }
+                    }
+                })->bindTo($notByRef, $class);
+            }
+
+            return (function ($properties, $object) use ($unsetOnNull, $backedEnum) {
                 $notByRef = (array) $this;
 
                 foreach ($properties as $name => &$value) {
                     if (null === $value && isset($unsetOnNull[$name])) {
                         unset($object->$name);
                         continue;
+                    }
+                    if (isset($backedEnum[$name]) && (\is_int($value) || \is_string($value))) {
+                        $value = $backedEnum[$name]::from($value);
                     }
                     if (!$noRef = $notByRef[$name] ?? false) {
                         $object->$name = $value;
