@@ -1217,7 +1217,7 @@ class DeepCloneTest extends TestCase
         $properties = ['p1' => 1];
         $properties['p2'] = &$properties['p1'];
 
-        $obj = deepclone_hydrate('stdClass', $properties, \DEEPCLONE_HYDRATE_MANGLED_VARS);
+        $obj = deepclone_hydrate('stdClass', $properties, \DEEPCLONE_HYDRATE_MANGLED_VARS | \DEEPCLONE_HYDRATE_PRESERVE_REFS);
 
         $this->assertSame(1, $obj->p1);
         $this->assertSame(1, $obj->p2);
@@ -1227,14 +1227,39 @@ class DeepCloneTest extends TestCase
         $this->assertSame(2, $obj->p2);
     }
 
+    public function testHydratePhpReferencesNotPreservedByDefault()
+    {
+        $properties = ['p1' => 1];
+        $properties['p2'] = &$properties['p1'];
+
+        $obj = deepclone_hydrate('stdClass', $properties, \DEEPCLONE_HYDRATE_MANGLED_VARS);
+
+        $this->assertSame(1, $obj->p1);
+        $this->assertSame(1, $obj->p2);
+
+        $properties['p1'] = 2;
+        $this->assertSame(1, $obj->p1);
+        $this->assertSame(1, $obj->p2);
+    }
+
     public function testHydrateScopedReferences()
+    {
+        $v = 'hello';
+        $obj = deepclone_hydrate('stdClass', ['stdClass' => ['x' => &$v, 'y' => &$v]], \DEEPCLONE_HYDRATE_PRESERVE_REFS);
+
+        $v = 'world';
+        $this->assertSame('world', $obj->x);
+        $this->assertSame('world', $obj->y);
+    }
+
+    public function testHydrateScopedReferencesNotPreservedByDefault()
     {
         $v = 'hello';
         $obj = deepclone_hydrate('stdClass', ['stdClass' => ['x' => &$v, 'y' => &$v]]);
 
         $v = 'world';
-        $this->assertSame('world', $obj->x);
-        $this->assertSame('world', $obj->y);
+        $this->assertSame('hello', $obj->x);
+        $this->assertSame('hello', $obj->y);
     }
 
     public function testHydrateClassNotFound()

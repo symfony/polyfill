@@ -372,19 +372,11 @@ final class DeepClone
 
     public static function deepclone_hydrate(object|string $object_or_class, array $vars = [], int $flags = 0): object
     {
-        if ($flags & ~(\DEEPCLONE_HYDRATE_CALL_HOOKS | \DEEPCLONE_HYDRATE_NO_LAZY_INIT | \DEEPCLONE_HYDRATE_MANGLED_VARS)) {
+        if ($flags & ~(\DEEPCLONE_HYDRATE_CALL_HOOKS | \DEEPCLONE_HYDRATE_NO_LAZY_INIT | \DEEPCLONE_HYDRATE_MANGLED_VARS | \DEEPCLONE_HYDRATE_PRESERVE_REFS)) {
             throw new \ValueError('deepclone_hydrate(): Argument #3 ($flags) contains unknown bits');
         }
         if (($flags & \DEEPCLONE_HYDRATE_CALL_HOOKS) && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
             throw new \ValueError('deepclone_hydrate(): Argument #3 ($flags) DEEPCLONE_HYDRATE_CALL_HOOKS and DEEPCLONE_HYDRATE_NO_LAZY_INIT are mutually exclusive');
-        }
-
-        if ($flags & \DEEPCLONE_HYDRATE_MANGLED_VARS) {
-            $mangled_vars = $vars;
-            $scoped_vars = [];
-        } else {
-            $scoped_vars = $vars;
-            $mangled_vars = [];
         }
 
         if (\is_string($class = $object_or_class)) {
@@ -404,6 +396,31 @@ final class DeepClone
             $r = null;
             $object = $object_or_class;
             $class = $object::class;
+        }
+
+        // Fast path: scoped mode, single scope equal to the object's class, no flags
+        // other than (optionally) PRESERVE_REFS. Most common shape for DTO hydration.
+        if (!($flags & ~\DEEPCLONE_HYDRATE_PRESERVE_REFS) && isset($vars[$class]) && 1 === \count($vars)) {
+            $properties = $vars[$class];
+            if (\is_array($properties) && $properties && !isset($properties["\0"])) {
+                $hasRefs = false;
+                if ($flags & \DEEPCLONE_HYDRATE_PRESERVE_REFS) {
+                    foreach ($properties as $k => $_) {
+                        if (\ReflectionReference::fromArrayElement($properties, $k)) { $hasRefs = true; break; }
+                    }
+                }
+                (self::$simpleHydrators[$class] ??= self::getSimpleHydrator($class))($properties, $object, $hasRefs);
+
+                return $object;
+            }
+        }
+
+        if ($flags & \DEEPCLONE_HYDRATE_MANGLED_VARS) {
+            $mangled_vars = $vars;
+            $scoped_vars = [];
+        } else {
+            $scoped_vars = $vars;
+            $mangled_vars = [];
         }
 
         if ($mangled_vars) {
@@ -468,15 +485,16 @@ final class DeepClone
                     $r->getConstructor()->invokeArgs($object, $special);
                 }
             }
-            foreach ($properties as $name => $v) {
-                if (!\is_string($name)) {
-                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" must have only string keys', $scope));
-                }
-                if (\str_contains($name, "\0")) {
-                    throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" contains an invalid property name; use bare property names in scoped mode, or pass DEEPCLONE_HYDRATE_MANGLED_VARS in $flags', $scope));
-                }
-            }
             if ($properties) {
+                // Under PRESERVE_REFS, probe once to preserve PHP & references only
+                // when the input carries any. Otherwise skip ref handling entirely.
+                $hasRefs = false;
+                if ($flags & \DEEPCLONE_HYDRATE_PRESERVE_REFS) {
+                    foreach ($properties as $k => $_) {
+                        if (\ReflectionReference::fromArrayElement($properties, $k)) { $hasRefs = true; break; }
+                    }
+                }
+
                 $effectiveFlags = $flags & \DEEPCLONE_HYDRATE_CALL_HOOKS;
                 if (\PHP_VERSION_ID >= 80400 && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT)) {
                     $r ??= self::$reflectors[$class] ?? new \ReflectionClass($class);
@@ -485,11 +503,25 @@ final class DeepClone
                     }
                 }
                 $cacheKey = $effectiveFlags ? $effectiveFlags.$scope : $scope;
-                (self::$simpleHydrators[$cacheKey] ??= self::getSimpleHydrator($scope, $effectiveFlags))($properties, $object);
+                (self::$simpleHydrators[$cacheKey] ??= self::getSimpleHydrator($scope, $effectiveFlags))($properties, $object, $hasRefs);
             }
         }
 
         return $object;
+    }
+
+    /**
+     * @internal
+     *
+     * Cold path invoked from the generated hydrator closures to report a
+     * property name that is not a string or contains a NUL byte.
+     */
+    public static function throwInvalidPropName(mixed $name, string $scope): never
+    {
+        if (!\is_string($name)) {
+            throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" must have only string keys', $scope));
+        }
+        throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) scope "%s" contains an invalid property name; use bare property names in scoped mode, or pass DEEPCLONE_HYDRATE_MANGLED_VARS in $flags', $scope));
     }
 
     /**
@@ -1322,10 +1354,22 @@ final class DeepClone
     {
         $callHooks = (bool) ($flags & \DEEPCLONE_HYDRATE_CALL_HOOKS);
         $noLazyInit = \PHP_VERSION_ID >= 80400 && ($flags & \DEEPCLONE_HYDRATE_NO_LAZY_INIT);
-        $baseHydrator = self::$simpleHydrators['stdClass'] ??= static function ($properties, $object) {
-            foreach ($properties as $name => &$value) {
-                $object->$name = $value;
-                $object->$name = &$value;
+        $baseHydrator = self::$simpleHydrators['stdClass'] ??= static function ($properties, $object, $hasRefs) {
+            if ($hasRefs) {
+                foreach ($properties as $name => &$value) {
+                    if (!\is_string($name) || \str_contains($name, "\0")) {
+                        DeepClone::throwInvalidPropName($name, 'stdClass');
+                    }
+                    $object->$name = $value;
+                    $object->$name = &$value;
+                }
+            } else {
+                foreach ($properties as $name => $value) {
+                    if (!\is_string($name) || \str_contains($name, "\0")) {
+                        DeepClone::throwInvalidPropName($name, 'stdClass');
+                    }
+                    $object->$name = $value;
+                }
             }
         };
 
@@ -1379,7 +1423,7 @@ final class DeepClone
         }
 
         if (!$classReflector->isInternal()) {
-            $notByRef = new \stdClass();
+            $notByRef = [];
             $unsetOnNull = [];
             $backedEnum = [];
             foreach ($classReflector->getProperties() as $propertyReflector) {
@@ -1388,19 +1432,19 @@ final class DeepClone
                 }
                 if ($noLazyInit && !$propertyReflector->isVirtual()) {
                     // Virtual hooked props fall through — setRawValueWithoutLazyInitialization rejects them.
-                    $notByRef->{$propertyReflector->name} = $propertyReflector->setRawValueWithoutLazyInitialization(...);
+                    $notByRef[$propertyReflector->name] = $propertyReflector->setRawValueWithoutLazyInitialization(...);
                     continue;
                 }
                 if (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
                     if ($propertyReflector->isVirtual()) {
-                        $notByRef->{$propertyReflector->name} = true;
+                        $notByRef[$propertyReflector->name] = true;
                     } else {
-                        $notByRef->{$propertyReflector->name} = $callHooks
+                        $notByRef[$propertyReflector->name] = $callHooks
                             ? $propertyReflector->setValue(...)
                             : $propertyReflector->setRawValue(...);
                     }
                 } elseif ($propertyReflector->isReadOnly()) {
-                    $notByRef->{$propertyReflector->name} = static function ($object, $value) use ($propertyReflector) {
+                    $notByRef[$propertyReflector->name] = static function ($object, $value) use ($propertyReflector) {
                         // Idempotent rehydrate: skip same-value writes that the engine would reject.
                         if ($propertyReflector->isInitialized($object)
                             && $propertyReflector->getValue($object) === $value)
@@ -1424,30 +1468,96 @@ final class DeepClone
                 }
             }
 
-            // Three variants so the lean path skips per-iteration checks that can't trip.
+            $scope = $class;
+
+            // Three variants × ref-preserving vs ref-less, so the common (no-refs) hot path skips
+            // the by-ref double-write and the per-iteration checks that can't trip.
             if (!$unsetOnNull && !$backedEnum) {
-                return (function ($properties, $object) {
-                    $notByRef = (array) $this;
-                    foreach ($properties as $name => &$value) {
-                        if (!$noRef = $notByRef[$name] ?? false) {
-                            $object->$name = $value;
-                            $object->$name = &$value;
-                        } elseif (true !== $noRef) {
-                            $noRef($object, $value);
-                        } else {
-                            $object->$name = $value;
+                return \Closure::bind(static function ($properties, $object, $hasRefs) use ($notByRef, $scope): void {
+                    if ($hasRefs) {
+                        foreach ($properties as $name => &$value) {
+                            if (!\is_string($name) || \str_contains($name, "\0")) {
+                                DeepClone::throwInvalidPropName($name, $scope);
+                            }
+                            if (!$noRef = $notByRef[$name] ?? false) {
+                                $object->$name = $value;
+                                $object->$name = &$value;
+                            } elseif (true !== $noRef) {
+                                $noRef($object, $value);
+                            } else {
+                                $object->$name = $value;
+                            }
+                        }
+                    } else {
+                        foreach ($properties as $name => $value) {
+                            if (!\is_string($name) || \str_contains($name, "\0")) {
+                                DeepClone::throwInvalidPropName($name, $scope);
+                            }
+                            if (!$noRef = $notByRef[$name] ?? false) {
+                                $object->$name = $value;
+                            } elseif (true !== $noRef) {
+                                $noRef($object, $value);
+                            } else {
+                                $object->$name = $value;
+                            }
                         }
                     }
-                })->bindTo($notByRef, $class);
+                }, null, $class);
             }
             if (!$backedEnum) {
-                return (function ($properties, $object) use ($unsetOnNull) {
-                    $notByRef = (array) $this;
+                return \Closure::bind(static function ($properties, $object, $hasRefs) use ($notByRef, $unsetOnNull, $scope): void {
+                    if ($hasRefs) {
+                        foreach ($properties as $name => &$value) {
+                            if (!\is_string($name) || \str_contains($name, "\0")) {
+                                DeepClone::throwInvalidPropName($name, $scope);
+                            }
+                            if (null === $value && isset($unsetOnNull[$name])) {
+                                unset($object->$name);
+                                continue;
+                            }
+                            if (!$noRef = $notByRef[$name] ?? false) {
+                                $object->$name = $value;
+                                $object->$name = &$value;
+                            } elseif (true !== $noRef) {
+                                $noRef($object, $value);
+                            } else {
+                                $object->$name = $value;
+                            }
+                        }
+                    } else {
+                        foreach ($properties as $name => $value) {
+                            if (!\is_string($name) || \str_contains($name, "\0")) {
+                                DeepClone::throwInvalidPropName($name, $scope);
+                            }
+                            if (null === $value && isset($unsetOnNull[$name])) {
+                                unset($object->$name);
+                                continue;
+                            }
+                            if (!$noRef = $notByRef[$name] ?? false) {
+                                $object->$name = $value;
+                            } elseif (true !== $noRef) {
+                                $noRef($object, $value);
+                            } else {
+                                $object->$name = $value;
+                            }
+                        }
+                    }
+                }, null, $class);
+            }
+
+            return \Closure::bind(static function ($properties, $object, $hasRefs) use ($notByRef, $unsetOnNull, $backedEnum, $scope): void {
+                if ($hasRefs) {
                     foreach ($properties as $name => &$value) {
+                        if (!\is_string($name) || \str_contains($name, "\0")) {
+                            DeepClone::throwInvalidPropName($name, $scope);
+                        }
                         if (null === $value && isset($unsetOnNull[$name])) {
                             unset($object->$name);
                             continue;
                         }
+                        if (isset($backedEnum[$name]) && (\is_int($value) || \is_string($value))) {
+                            $value = $backedEnum[$name]::from($value);
+                        }
                         if (!$noRef = $notByRef[$name] ?? false) {
                             $object->$name = $value;
                             $object->$name = &$value;
@@ -1457,30 +1567,28 @@ final class DeepClone
                             $object->$name = $value;
                         }
                     }
-                })->bindTo($notByRef, $class);
-            }
-
-            return (function ($properties, $object) use ($unsetOnNull, $backedEnum) {
-                $notByRef = (array) $this;
-
-                foreach ($properties as $name => &$value) {
-                    if (null === $value && isset($unsetOnNull[$name])) {
-                        unset($object->$name);
-                        continue;
-                    }
-                    if (isset($backedEnum[$name]) && (\is_int($value) || \is_string($value))) {
-                        $value = $backedEnum[$name]::from($value);
-                    }
-                    if (!$noRef = $notByRef[$name] ?? false) {
-                        $object->$name = $value;
-                        $object->$name = &$value;
-                    } elseif (true !== $noRef) {
-                        $noRef($object, $value);
-                    } else {
-                        $object->$name = $value;
+                } else {
+                    foreach ($properties as $name => $value) {
+                        if (!\is_string($name) || \str_contains($name, "\0")) {
+                            DeepClone::throwInvalidPropName($name, $scope);
+                        }
+                        if (null === $value && isset($unsetOnNull[$name])) {
+                            unset($object->$name);
+                            continue;
+                        }
+                        if (isset($backedEnum[$name]) && (\is_int($value) || \is_string($value))) {
+                            $value = $backedEnum[$name]::from($value);
+                        }
+                        if (!$noRef = $notByRef[$name] ?? false) {
+                            $object->$name = $value;
+                        } elseif (true !== $noRef) {
+                            $noRef($object, $value);
+                        } else {
+                            $object->$name = $value;
+                        }
                     }
                 }
-            })->bindTo($notByRef, $class);
+            }, null, $class);
         }
 
         if ($classReflector->name !== $class) {

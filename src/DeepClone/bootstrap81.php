@@ -30,6 +30,9 @@ if (!defined('DEEPCLONE_HYDRATE_NO_LAZY_INIT')) {
 if (!defined('DEEPCLONE_HYDRATE_MANGLED_VARS')) {
     define('DEEPCLONE_HYDRATE_MANGLED_VARS', 1 << 2);
 }
+if (!defined('DEEPCLONE_HYDRATE_PRESERVE_REFS')) {
+    define('DEEPCLONE_HYDRATE_PRESERVE_REFS', 1 << 3);
+}
 if (!function_exists('deepclone_hydrate')) {
     function deepclone_hydrate(object|string $object_or_class, array $vars = [], int $flags = 0): object { return p\DeepClone::deepclone_hydrate($object_or_class, $vars, $flags); }
 }
