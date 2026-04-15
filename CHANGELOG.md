@@ -1,6 +1,6 @@
-# 1.35.1
+# 1.36.0
 
-  * Fix PHP warning for `__sleep()`-listed uninitialized declared properties
+  * Polyfill deepclone v0.3.0
 
 # 1.35.0
 
