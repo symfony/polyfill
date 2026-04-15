@@ -303,6 +303,18 @@ trait HydrateTrait
 {
 }
 
+class PrivShadowA
+{
+    private string $x = 'a_init';
+    public function get(): string { return $this->x; }
+}
+
+class PrivShadowB extends PrivShadowA
+{
+    private string $x = 'b_init';
+    public function getChild(): string { return $this->x; }
+}
+
 class ScopeParent
 {
     public int $pub = 0;

@@ -1505,4 +1505,42 @@ class DeepCloneTest extends TestCase
         $h = deepclone_hydrate(HookedBackingProps::class, [HookedBackingProps::class => ['x' => 7]]);
         $this->assertSame(7, $h->x);
     }
+
+    public function testPrivateShadowingDistinctSlotsPerScope()
+    {
+        $b = new PrivShadowB();
+        deepclone_hydrate($b, [
+            PrivShadowA::class => ['x' => 'A_written'],
+            PrivShadowB::class => ['x' => 'B_written'],
+        ]);
+        $this->assertSame('A_written', $b->get());
+        $this->assertSame('B_written', $b->getChild());
+    }
+
+    public function testPrivateShadowingRoundtripPreservesBothSlots()
+    {
+        $orig = new PrivShadowB();
+        (new \ReflectionProperty(PrivShadowA::class, 'x'))->setValue($orig, 'parent_val');
+        (new \ReflectionProperty(PrivShadowB::class, 'x'))->setValue($orig, 'child_val');
+
+        $clone = deepclone_from_array(deepclone_to_array($orig));
+        $this->assertSame('parent_val', $clone->get());
+        $this->assertSame('child_val', $clone->getChild());
+    }
+
+    public function testPrivateShadowingBareMangledNameTargetsMostDerived()
+    {
+        $b = new PrivShadowB();
+        deepclone_hydrate($b, [], ['x' => 'bare_val']);
+        $this->assertSame('a_init', $b->get());
+        $this->assertSame('bare_val', $b->getChild());
+    }
+
+    public function testPrivateShadowingMangledKeyTargetsParentSlot()
+    {
+        $b = new PrivShadowB();
+        deepclone_hydrate($b, [], ["\0".PrivShadowA::class."\0x" => 'parent_targeted']);
+        $this->assertSame('parent_targeted', $b->get());
+        $this->assertSame('b_init', $b->getChild());
+    }
 }
