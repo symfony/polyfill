@@ -236,6 +236,17 @@ class AbstractScopeChild extends AbstractScopeBase
     }
 }
 
+class AllowedParent
+{
+    private string $secret = '';
+    public function getSecret(): string { return $this->secret; }
+}
+
+class AllowedChild extends AllowedParent
+{
+    public string $pub = '';
+}
+
 abstract class AbstractWithPrivate
 {
     private string $secret = 'default';
