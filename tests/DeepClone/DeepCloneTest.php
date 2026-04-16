@@ -1167,7 +1167,7 @@ class DeepCloneTest extends TestCase
 
         $this->assertInstanceOf(\ArrayObject::class, $ao);
         $this->assertSame(1, $ao['x']);
-        $this->assertTrue($ao->getFlags() === \ArrayObject::ARRAY_AS_PROPS);
+        $this->assertTrue(\ArrayObject::ARRAY_AS_PROPS === $ao->getFlags());
     }
 
     public function testHydrateArrayIterator()
@@ -1386,7 +1386,7 @@ class DeepCloneTest extends TestCase
         $this->assertArrayHasKey("\0".HydrateP::class."\0mid", $props);
     }
 
-public function testHydrateReflectorSubclass()
+    public function testHydrateReflectorSubclass()
     {
         $this->expectException(\DeepClone\NotInstantiableException::class);
         deepclone_hydrate('ReflectionClass');
@@ -1428,7 +1428,7 @@ public function testHydrateReflectorSubclass()
     {
         $o = new AbstractScopeChild('entity');
         $errors = [];
-        set_error_handler(function ($_, $msg) use (&$errors) {
+        set_error_handler(static function ($_, $msg) use (&$errors) {
             $errors[] = $msg;
 
             return true;
@@ -1480,7 +1480,7 @@ public function testHydrateReflectorSubclass()
         $this->assertSame('val', $o->{'0'});
     }
 
-public function testFromArrayRejectsUnloadedScope()
+    public function testFromArrayRejectsUnloadedScope()
     {
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('scope "NoSuchScope"');
@@ -1670,7 +1670,7 @@ public function testFromArrayRejectsUnloadedScope()
     {
         $rc = new \ReflectionClass(TypedInt::class);
         $initRan = 0;
-        $ghost = $rc->newLazyGhost(function (TypedInt $o) use (&$initRan) {
+        $ghost = $rc->newLazyGhost(static function (TypedInt $o) use (&$initRan) {
             ++$initRan;
             $o->x = 1;
         });
@@ -1686,7 +1686,7 @@ public function testFromArrayRejectsUnloadedScope()
     {
         $rc = new \ReflectionClass(TypedInt::class);
         $initRan = 0;
-        $ghost = $rc->newLazyGhost(function (TypedInt $o) use (&$initRan) {
+        $ghost = $rc->newLazyGhost(static function (TypedInt $o) use (&$initRan) {
             ++$initRan;
             $o->x = 1;
         });

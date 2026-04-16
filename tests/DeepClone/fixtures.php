@@ -202,8 +202,16 @@ class HydrateBar extends HydrateFoo
 class CacheIsolationParent
 {
     private string $priv = 'def';
-    public function getPriv(): string { return $this->priv; }
-    public function setPriv(string $v): void { $this->priv = $v; }
+
+    public function getPriv(): string
+    {
+        return $this->priv;
+    }
+
+    public function setPriv(string $v): void
+    {
+        $this->priv = $v;
+    }
 }
 
 class CacheIsolationChild extends CacheIsolationParent
@@ -239,7 +247,11 @@ class AbstractScopeChild extends AbstractScopeBase
 class AllowedParent
 {
     private string $secret = '';
-    public function getSecret(): string { return $this->secret; }
+
+    public function getSecret(): string
+    {
+        return $this->secret;
+    }
 }
 
 class AllowedChild extends AllowedParent
@@ -270,27 +282,45 @@ class AbstractWithPrivateChild extends AbstractWithPrivate
 class HydrateBase
 {
     private string $secret = '';
-    public function getSecret(): string { return $this->secret; }
+
+    public function getSecret(): string
+    {
+        return $this->secret;
+    }
 }
 
 class HydrateChild extends HydrateBase
 {
     protected int $num = 0;
     public string $pub = '';
-    public function getNum(): int { return $this->num; }
+
+    public function getNum(): int
+    {
+        return $this->num;
+    }
 }
 
 class HydrateReadonly
 {
     public string $status = 'new';
     private readonly int $value;
-    public function __construct(int $value) { $this->value = $value; }
-    public function getValue(): int { return $this->value; }
+
+    public function __construct(int $value)
+    {
+        $this->value = $value;
+    }
+
+    public function getValue(): int
+    {
+        return $this->value;
+    }
 }
 
 class HydrateReadonlyObject
 {
-    public function __construct(public readonly \stdClass $o) {}
+    public function __construct(public readonly \stdClass $o)
+    {
+    }
 }
 
 class HydrateNullableInt
@@ -301,13 +331,21 @@ class HydrateNullableInt
 class HydrateGP
 {
     private string $secret = '';
-    public function getSecret(): string { return $this->secret; }
+
+    public function getSecret(): string
+    {
+        return $this->secret;
+    }
 }
 
 class HydrateP extends HydrateGP
 {
     private int $mid = 0;
-    public function getMid(): int { return $this->mid; }
+
+    public function getMid(): int
+    {
+        return $this->mid;
+    }
 }
 
 class HydrateC extends HydrateP
@@ -324,8 +362,16 @@ trait HydrateTrait
 {
 }
 
-enum DeepCloneHydrateSuit: string { case Hearts = 'H'; case Spades = 'S'; }
-enum DeepCloneHydrateSize: int    { case Small = 1;   case Large = 2;   }
+enum DeepCloneHydrateSuit: string
+{
+    case Hearts = 'H';
+    case Spades = 'S';
+}
+enum DeepCloneHydrateSize: int
+{
+    case Small = 1;
+    case Large = 2;
+}
 
 class WithBackedEnums
 {
@@ -347,13 +393,21 @@ class TypedReadonly
 class PrivShadowA
 {
     private string $x = 'a_init';
-    public function get(): string { return $this->x; }
+
+    public function get(): string
+    {
+        return $this->x;
+    }
 }
 
 class PrivShadowB extends PrivShadowA
 {
     private string $x = 'b_init';
-    public function getChild(): string { return $this->x; }
+
+    public function getChild(): string
+    {
+        return $this->x;
+    }
 }
 
 class ScopeParent

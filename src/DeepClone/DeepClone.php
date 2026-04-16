@@ -538,7 +538,7 @@ final class DeepClone
      *   - "\0*\0name"          (for protected props — points to the declaring
      *                           class entry)
      *   - "\0ClassName\0name"  (for private props declared on ClassName, where
-     *                           ClassName is $class or a parent)
+     *                           ClassName is $class or a parent).
      *
      * Each entry is [$declaringClass, $propertyName] — the scope and real
      * name to use for grouping + dispatch. Adapted from VarExporter's
