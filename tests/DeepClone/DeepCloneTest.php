@@ -355,6 +355,16 @@ class DeepCloneTest extends TestCase
         deepclone_from_array(['classes' => 'stdClass', 'objectMeta' => -1, 'prepared' => 0]);
     }
 
+    public function testFromArrayRejectsOversizedObjectMetaCount()
+    {
+        // Matches the ext cap (1 << 20). Guards against a DoS where a tiny
+        // payload with a huge IS_LONG objectMeta count triggers a massive
+        // allocation.
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('deepclone_from_array(): Argument #1 ($data) "objectMeta" count out of range: 1048577');
+        deepclone_from_array(['classes' => 'stdClass', 'objectMeta' => 0x100001, 'prepared' => 0]);
+    }
+
     public function testFromArrayRejectsObjectMetaReferencingEmptyClasses()
     {
         $this->expectException(\ValueError::class);

@@ -330,6 +330,14 @@ final class DeepClone
             if ($meta < 0) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" count must be non-negative, '.$meta.' given');
             }
+            // Sanity cap: the IS_LONG form specifies a count without the per-
+            // object payload, so a tiny input can demand huge allocations.
+            // Legitimate use never needs more than ~1M objects in a single
+            // payload — beyond that, use the array form which is naturally
+            // bounded by the hash-table size.
+            if ($meta > 0x100000) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" count out of range: '.$meta);
+            }
             if ($meta > 0 && $numClasses < 1) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" references class index 0 but "classes" is empty');
             }
