@@ -183,4 +183,33 @@ class Php86Test extends TestCase
         $this->assertInstanceOf(\UnitEnum::class, \SortDirection::Ascending);
         $this->assertInstanceOf(\UnitEnum::class, \SortDirection::Descending);
     }
+
+    /**
+     * @dataProvider provideGraphemeStrrev
+     */
+    public function testGraphemeStrrev(string $expected, string $string)
+    {
+        $this->assertSame($expected, grapheme_strrev($string));
+    }
+
+    public static function provideGraphemeStrrev(): array
+    {
+        return [
+            ['', ''],
+            ['A', 'A'],
+            ['EDCBA', 'ABCDE'],
+            ['elppA eplpA', 'Aplpe Apple'],
+            ['🍏elppA', 'Apple🍏'],
+            ['🇳🇨 - 🇨🇳', '🇨🇳 - 🇳🇨'],
+            ['日本語', '語本日'],
+            ['🎉👍🏽🎊', '🎊👍🏽🎉'],
+            ['C👍🏽A', 'A👍🏽C'],
+            ["B\0A", "A\0B"],
+        ];
+    }
+
+    public function testGraphemeStrrevInvalidUtf8()
+    {
+        $this->assertFalse(grapheme_strrev("\xFF"));
+    }
 }

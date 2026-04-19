@@ -37,3 +37,7 @@ if (!function_exists('clamp')) {
      */
     function clamp($value, $min, $max) { return p\Php86::clamp($value, $min, $max); }
 }
+
+if (extension_loaded('intl') && !function_exists('grapheme_strrev')) {
+    function grapheme_strrev(string $string) { return p\Php86::grapheme_strrev($string); }
+}
