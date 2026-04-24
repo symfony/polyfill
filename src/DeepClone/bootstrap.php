@@ -15,6 +15,21 @@ if (extension_loaded('deepclone')) {
     return;
 }
 
-if (\PHP_VERSION_ID >= 80100) {
-    require __DIR__.'/bootstrap81.php';
+if (!function_exists('deepclone_to_array')) {
+    function deepclone_to_array(mixed $value, ?array $allowed_classes = null): array { return p\DeepClone::deepclone_to_array($value, $allowed_classes); }
+}
+if (!function_exists('deepclone_from_array')) {
+    function deepclone_from_array(array $data, ?array $allowed_classes = null): mixed { return p\DeepClone::deepclone_from_array($data, $allowed_classes); }
+}
+if (!defined('DEEPCLONE_HYDRATE_CALL_HOOKS')) {
+    define('DEEPCLONE_HYDRATE_CALL_HOOKS', 1 << 0);
+}
+if (!defined('DEEPCLONE_HYDRATE_NO_LAZY_INIT')) {
+    define('DEEPCLONE_HYDRATE_NO_LAZY_INIT', 1 << 1);
+}
+if (!defined('DEEPCLONE_HYDRATE_PRESERVE_REFS')) {
+    define('DEEPCLONE_HYDRATE_PRESERVE_REFS', 1 << 2);
+}
+if (!function_exists('deepclone_hydrate')) {
+    function deepclone_hydrate(object|string $object_or_class, array $vars = [], int $flags = 0): object { return p\DeepClone::deepclone_hydrate($object_or_class, $vars, $flags); }
 }
