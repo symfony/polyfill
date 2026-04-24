@@ -150,6 +150,11 @@ class MessageFormatter
         return false;
     }
 
+    public static function parseMessage(string $locale, string $pattern, string $message)
+    {
+        return false;
+    }
+
     private static function parseTokens(array $tokens, array $values, $locale)
     {
         foreach ($tokens as $i => $token) {
