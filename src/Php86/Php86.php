@@ -62,4 +62,13 @@ final class Php86
 
         throw new \ValueError($message);
     }
+
+    public static function grapheme_strrev(string $string)
+    {
+        if (false === $units = grapheme_str_split($string)) {
+            return false;
+        }
+
+        return implode('', array_reverse($units));
+    }
 }

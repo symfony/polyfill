@@ -296,4 +296,38 @@ class GraphemeTest extends TestCase
         $this->expectException(\ValueError::class);
         grapheme_levenshtein('a', 'b', -1);
     }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrev
+     *
+     * @dataProvider provideGraphemeStrrev
+     */
+    public function testGraphemeStrrev(string $expected, string $string)
+    {
+        $this->assertSame($expected, grapheme_strrev($string));
+    }
+
+    public static function provideGraphemeStrrev(): array
+    {
+        return [
+            ['', ''],
+            ['A', 'A'],
+            ['EDCBA', 'ABCDE'],
+            ['elppA eplpA', 'Aplpe Apple'],
+            ['🍏elppA', 'Apple🍏'],
+            ['🇳🇨 - 🇨🇳', '🇨🇳 - 🇳🇨'],
+            ['日本語', '語本日'],
+            ['🎉👍🏽🎊', '🎊👍🏽🎉'],
+            ['C👍🏽A', 'A👍🏽C'],
+            ["B\0A", "A\0B"],
+        ];
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrev
+     */
+    public function testGraphemeStrrevInvalidUtf8()
+    {
+        $this->assertFalse(grapheme_strrev("\xFF"));
+    }
 }

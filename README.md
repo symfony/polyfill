@@ -88,6 +88,7 @@ Polyfills are provided for:
 - the `clamp` function introduced in PHP 8.6;
 - the `ARRAY_FILTER_USE_VALUE` constant introduced in PHP 8.6;
 - the `SortDirection` enum introduced in PHP 8.6;
+- the `grapheme_strrev` function introduced in PHP 8.6;
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
