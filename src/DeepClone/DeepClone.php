@@ -419,26 +419,6 @@ final class DeepClone
             return $object;
         }
 
-        // "\0" = SPL internal state (SplObjectStorage / ArrayObject / ArrayIterator).
-        if ($hasSpecial = \array_key_exists("\0", $vars)) {
-            if (!\is_array($special = $vars["\0"])) {
-                throw new \ValueError('deepclone_hydrate(): Argument #2 ($vars) special key must be of type array, '.self::valueName($vars["\0"]).' given');
-            }
-            if ($object instanceof \SplObjectStorage) {
-                for ($i = 0, $c = \count($special); $i + 1 < $c; $i += 2) {
-                    $object[$special[$i]] = $special[$i + 1];
-                }
-            } elseif ($object instanceof \ArrayObject || $object instanceof \ArrayIterator) {
-                $r ??= self::$reflectors[$class] ?? new \ReflectionClass($class);
-                $r->getConstructor()->invokeArgs($object, $special);
-            } else {
-                throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) uses the special "\\0" key, which is only supported for SplObjectStorage, ArrayObject, and ArrayIterator; got "%s"', $class));
-            }
-            if (1 === \count($vars)) {
-                return $object;
-            }
-        }
-
         // Look up each key in the pre-built (propertyScopes) index, which
         // handles all three mangled-key shapes uniformly — bare "foo",
         // "\0*\0foo", "\0Class\0foo" — with a single hash lookup. Bare
@@ -448,17 +428,14 @@ final class DeepClone
         //
         // Scan first: if every key maps to $class, hand $vars straight
         // to the $class hydrator and skip the intermediate grouping.
-        // When $hasSpecial is set, the "\0" key is still in $vars and we
-        // must go through the grouping path to skip it.
         $r ??= self::$reflectors[$class] ?? new \ReflectionClass($class);
         $propertyScopes = self::$propertyScopes[$class] ??= self::getPropertyScopes($r);
 
-        if (!$needsGroup = $hasSpecial) {
-            foreach ($vars as $name => $_) {
-                if (\array_key_exists($name, $propertyScopes) ? $class !== $propertyScopes[$name][0] : "\0" === ($name[0] ?? '')) {
-                    $needsGroup = true;
-                    break;
-                }
+        $needsGroup = false;
+        foreach ($vars as $name => $_) {
+            if (\array_key_exists($name, $propertyScopes) ? $class !== $propertyScopes[$name][0] : "\0" === ($name[0] ?? '')) {
+                $needsGroup = true;
+                break;
             }
         }
 
@@ -501,10 +478,6 @@ final class DeepClone
             }
             if (!\is_string($name) || "\0" !== ($name[0] ?? '')) {
                 $scoped[$class][$name] = &$value;
-                continue;
-            }
-            if ("\0" === $name) {
-                // Already handled above as the SPL special key.
                 continue;
             }
             // NUL-prefixed key that isn't in $propertyScopes: either malformed
@@ -715,19 +688,6 @@ final class DeepClone
                     $properties = $arrayValue;
                     goto prepare_value;
                 }
-            } elseif (($value instanceof \ArrayIterator || $value instanceof \ArrayObject) && null !== $proto) {
-                [$arrayValue, $properties] = self::getArrayObjectProperties($value, $proto);
-
-                // Re-create prototype consumed by (array) cast comparison above.
-                self::getClassReflector($class, self::$instantiableWithoutConstructor[$class], self::$cloneable[$class]);
-            } elseif ($value instanceof \SplObjectStorage && self::$cloneable[$class] && null !== $proto) {
-                // SplObjectStorage's Serializable interface breaks object references.
-                foreach (clone $value as $v) {
-                    $properties[] = $v;
-                    $properties[] = $value[$v];
-                }
-                $properties = ['SplObjectStorage' => ["\0" => $properties]];
-                $arrayValue = (array) $value;
             } elseif ($value instanceof \Serializable || $value instanceof \__PHP_Incomplete_Class) {
                 ++$objectsCount;
                 $objectsPool[$oid] = [$id = \count($objectsPool), serialize($value), [], 0, $value, null];
@@ -819,45 +779,6 @@ final class DeepClone
         }
 
         return $values;
-    }
-
-    /**
-     * @param \ArrayIterator|\ArrayObject $value
-     * @param \ArrayIterator|\ArrayObject $proto
-     */
-    private static function getArrayObjectProperties($value, $proto): array
-    {
-        $reflector = $value instanceof \ArrayIterator ? 'ArrayIterator' : 'ArrayObject';
-        $reflector = self::$reflectors[$reflector] ??= self::getClassReflector($reflector);
-
-        $properties = [
-            $arrayValue = (array) $value,
-            $reflector->getMethod('getFlags')->invoke($value),
-            $value instanceof \ArrayObject ? $reflector->getMethod('getIteratorClass')->invoke($value) : 'ArrayIterator',
-        ];
-
-        $reflector = $reflector->getMethod('setFlags');
-        $reflector->invoke($proto, \ArrayObject::STD_PROP_LIST);
-
-        if ($properties[1] & \ArrayObject::STD_PROP_LIST) {
-            $reflector->invoke($value, 0);
-            $properties[0] = (array) $value;
-        } else {
-            $reflector->invoke($value, \ArrayObject::STD_PROP_LIST);
-            $arrayValue = (array) $value;
-        }
-        $reflector->invoke($value, $properties[1]);
-
-        if ([[], 0, 'ArrayIterator'] === $properties) {
-            $properties = [];
-        } else {
-            if ('ArrayIterator' === $properties[2]) {
-                unset($properties[2]);
-            }
-            $properties = [$reflector->class => ["\0" => $properties]];
-        }
-
-        return [$arrayValue, $properties];
     }
 
     private static function reconstruct($prepared, $objectMeta, $numObjects, $properties, $resolve, $states, $refs, $preparedMask = null, $refMasks = [], ?array $allowedClasses = null, array $expectedStates = [])
@@ -1342,24 +1263,6 @@ final class DeepClone
             return $baseHydrator;
         }
 
-        if ('SplObjectStorage' === $class) {
-            return static function ($properties, $objects) {
-                foreach ($properties as $name => $values) {
-                    if ("\0" === $name) {
-                        foreach ($values as $i => $v) {
-                            for ($j = 0; $j < \count($v); ++$j) {
-                                $objects[$i][$v[$j]] = $v[++$j];
-                            }
-                        }
-                        continue;
-                    }
-                    foreach ($values as $i => $v) {
-                        $objects[$i]->$name = $v;
-                    }
-                }
-            };
-        }
-
         if ('TypeError' === $class) {
             $class = 'Error';
         } elseif ('ErrorException' === $class) {
@@ -1368,23 +1271,6 @@ final class DeepClone
 
         // self::$reflectors must be populated via getClassReflector() (companion caches), so read with ??.
         $classReflector = self::$reflectors[$class] ?? new \ReflectionClass($class);
-
-        if (\in_array($class, ['ArrayIterator', 'ArrayObject'], true)) {
-            $constructor = $classReflector->getConstructor()->invokeArgs(...);
-
-            return static function ($properties, $objects) use ($constructor) {
-                foreach ($properties as $name => $values) {
-                    if ("\0" !== $name) {
-                        foreach ($values as $i => $v) {
-                            $objects[$i]->$name = $v;
-                        }
-                    }
-                }
-                foreach ($properties["\0"] ?? [] as $i => $v) {
-                    $constructor($objects[$i], $v);
-                }
-            };
-        }
 
         if (!$classReflector->isInternal()) {
             return $baseHydrator->bindTo(null, $class);
@@ -1440,20 +1326,6 @@ final class DeepClone
         if ('stdClass' === $class) {
             return $baseHydrator;
         }
-        if ('SplObjectStorage' === $class) {
-            return static function ($properties, $object) {
-                foreach ($properties as $name => &$value) {
-                    if ("\0" !== $name) {
-                        $object->$name = $value;
-                        $object->$name = &$value;
-                        continue;
-                    }
-                    for ($i = 0; $i < \count($value); ++$i) {
-                        $object[$value[$i]] = $value[++$i];
-                    }
-                }
-            };
-        }
 
         if ('TypeError' === $class) {
             $class = 'Error';
@@ -1463,21 +1335,6 @@ final class DeepClone
             throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
         }
         $classReflector = self::$reflectors[$class] ?? new \ReflectionClass($class);
-
-        if (\in_array($class, ['ArrayIterator', 'ArrayObject'], true)) {
-            $constructor = $classReflector->getConstructor()->invokeArgs(...);
-
-            return static function ($properties, $object) use ($constructor) {
-                foreach ($properties as $name => &$value) {
-                    if ("\0" === $name) {
-                        $constructor($object, $value);
-                    } else {
-                        $object->$name = $value;
-                        $object->$name = &$value;
-                    }
-                }
-            };
-        }
 
         if ($classReflector->isInternal()) {
             if ($classReflector->name !== $class) {
