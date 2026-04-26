@@ -1,6 +1,9 @@
 # 1.37.0
 
-  * Polyfill deepclone v0.5.0
+  * Add polyfill for `grapheme_strrev()`
+  * Compat with deepclone v0.6.0
+  * Fix `locale_is_right_to_left()` registration in polyfill-php85
+  * Fix `grapheme_levenshtein()` registration in polyfill-php85
 
 # 1.36.0
 
