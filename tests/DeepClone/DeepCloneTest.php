@@ -1156,24 +1156,24 @@ class DeepCloneTest extends TestCase
 
     public function testHydrateSplObjectStorage()
     {
-        $s = new \SplObjectStorage();
+        // SplObjectStorage ships __serialize/__unserialize since PHP 7.4 —
+        // deepclone_hydrate() instantiates, the caller wires up state.
         $o1 = new \stdClass();
         $o2 = new \stdClass();
 
-        $result = deepclone_hydrate($s, ["\0" => [$o1, 'info1', $o2, 'info2']]);
+        $s = deepclone_hydrate('SplObjectStorage');
+        $s->__unserialize([[$o1, 'info1', $o2, 'info2'], []]);
 
-        $this->assertSame($s, $result);
-        $this->assertSame(2, $result->count());
-        $result->rewind();
-        $this->assertSame($o1, $result->current());
-        $this->assertSame('info1', $result->getInfo());
+        $this->assertSame(2, $s->count());
+        $s->rewind();
+        $this->assertSame($o1, $s->current());
+        $this->assertSame('info1', $s->getInfo());
     }
 
     public function testHydrateArrayObject()
     {
-        $ao = deepclone_hydrate('ArrayObject', [
-            "\0" => [['x' => 1, 'y' => 2], \ArrayObject::ARRAY_AS_PROPS],
-        ]);
+        $ao = deepclone_hydrate('ArrayObject');
+        $ao->__unserialize([\ArrayObject::ARRAY_AS_PROPS, ['x' => 1, 'y' => 2], []]);
 
         $this->assertInstanceOf(\ArrayObject::class, $ao);
         $this->assertSame(1, $ao['x']);
@@ -1182,9 +1182,8 @@ class DeepCloneTest extends TestCase
 
     public function testHydrateArrayIterator()
     {
-        $ai = deepclone_hydrate('ArrayIterator', [
-            "\0" => [['a', 'b', 'c']],
-        ]);
+        $ai = deepclone_hydrate('ArrayIterator');
+        $ai->__unserialize([0, ['a', 'b', 'c'], []]);
 
         $this->assertInstanceOf(\ArrayIterator::class, $ai);
         $this->assertCount(3, $ai);
@@ -1198,34 +1197,6 @@ class DeepCloneTest extends TestCase
     public function testHydrateFlatCaseInsensitiveClass()
     {
         $this->assertEquals((object) ['p' => 123], deepclone_hydrate('STDcLASS', ['p' => 123]));
-    }
-
-    public function testHydrateFlatArrayObject()
-    {
-        $this->assertEquals(new \ArrayObject([123]), deepclone_hydrate(\ArrayObject::class, ["\0" => [[123]]]));
-    }
-
-    public function testHydrateFlatSplObjectStorage()
-    {
-        $o1 = new \stdClass();
-        $s = deepclone_hydrate('SplObjectStorage', ["\0" => [$o1, 'data']]);
-
-        $this->assertSame(1, $s->count());
-    }
-
-    public function testHydrateScopedArrayObjectOwnClass()
-    {
-        $ao = deepclone_hydrate('ArrayObject', ["\0" => [[456]]]);
-
-        $this->assertSame(456, $ao[0]);
-    }
-
-    public function testHydrateScopedSplObjectStorageOwnClass()
-    {
-        $o1 = new \stdClass();
-        $s = deepclone_hydrate('SplObjectStorage', ["\0" => [$o1, 'info']]);
-
-        $this->assertSame(1, $s->count());
     }
 
     public function testHydrateFlatMangledKeys()
