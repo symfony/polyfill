@@ -1,3 +1,7 @@
+# 1.38.1
+
+  * CVE-2026-46644 `idn_to_ascii()`/`idn_to_utf8()`: reject `xn--` labels whose Punycode payload decodes to ASCII-only
+
 # 1.38.0
 
   * Add polyfill for `normalizer_get_raw_decomposition()`

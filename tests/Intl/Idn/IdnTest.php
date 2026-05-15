@@ -351,6 +351,31 @@ class IdnTest extends TestCase
         $this->assertSame('xn--🌈.faß.de', $info['result']);
     }
 
+    /**
+     * UTS #46 revision 33: a label starting with "xn--" whose Punycode payload decodes
+     * to an empty string or to a string containing only ASCII code points must be rejected.
+     *
+     * @dataProvider asciiOnlyPunycodeProvider
+     */
+    public function testLabelDecodingToAsciiOnlyIsRejected($input)
+    {
+        $options = \IDNA_USE_STD3_RULES | \IDNA_CHECK_BIDI | \IDNA_CHECK_CONTEXTJ;
+
+        idn_to_ascii($input, $options | \IDNA_NONTRANSITIONAL_TO_ASCII, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertFalse(0 === $info['errors'], 'idn_to_ascii should report an error for '.$input);
+
+        idn_to_utf8($input, $options | \IDNA_NONTRANSITIONAL_TO_UNICODE, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertFalse(0 === $info['errors'], 'idn_to_utf8 should report an error for '.$input);
+    }
+
+    public static function asciiOnlyPunycodeProvider()
+    {
+        return [
+            ['poc.xn--kc1zs4-.com'],
+            ['poc.kc1zs4.xn--'],
+        ];
+    }
+
     public static function captialSharpSProvider()
     {
         return [
