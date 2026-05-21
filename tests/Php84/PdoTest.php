@@ -195,12 +195,12 @@ class PdoTest extends TestCase
         $this->assertSame(\PHP_VERSION_ID < 80500 ? 1011 : 1010, \Pdo\Mysql::ATTR_SSL_CIPHER);
         $this->assertSame(\PHP_VERSION_ID < 80500 ? 1012 : 1011, \Pdo\Mysql::ATTR_SERVER_PUBLIC_KEY);
         $this->assertSame(\PHP_VERSION_ID < 80500 ? 1013 : 1012, \Pdo\Mysql::ATTR_MULTI_STATEMENTS);
-        $this->assertSame(\PHP_VERSION_ID < 80500 ? 1014 : 1013, \Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT);
         $this->assertSame(\PHP_VERSION_ID < 80500 ? 1015 : 1014, \Pdo\Mysql::ATTR_LOCAL_INFILE_DIRECTORY);
-        if (\defined('PDO::MYSQL_ATTR_MAX_BUFFER_SIZE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_FILE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_GROUP')) {
+        if (\defined('PDO::MYSQL_ATTR_MAX_BUFFER_SIZE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_FILE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_GROUP') && \defined('PDO::ATTR_SSL_VERIFY_SERVER_CERT')) {
             $this->assertSame(1003, \Pdo\Mysql::ATTR_READ_DEFAULT_FILE);
             $this->assertSame(1004, \Pdo\Mysql::ATTR_READ_DEFAULT_GROUP);
             $this->assertSame(1005, \Pdo\Mysql::ATTR_MAX_BUFFER_SIZE);
+            $this->assertSame(\PHP_VERSION_ID < 80500 ? 1014 : 1013, \Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT);
         }
     }
 
