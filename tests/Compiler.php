@@ -193,6 +193,29 @@ class Compiler
             }
         }
 
+        $nfkcCaseFolding = [];
+        $h = fopen(self::getFile('DerivedNormalizationProps.txt'), 'r');
+        while (false !== $m = fgets($h)) {
+            if (!preg_match('/^([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s*; NFKC_CF\s*;([^#]*)#/', $m, $m)) {
+                continue;
+            }
+
+            $mapping = '';
+            foreach (preg_split('/\s+/', trim($m[3]), -1, \PREG_SPLIT_NO_EMPTY) as $cp) {
+                $mapping .= self::chr(hexdec($cp));
+            }
+
+            $start = hexdec($m[1]);
+            $end = '' !== $m[2] ? hexdec($m[2]) : $start;
+            for ($cp = $start; $cp <= $end; ++$cp) {
+                $k = self::chr($cp);
+                if ($k !== $mapping) {
+                    $nfkcCaseFolding[$k] = $mapping;
+                }
+            }
+        }
+        fclose($h);
+
         $h = fopen(self::getFile('CaseFolding.txt'), 'r');
         while (false !== $m = fgets($h)) {
             if (preg_match('/^([0-9A-F]+); ([CFST]); ([0-9A-F]+(?: [0-9A-F]+)*)/', $m, $m)) {
@@ -223,6 +246,7 @@ class Compiler
         $compatibilityDecomposition = "<?php\n\nreturn ".var_export($compatibilityDecomposition, true).";\n";
         $rawCanonicalDecompositionData = "<?php\n\nreturn ".var_export($rawCanonicalDecomposition, true).";\n";
         $rawCompatibilityDecompositionData = "<?php\n\nreturn ".var_export($rawCompatibilityDecomposition, true).";\n";
+        $nfkcCaseFoldingData = "<?php\n\nreturn ".var_export($nfkcCaseFolding, true).";\n";
 
         file_put_contents($out_dir.'upperCase.php', $upperCase);
         file_put_contents($out_dir.'lowerCase.php', $lowerCase);
@@ -233,6 +257,7 @@ class Compiler
         file_put_contents($out_dir.'compatibilityDecomposition.php', $compatibilityDecomposition);
         file_put_contents($out_dir.'rawCanonicalDecomposition.php', $rawCanonicalDecompositionData);
         file_put_contents($out_dir.'rawCompatibilityDecomposition.php', $rawCompatibilityDecompositionData);
+        file_put_contents($out_dir.'nfkcCaseFolding.php', $nfkcCaseFoldingData);
     }
 
     public static function idnMaps($out_dir)

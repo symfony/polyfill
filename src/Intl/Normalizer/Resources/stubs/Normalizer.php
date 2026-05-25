@@ -10,8 +10,10 @@ class Normalizer extends Symfony\Polyfill\Intl\Normalizer\Normalizer
     public const FORM_KD = 8;
     public const FORM_C = 16;
     public const FORM_KC = 32;
+    public const FORM_KC_CF = 48;
     public const NFD = 4;
     public const NFKD = 8;
     public const NFC = 16;
     public const NFKC = 32;
+    public const NFKC_CF = 48;
 }

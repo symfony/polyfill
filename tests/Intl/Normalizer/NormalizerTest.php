@@ -33,7 +33,10 @@ class NormalizerTest extends TestCase
         $rpn = $rpn->getConstants();
         $rin = $rin->getConstants();
 
-        unset($rin['NONE'], $rin['FORM_KC_CF'], $rin['NFKC_CF']);
+        unset($rin['NONE']);
+        if (!\defined('Normalizer::FORM_KC_CF')) {
+            unset($rpn['FORM_KC_CF'], $rpn['NFKC_CF']);
+        }
 
         ksort($rpn);
         ksort($rin);
@@ -60,6 +63,15 @@ class NormalizerTest extends TestCase
         $this->assertTrue(pn::isNormalized($d, pn::NFD));
 
         $this->assertFalse(pn::isNormalized('', 42));
+
+        if (\PHP_VERSION_ID >= 70300) {
+            $this->assertTrue(normalizer_is_normalized('abc', pn::NFKC_CF));
+            $this->assertFalse(normalizer_is_normalized('ABC', pn::NFKC_CF));
+            $this->assertFalse(normalizer_is_normalized("\u{00DF}", pn::NFKC_CF));
+            $this->assertFalse(normalizer_is_normalized("\u{FB01}", pn::NFKC_CF));
+            $this->assertFalse(normalizer_is_normalized("\u{00AD}", pn::NFKC_CF));
+            $this->assertTrue(normalizer_is_normalized('', pn::NFKC_CF));
+        }
     }
 
     /**
@@ -88,6 +100,17 @@ class NormalizerTest extends TestCase
 
         $this->assertSame("\xcc\x83\xc3\x92\xd5\x9b", normalizer_normalize("\xcc\x83\xc3\x92\xd5\x9b"));
         $this->assertSame("\xe0\xbe\xb2\xe0\xbd\xb1\xe0\xbe\x80\xe0\xbe\x80", normalizer_normalize("\xe0\xbd\xb6\xe0\xbe\x81", pn::NFD));
+
+        if (\PHP_VERSION_ID >= 70300) {
+            $this->assertSame('abc', normalizer_normalize('ABC', pn::NFKC_CF));
+            $this->assertSame('ss', normalizer_normalize("\u{00DF}", pn::NFKC_CF));
+            $this->assertSame('fi', normalizer_normalize("\u{FB01}", pn::NFKC_CF));
+            $this->assertSame("\u{03C9}", normalizer_normalize("\u{2126}", pn::NFKC_CF));
+            $this->assertSame("\u{00E5}", normalizer_normalize("\u{0041}\u{030A}", pn::NFKC_CF));
+            $this->assertSame('', normalizer_normalize("\u{00AD}", pn::NFKC_CF));
+            $this->assertSame('', normalizer_normalize('', pn::NFKC_CF));
+            $this->assertSame('abcssfiss', normalizer_normalize("ABC\u{00DF}\u{FB01}\u{1E9E}", pn::NFKC_CF));
+        }
     }
 
     /**
