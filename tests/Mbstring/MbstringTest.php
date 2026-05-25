@@ -327,6 +327,15 @@ class MbstringTest extends TestCase
         $this->assertSame(2, mb_strlen("\x00\xFF", 'CP850'));
         $this->assertSame(3, mb_strlen('한국어'));
         $this->assertSame(8, mb_strlen(\Normalizer::normalize('한국어', \Normalizer::NFD)));
+
+        $this->assertSame(1, p::mb_strlen("\xFE"));
+        $this->assertSame(2, p::mb_strlen("\xFE\xFF"));
+        $this->assertSame(4, p::mb_strlen("abc\xFE"));
+        $this->assertSame(1, p::mb_strlen("\xC2"));
+        $this->assertSame(2, p::mb_strlen("\xC2\xC2"));
+        $this->assertSame(1, p::mb_strlen("\x80"));
+        $this->assertSame(3, p::mb_strlen("a\x80b"));
+        $this->assertSame(1, p::mb_strlen("\xE2\x82"));
     }
 
     /**
