@@ -122,6 +122,10 @@ class IdnTest extends TestCase
      */
     public function testToUnicode($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
     {
+        if (\defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '74', '>=')) {
+            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 13.0.0; ICU 74+ uses newer Unicode data.');
+        }
+
         if (\PHP_VERSION_ID >= 80400 && '' === $source) {
             $this->expectException(\ValueError::class);
         }
@@ -154,6 +158,10 @@ class IdnTest extends TestCase
      */
     public function testToAsciiNonTransitional($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
     {
+        if (\defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '74', '>=')) {
+            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 13.0.0; ICU 74+ uses newer Unicode data.');
+        }
+
         if (\PHP_VERSION_ID >= 80400 && '' === $source) {
             $this->expectException(\ValueError::class);
         }
@@ -186,6 +194,10 @@ class IdnTest extends TestCase
      */
     public function testToAsciiTransitional($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
     {
+        if (\defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '74', '>=')) {
+            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 13.0.0; ICU 74+ uses newer Unicode data.');
+        }
+
         if (\PHP_VERSION_ID >= 80400 && '' === $source) {
             $this->expectException(\ValueError::class);
         }

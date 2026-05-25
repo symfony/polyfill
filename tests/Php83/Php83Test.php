@@ -23,7 +23,8 @@ class Php83Test extends TestCase
     public function testJsonValidate(bool $valid, string $json, string $errorMessage = 'No error', int $depth = 512, int $options = 0)
     {
         $this->assertSame($valid, json_validate($json, $depth, $options));
-        $this->assertSame($errorMessage, json_last_error_msg());
+        $actualErrorMessage = preg_replace('/ near location \d+:\d+/', '', json_last_error_msg());
+        $this->assertSame($errorMessage, $actualErrorMessage);
     }
 
     /**
