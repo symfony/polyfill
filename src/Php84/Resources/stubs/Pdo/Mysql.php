@@ -15,7 +15,7 @@ use PDO;
 
 if (\PHP_VERSION_ID < 80400 && \extension_loaded('pdo_mysql')) {
     // Feature detection for non-mysqlnd; see also https://www.php.net/manual/en/class.pdo-mysql.php#pdo-mysql.constants.attr-max-buffer-size
-    if (\defined('PDO::MYSQL_ATTR_MAX_BUFFER_SIZE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_FILE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_GROUP')) {
+    if (\defined('PDO::MYSQL_ATTR_MAX_BUFFER_SIZE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_FILE') && \defined('PDO::MYSQL_ATTR_READ_DEFAULT_GROUP') && \defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
         class Mysql extends \PDO
         {
             public const ATTR_COMPRESS = \PDO::MYSQL_ATTR_COMPRESS;
@@ -76,7 +76,6 @@ if (\PHP_VERSION_ID < 80400 && \extension_loaded('pdo_mysql')) {
             public const ATTR_SSL_CERT = \PDO::MYSQL_ATTR_SSL_CERT;
             public const ATTR_SSL_CIPHER = \PDO::MYSQL_ATTR_SSL_CIPHER;
             public const ATTR_SSL_KEY = \PDO::MYSQL_ATTR_SSL_KEY;
-            public const ATTR_SSL_VERIFY_SERVER_CERT = \PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT;
             public const ATTR_USE_BUFFERED_QUERY = \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY;
 
             public function __construct(string $dsn, ?string $username = null, ?string $password = null, ?array $options = null)
