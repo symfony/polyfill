@@ -1,0 +1,56 @@
+---------------------------------------------------------------------------
+
+by alexpott at 2026-05-21T11:09:11Z
+
+We recently fixed the issue in Drush :D https://github.com/drush-ops/drush/issues/6505 only for it to re-occur with the recent update all the things due to the PHP 8.4 polyfill adding code for the PDO changes...
+
+---------------------------------------------------------------------------
+
+by Ayesh at 2026-05-21T11:18:33Z
+
+Cheap PHP hosting space is wild! Sometimes I wonder who even comes up with ideas like just to save a few microseconds of their CPU time.
+
+---------------------------------------------------------------------------
+
+by donbrae at 2026-05-21T11:22:31Z
+
+Is this an example of an issue with cPanel hosting in general, or just certain cPanel hosting setups (eg shared)?
+
+---------------------------------------------------------------------------
+
+by alexpott at 2026-05-21T11:25:49Z
+
+See https://github.com/php/php-src/blob/PHP-8.3/ext/pdo_mysql/php_pdo_mysql_int.h#L178 for why this belongs in the same lot of `if defined()` as MYSQL_ATTR_MAX_BUFFER_SIZE, MYSQL_ATTR_READ_DEFAULT_FILE and constants.
+
+It's controlled by the same `#ifdef`....
+```
+enum {
+	PDO_MYSQL_ATTR_USE_BUFFERED_QUERY = PDO_ATTR_DRIVER_SPECIFIC,
+	PDO_MYSQL_ATTR_LOCAL_INFILE,
+	PDO_MYSQL_ATTR_INIT_COMMAND,
+#ifndef PDO_USE_MYSQLND
+	PDO_MYSQL_ATTR_READ_DEFAULT_FILE,
+	PDO_MYSQL_ATTR_READ_DEFAULT_GROUP,
+	PDO_MYSQL_ATTR_MAX_BUFFER_SIZE,
+#endif
+	PDO_MYSQL_ATTR_COMPRESS,
+	PDO_MYSQL_ATTR_DIRECT_QUERY,
+	PDO_MYSQL_ATTR_FOUND_ROWS,
+	PDO_MYSQL_ATTR_IGNORE_SPACE,
+	PDO_MYSQL_ATTR_SSL_KEY,
+	PDO_MYSQL_ATTR_SSL_CERT,
+	PDO_MYSQL_ATTR_SSL_CA,
+	PDO_MYSQL_ATTR_SSL_CAPATH,
+	PDO_MYSQL_ATTR_SSL_CIPHER,
+#if MYSQL_VERSION_ID > 50605 || defined(PDO_USE_MYSQLND)
+	PDO_MYSQL_ATTR_SERVER_PUBLIC_KEY,
+#endif
+	PDO_MYSQL_ATTR_MULTI_STATEMENTS,
+#ifdef PDO_USE_MYSQLND
+	PDO_MYSQL_ATTR_SSL_VERIFY_SERVER_CERT,
+#endif
+#if MYSQL_VERSION_ID >= 80021 || defined(PDO_USE_MYSQLND)
+	PDO_MYSQL_ATTR_LOCAL_INFILE_DIRECTORY,
+#endif
+};
+```
