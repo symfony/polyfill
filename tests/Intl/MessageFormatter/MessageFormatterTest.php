@@ -262,4 +262,37 @@ _MSG_
         $formatter = new MessageFormatter('en-US', $pattern);
         $this->assertFalse($formatter->format(['n' => 42]));
     }
+
+    /**
+     * @dataProvider invalidPatterns
+     */
+    public function testInvalidPatternThrowsAtConstruction($pattern)
+    {
+        $this->expectException(\IntlException::class);
+        new MessageFormatter('en_US', $pattern);
+    }
+
+    /**
+     * @dataProvider invalidPatterns
+     */
+    public function testInvalidPatternMakesCreateReturnNull($pattern)
+    {
+        $this->assertNull(MessageFormatter::create('en_US', $pattern));
+    }
+
+    public static function invalidPatterns()
+    {
+        return [
+            'unknown type' => ['{n, foo}'],
+            'select without styles' => ['{n, select}'],
+            'plural without styles' => ['{n, plural}'],
+            'selectordinal without styles' => ['{n, selectordinal}'],
+            'select without other' => ['{n, select, brown {a}}'],
+            'plural without other' => ['{n, plural, =0 {a}}'],
+            'selectordinal without other' => ['{n, selectordinal, one {a}}'],
+            'unclosed outer brace' => ['{n, plural, other {a}'],
+            'unknown nested type' => ['{n, plural, other {{x, foo}}}'],
+            'nested select without other' => ['{n, plural, other {{x, select, brown {a}}}}'],
+        ];
+    }
 }
