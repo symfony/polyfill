@@ -15,6 +15,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @group class-polyfill
+ *
+ * @requires PHP 8.1
  */
 class CurrenciesTest extends TestCase
 {

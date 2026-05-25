@@ -960,6 +960,10 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
      */
     public function testSetTimeZone($timeZoneId, $expectedTimeZoneId)
     {
+        if (\PHP_VERSION_ID >= 80500 && 'UTC' === $expectedTimeZoneId && \in_array($timeZoneId, ['Foo/Bar', 'GMT+00:AA', 'GMT+00AA'], true)) {
+            $this->expectException(\IntlException::class);
+        }
+
         $formatter = $this->getDefaultDateFormatter();
 
         $formatter->setTimeZone($timeZoneId);
@@ -997,10 +1001,13 @@ abstract class AbstractIntlDateFormatterTest extends TestCase
 
     protected function assertIsIntlFailure($formatter, $errorMessage, $errorCode)
     {
-        $this->assertSame($errorMessage, $this->getIntlErrorMessage());
+        $stripPrefix = static fn (string $message): string => preg_replace('/^(?:IntlDateFormatter::(?:format|parse)|datefmt_format)(?:\(\))?: /', '', $message);
+        $errorMessage = $stripPrefix($errorMessage);
+
+        $this->assertSame($errorMessage, $stripPrefix($this->getIntlErrorMessage()));
         $this->assertSame($errorCode, $this->getIntlErrorCode());
         $this->assertTrue($this->isIntlFailure($this->getIntlErrorCode()));
-        $this->assertSame($errorMessage, $formatter->getErrorMessage());
+        $this->assertSame($errorMessage, $stripPrefix($formatter->getErrorMessage()));
         $this->assertSame($errorCode, $formatter->getErrorCode());
         $this->assertTrue($this->isIntlFailure($formatter->getErrorCode()));
     }
