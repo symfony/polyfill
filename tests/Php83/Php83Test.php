@@ -296,6 +296,13 @@ class Php83Test extends TestCase
         yield ['e', 'd'];
         yield ['E', 'D'];
         yield ['5', '4'];
+        yield ['10', '9'];
+        yield ['100', '99'];
+        yield ['1000', '999'];
+        yield ['9223372036854775808', '9223372036854775807'];
+        yield ['9223372036854775821', '9223372036854775820'];
+        yield ['10000000000000000000', '9999999999999999999'];
+        yield ['013', '012'];
     }
 
     public static function strDecrementProvider(): iterable
