@@ -221,6 +221,36 @@ class Php83Test extends TestCase
         $this->assertSame(['http' => ['method' => 'POST']], stream_context_get_options($context));
     }
 
+    public function testLdapExopSync()
+    {
+        if (\PHP_VERSION_ID >= 80300) {
+            $this->markTestSkipped('PHP >= 8.3 provides ldap_exop_sync() natively.');
+        }
+        if (!extension_loaded('ldap')) {
+            $this->markTestSkipped('The ldap extension is required.');
+        }
+
+        $errors = [];
+        set_error_handler(static function ($errno, $errstr) use (&$errors) {
+            $errors[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $ldap = ldap_connect('ldap://example.invalid');
+            ldap_exop_sync($ldap, '1.3.6.1.4.1.4203.1.11.1', null, [['oid' => '1.2.3', 'value' => 'x']]);
+        } catch (\Throwable $e) {
+            $errors[] = $e->getMessage();
+        } finally {
+            restore_error_handler();
+        }
+
+        $joined = implode("\n", $errors);
+        $this->assertStringNotContainsString('expects at most', $joined);
+        $this->assertStringNotContainsString('expects exactly', $joined);
+    }
+
     public function testDateTimeExceptionClassesExist()
     {
         $this->assertTrue(class_exists(\DateError::class));
