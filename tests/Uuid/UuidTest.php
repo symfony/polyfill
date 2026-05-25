@@ -368,4 +368,42 @@ class UuidTest extends TestCase
 
         $this->assertFalse(@uuid_unparse($uuid));
     }
+
+    public function testDeprecatedTypeDce()
+    {
+        $this->assertSame(4, $this->captureDeprecation(static function() { return \UUID_TYPE_DCE; }, 'UUID_TYPE_DCE'));
+    }
+
+    public function testDeprecatedTypeName()
+    {
+        $this->assertSame(1, $this->captureDeprecation(static function() { return \UUID_TYPE_NAME; }, 'UUID_TYPE_NAME'));
+    }
+
+    private function captureDeprecation(\Closure $access, string $name)
+    {
+        if (\PHP_VERSION_ID < 80500) {
+            $this->markTestSkipped('The Deprecated attribute applies to global constants since PHP 8.5.');
+        }
+        if (extension_loaded('uuid')) {
+            $this->markTestSkipped('ext-uuid is loaded, the polyfill is not in use.');
+        }
+
+        $deprecation = null;
+        set_error_handler(static function ($type, $message) use (&$deprecation) {
+            $deprecation = $message;
+
+            return true;
+        }, \E_USER_DEPRECATED | \E_DEPRECATED);
+
+        try {
+            $value = $access();
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertNotNull($deprecation, sprintf('Using %s should trigger a deprecation.', $name));
+        $this->assertStringContainsString($name, $deprecation);
+
+        return $value;
+    }
 }

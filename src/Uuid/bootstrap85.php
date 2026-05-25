@@ -11,10 +11,6 @@
 
 use Symfony\Polyfill\Uuid as p;
 
-if (\PHP_VERSION_ID >= 80500) {
-    return require __DIR__.'/bootstrap85.php';
-}
-
 if (!defined('UUID_VARIANT_NCS')) {
     define('UUID_VARIANT_NCS', 0);
 }
@@ -36,12 +32,6 @@ if (!defined('UUID_TYPE_TIME')) {
 if (!defined('UUID_TYPE_MD5')) {
     define('UUID_TYPE_MD5', 3);
 }
-if (!defined('UUID_TYPE_DCE')) {
-    define('UUID_TYPE_DCE', 4); // Deprecated alias
-}
-if (!defined('UUID_TYPE_NAME')) {
-    define('UUID_TYPE_NAME', 1); // Deprecated alias
-}
 if (!defined('UUID_TYPE_RANDOM')) {
     define('UUID_TYPE_RANDOM', 4);
 }
@@ -54,6 +44,12 @@ if (!defined('UUID_TYPE_NULL')) {
 if (!defined('UUID_TYPE_INVALID')) {
     define('UUID_TYPE_INVALID', -42);
 }
+
+#[Deprecated(message: 'use UUID_TYPE_RANDOM instead')]
+const UUID_TYPE_DCE = 4;
+
+#[Deprecated(message: 'use UUID_TYPE_TIME instead')]
+const UUID_TYPE_NAME = 1;
 
 if (!function_exists('uuid_create')) {
     function uuid_create(?int $uuid_type = \UUID_TYPE_DEFAULT): string { return p\Uuid::uuid_create((int) $uuid_type); }
