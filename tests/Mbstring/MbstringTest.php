@@ -972,6 +972,9 @@ class MbstringTest extends TestCase
         yield ["foo\n", "foo\n", 'o'];
     }
 
+    /**
+     * @group legacy
+     */
     public function testNullStringArgument()
     {
         $this->assertSame('', @mb_trim(null));

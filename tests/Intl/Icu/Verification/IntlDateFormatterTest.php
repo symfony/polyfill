@@ -97,6 +97,18 @@ class IntlDateFormatterTest extends AbstractIntlDateFormatterTest
         parent::testFormatIgnoresPatternForRelativeDateType();
     }
 
+    /**
+     * @dataProvider setTimeZoneProvider
+     */
+    public function testSetTimeZone($timeZoneId, $expectedTimeZoneId)
+    {
+        if (\PHP_VERSION_ID >= 80500 && 'UTC' === $expectedTimeZoneId && \in_array($timeZoneId, ['Foo/Bar', 'GMT+00:AA', 'GMT+00AA'], true)) {
+            $this->expectException(\IntlException::class);
+        }
+
+        parent::testSetTimeZone($timeZoneId, $expectedTimeZoneId);
+    }
+
     protected function getDateFormatter($locale, $datetype, $timetype, $timezone = null, $calendar = IntlDateFormatter::GREGORIAN, $pattern = null)
     {
         if (version_compare(\INTL_ICU_VERSION, '55.1', '<')) {
