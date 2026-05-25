@@ -149,6 +149,14 @@ class Php83Test extends TestCase
     }
 
     /**
+     * @group legacy
+     */
+    public function testMbStrPadWithNullString()
+    {
+        $this->assertSame('     ', @mb_str_pad(null, 5));
+    }
+
+    /**
      * @return iterable<array{0: bool, 1: string, 2?: string, 3?: int, 4?: int}>
      */
     public static function jsonDataProvider(): iterable

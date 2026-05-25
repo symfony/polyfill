@@ -345,6 +345,18 @@ class Php84Test extends TestCase
     }
 
     /**
+     * @group legacy
+     */
+    public function testNullStringArgument()
+    {
+        $this->assertSame('', @mb_trim(null));
+        $this->assertSame('', @mb_ltrim(null));
+        $this->assertSame('', @mb_rtrim(null));
+        $this->assertSame('', @mb_ucfirst(null));
+        $this->assertSame('', @mb_lcfirst(null));
+    }
+
+    /**
      * @dataProvider fpowProvider
      */
     public function testFpow(float $num, float $exponent, float $expected)
