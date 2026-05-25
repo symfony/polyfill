@@ -11,6 +11,10 @@
 
 use Symfony\Polyfill\Uuid as p;
 
+if (\PHP_VERSION_ID >= 80500) {
+    require __DIR__.'/bootstrap85.php';
+}
+
 if (!defined('UUID_VARIANT_NCS')) {
     define('UUID_VARIANT_NCS', 0);
 }

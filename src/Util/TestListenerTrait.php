@@ -49,7 +49,9 @@ class TestListenerTrait
             }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
             $bootstrap = \dirname($testedClass->getFileName()).'/bootstrap';
-            if (\PHP_VERSION_ID >= 80200 && file_exists($bootstrap.'82.php')) {
+            if (\PHP_VERSION_ID >= 80500 && file_exists($bootstrap.'85.php')) {
+                $bootstrap .= '85';
+            } elseif (\PHP_VERSION_ID >= 80200 && file_exists($bootstrap.'82.php')) {
                 $bootstrap .= '82';
             } elseif (\PHP_VERSION_ID >= 80100 && file_exists($bootstrap.'81.php')) {
                 $bootstrap .= '81';
