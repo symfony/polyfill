@@ -1,3 +1,25 @@
+# 1.38.0
+
+  * Add polyfill for `normalizer_get_raw_decomposition()`
+  * Add missing `IntlMessageFormatter::parseMessage()` method
+  * Sync currencies metadata with `symfony/intl` data
+  * Mark `UUID_TYPE_DCE` and `UUID_TYPE_NAME` as deprecated on PHP 8.5+
+  * Validate `MessageFormatter` patterns at configuration time
+  * Accept null in `mb_*` polyfills
+  * Fall back to plain `iconv()` when `//IGNORE` is unsupported (e.g. on musl)
+  * Improve type declarations of some mbstring polyfills
+  * Make `mb_convert_encoding($s, $y, 'HTML-ENTITIES')` match native output
+  * Update `IntlDateFormatter::__construct()` parameters
+  * Fix `grapheme_strrev()` to return false on invalid UTF-8
+  * Fix grapheme cluster splitting on PCRE < 10.44
+  * Fix `mb_strlen()` for invalid UTF-8 input
+  * Fix `mb_rtrim()` missing unicode-awareness
+  * Fix `mb_str_pad()` invalid encoding error reporting
+  * Fix `str_increment()` for numeric strings beyond `PHP_INT_MAX`
+  * Fix `ldap_exop_sync()` polyfill on PHP < 8.3
+  * Fix `ReflectionConstant` stub to declare its `$persistent` property
+  * Fix detection of `PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT` when PHP is built without it
+
 # 1.37.0
 
   * Add polyfill for `grapheme_strrev()`
