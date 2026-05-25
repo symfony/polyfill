@@ -677,10 +677,10 @@ abstract class AbstractNumberFormatterTest extends TestCase
             $errorMessage = 'U_ZERO_ERROR';
         }
 
-        $this->assertSame($errorMessage, static::getIntlErrorMessage());
+        $this->assertSame($errorMessage, preg_replace('/^NumberFormatter::parse\(\): /', '', static::getIntlErrorMessage()));
         $this->assertSame($errorCode, static::getIntlErrorCode());
         $this->assertSame(0 !== $errorCode, static::isIntlFailure(static::getIntlErrorCode()));
-        $this->assertSame($errorMessage, $formatter->getErrorMessage());
+        $this->assertSame($errorMessage, preg_replace('/^NumberFormatter::parse\(\): /', '', $formatter->getErrorMessage()));
         $this->assertSame($errorCode, $formatter->getErrorCode());
         $this->assertSame(0 !== $errorCode, static::isIntlFailure($formatter->getErrorCode()));
     }
