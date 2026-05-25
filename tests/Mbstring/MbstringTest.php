@@ -83,6 +83,17 @@ class MbstringTest extends TestCase
         $this->assertSame('&#23455;<&>d&eacute;j&agrave;', mb_convert_encoding('実<&>déjà', 'Html-entities'));
         $this->assertSame('déjà', mb_convert_encoding(base64_encode('déjà'), 'Utf-8', 'Base64'));
         $this->assertSame('déjà', mb_convert_encoding('d&eacute;j&#224;', 'Utf-8', 'Html-entities'));
+
+        $this->assertSame("'", mb_convert_encoding('&#39;', 'UTF-8', 'Html-entities'));
+        $this->assertSame("'", mb_convert_encoding('&#x27;', 'UTF-8', 'Html-entities'));
+        $this->assertSame("\0", mb_convert_encoding('&#0;', 'UTF-8', 'Html-entities'));
+        $this->assertSame("\x0b", mb_convert_encoding('&#11;', 'UTF-8', 'Html-entities'));
+        $this->assertSame("\x7f", mb_convert_encoding('&#127;', 'UTF-8', 'Html-entities'));
+        $this->assertSame("\u{80}", mb_convert_encoding('&#128;', 'UTF-8', 'Html-entities'));
+        $this->assertSame("\u{9f}", mb_convert_encoding('&#159;', 'UTF-8', 'Html-entities'));
+        // out-of-range and not-an-entity stay untouched, like native does
+        $this->assertSame('&#1114112;', mb_convert_encoding('&#1114112;', 'UTF-8', 'Html-entities'));
+        $this->assertSame('&apos;', mb_convert_encoding('&apos;', 'UTF-8', 'Html-entities'));
     }
 
     /**
