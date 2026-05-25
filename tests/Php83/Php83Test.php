@@ -147,6 +147,11 @@ class Php83Test extends TestCase
         yield ['mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "unexisting" given', '▶▶', 6, ' ', \STR_PAD_BOTH, 'unexisting'];
     }
 
+    public function testMbStrPadWithNullString()
+    {
+        $this->assertSame('     ', @mb_str_pad(null, 5));
+    }
+
     /**
      * @return iterable<array{0: bool, 1: string, 2?: string, 3?: int, 4?: int}>
      */

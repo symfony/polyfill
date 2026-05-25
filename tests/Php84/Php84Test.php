@@ -344,6 +344,15 @@ class Php84Test extends TestCase
         yield ["foo\n", "foo\n", 'o'];
     }
 
+    public function testNullStringArgument()
+    {
+        $this->assertSame('', @mb_trim(null));
+        $this->assertSame('', @mb_ltrim(null));
+        $this->assertSame('', @mb_rtrim(null));
+        $this->assertSame('', @mb_ucfirst(null));
+        $this->assertSame('', @mb_lcfirst(null));
+    }
+
     /**
      * @dataProvider fpowProvider
      */
