@@ -300,7 +300,7 @@ return array (
   'COP' => 
   array (
     0 => 'COP',
-    1 => 2,
+    1 => 0,
     2 => 0,
   ),
   'COU' => 
@@ -516,13 +516,13 @@ return array (
   'HUF' => 
   array (
     0 => 'HUF',
-    1 => 2,
+    1 => 0,
     2 => 0,
   ),
   'IDR' => 
   array (
     0 => 'IDR',
-    1 => 2,
+    1 => 0,
     2 => 0,
   ),
   'IEP' => 
@@ -892,7 +892,7 @@ return array (
   'PKR' => 
   array (
     0 => 'PKR',
-    1 => 2,
+    1 => 0,
     2 => 0,
   ),
   'PLN' => 
@@ -932,7 +932,7 @@ return array (
   'RSD' => 
   array (
     0 => 'RSD',
-    1 => 0,
+    1 => 2,
     2 => 0,
   ),
   'RUB' => 
@@ -1322,6 +1322,16 @@ return array (
     0 => 'ZWR',
   ),
   'DEFAULT' => 
+  array (
+    1 => 2,
+    2 => 0,
+  ),
+  'XAD' => 
+  array (
+    1 => 2,
+    2 => 0,
+  ),
+  'XAU' => 
   array (
     1 => 2,
     2 => 0,
