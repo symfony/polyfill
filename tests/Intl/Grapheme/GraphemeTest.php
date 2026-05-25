@@ -325,6 +325,8 @@ class GraphemeTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrev
+     *
+     * @requires PHP < 8.6
      */
     public function testGraphemeStrrevInvalidUtf8()
     {
