@@ -667,6 +667,10 @@ abstract class AbstractNumberFormatterTest extends TestCase
         $formatter->setAttribute(NumberFormatter::GROUPING_USED, $groupingUsed);
         $parsedValue = $formatter->parse($value, NumberFormatter::TYPE_DOUBLE, $position);
         $this->assertSame($expected, $parsedValue, $message);
+        if (false === $expected && version_compare(\INTL_ICU_VERSION, '76', '>=')) {
+            // ICU 76+ reports position 0 instead of just past the sign character for failed parses.
+            $expectedPosition = 0 === strpos($value, '-') && 1 === $expectedPosition ? 0 : $expectedPosition;
+        }
         $this->assertSame($expectedPosition, $position, $message);
 
         if (false === $expected) {
