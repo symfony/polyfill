@@ -24,7 +24,11 @@ class Php73Test extends TestCase
         $this->assertTrue(is_countable([1, 2, '3']));
         $this->assertTrue(is_countable(new \ArrayIterator(['foo', 'bar', 'baz'])));
         $this->assertTrue(is_countable(new \ArrayIterator()));
-        $this->assertTrue(is_countable(new \SimpleXMLElement('<foo><bar/><bar/><bar/></foo>')));
+
+        if (\class_exists('\SimpleXMLElement')) {
+            $this->assertTrue(is_countable(new \SimpleXMLElement('<foo><bar/><bar/><bar/></foo>')));
+        }
+
         $this->assertFalse(is_countable(new \stdClass()));
 
         $endianBytes = unpack('S', "\x01\x00");
