@@ -60,7 +60,7 @@ final class Php83
             $errorToTrigger = \sprintf('mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "%s" given', $encoding);
         }
 
-        if (mb_strlen($pad_string, $encoding) <= 0) {
+        if (null === $errorToTrigger && mb_strlen($pad_string, $encoding) <= 0) {
             $errorToTrigger = 'mb_str_pad(): Argument #3 ($pad_string) must be a non-empty string';
         }
 
