@@ -5,4 +5,5 @@ composer.lock
 phpunit.xml
 .phpunit
 vendor/
+/tests/Io/Poll/phpt/*.php
 /tests/unicode

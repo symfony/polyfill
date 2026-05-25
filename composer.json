@@ -42,6 +42,7 @@
         "symfony/polyfill-intl-messageformatter": "self.version",
         "symfony/polyfill-intl-idn": "self.version",
         "symfony/polyfill-intl-normalizer": "self.version",
+        "symfony/polyfill-io-poll": "self.version",
         "symfony/polyfill-mbstring": "self.version",
         "symfony/polyfill-util": "self.version",
         "symfony/polyfill-uuid": "self.version"
@@ -67,6 +68,7 @@
             "src/Intl/Icu/Resources/stubs",
             "src/Intl/MessageFormatter/Resources/stubs",
             "src/Intl/Normalizer/Resources/stubs",
+            "src/Io/Poll/Resources/stubs",
             "src/Php86/Resources/stubs",
             "src/Php85/Resources/stubs",
             "src/Php84/Resources/stubs",

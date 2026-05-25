@@ -18,7 +18,7 @@ class Php86Test extends TestCase
     /**
      * @dataProvider provideValidClampInput
      */
-    public function testClampSuccess(array $arguments, $result): void
+    public function testClampSuccess(array $arguments, $result)
     {
         [$value, $min, $max] = $arguments;
 
@@ -33,7 +33,7 @@ class Php86Test extends TestCase
         $this->assertSame($result, $actual);
     }
 
-    public function testClampNanReturn(): void
+    public function testClampNanReturn()
     {
         $this->assertNan(clamp(\NAN, 4, 6));
     }
@@ -139,7 +139,7 @@ class Php86Test extends TestCase
     /**
      * @dataProvider provideInvalidClampInput
      */
-    public function testClampFailure(array $arguments, string $error): void
+    public function testClampFailure(array $arguments, string $error)
     {
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage($error);
