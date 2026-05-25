@@ -67,7 +67,9 @@ class Php83Test extends TestCase
         $this->expectExceptionMessage($expectedError);
 
         set_error_handler(static function ($errno, $errstr, $errfile, $errline) {
-            throw new \ErrorException($errstr, $errno, $errfile, $errline);
+            if (\E_USER_WARNING === $errno) {
+                throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+            }
         });
 
         try {
