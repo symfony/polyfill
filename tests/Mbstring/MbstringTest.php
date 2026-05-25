@@ -74,6 +74,36 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_encoding
+     */
+    public function testConvertEncodingWithoutIconvIgnoreSupport()
+    {
+        $property = new \ReflectionProperty(p::class, 'iconvSupportsIgnore');
+        if (\PHP_VERSION_ID < 80100) {
+            $property->setAccessible(true);
+        }
+        $previous = $property->getValue();
+        $property->setValue(null, false);
+
+        $errors = [];
+        set_error_handler(static function ($errno, $errstr) use (&$errors) {
+            $errors[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $result = mb_convert_encoding('déjà', 'ISO-8859-1', 'UTF-8');
+        } finally {
+            restore_error_handler();
+            $property->setValue(null, $previous);
+        }
+
+        $this->assertSame(iconv('UTF-8', 'ISO-8859-1', 'déjà'), $result);
+        $this->assertSame([], $errors);
+    }
+
+    /**
      * @group legacy
      */
     public function testConvertLegacyEncoding()
