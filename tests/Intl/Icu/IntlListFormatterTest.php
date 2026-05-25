@@ -31,6 +31,10 @@ class IntlListFormatterTest extends TestCase
 
     public function testUnsupportedLocales()
     {
+        if (\PHP_VERSION_ID >= 80500) {
+            $this->markTestSkipped('Native IntlListFormatter accepts the "ja" locale on PHP 8.5+.');
+        }
+
         if (80000 <= \PHP_VERSION_ID) {
             $this->expectException(\ValueError::class);
         } else {
