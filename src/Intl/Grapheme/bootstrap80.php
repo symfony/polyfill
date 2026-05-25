@@ -38,6 +38,10 @@ if (!defined('GRAPHEME_EXTR_MAXCHARS')) {
 if (!function_exists('grapheme_extract')) {
     function grapheme_extract(?string $haystack, ?int $size, ?int $type = GRAPHEME_EXTR_COUNT, ?int $offset = 0, &$next = null): string|false { return p\Grapheme::grapheme_extract((string) $haystack, (int) $size, (int) $type, (int) $offset, $next); }
 }
+if (\PHP_VERSION_ID >= 80500) {
+    return require __DIR__.'/bootstrap85.php';
+}
+
 if (!function_exists('grapheme_stripos')) {
     function grapheme_stripos(?string $haystack, ?string $needle, ?int $offset = 0): int|false { return p\Grapheme::grapheme_stripos((string) $haystack, (string) $needle, (int) $offset); }
 }

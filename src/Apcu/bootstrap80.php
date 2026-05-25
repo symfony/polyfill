@@ -22,7 +22,7 @@ if (extension_loaded('Zend Data Cache')) {
         function apcu_exists($key): array|bool { return p\Apcu::apcu_exists($key); }
     }
     if (!function_exists('apcu_fetch')) {
-        function apcu_fetch($key, &$success = null) { return p\Apcu::apcu_fetch($key, $success); }
+        function apcu_fetch($key, &$success = null): mixed { return p\Apcu::apcu_fetch($key, $success); }
     }
     if (!function_exists('apcu_store')) {
         function apcu_store($key, mixed $value, ?int $ttl = 0): array|bool { return p\Apcu::apcu_store($key, $value, (int) $ttl); }
