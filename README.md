@@ -30,6 +30,7 @@ Polyfills are provided for:
 - the `array_key_first` and `array_key_last` functions introduced in PHP 7.3;
 - the `hrtime` function introduced in PHP 7.3;
 - the `JsonException` class introduced in PHP 7.3;
+- the `normalizer_get_raw_decomposition` function introduced in PHP 7.3;
 - the `get_mangled_object_vars`, `mb_str_split` and `password_algos` functions
   introduced in PHP 7.4;
 - the `fdiv` function introduced in PHP 8.0;

@@ -104,6 +104,59 @@ class NormalizerTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::getRawDecomposition
+     */
+    public function testGetRawDecomposition()
+    {
+        $this->assertNull(normalizer_get_raw_decomposition('a'));
+        $this->assertNull(normalizer_get_raw_decomposition('A'));
+
+        $this->assertSame("A\xCC\x8A", normalizer_get_raw_decomposition("\u{00C5}"));
+        $this->assertSame("a\xCC\x8A", normalizer_get_raw_decomposition("\u{00E5}"));
+        $this->assertSame("\xC5\xBF\xCC\x87", normalizer_get_raw_decomposition("\u{1E9B}"));
+        $this->assertSame("\xE0\xB2\xBF\xE0\xB3\x95", normalizer_get_raw_decomposition("\u{0CC0}"));
+        $this->assertSame("\xCE\xAE", normalizer_get_raw_decomposition("\u{1F75}"));
+        $this->assertSame("\xE3\x82\xAB\xE3\x82\x99", normalizer_get_raw_decomposition("\u{30AC}"));
+
+        $this->assertNull(normalizer_get_raw_decomposition("\u{FB01}"));
+        $this->assertNull(normalizer_get_raw_decomposition("\u{FB05}"));
+        $this->assertNull(normalizer_get_raw_decomposition("\u{2026}"));
+        $this->assertNull(normalizer_get_raw_decomposition("\u{FDFA}"));
+        $this->assertNull(normalizer_get_raw_decomposition("\u{FFDA}"));
+
+        $this->assertSame('fi', normalizer_get_raw_decomposition("\u{FB01}", pn::NFKC));
+        $this->assertSame("\xC5\xBFt", normalizer_get_raw_decomposition("\u{FB05}", pn::NFKC));
+        $this->assertSame('...', normalizer_get_raw_decomposition("\u{2026}", pn::NFKC));
+        $this->assertSame("\xE3\x85\xA1", normalizer_get_raw_decomposition("\u{FFDA}", pn::NFKC));
+        $this->assertSame("A\xCC\x8A", normalizer_get_raw_decomposition("\u{00C5}", pn::NFKC));
+        $this->assertSame("A\xCC\x8A", normalizer_get_raw_decomposition("\u{00C5}", pn::NFKD));
+        $this->assertSame("A\xCC\x8A", normalizer_get_raw_decomposition("\u{00C5}", pn::NFD));
+
+        $this->assertSame("\xE1\x84\x80\xE1\x85\xA1", normalizer_get_raw_decomposition("\u{AC00}"));
+        $this->assertSame("\xEA\xB0\x80\xE1\x86\xA8", normalizer_get_raw_decomposition("\u{AC01}"));
+        $this->assertSame("\xED\x9E\x88\xE1\x87\x82", normalizer_get_raw_decomposition("\u{D7A3}"));
+        $this->assertNull(normalizer_get_raw_decomposition("\u{D7A4}"));
+
+        $this->assertNull(normalizer_get_raw_decomposition(''));
+        $this->assertNull(normalizer_get_raw_decomposition('aa'));
+        $this->assertNull(normalizer_get_raw_decomposition("\xFF"));
+        $this->assertNull(normalizer_get_raw_decomposition("\xF5"));
+
+        $this->assertSame('', normalizer_get_raw_decomposition("\u{00C5}", 0));
+        $this->assertSame('', normalizer_get_raw_decomposition("\u{00C5}", -1));
+        $this->assertSame('', normalizer_get_raw_decomposition("\u{00C5}", 999));
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testGetRawDecompositionNullArgument()
+    {
+        $this->assertNull(@normalizer_get_raw_decomposition(null));
+        $this->assertSame('', @normalizer_get_raw_decomposition("\u{00C5}", null));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
      */
     public function testNormalizeConformance()

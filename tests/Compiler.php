@@ -93,6 +93,8 @@ class Compiler
         $canonicalComposition = [];
         $canonicalDecomposition = [];
         $compatibilityDecomposition = [];
+        $rawCanonicalDecomposition = [];
+        $rawCompatibilityDecomposition = [];
 
         $exclusion = [];
 
@@ -131,7 +133,10 @@ class Compiler
 
                 if ($canonic) {
                     $canonicalDecomposition[$k] = $decomp;
+                    $rawCanonicalDecomposition[$k] = $decomp;
                     $exclude || $canonicalComposition[$decomp] = $k;
+                } else {
+                    $rawCompatibilityDecomposition[$k] = $decomp;
                 }
 
                 $compatibilityDecomposition[$k] = $decomp;
@@ -216,6 +221,8 @@ class Compiler
         $canonicalComposition = "<?php\n\nreturn ".var_export($canonicalComposition, true).";\n";
         $canonicalDecomposition = "<?php\n\nreturn ".var_export($canonicalDecomposition, true).";\n";
         $compatibilityDecomposition = "<?php\n\nreturn ".var_export($compatibilityDecomposition, true).";\n";
+        $rawCanonicalDecompositionData = "<?php\n\nreturn ".var_export($rawCanonicalDecomposition, true).";\n";
+        $rawCompatibilityDecompositionData = "<?php\n\nreturn ".var_export($rawCompatibilityDecomposition, true).";\n";
 
         file_put_contents($out_dir.'upperCase.php', $upperCase);
         file_put_contents($out_dir.'lowerCase.php', $lowerCase);
@@ -224,6 +231,8 @@ class Compiler
         file_put_contents($out_dir.'canonicalComposition.php', $canonicalComposition);
         file_put_contents($out_dir.'canonicalDecomposition.php', $canonicalDecomposition);
         file_put_contents($out_dir.'compatibilityDecomposition.php', $compatibilityDecomposition);
+        file_put_contents($out_dir.'rawCanonicalDecomposition.php', $rawCanonicalDecompositionData);
+        file_put_contents($out_dir.'rawCompatibilityDecomposition.php', $rawCompatibilityDecompositionData);
     }
 
     public static function idnMaps($out_dir)
