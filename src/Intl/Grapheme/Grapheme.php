@@ -329,6 +329,10 @@ final class Grapheme
 
     public static function grapheme_strrev(string $string)
     {
+        if (!preg_match('//u', $string)) {
+            return false;
+        }
+
         $units = grapheme_str_split($string);
 
         if (false === $units) {
