@@ -15,13 +15,17 @@ if (\PHP_VERSION_ID >= 80400) {
     return;
 }
 
-if (defined('CURL_VERSION_HTTP3') || \PHP_VERSION_ID < 80200 && function_exists('curl_version') && curl_version()['version'] >= 0x074200) { // libcurl >= 7.66.0
-    if (!defined('CURL_HTTP_VERSION_3')) {
-        define('CURL_HTTP_VERSION_3', 30);
-    }
+if (\extension_loaded('curl')) {
+    // CURL_VERSION_HTTP3 is defined by PHP 8.2+ when libcurl >= 7.66.0
+    if (defined('CURL_VERSION_HTTP3') || \PHP_VERSION_ID < 80200 && curl_version()['version_number'] >= 0x074200) {
+        if (!defined('CURL_HTTP_VERSION_3')) {
+            define('CURL_HTTP_VERSION_3', 30);
+        }
 
-    if (!defined('CURL_HTTP_VERSION_3ONLY') && defined('CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256')) { // libcurl >= 7.80.0 (7.88 would be better but is slow to check)
-        define('CURL_HTTP_VERSION_3ONLY', 31);
+        // CURL_HTTP_VERSION_3ONLY requires libcurl >= 7.88.0 and is not gated by any PHP-defined constant before 8.4
+        if (!defined('CURL_HTTP_VERSION_3ONLY') && curl_version()['version_number'] >= 0x075800) {
+            define('CURL_HTTP_VERSION_3ONLY', 31);
+        }
     }
 }
 
