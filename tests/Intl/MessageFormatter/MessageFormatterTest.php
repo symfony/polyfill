@@ -295,4 +295,9 @@ _MSG_
             'nested select without other' => ['{n, plural, other {{x, select, brown {a}}}}'],
         ];
     }
+
+    public function testParseMessageWithInvalidPattern()
+    {
+        $this->assertFalse(MessageFormatter::parseMessage('en_US', '{invalid', 'message'));
+    }
 }
