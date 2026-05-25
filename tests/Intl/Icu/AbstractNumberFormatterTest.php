@@ -667,6 +667,10 @@ abstract class AbstractNumberFormatterTest extends TestCase
         $formatter->setAttribute(NumberFormatter::GROUPING_USED, $groupingUsed);
         $parsedValue = $formatter->parse($value, NumberFormatter::TYPE_DOUBLE, $position);
         $this->assertSame($expected, $parsedValue, $message);
+        if (false === $expected && 0 === strpos($value, '-') && 1 === $expectedPosition && 0 === $position) {
+            // ICU 76+ reports position 0 instead of just past the sign character for failed parses.
+            $expectedPosition = 0;
+        }
         $this->assertSame($expectedPosition, $position, $message);
 
         if (false === $expected) {
@@ -677,10 +681,10 @@ abstract class AbstractNumberFormatterTest extends TestCase
             $errorMessage = 'U_ZERO_ERROR';
         }
 
-        $this->assertSame($errorMessage, static::getIntlErrorMessage());
+        $this->assertSame($errorMessage, preg_replace('/^NumberFormatter::parse\(\): /', '', static::getIntlErrorMessage()));
         $this->assertSame($errorCode, static::getIntlErrorCode());
         $this->assertSame(0 !== $errorCode, static::isIntlFailure(static::getIntlErrorCode()));
-        $this->assertSame($errorMessage, $formatter->getErrorMessage());
+        $this->assertSame($errorMessage, preg_replace('/^NumberFormatter::parse\(\): /', '', $formatter->getErrorMessage()));
         $this->assertSame($errorCode, $formatter->getErrorCode());
         $this->assertSame(0 !== $errorCode, static::isIntlFailure($formatter->getErrorCode()));
     }
