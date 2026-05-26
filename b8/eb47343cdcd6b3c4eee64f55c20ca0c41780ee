@@ -1,0 +1,12 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-05-26T06:12:29Z
+
+Thanks for this. The PR is draft because you want to tackle the todo, isn't it?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-05-26T11:27:32Z
+
+AFAIK, the PHP_VERSION_ID checks can be optimized by opcache, while define() calls can, but only when the const actually exists. When it doesn't exist, defined checks need to remain so that a dynamically defined const can still be tested.
+This could be a reason to keep these checks, even if they look duplicates in your analysis.
