@@ -1,6 +1,12 @@
 # 1.38.1
 
   * CVE-2026-46644 `idn_to_ascii()`/`idn_to_utf8()`: reject `xn--` labels whose Punycode payload decodes to ASCII-only
+  * Fix `grapheme_str_split()` on PCRE 8
+  * Fix `mb_str_split()` newline handling in the Php74 polyfill
+  * Fix `grapheme_levenshtein()` delegation in the Intl/Grapheme polyfill
+  * Make `mb_*` polyfills match the native `string` return type on PHP 8+
+  * Fix missing `CURLOPT_ISSUERCERT_BLOB` and `CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256` constants
+  * Fix definition of MySQL PDO constants
 
 # 1.38.0
 

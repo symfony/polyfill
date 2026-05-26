@@ -50,6 +50,7 @@ Polyfills are provided for:
 - the `MYSQLI_REFRESH_REPLICA` constant introduced in PHP 8.1;
 - the `ReturnTypeWillChange` attribute introduced in PHP 8.1;
 - the `CURLStringFile` class introduced in PHP 8.1 (but only if PHP >= 7.4 is used);
+- the `CURLOPT_ISSUERCERT_BLOB` constant introduced in PHP 8.1 when curl 7.47+ is used;
 - the `AllowDynamicProperties` attribute introduced in PHP 8.2;
 - the `SensitiveParameter` attribute introduced in PHP 8.2;
 - the `SensitiveParameterValue` class introduced in PHP 8.2;
@@ -60,6 +61,7 @@ Polyfills are provided for:
 - the `odbc_connection_string_should_quote` function introduced in PHP 8.2;
 - the `odbc_connection_string_quote` function introduced in PHP 8.2;
 - the `ini_parse_quantity` function introduced in PHP 8.2;
+- the `CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256` constant introduced in PHP 8.1 when curl 7.50+ is used;
 - the `json_validate` function introduced in PHP 8.3;
 - the `Override` attribute introduced in PHP 8.3;
 - the `mb_str_pad` function introduced in PHP 8.3;
