@@ -67,15 +67,29 @@ class Php84Test extends TestCase
     /**
      * @requires extension curl
      */
-    public function testCurlHttp3Constants()
+    public function testCurlHttpVersion3Constant()
     {
+        if (curl_version()['version_number'] < 0x074200) {
+            $this->markTestSkipped('Requires libcurl >= 7.66.0');
+        }
+
         $ch = curl_init();
 
         $this->assertIsBool(curl_setopt($ch, \CURLOPT_HTTP_VERSION, \CURL_HTTP_VERSION_3));
+    }
 
-        if (\defined('CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256')) {
-            $this->assertIsBool(curl_setopt($ch, \CURLOPT_HTTP_VERSION, \CURL_HTTP_VERSION_3ONLY));
+    /**
+     * @requires extension curl
+     */
+    public function testCurlHttpVersion3OnlyConstant()
+    {
+        if (curl_version()['version_number'] < 0x075800) {
+            $this->markTestSkipped('Requires libcurl >= 7.88.0');
         }
+
+        $ch = curl_init();
+
+        $this->assertIsBool(curl_setopt($ch, \CURLOPT_HTTP_VERSION, \CURL_HTTP_VERSION_3ONLY));
     }
 
     public static function ucFirstDataProvider(): array

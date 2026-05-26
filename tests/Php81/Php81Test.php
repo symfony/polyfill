@@ -42,4 +42,17 @@ class Php81Test extends TestCase
         $this->assertTrue(\defined('MYSQLI_REFRESH_REPLICA'));
         $this->assertSame(MYSQLI_REFRESH_SLAVE, MYSQLI_REFRESH_REPLICA);
     }
+
+    /**
+     * @requires extension curl
+     */
+    public function testCurlOptIssuerCertBlobDefined()
+    {
+        if (curl_version()['version_number'] < 0x074700) {
+            $this->markTestSkipped('Requires libcurl >= 7.71.0');
+        }
+
+        $this->assertTrue(\defined('CURLOPT_ISSUERCERT_BLOB'));
+        $this->assertSame(40295, \CURLOPT_ISSUERCERT_BLOB);
+    }
 }

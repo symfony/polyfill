@@ -49,6 +49,19 @@ class Php82Test extends TestCase
     }
 
     /**
+     * @requires extension curl
+     */
+    public function testCurlOptSshHostPublicKeySha256Defined()
+    {
+        if (curl_version()['version_number'] < 0x075000) {
+            $this->markTestSkipped('Requires libcurl >= 7.80.0');
+        }
+
+        $this->assertTrue(\defined('CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256'));
+        $this->assertSame(10311, \CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256);
+    }
+
+    /**
      * Test cases ported from upstream.
      *
      * @see https://github.com/php/php-src/blob/838f6bffff6363a204a2597cbfbaad1d7ee3f2b6/ext/odbc/tests/odbc_utils.phpt
