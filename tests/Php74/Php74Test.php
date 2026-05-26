@@ -91,6 +91,8 @@ class Php74Test extends TestCase
      */
     public function testStrSplit()
     {
+        $this->assertSame(['H', "\r", "\n", 'W'], mb_str_split("H\r\nW", 1));
+        $this->assertSame(['Hell', "o\nWo", 'rld!'], mb_str_split("Hello\nWorld!", 4));
         $this->assertSame(['한', '국', '어'], mb_str_split('한국어'));
         $this->assertSame(['по', 'бе', 'да'], mb_str_split('победа', 2));
         $this->assertSame(['źre', 'bię'], mb_str_split('źrebię', 3));
