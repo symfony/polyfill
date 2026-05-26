@@ -15,17 +15,22 @@ jobs:
 
         strategy:
             matrix:
-                include:
-                    - php: '7.2'
-                    - php: '7.3'
-                    - php: '7.4'
-                    - php: '8.0'
-                    - php: '8.1'
-                    - php: '8.2'
-                    - php: '8.3'
-                    - php: '8.4'
-                    - php: '8.5'
-                    - php: '8.6'
+                php: [
+                    '7.2',
+                    '7.3',
+                    '7.4',
+                    '8.0',
+                    '8.1',
+                    '8.2',
+                    '8.3',
+                    '8.4',
+                    '8.5',
+                    '8.6',
+                ]
+                extensions: [
+                    "none, iconv, json, dom, mbstring, xml, xmlwriter, tokenizer, pdo_sqlite",
+                    "apc, apcu, bcmath, curl, ctype, dom, iconv, intl-73.2, json, ldap, mbstring, mongodb, mysqli, pdo_dblib, pdo_firebird, pdo_mysql, pdo_odbc, pdo_pgsql, pdo_sqlite, odbc, tidy, tokenizer, uuid, xml, xmlwriter",
+                ]
             fail-fast: false
 
         steps:
@@ -36,16 +41,15 @@ jobs:
                 uses: shivammathur/setup-php@v2
                 with:
                     coverage: "none"
-                    extensions: "apcu, intl-73.2, ldap, mbstring, odbc, uuid, mongodb"
+                    extensions: "${{ matrix.extensions }}"
                     ini-values: "memory_limit=-1, session.gc_probability=0, apc.enable_cli=1"
                     php-version: "${{ matrix.php }}"
-                    tools: "composer:v2"
+                    tools: "composer:v2, pie"
 
             -   name: Install ext-deepclone via PIE
-                if: ${{ matrix.php >= '8.2' }}
+                if: ${{ !startsWith(matrix.extensions, 'none') && matrix.php >= '8.2' }}
                 run: |
-                    curl -sLO https://github.com/php/pie/releases/latest/download/pie.phar
-                    sudo BOX_REQUIREMENT_CHECKER=0 php pie.phar install symfony/deepclone
+                    sudo BOX_REQUIREMENT_CHECKER=0 pie install symfony/deepclone
                     php --ri deepclone || echo "extension=deepclone" | sudo tee "$(php -r 'echo PHP_CONFIG_FILE_SCAN_DIR;')/99-deepclone.ini"
                     php -m | grep -q deepclone && echo "deepclone loaded" || echo "deepclone NOT loaded"
 

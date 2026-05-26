@@ -239,6 +239,8 @@ class PdoTest extends TestCase
     }
 }
 
-class ExtendedPdoSqlite extends \Pdo\Sqlite
-{
+if (class_exists('\Pdo\Sqlite')) {
+    class ExtendedPdoSqlite extends \Pdo\Sqlite
+    {
+    }
 }

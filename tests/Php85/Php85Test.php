@@ -121,6 +121,9 @@ class Php85Test extends TestCase
         $this->assertTrue(class_exists(\Filter\FilterFailedException::class));
     }
 
+    /**
+     * @requires extension intl
+     */
     public function testLocaleIsRightToLeft()
     {
         $this->assertTrue(locale_is_right_to_left('ar'));
