@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by mitelg at 2026-05-26T12:50:03Z
+
+hey @nicolas-grekas
+
+I tested your changes and the PHPStan issues with the return type are gone for our supported PHP versions :+1:
