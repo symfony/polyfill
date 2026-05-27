@@ -691,10 +691,6 @@ class MbstringTest extends TestCase
      */
     public function testMbStrPad(string $expectedResult, string $string, int $length, string $padString, int $padType, ?string $encoding = null)
     {
-        if ('UTF-32' === $encoding && \PHP_VERSION_ID < 73000) {
-            $this->markTestSkipped('PHP < 7.3 doesn\'t handle UTF-32 encoding properly');
-        }
-
         $this->assertSame($expectedResult, mb_convert_encoding(mb_str_pad($string, $length, $padString, $padType, $encoding), 'UTF-8', $encoding ?? mb_internal_encoding()));
     }
 
@@ -823,6 +819,8 @@ class MbstringTest extends TestCase
         yield ['mb_str_pad(): Argument #3 ($pad_string)', '▶▶', 6, '', \STR_PAD_BOTH];
         yield ['mb_str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH', '▶▶', 6, ' ', 123456];
         yield ['mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "unexisting" given', '▶▶', 6, ' ', \STR_PAD_BOTH, 'unexisting'];
+        yield ['mb_str_pad(): Argument #3 ($pad_string)', '▶▶', 6, '', 123456];
+        yield ['mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "unexisting" given', '▶▶', 6, '', 123456, 'unexisting'];
     }
 
     public static function ucFirstDataProvider(): array
