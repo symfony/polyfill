@@ -838,6 +838,40 @@ final class DeepClone
             $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs);
         }
 
+        // Finalize the remaining deferred objects: needsFullUnserialize objects
+        // whose __serialize() state nests another object (e.g. Random\Randomizer
+        // wrapping a Random\Engine\*), so their state carries an object-ref mask.
+        // The loop above skipped them because resolving the mask needs the
+        // referenced objects to exist first. Iterate to a fixpoint: each pass
+        // finalizes those whose referenced objects are now available. A leftover
+        // null (a cycle of such classes, which pure PHP cannot reconstruct) is
+        // reported by the properties/states loop below.
+        if ($states) {
+            do {
+                $progress = false;
+                foreach ($states as $state) {
+                    if (!\is_array($state) || !isset($state[2])) {
+                        continue;
+                    }
+                    $zid = $state[0] ?? null;
+                    if (!\is_int($zid) || !\array_key_exists($zid, $objects) || null !== $objects[$zid]) {
+                        continue;
+                    }
+                    if (!self::maskRefsReady($state[1] ?? null, $state[2], $objects)) {
+                        continue;
+                    }
+                    $class = $objectMeta[$zid][0];
+                    $resolvedProps = self::resolveWithMask($state[1] ?? null, $state[2], $objects, $refs);
+                    $ser = serialize($resolvedProps);
+                    if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
+                        throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
+                    }
+                    $objects[$zid] = $obj;
+                    $progress = true;
+                }
+            } while ($progress);
+        }
+
         foreach ($properties as $scope => $scopeProps) {
             if (!\is_string($scope)) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" keys must be of type string');
@@ -985,6 +1019,29 @@ final class DeepClone
         }
 
         return $prepared;
+    }
+
+    /**
+     * Whether every object referenced by $mask (positive object ids) has already
+     * been finalized in $objects, so resolveWithMask() can run without hitting an
+     * unbuilt placeholder. Hard/soft refs (negative ids, resolved against $refs in
+     * an earlier pass) and scalar/enum/closure masks never gate this.
+     */
+    private static function maskRefsReady($value, $mask, array $objects): bool
+    {
+        if (true === $mask) {
+            return !\is_int($value) || $value < 0 || isset($objects[$value]);
+        }
+        if (!\is_array($mask) || !\is_array($value)) {
+            return true;
+        }
+        foreach ($mask as $k => $m) {
+            if (false !== $m && !self::maskRefsReady($value[$k] ?? null, $m, $objects)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function resolveWithMask($value, $mask, $objects, &$refs)
