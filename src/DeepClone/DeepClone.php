@@ -847,9 +847,9 @@ final class DeepClone
                 $resolveScope = $resolve[$scope];
             }
             foreach ($scopeProps as $name => $idValues) {
-                if (!\is_string($name)) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" inner keys must be of type string');
-                }
+                // Numeric property names (e.g. $o->{'999'}) surface as integer
+                // array keys because PHP normalizes numeric string keys; accept
+                // them as-is, the same way unserialize() round-trips them.
                 if (!\is_array($idValues)) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" must be of type array, '.self::valueName($idValues).' given');
                 }

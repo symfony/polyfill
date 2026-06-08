@@ -1461,6 +1461,73 @@ class DeepCloneTest extends TestCase
         $this->assertSame('val', $o->{'0'});
     }
 
+    public function testNumericPropertyNameRoundTrip()
+    {
+        // GH-64548: a numeric property name like $o->{'999'} must round-trip
+        // the same way serialize()/unserialize() handles it. PHP normalizes
+        // numeric string keys to integers, so the wire format uses an int key.
+        $cfg = new \stdClass();
+        $cfg->{'999'} = ['TST'];
+
+        $d = deepclone_to_array($cfg);
+        $this->assertSame(999, array_key_first($d['properties']['stdClass']));
+
+        $clone = deepclone_from_array($d);
+        $this->assertEquals($cfg, $clone);
+        $this->assertSame(['TST'], $clone->{'999'});
+    }
+
+    public function testNumericPropertyNameSurvivesSerializationFormats()
+    {
+        // The int-keyed payload must survive a var_export()/require round-trip
+        // (the OPcache cache.php use case) and a JSON round-trip, both of which
+        // re-normalize a "999" key back to the integer 999.
+        $o = new \stdClass();
+        $o->{'0'} = 'zero';
+        $o->normal = 1;
+
+        $d = deepclone_to_array($o);
+        $viaExport = deepclone_from_array(eval('return '.var_export($d, true).';'));
+        $viaJson = deepclone_from_array(json_decode(json_encode($d), true));
+
+        $this->assertEquals($o, $viaExport);
+        $this->assertEquals($o, $viaJson);
+    }
+
+    public function testNumericPropertyLeadingZeroStaysString()
+    {
+        // "007" is not a canonical integer key, so it stays a string — exactly
+        // as PHP arrays and serialize() treat it.
+        $o = new \stdClass();
+        $o->{'007'} = 'keepstr';
+        $o->{'8'} = 'int';
+
+        $d = deepclone_to_array($o);
+        $this->assertSame(['007', 8], array_keys($d['properties']['stdClass']));
+        $this->assertEquals($o, deepclone_from_array($d));
+    }
+
+    public function testNumericPropertyOnTypedObjectRoundTrip()
+    {
+        $f = new DeepCloneNumericHolder();
+        $f->{'999'} = ['TST'];
+        $f->a = 5;
+
+        $this->assertEquals($f, deepclone_from_array(deepclone_to_array($f)));
+    }
+
+    public function testNumericPropertyPreservesSharedObjectIdentity()
+    {
+        $shared = new \stdClass();
+        $shared->x = 1;
+        $o = new \stdClass();
+        $o->{'42'} = $shared;
+        $o->ref2 = $shared;
+
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $this->assertSame($clone->{'42'}, $clone->ref2);
+    }
+
     public function testFromArrayRejectsUnloadedScope()
     {
         $this->expectException(\ValueError::class);
