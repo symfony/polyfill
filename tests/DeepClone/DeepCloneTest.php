@@ -341,6 +341,16 @@ class DeepCloneTest extends TestCase
         deepclone_from_array(['classes' => [42], 'objectMeta' => 0, 'prepared' => 0]);
     }
 
+    public function testFromArrayRejectsNonObjectUnserializeResult()
+    {
+        // A class-name string whose second byte is ':' is replayed through
+        // unserialize(); a scalar/array serialize form must be rejected rather
+        // than stored and later treated as an object.
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('deepclone_from_array(): Argument #1 ($data) object 0 did not unserialize to an object, int given');
+        deepclone_from_array(['classes' => 'i:1234;', 'objectMeta' => 1, 'prepared' => 0]);
+    }
+
     public function testFromArrayRejectsObjectMetaWrongType()
     {
         $this->expectException(\ValueError::class);
@@ -468,6 +478,44 @@ class DeepCloneTest extends TestCase
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('"prepared" references unknown ref id 99');
         deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => -99]);
+    }
+
+    public function testFromArrayRejectsIntMinRefIdsWithoutWarning()
+    {
+        // Negating PHP_INT_MIN overflows to a float and emits a runtime warning
+        // before the value can be used as a ref-id array key. Every resolution
+        // path must reject it cleanly. A strict error handler turns any emitted
+        // diagnostic into a failure so the warning cannot regress unnoticed.
+        $cases = [
+            [
+                ['classes' => 'stdClass', 'objectMeta' => 0, 'prepared' => \PHP_INT_MIN],
+                '"prepared" references unknown ref id out of range',
+            ],
+            [
+                ['classes' => 'stdClass', 'objectMeta' => 0, 'prepared' => [0 => \PHP_INT_MIN], 'mask' => [0 => true]],
+                'malformed payload, ref id out of range',
+            ],
+            [
+                ['classes' => 'stdClass', 'objectMeta' => 0, 'prepared' => [\PHP_INT_MIN, 'strlen'], 'mask' => 0],
+                'malformed payload, named-closure references unknown id -9223372036854775808',
+            ],
+        ];
+
+        set_error_handler(static function ($type, $message) {
+            throw new \RuntimeException('unexpected diagnostic: '.$message);
+        });
+        try {
+            foreach ($cases as [$payload, $expected]) {
+                try {
+                    deepclone_from_array($payload);
+                    $this->fail('Expected ValueError was not thrown');
+                } catch (\ValueError $e) {
+                    $this->assertStringContainsString($expected, $e->getMessage());
+                }
+            }
+        } finally {
+            restore_error_handler();
+        }
     }
 
     public function testClosureGlobalFunctionWireFormat()
