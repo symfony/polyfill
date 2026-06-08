@@ -1903,4 +1903,57 @@ class DeepCloneTest extends TestCase
         $this->assertSame(DeepCloneHydrateSuit::Spades, $o->s);
         $this->assertNull(HookedEnumWiderParam::$lastRaw);
     }
+
+    /**
+     * @requires PHP 8.4
+     * @requires extension bcmath
+     */
+    public function testRoundTripBcMathNumber()
+    {
+        // BcMath\Number is a final internal class with a custom create_object,
+        // so newInstanceWithoutConstructor() is rejected and an empty O:
+        // unserialize is refused by __unserialize(). The round-trip must still
+        // reconstruct it through a full serialization replay.
+        $n = new \BcMath\Number('12.34');
+        $o = (object) ['a' => $n, 'b' => $n, 'list' => [$n, new \BcMath\Number('5')]];
+
+        $c = deepclone_from_array(deepclone_to_array($o));
+
+        $this->assertInstanceOf(\BcMath\Number::class, $c->a);
+        $this->assertSame('12.34', (string) $c->a);
+        $this->assertSame(2, $c->a->scale);
+        $this->assertNotSame($n, $c->a, 'is a real clone, not the original instance');
+        $this->assertSame($c->a, $c->b, 'shared identity is preserved');
+        $this->assertSame($c->a, $c->list[0], 'shared identity is preserved across the graph');
+        $this->assertSame('5', (string) $c->list[1]);
+    }
+
+    /**
+     * @requires PHP 8.4
+     * @requires extension bcmath
+     */
+    public function testRoundTripBcMathNumberTopLevel()
+    {
+        $c = deepclone_from_array(deepclone_to_array(new \BcMath\Number('99.999')));
+
+        $this->assertInstanceOf(\BcMath\Number::class, $c);
+        $this->assertSame('99.999', (string) $c);
+        $this->assertSame(3, $c->scale);
+        $this->assertSame('100.499', (string) $c->add('0.5'));
+    }
+
+    /**
+     * @requires PHP 8.4
+     * @requires extension bcmath
+     */
+    public function testHydrateBcMathNumberThrows()
+    {
+        // deepclone_hydrate() injects properties into an empty shell; a class
+        // that only becomes valid through __construct()/__unserialize() cannot
+        // be built that way and must be rejected rather than yielding a broken
+        // (uninitialized) instance.
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        $this->expectExceptionMessage('Class "BcMath\Number" is not instantiable.');
+        deepclone_hydrate(\BcMath\Number::class, ['value' => '7.5']);
+    }
 }
