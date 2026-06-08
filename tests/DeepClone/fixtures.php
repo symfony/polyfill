@@ -199,6 +199,12 @@ class HydrateBar extends HydrateFoo
     private $priv;
 }
 
+#[\AllowDynamicProperties]
+class DeepCloneNumericHolder
+{
+    public int $a = 1;
+}
+
 class CacheIsolationParent
 {
     private string $priv = 'def';
