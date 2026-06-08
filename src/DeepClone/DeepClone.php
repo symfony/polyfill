@@ -787,7 +787,12 @@ final class DeepClone
 
         foreach ($objectMeta as $id => [$class]) {
             if (':' === ($class[1] ?? null)) {
-                $objects[$id] = unserialize($class, null !== $allowedClasses ? ['allowed_classes' => $allowedClasses] : []);
+                // The result is used as an object below; a malformed payload can
+                // carry any serialize form (i:…, s:…, a:…), so reject anything
+                // that did not decode to an object rather than mistreating it.
+                if (!\is_object($objects[$id] = unserialize($class, null !== $allowedClasses ? ['allowed_classes' => $allowedClasses] : []))) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) object '.$id.' did not unserialize to an object, '.get_debug_type($objects[$id]).' given');
+                }
                 continue;
             }
             try {
@@ -953,6 +958,9 @@ final class DeepClone
 
                 return $objects[$prepared];
             }
+            if (\PHP_INT_MIN === $prepared) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "prepared" references unknown ref id out of range');
+            }
             if (!isset($refs[-$prepared])) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "prepared" references unknown ref id '.(-$prepared));
             }
@@ -979,6 +987,9 @@ final class DeepClone
                 }
 
                 return $objects[$value];
+            }
+            if (\PHP_INT_MIN === $value) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
             }
             if (!isset($refs[-$value])) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.(-$value));
@@ -1091,7 +1102,7 @@ final class DeepClone
                 }
                 $obj = $objects[$obj];
             } else {
-                if (!isset($refs[-$obj])) {
+                if (\PHP_INT_MIN === $obj || !isset($refs[-$obj])) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure references unknown id '.$obj);
                 }
                 $obj = $refs[-$obj];
