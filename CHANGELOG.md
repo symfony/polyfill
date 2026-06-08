@@ -1,3 +1,12 @@
+# 1.38.2
+
+  * Fix round-tripping objects whose `__serialize()` nests another object
+  * Fix round-tripping and hydrating `BcMath\Number`
+  * Reject malformed `deepclone_from_array()` input without warnings
+  * Fix cloning objects with numeric property names
+  * Fix issues with `mb_scrub()`
+  * Fix issues with `mb_str_pad()`
+
 # 1.38.1
 
   * CVE-2026-46644 `idn_to_ascii()`/`idn_to_utf8()`: reject `xn--` labels whose Punycode payload decodes to ASCII-only
