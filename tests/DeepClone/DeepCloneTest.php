@@ -1956,4 +1956,39 @@ class DeepCloneTest extends TestCase
         $this->expectExceptionMessage('Class "BcMath\Number" is not instantiable.');
         deepclone_hydrate(\BcMath\Number::class, ['value' => '7.5']);
     }
+
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizerAsObjectProperty()
+    {
+        // Random\Randomizer is a final internal class whose __serialize() nests
+        // its engine object, so its deep-clone state carries an object-ref mask
+        // and it cannot be built as an early empty shell. Used as a property it
+        // must still round-trip: it is finalized once the engine it references
+        // exists, before references to it are resolved.
+        $seed = 1234;
+        $expected = (new \Random\Randomizer(new \Random\Engine\Mt19937($seed)))->getInt(1, \PHP_INT_MAX);
+
+        $g = (object) ['r' => new \Random\Randomizer(new \Random\Engine\Mt19937($seed))];
+        $c = deepclone_from_array(deepclone_to_array($g));
+
+        $this->assertInstanceOf(\Random\Randomizer::class, $c->r);
+        $this->assertSame($expected, $c->r->getInt(1, \PHP_INT_MAX));
+    }
+
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizerTopLevelAndNested()
+    {
+        $top = deepclone_from_array(deepclone_to_array(new \Random\Randomizer(new \Random\Engine\Mt19937(7))));
+        $this->assertInstanceOf(\Random\Randomizer::class, $top);
+
+        $arr = deepclone_from_array(deepclone_to_array([new \Random\Randomizer(new \Random\Engine\Mt19937(8))]));
+        $this->assertInstanceOf(\Random\Randomizer::class, $arr[0]);
+
+        $deep = deepclone_from_array(deepclone_to_array((object) ['list' => [(object) ['r' => new \Random\Randomizer(new \Random\Engine\Mt19937(9))]]]));
+        $this->assertInstanceOf(\Random\Randomizer::class, $deep->list[0]->r);
+    }
 }
