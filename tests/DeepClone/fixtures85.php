@@ -126,6 +126,15 @@ class ConstExprTraitAliasFixture
     }
 }
 
+class ConstExprFccFixture
+{
+    #[ConstExprAttr(self::helper(...))]
+    public static function helper(): bool
+    {
+        return true;
+    }
+}
+
 class ConstExprHookedFixture
 {
     public string $virtual {
@@ -140,17 +149,22 @@ class ConstExprHookedFixture
     }
 }
 
-class ConstExprFccFixture
-{
-    #[ConstExprAttr(self::helper(...))]
-    public static function helper(): bool
-    {
-        return true;
-    }
-}
-
 class ConstExprGlobalFccFixture
 {
     #[ConstExprAttr(strlen(...))]
     public string $p = '';
+}
+
+class ConstExprCrossTarget
+{
+    public static function check(): bool { return true; }
+}
+
+function dc_constexpr_global_fcc(): int { return 7; }
+
+class ConstExprCrossFccFixture
+{
+    #[ConstExprAttr(ConstExprCrossTarget::check(...))] public int $x = 0;
+    #[ConstExprAttr(strlen(...))] public int $g = 0;
+    #[ConstExprAttr(dc_constexpr_global_fcc(...))] public int $u = 0;
 }
