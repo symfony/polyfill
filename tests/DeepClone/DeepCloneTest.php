@@ -12,9 +12,13 @@
 namespace Symfony\Polyfill\Tests\DeepClone;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Polyfill\Util\TestListenerTrait;
 
 if (\PHP_VERSION_ID >= 80100) {
     require __DIR__.'/fixtures.php';
+}
+if (\PHP_VERSION_ID >= 80500) {
+    require __DIR__.'/fixtures85.php';
 }
 
 /**
@@ -2006,5 +2010,495 @@ class DeepCloneTest extends TestCase
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('has an __unserialize() method but "objectMeta" does not flag it for an __unserialize state');
         deepclone_from_array($d);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayConstExprClosureClassAttributeWireFormat()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, '', 0, 0, $line], $d['prepared']);
+        $this->assertSame(1, $d['mask']);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureClassAttributeRebindsScope()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+
+        $clone = deepclone_from_array(deepclone_to_array($closure));
+
+        $this->assertInstanceOf(\Closure::class, $clone);
+        $this->assertNotSame($closure, $clone);
+        $this->assertSame('class-secret', $clone());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureNestedAttributeArgument()
+    {
+        $closure = (new \ReflectionProperty(ConstExprClosureFixture::class, 'tagged'))->getAttributes()[0]->getArguments()['cb'][1]['x'];
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, '$tagged', 0, 0, $line], $d['prepared']);
+        $this->assertSame(6, deepclone_from_array($d)(3));
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureMultipleClosuresInOneAttribute()
+    {
+        $args = (new \ReflectionClassConstant(ConstExprClosureFixture::class, 'TAGGED'))->getAttributes()[0]->getArguments();
+
+        foreach (['multi-0', 'multi-1'] as $i => $expected) {
+            $line = (new \ReflectionFunction($args[$i]))->getStartLine();
+            $d = deepclone_to_array($args[$i]);
+
+            $this->assertSame([ConstExprClosureFixture::class, 'TAGGED', 0, $i, $line], $d['prepared']);
+            $this->assertSame($expected, deepclone_from_array($d)());
+        }
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureRepeatedAttribute()
+    {
+        $closure = (new \ReflectionMethod(ConstExprClosureFixture::class, 'tagged'))->getAttributes()[1]->getArguments()[0];
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, 'tagged()', 1, 0, $line], $d['prepared']);
+        $this->assertSame('repeated', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureParameterAttribute()
+    {
+        $closure = (new \ReflectionMethod(ConstExprClosureFixture::class, 'tagged'))->getParameters()[0]->getAttributes()[0]->getArguments()[0];
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, 'tagged()#0', 0, 0, $line], $d['prepared']);
+        $this->assertSame('param-attr', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureParameterDefault()
+    {
+        $closure = (new \ReflectionMethod(ConstExprClosureFixture::class, 'tagged'))->getParameters()[0]->getDefaultValue();
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, 'tagged()#0', null, 0, $line], $d['prepared']);
+        $this->assertSame('param-default', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosurePropertyDefault()
+    {
+        $closure = (new \ReflectionProperty(ConstExprClosureFixture::class, 'factory'))->getDefaultValue();
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, '$factory', null, 0, $line], $d['prepared']);
+        $this->assertSame('prop-default', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureStaticPropertyDefault()
+    {
+        $closure = (new \ReflectionProperty(ConstExprClosureFixture::class, 'staticFactory'))->getDefaultValue();
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, '$staticFactory', null, 0, $line], $d['prepared']);
+        $this->assertSame('static-prop-default', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureClassConstantValue()
+    {
+        $closure = ConstExprClosureFixture::CALLBACKS['first'];
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprClosureFixture::class, 'CALLBACKS', null, 0, $line], $d['prepared']);
+        $this->assertSame('const-value', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureEnumCaseAttribute()
+    {
+        $closure = (new \ReflectionClassConstant(ConstExprEnumFixture::class, 'Active'))->getAttributes()[0]->getArguments()[0];
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprEnumFixture::class, 'Active', 0, 0, $line], $d['prepared']);
+        $this->assertSame('enum-case-attr', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureEnumConstant()
+    {
+        $closure = ConstExprEnumFixture::FILTER;
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprEnumFixture::class, 'FILTER', null, 0, $line], $d['prepared']);
+        $this->assertSame('enum-const', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureTraitMethodAttribute()
+    {
+        $closure = (new \ReflectionClass(ConstExprTraitUserFixture::class))->getMethod('traitTagged')->getAttributes()[0]->getArguments()[0];
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame(ConstExprTraitUserFixture::class, $d['prepared'][0]);
+        $this->assertSame('trait-attr', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosurePromotedParameterAttribute()
+    {
+        $closure = (new \ReflectionProperty(ConstExprPromotedFixture::class, 'promoted'))->getAttributes()[0]->getArguments()[0];
+        $line = (new \ReflectionFunction($closure))->getStartLine();
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprPromotedFixture::class, '__construct()#0', 0, 0, $line], $d['prepared']);
+        $this->assertSame('promoted-attr', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureSameLineDistinctSignatures()
+    {
+        $args = (new \ReflectionClass(ConstExprSameLineFixture::class))->getAttributes()[0]->getArguments();
+
+        $this->assertSame('noargs', deepclone_from_array(deepclone_to_array($args[0]))());
+        $this->assertSame('witharg', deepclone_from_array(deepclone_to_array($args[1]))(1));
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayConstExprClosureAmbiguousSameLine()
+    {
+        $args = (new \ReflectionClass(ConstExprAmbiguousFixture::class))->getAttributes()[0]->getArguments();
+
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
+            // The extension tells same-line closures apart by op_array identity.
+            $this->assertSame('first', deepclone_from_array(deepclone_to_array($args[0]))());
+            $this->assertSame('second', deepclone_from_array(deepclone_to_array($args[1]))());
+
+            return;
+        }
+
+        // The polyfill only knows file/line/signature, which cannot tell them apart.
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('multiple closures share this declaration site');
+        deepclone_to_array($args[0]);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayRuntimeStaticClosureIsNotInstantiable()
+    {
+        $closure = static function (): string { return 'runtime'; };
+
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        $this->expectExceptionMessage('Type "Closure" is not instantiable.');
+        deepclone_to_array($closure);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureInsideObjectGraph()
+    {
+        $classClosure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+        $propClosure = (new \ReflectionProperty(ConstExprClosureFixture::class, 'tagged'))->getAttributes()[0]->getArguments()['cb'][1]['x'];
+        $graph = new ConstraintLikeFixture($classClosure, [new ConstraintLikeFixture($propClosure)]);
+
+        $clone = deepclone_from_array(deepclone_to_array($graph));
+
+        $this->assertInstanceOf(ConstraintLikeFixture::class, $clone);
+        $this->assertInstanceOf(\Closure::class, $clone->callback);
+        $this->assertSame('class-secret', ($clone->callback)());
+        $this->assertSame(6, ($clone->constraints[0]->callback)(3));
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testConstExprClosurePayloadSurvivesJsonRoundTrip()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+        $graph = new ConstraintLikeFixture($closure);
+
+        $d = json_decode(json_encode(deepclone_to_array($graph)), true);
+
+        $this->assertSame('class-secret', (deepclone_from_array($d)->callback)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testFromArrayConstExprClosureStaleLineThrows()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+        $d = deepclone_to_array($closure);
+        ++$d['prepared'][4];
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('stale payload');
+        deepclone_from_array($d);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayAllowedClassesRejectsConstExprClosure()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('"Closure" is not allowed');
+        deepclone_to_array($closure, []);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testFromArrayAllowedClassesRejectsConstExprClosureInMask()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+        $d = deepclone_to_array($closure);
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('"Closure" is not allowed');
+        deepclone_from_array($d, []);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureWithAllowedClasses()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+
+        $clone = deepclone_from_array(deepclone_to_array($closure, ['Closure']), ['Closure', ConstExprClosureFixture::class]);
+
+        $this->assertSame('class-secret', $clone());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testFromArrayConstExprClosureClassMustBeAllowed()
+    {
+        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+        $d = deepclone_to_array($closure, ['Closure']);
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('class "'.ConstExprClosureFixture::class.'" is not allowed');
+        deepclone_from_array($d, ['Closure']);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayConstExprClosureAllowedGatePrecedesAmbiguity()
+    {
+        $closure = (new \ReflectionClass(ConstExprAmbiguousFixture::class))->getAttributes()[0]->getArguments()[0];
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('class "Closure" is not allowed');
+        deepclone_to_array($closure, []);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureFactoryConstant()
+    {
+        $outer = ConstExprFactoryFixture::FACTORY;
+
+        $this->assertSame('inner', deepclone_from_array(deepclone_to_array($outer))()());
+
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        deepclone_to_array($outer());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayRuntimeClosureCollidingWithConstExprSite()
+    {
+        $attrClosure = (new \ReflectionMethod(ConstExprRuntimeCollisionFixture::class, 'make'))->getAttributes()[0]->getArguments()[0];
+
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
+            // The extension tells the attribute literal and the same-line runtime
+            // literal apart by op_array identity.
+            $this->assertSame('const-expr', deepclone_from_array(deepclone_to_array($attrClosure))());
+
+            $this->expectException(\DeepClone\NotInstantiableException::class);
+            deepclone_to_array(ConstExprRuntimeCollisionFixture::make());
+
+            return;
+        }
+
+        // Both closures share the method-derived name, line and signature; the
+        // polyfill cannot tell them apart and refuses both.
+        try {
+            deepclone_to_array($attrClosure);
+            $this->fail('Expected ValueError was not thrown');
+        } catch (\ValueError $e) {
+            $this->assertStringContainsString('multiple closures share this declaration site', $e->getMessage());
+        }
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('multiple closures share this declaration site');
+        deepclone_to_array(ConstExprRuntimeCollisionFixture::make());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureEvaluatedThroughTwoSurfaces()
+    {
+        $closure = (new ConstExprDualSurfaceFixture())->cb;
+
+        $this->assertSame('dual-surface', deepclone_from_array(deepclone_to_array($closure))());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosureAliasedTraitMethod()
+    {
+        $closure = (new \ReflectionMethod(ConstExprTraitAliasFixture::class, 'traitTagged'))->getAttributes()[0]->getArguments()[0];
+
+        $this->assertSame('trait-attr', deepclone_from_array(deepclone_to_array($closure))());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayConstExprClosureWithoutSourcesInvitesExtension()
+    {
+        if (!class_exists('ConstExprNoSourcesFixture', false)) {
+            $file = sys_get_temp_dir().'/ConstExprNoSourcesFixture.php';
+            file_put_contents($file, '<?php class ConstExprNoSourcesFixture { #[Symfony\\Polyfill\\Tests\\DeepClone\\ConstExprAttr(static function (): string { return "no-sources"; })] public function m(): void {} }');
+            require $file;
+            unlink($file);
+        }
+        $closure = (new \ReflectionMethod(\ConstExprNoSourcesFixture::class, 'm'))->getAttributes()[0]->getArguments()[0];
+
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
+            // The extension matches op_arrays and needs no source files.
+            $this->assertSame('no-sources', deepclone_from_array(deepclone_to_array($closure))());
+
+            return;
+        }
+
+        // Method-scoped names require reading the file to rule out aliasing.
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('install the "deepclone" extension');
+        deepclone_to_array($closure);
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testRoundTripConstExprClosurePropertyHookAttributes()
+    {
+        $closure = (new \ReflectionProperty(ConstExprHookedFixture::class, 'virtual'))->getHook(\PropertyHookType::Get)->getAttributes()[0]->getArguments()[0];
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprHookedFixture::class, '$virtual::get()', 0, 0, (new \ReflectionFunction($closure))->getStartLine()], $d['prepared']);
+        $this->assertSame('get-hook-attr', deepclone_from_array($d)());
+
+        $closure = (new \ReflectionProperty(ConstExprHookedFixture::class, 'stored'))->getHook(\PropertyHookType::Set)->getParameters()[0]->getAttributes()[0]->getArguments()[0];
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame([ConstExprHookedFixture::class, '$stored::set()#0', 0, 0, (new \ReflectionFunction($closure))->getStartLine()], $d['prepared']);
+        $this->assertSame('set-hook-param-attr', deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testFromArrayConstExprClosureMalformedPayloads()
+    {
+        $line = (new \ReflectionFunction((new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0]))->getStartLine();
+        $cases = [
+            ['foo', 'const-expr-closure value must be of type array, string given'],
+            [[ConstExprClosureFixture::class], 'const-expr-closure value must have 5 elements'],
+            [[42, '', 0, 0, $line], 'const-expr-closure class name must be of type string, int given'],
+            [['No\\Such\\ClassAtAll', '', 0, 0, $line], 'const-expr-closure references unknown class "No\\Such\\ClassAtAll"'],
+            [[ConstExprClosureFixture::class, 42, 0, 0, $line], 'const-expr-closure site must be of type string, int given'],
+            [[ConstExprClosureFixture::class, '', 'x', 0, $line], 'const-expr-closure attribute index must be of type int or null, string given'],
+            [[ConstExprClosureFixture::class, '', 0, 'x', $line], 'const-expr-closure closure index must be of type int, string given'],
+            [[ConstExprClosureFixture::class, '', 0, 0, 'x'], 'const-expr-closure line must be of type int, string given'],
+            [[ConstExprClosureFixture::class, '$nope', 0, 0, $line], 'const-expr-closure references unknown property "$nope"'],
+            [[ConstExprClosureFixture::class, 'nope()', 0, 0, $line], 'const-expr-closure references unknown method "nope()"'],
+            [[ConstExprClosureFixture::class, 'NOPE', 0, 0, $line], 'const-expr-closure references unknown constant "NOPE"'],
+            [[ConstExprClosureFixture::class, 'tagged()#9', 0, 0, $line], 'const-expr-closure references unknown parameter "tagged()#9"'],
+            [[ConstExprClosureFixture::class, '', 9, 0, $line], 'const-expr-closure references unknown attribute index 9'],
+            [[ConstExprClosureFixture::class, '', 0, 9, $line], 'const-expr-closure references unknown closure index 9'],
+            [[ConstExprClosureFixture::class, '', null, 0, $line], 'const-expr-closure attribute index is required for site ""'],
+            [[ConstExprClosureFixture::class, 'tagged()', null, 0, $line], 'const-expr-closure attribute index is required for site "tagged()"'],
+        ];
+
+        foreach ($cases as [$prepared, $expected]) {
+            try {
+                deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => $prepared, 'mask' => 1]);
+                $this->fail('Expected ValueError was not thrown for: '.$expected);
+            } catch (\ValueError $e) {
+                $this->assertStringContainsString($expected, $e->getMessage());
+            }
+        }
     }
 }
