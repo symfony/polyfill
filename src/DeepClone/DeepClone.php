@@ -789,7 +789,7 @@ final class DeepClone
     {
         $objects = [];
 
-        foreach ($objectMeta as $id => [$class]) {
+        foreach ($objectMeta as $id => [$class, $wakeup]) {
             if (':' === ($class[1] ?? null)) {
                 // The result is used as an object below; a malformed payload can
                 // carry any serialize form (i:…, s:…, a:…), so reject anything
@@ -803,6 +803,15 @@ final class DeepClone
                 self::$reflectors[$class] ??= self::getClassReflector($class);
             } catch (\DeepClone\ClassNotFoundException) {
                 throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
+            }
+
+            // A class with __unserialize() is only ever emitted (by
+            // deepclone_to_array()) as a negative-wakeup state replay; a payload
+            // that creates one without that flag could not initialize it (e.g.
+            // BcMath\Number's bc_num would stay NULL). Reject rather than build
+            // an unusable object, matching the extension.
+            if ($wakeup >= 0 && (self::$classInfo[$class][0] ??= self::$reflectors[$class]->hasMethod('__unserialize'))) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) object '.$id.' of class '.$class.' has an __unserialize() method but "objectMeta" does not flag it for an __unserialize state');
             }
 
             if (self::$needsFullUnserialize[$class] ?? false) {
