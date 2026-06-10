@@ -1991,4 +1991,20 @@ class DeepCloneTest extends TestCase
         $deep = deepclone_from_array(deepclone_to_array((object) ['list' => [(object) ['r' => new \Random\Randomizer(new \Random\Engine\Mt19937(9))]]]));
         $this->assertInstanceOf(\Random\Randomizer::class, $deep->list[0]->r);
     }
+
+    public function testFromArrayRejectsUnserializeClassWithoutReplayFlag()
+    {
+        // A class with __unserialize() is always emitted as a negative-wakeup
+        // state replay. A crafted payload that clears that flag and drops the
+        // replay would leave the object uninitialized (e.g. a BcMath\Number
+        // with a NULL bc_num), so it is rejected rather than reconstructed,
+        // matching the extension.
+        $d = deepclone_to_array(new DeepCloneSerializeFixture('x', 1));
+        $d['objectMeta'][0][1] = 0; // clear the __unserialize flag
+        $d['states'] = [];          // drop the replay
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('has an __unserialize() method but "objectMeta" does not flag it for an __unserialize state');
+        deepclone_from_array($d);
+    }
 }
