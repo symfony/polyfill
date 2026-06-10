@@ -1,3 +1,9 @@
+# 1.39.0
+
+  * Support closures declared in constant expressions
+  * Fix round-tripping short-lived `Random\Randomizer` instances on PHP 8.2
+  * Reject `deepclone_from_array()` payloads that would build an uninitialized object
+
 # 1.38.2
 
   * Fix round-tripping objects whose `__serialize()` nests another object
