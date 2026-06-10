@@ -688,6 +688,15 @@ final class DeepClone
                     throw new \TypeError($class.'::__serialize() must return an array');
                 }
 
+                // Before PHP 8.3, Random\Randomizer::__serialize() returns its raw
+                // property table, whose IS_INDIRECT "engine" slot dangles once the
+                // object is released; it is the only affected class, as the others
+                // sharing the pattern declare no properties. Let the serializer
+                // materialize real values while the object is still alive.
+                if (\PHP_VERSION_ID < 80300 && $value instanceof \Random\Randomizer) {
+                    $arrayValue = unserialize(serialize($arrayValue));
+                }
+
                 if ($hasUnserialize = self::$classInfo[$class][0] ??= $reflector->hasMethod('__unserialize')) {
                     $properties = $arrayValue;
                     goto prepare_value;
