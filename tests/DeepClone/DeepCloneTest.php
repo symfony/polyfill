@@ -146,7 +146,7 @@ class DeepCloneTest extends TestCase
 
     public function testToArrayNamedClosureGlobalFunctionWireFormat()
     {
-        $d = deepclone_to_array(\Closure::fromCallable('strlen'));
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
 
         $this->assertSame([null, 'strlen'], $d['prepared']);
         $this->assertSame(0, $d['mask']);
@@ -259,7 +259,7 @@ class DeepCloneTest extends TestCase
 
     public function testRoundTripNamedClosureGlobalFunction()
     {
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen')));
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true), allow_named_closures: true);
 
         $this->assertSame(5, $clone('hello'));
     }
@@ -511,7 +511,10 @@ class DeepCloneTest extends TestCase
         try {
             foreach ($cases as [$payload, $expected]) {
                 try {
-                    deepclone_from_array($payload);
+                    // allow_named_closures lets the named-closure case reach the
+                    // ref-id check; the other cases carry no named-closure marker
+                    // so the flag does not affect them.
+                    deepclone_from_array($payload, null, true);
                     $this->fail('Expected ValueError was not thrown');
                 } catch (\ValueError $e) {
                     $this->assertStringContainsString($expected, $e->getMessage());
@@ -524,7 +527,7 @@ class DeepCloneTest extends TestCase
 
     public function testClosureGlobalFunctionWireFormat()
     {
-        $d = deepclone_to_array(\Closure::fromCallable('strlen'));
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
 
         $this->assertSame(0, $d['mask']);
         $this->assertNull($d['prepared'][0]);
@@ -533,13 +536,13 @@ class DeepCloneTest extends TestCase
 
     public function testClosureGlobalFunctionRoundTrip()
     {
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen')));
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true), allow_named_closures: true);
         $this->assertSame(5, $clone('hello'));
     }
 
     public function testClosureStaticMethodWireFormat()
     {
-        $d = deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod']));
+        $d = deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod']), allow_named_closures: true);
 
         $this->assertSame(ClosureFixture::class, $d['prepared'][0]);
         $this->assertSame('staticMethod', $d['prepared'][1]);
@@ -547,14 +550,14 @@ class DeepCloneTest extends TestCase
 
     public function testClosureStaticMethodRoundTrip()
     {
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod'])));
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod']), allow_named_closures: true), allow_named_closures: true);
         $this->assertSame('static', $clone());
     }
 
     public function testClosureInstanceMethodWireFormat()
     {
         $obj = new ClosureFixture();
-        $d = deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod']));
+        $d = deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod']), allow_named_closures: true);
 
         $this->assertSame(ClosureFixture::class, $d['classes']);
     }
@@ -562,7 +565,7 @@ class DeepCloneTest extends TestCase
     public function testClosureInstanceMethodRoundTrip()
     {
         $obj = new ClosureFixture();
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod'])));
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod']), allow_named_closures: true), allow_named_closures: true);
         $this->assertSame('instance', $clone());
     }
 
@@ -570,12 +573,44 @@ class DeepCloneTest extends TestCase
     {
         $obj = new ClosureFixture();
         $fn = $obj->getPrivateClosure();
-        $d = deepclone_to_array($fn);
+        $d = deepclone_to_array($fn, allow_named_closures: true);
 
         $this->assertSame(0, $d['mask']);
 
-        $clone = deepclone_from_array($d);
+        $clone = deepclone_from_array($d, allow_named_closures: true);
         $this->assertSame('private', $clone());
+    }
+
+    public function testToArrayNamedClosureRequiresOptIn()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('serializing a closure over the named callable "strlen" requires enabling the allow_named_closures option');
+        deepclone_to_array(\Closure::fromCallable('strlen'));
+    }
+
+    public function testFromArrayNamedClosureRequiresOptIn()
+    {
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('resolving a closure over a named callable requires enabling the allow_named_closures option');
+        deepclone_from_array($d);
+    }
+
+    public function testFromArrayNamedClosureNestedRejectedBeforeInstantiation()
+    {
+        $h = new \stdClass();
+        $h->cb = \Closure::fromCallable('strlen');
+        $d = deepclone_to_array($h, allow_named_closures: true);
+
+        try {
+            deepclone_from_array($d);
+            $this->fail('Expected ValueError was not thrown');
+        } catch (\ValueError $e) {
+            $this->assertStringContainsString('resolving a closure over a named callable requires enabling the allow_named_closures option', $e->getMessage());
+        }
+
+        $clone = deepclone_from_array($d, allow_named_closures: true);
+        $this->assertSame(4, ($clone->cb)('abcd'));
     }
 
     public function testDateTimeRoundTrip()
@@ -1055,7 +1090,7 @@ class DeepCloneTest extends TestCase
     {
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('"Closure" is not allowed');
-        deepclone_to_array(\Closure::fromCallable('strlen'), []);
+        deepclone_to_array(\Closure::fromCallable('strlen'), [], true);
     }
 
     public function testToArrayAllowedClassesStaticValueBypassesCheck()
@@ -1081,7 +1116,7 @@ class DeepCloneTest extends TestCase
 
     public function testFromArrayAllowedClassesRejectsClosureInMask()
     {
-        $d = deepclone_to_array(\Closure::fromCallable('strlen'));
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('"Closure" is not allowed');
         deepclone_from_array($d, ['stdClass']);
@@ -2500,5 +2535,23 @@ class DeepCloneTest extends TestCase
                 $this->assertStringContainsString($expected, $e->getMessage());
             }
         }
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayConstExprClosureFirstClassCallableUsesDeclarationSite()
+    {
+        // A first-class callable over a method of its own declaring class,
+        // declared in a constant expression, is encoded as a declaration-site
+        // reference (mask 1) like an anonymous const-expr closure, not by name,
+        // so it round-trips without the allow_named_closures opt-in.
+        $closure = (new \ReflectionMethod(ConstExprFccFixture::class, 'helper'))->getAttributes()[0]->getArguments()[0];
+
+        $d = deepclone_to_array($closure);
+
+        $this->assertSame(1, $d['mask']);
+        $this->assertSame(ConstExprFccFixture::class, $d['prepared'][0]);
+        $this->assertTrue(deepclone_from_array($d)());
     }
 }
