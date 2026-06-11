@@ -16,10 +16,10 @@ if (extension_loaded('deepclone')) {
 }
 
 if (!function_exists('deepclone_to_array')) {
-    function deepclone_to_array(mixed $value, ?array $allowed_classes = null): array { return p\DeepClone::deepclone_to_array($value, $allowed_classes); }
+    function deepclone_to_array(mixed $value, ?array $allowed_classes = null, bool $allow_named_closures = false): array { return p\DeepClone::deepclone_to_array($value, $allowed_classes, $allow_named_closures); }
 }
 if (!function_exists('deepclone_from_array')) {
-    function deepclone_from_array(array $data, ?array $allowed_classes = null): mixed { return p\DeepClone::deepclone_from_array($data, $allowed_classes); }
+    function deepclone_from_array(array $data, ?array $allowed_classes = null, bool $allow_named_closures = false): mixed { return p\DeepClone::deepclone_from_array($data, $allowed_classes, $allow_named_closures); }
 }
 if (!defined('DEEPCLONE_HYDRATE_CALL_HOOKS')) {
     define('DEEPCLONE_HYDRATE_CALL_HOOKS', 1 << 0);

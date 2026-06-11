@@ -43,10 +43,12 @@ final class DeepClone
     private static \stdClass $sentinel;
 
     /**
-     * @param list<string>|null $allowed_classes Classes that may be serialized
-     *                                           (null = all, [] = none)
+     * @param list<string>|null $allowed_classes      Classes that may be serialized
+     *                                                (null = all, [] = none)
+     * @param bool              $allow_named_closures Allow encoding closures over named
+     *                                                callables by name (both ends must opt in)
      */
-    public static function deepclone_to_array(mixed $value, ?array $allowed_classes = null): array
+    public static function deepclone_to_array(mixed $value, ?array $allowed_classes = null, bool $allow_named_closures = false): array
     {
         if (\is_resource($value)) {
             throw new \DeepClone\NotInstantiableException('Type "'.get_resource_type($value).' resource" is not instantiable.');
@@ -76,7 +78,7 @@ final class DeepClone
         $topMask = null;
 
         try {
-            $prepared = self::prepare([$value], $objectsPool, $refsPool, $objectsCount, $isStatic, $topMask, $allowedSet)[0];
+            $prepared = self::prepare([$value], $objectsPool, $refsPool, $objectsCount, $isStatic, $topMask, $allowedSet, $allow_named_closures)[0];
         } finally {
             // Snapshot ref state while references still break cycles.
             foreach ($refsPool as $i => $v) {
@@ -249,7 +251,7 @@ final class DeepClone
      * @param list<string>|null $allowed_classes Classes that may be instantiated
      *                                           (null = all, [] = none)
      */
-    public static function deepclone_from_array(array $data, ?array $allowed_classes = null): mixed
+    public static function deepclone_from_array(array $data, ?array $allowed_classes = null, bool $allow_named_closures = false): mixed
     {
         if (\array_key_exists('value', $data)) {
             return $data['value'];
@@ -322,6 +324,15 @@ final class DeepClone
                     }
                 }
             }
+        }
+
+        // Named closures (the by-name marker, 0) let a payload mint a Closure
+        // over any function or method by name; they resolve only when the
+        // caller opts in, which the producer must also have done. Const-expr
+        // closure references (marker 1) are unaffected. The scan runs before
+        // anything is instantiated so such a payload is rejected wholesale.
+        if (!$allow_named_closures && self::payloadHasNamedClosure($data)) {
+            throw new \ValueError('deepclone_from_array(): resolving a closure over a named callable requires enabling the allow_named_closures option');
         }
 
         // $expectedStates maps ids that flag a state replay to their wakeup
@@ -597,7 +608,7 @@ final class DeepClone
         };
     }
 
-    private static function prepare($values, &$objectsPool, &$refsPool, &$objectsCount, &$valuesAreStatic, &$mask = null, ?array $allowedSet = null)
+    private static function prepare($values, &$objectsPool, &$refsPool, &$objectsCount, &$valuesAreStatic, &$mask = null, ?array $allowedSet = null, bool $allowNamedClosures = false)
     {
         $sentinel = self::$sentinel ??= new \stdClass();
         $refs = $values;
@@ -624,7 +635,7 @@ final class DeepClone
             if (\is_array($value)) {
                 if ($value) {
                     $m = null;
-                    $value = self::prepare($value, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet);
+                    $value = self::prepare($value, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures);
                     if (null !== $m) {
                         $mask[$k] = $m;
                     }
@@ -647,13 +658,41 @@ final class DeepClone
                 $r = new \ReflectionFunction($value);
 
                 if (!(\PHP_VERSION_ID >= 80200 ? $r->isAnonymous() : str_contains($r->name, "@anonymous\0"))) {
+                    // First-class callable. When it references a method of its
+                    // own declaring class declared in a constant expression
+                    // (e.g. #[When(self::isStrict(...))]), encode it as a
+                    // declaration-site reference like the extension does, so it
+                    // round-trips without the allow_named_closures opt-in.
+                    // Closure is allow-list-gated first, mirroring the
+                    // extension (reported before any const-expr is evaluated).
+                    if (\PHP_VERSION_ID >= 80500 && !$r->getClosureThis() && $r->getClosureScopeClass()) {
+                        if (null !== $allowedSet && !isset($allowedSet['closure'])) {
+                            throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
+                        }
+                        if (null !== $ref = self::locateConstExprClosure($r)) {
+                            $value = $ref;
+                            $mask[$k] = 1;
+
+                            goto handle_value;
+                        }
+                    }
+
+                    // Not addressable as a declaration-site reference (runtime
+                    // first-class callable, cross-class or global-function
+                    // target, internal function): encode it by name. That lets
+                    // deepclone_from_array() mint a Closure over any function or
+                    // method of that name, so it is gated behind
+                    // allow_named_closures, which both ends must enable.
+                    if (!$allowNamedClosures) {
+                        throw new \ValueError('deepclone_to_array(): serializing a closure over the named callable "'.$r->name.'" requires enabling the allow_named_closures option');
+                    }
                     if (null !== $allowedSet && !isset($allowedSet['closure'])) {
                         throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
                     }
                     $callable = [$r->getClosureThis() ?? (\PHP_VERSION_ID >= 80111 ? $r->getClosureCalledClass() : $r->getClosureScopeClass())?->name, $r->name];
                     $rm = $callable[0] ? new \ReflectionMethod(...$callable) : null;
                     $unused = null;
-                    $callable = self::prepare($callable, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $unused, $allowedSet);
+                    $callable = self::prepare($callable, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $unused, $allowedSet, $allowNamedClosures);
                     $value = !($rm?->isPublic() ?? true) ? [$callable, $rm->class, $rm->name] : $callable;
                     $mask[$k] = 0;
 
@@ -683,7 +722,7 @@ final class DeepClone
                 $arrayValue = (array) $value;
                 $objectsPool[$oid] = [$id = \count($objectsPool)];
                 $m = null;
-                $properties = $arrayValue ? self::prepare(['stdClass' => $arrayValue], $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet) : [];
+                $properties = $arrayValue ? self::prepare(['stdClass' => $arrayValue], $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures) : [];
                 ++$objectsCount;
                 $objectsPool[$oid] = [$id, 'stdClass', $properties, 0, $value, $m];
                 $value = $id;
@@ -791,7 +830,7 @@ final class DeepClone
             prepare_value:
             $objectsPool[$oid] = [$id = \count($objectsPool)];
             $m = null;
-            $properties = self::prepare($properties, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet);
+            $properties = self::prepare($properties, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures);
             ++$objectsCount;
             $objectsPool[$oid] = [$id, $class, $properties, $hasUnserialize ? -$objectsCount : ((self::$classInfo[$class][1] ??= $reflector->hasMethod('__wakeup')) ? $objectsCount : 0), $value, $m];
 
@@ -1247,6 +1286,17 @@ final class DeepClone
         if (!$candidates = $index[$r->name.':'.$file.':'.$line.':'.$r->getEndLine().':'.self::closureSignature($r)] ?? null) {
             return null;
         }
+
+        // First-class callables are keyed by their target method's identity, so
+        // several declaration sites can map to the same key; they are
+        // equivalent and the first one wins, exactly like the extension. The
+        // anonymous-only checks below (the same-site ambiguity guard and the
+        // runtime-aliasing refusal) only concern anonymous closure literals,
+        // which are told apart by source position.
+        if (!$r->isAnonymous()) {
+            return [$scope->name, $candidates[0][0], $candidates[0][1], $candidates[0][2], $line];
+        }
+
         $sites = [];
         foreach ($candidates as $candidate) {
             if (isset($sites[$siteKey = $candidate[0].'#'.$candidate[1]])) {
@@ -1330,11 +1380,21 @@ final class DeepClone
                     }
                     $seen[$id] = true;
                     $r = new \ReflectionFunction($value);
-                    if (!$r->isAnonymous() || $r->getClosureScopeClass()?->name !== $class) {
+                    // Index anonymous closures declared in this class, and
+                    // first-class callables over a method of this class (their
+                    // scope is the target method's class): both are closures
+                    // the class declares about itself. Cross-class and
+                    // global-function callables have a different (or null)
+                    // scope and are addressed by name instead.
+                    if ($r->getClosureScopeClass()?->name !== $class) {
                         return;
                     }
                     $index[$r->name.':'.$r->getFileName().':'.$r->getStartLine().':'.$r->getEndLine().':'.self::closureSignature($r)][] = [$site, $attrIndex, $n];
-                    $lines[$k = $r->getFileName().':'.$r->getStartLine()] = ($lines[$k] ?? 0) + 1;
+                    if ($r->isAnonymous()) {
+                        // The runtime-aliasing refusal keys off source lines and
+                        // only concerns anonymous closure literals.
+                        $lines[$k = $r->getFileName().':'.$r->getStartLine()] = ($lines[$k] ?? 0) + 1;
+                    }
                 } elseif (\is_array($value)) {
                     foreach ($value as $v) {
                         $walk($v);
@@ -1610,6 +1670,61 @@ final class DeepClone
         if (\is_array($mask)) {
             foreach ($mask as $v) {
                 if (self::maskHasClosure($v)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Like maskHasClosure() but matches only the named-closure marker (0),
+     * ignoring const-expr-closure references (1).
+     */
+    private static function maskHasNamedClosure($mask): bool
+    {
+        if (0 === $mask) {
+            return true;
+        }
+        if (\is_array($mask)) {
+            foreach ($mask as $v) {
+                if (self::maskHasNamedClosure($v)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Scans the payload regions that can carry closure markers (the top mask,
+     * the reference masks, the resolve table and the replayed state masks) for
+     * a named-closure marker. Mirrors the region set used by the
+     * allowed_classes "Closure" gate.
+     */
+    private static function payloadHasNamedClosure(array $data): bool
+    {
+        foreach (['mask', 'refMasks'] as $key) {
+            if (isset($data[$key]) && self::maskHasNamedClosure($data[$key])) {
+                return true;
+            }
+        }
+        if (isset($data['resolve'])) {
+            foreach ($data['resolve'] as $scope) {
+                if (\is_array($scope)) {
+                    foreach ($scope as $name) {
+                        if (self::maskHasNamedClosure($name)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        if (isset($data['states'])) {
+            foreach ($data['states'] as $state) {
+                if (\is_array($state) && isset($state[2]) && self::maskHasNamedClosure($state[2])) {
                     return true;
                 }
             }

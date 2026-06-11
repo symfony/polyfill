@@ -139,3 +139,12 @@ class ConstExprHookedFixture
         }
     }
 }
+
+class ConstExprFccFixture
+{
+    #[ConstExprAttr(self::helper(...))]
+    public static function helper(): bool
+    {
+        return true;
+    }
+}

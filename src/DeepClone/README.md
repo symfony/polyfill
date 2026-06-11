@@ -4,13 +4,23 @@ Symfony Polyfill / DeepClone
 This package provides a pure-PHP implementation of the functions and exception
 classes from the [deepclone extension](https://github.com/symfony/php-ext-deepclone):
 
-- `deepclone_to_array(mixed $value, ?array $allowedClasses = null): array`
+- `deepclone_to_array(mixed $value, ?array $allowedClasses = null, bool $allowNamedClosures = false): array`
   — converts any serializable PHP value graph into a pure array (only scalars
   and nested arrays, no objects).
-- `deepclone_from_array(array $data, ?array $allowedClasses = null): mixed`
+- `deepclone_from_array(array $data, ?array $allowedClasses = null, bool $allowNamedClosures = false): mixed`
   — rebuilds the value graph from the array, preserving object identity,
   references, cycles, and private property state.
 - `DeepClone\NotInstantiableException` and `DeepClone\ClassNotFoundException`
+
+`$allowNamedClosures` (default `false`, required on both ends) gates the
+by-name encoding of closures over named callables (first-class callables such
+as `strlen(...)` or `Cls::method(...)`, and `Closure::fromCallable()`): a
+by-name payload can mint a `Closure` over any function or method of that name,
+so it should only travel between ends that trust each other. Closures declared
+in constant expressions — anonymous static closures and first-class callables
+over a method of their own declaring class, as found in attribute arguments —
+serialize as a reference to their declaration site and round-trip without this
+option.
 
 When the native `deepclone` extension is loaded, this polyfill does nothing —
 the extension provides the same functions 4–5× faster.
