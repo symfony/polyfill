@@ -584,7 +584,9 @@ class DeepCloneTest extends TestCase
     public function testToArrayNamedClosureRequiresOptIn()
     {
         $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('serializing a closure over the named callable "strlen" requires enabling the allow_named_closures option');
+        // Substring common to the polyfill and extension messages (the polyfill
+        // quotes the option name and appends an extension hint).
+        $this->expectExceptionMessage('serializing a closure over the named callable "strlen" requires enabling the');
         deepclone_to_array(\Closure::fromCallable('strlen'));
     }
 
@@ -2553,5 +2555,22 @@ class DeepCloneTest extends TestCase
         $this->assertSame(1, $d['mask']);
         $this->assertSame(ConstExprFccFixture::class, $d['prepared'][0]);
         $this->assertTrue(deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testFromArrayConstExprClosureGlobalInternalFunction()
+    {
+        // The extension can reference a global internal function declared in an
+        // attribute (e.g. #[ConstExprAttr(strlen(...))]); such a reference has
+        // no start line and is encoded with line 0. The polyfill cannot produce
+        // these (no reflection hook), but must decode them: ReflectionFunction
+        // reports no start line for an internal function, so the line-0
+        // reference must not be treated as stale.
+        $payload = ['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprGlobalFccFixture::class, '$p', 0, 0, 0], 'mask' => 1];
+
+        $r = deepclone_from_array($payload);
+        $this->assertSame(5, $r('hello'));
     }
 }

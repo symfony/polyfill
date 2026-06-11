@@ -684,7 +684,7 @@ final class DeepClone
                     // method of that name, so it is gated behind
                     // allow_named_closures, which both ends must enable.
                     if (!$allowNamedClosures) {
-                        throw new \ValueError('deepclone_to_array(): serializing a closure over the named callable "'.$r->name.'" requires enabling the allow_named_closures option');
+                        throw new \ValueError('deepclone_to_array(): serializing a closure over the named callable "'.$r->name.'" requires enabling the "allow_named_closures" option; do it only if you trust the input; alternatively, install the "deepclone" extension, which can reference callables declared in constant expressions');
                     }
                     if (null !== $allowedSet && !isset($allowedSet['closure'])) {
                         throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
@@ -1655,7 +1655,11 @@ final class DeepClone
         if (null === $found) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure index '.$closureIndex);
         }
-        if ($line !== $foundLine = (new \ReflectionFunction($found))->getStartLine()) {
+        // Internal functions (e.g. a global strlen(...) reference) have no
+        // start line; getStartLine() returns false, which the extension encodes
+        // as 0. Normalize so such a reference does not look stale.
+        $foundLine = (new \ReflectionFunction($found))->getStartLine() ?: 0;
+        if ($line !== $foundLine) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) stale payload, const-expr-closure moved from line '.$line.' to line '.$foundLine);
         }
 

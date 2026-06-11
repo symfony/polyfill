@@ -148,3 +148,9 @@ class ConstExprFccFixture
         return true;
     }
 }
+
+class ConstExprGlobalFccFixture
+{
+    #[ConstExprAttr(strlen(...))]
+    public string $p = '';
+}
