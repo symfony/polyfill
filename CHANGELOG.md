@@ -1,3 +1,8 @@
+# 1.40.0
+
+  * Gate deepcloning closures over named callables behind an `$allow_named_closures` option
+  * Suggest ext-deepclone when refusing a named callable, and decode its global-function references
+
 # 1.39.0
 
   * Support closures declared in constant expressions
