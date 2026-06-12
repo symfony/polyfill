@@ -332,7 +332,7 @@ final class DeepClone
         // closure references (marker 1) are unaffected. The scan runs before
         // anything is instantiated so such a payload is rejected wholesale.
         if (!$allow_named_closures && self::payloadHasNamedClosure($data)) {
-            throw new \ValueError('deepclone_from_array(): resolving a closure over a named callable requires enabling the allow_named_closures option');
+            throw new \ValueError('deepclone_from_array(): resolving a closure over a named callable requires enabling the "allow_named_closures" option; do it only if you trust the input; alternatively, install the "deepclone" extension, which can reference callables declared in constant expressions');
         }
 
         // $expectedStates maps ids that flag a state replay to their wakeup
