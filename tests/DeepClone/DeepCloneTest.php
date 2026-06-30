@@ -146,7 +146,7 @@ class DeepCloneTest extends TestCase
 
     public function testToArrayNamedClosureGlobalFunctionWireFormat()
     {
-        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), null, true);
 
         $this->assertSame([null, 'strlen'], $d['prepared']);
         $this->assertSame(0, $d['mask']);
@@ -259,7 +259,7 @@ class DeepCloneTest extends TestCase
 
     public function testRoundTripNamedClosureGlobalFunction()
     {
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true), allow_named_closures: true);
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen'), null, true), null, true);
 
         $this->assertSame(5, $clone('hello'));
     }
@@ -527,7 +527,7 @@ class DeepCloneTest extends TestCase
 
     public function testClosureGlobalFunctionWireFormat()
     {
-        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), null, true);
 
         $this->assertSame(0, $d['mask']);
         $this->assertNull($d['prepared'][0]);
@@ -536,13 +536,13 @@ class DeepCloneTest extends TestCase
 
     public function testClosureGlobalFunctionRoundTrip()
     {
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true), allow_named_closures: true);
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen'), null, true), null, true);
         $this->assertSame(5, $clone('hello'));
     }
 
     public function testClosureStaticMethodWireFormat()
     {
-        $d = deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod']), allow_named_closures: true);
+        $d = deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod']), null, true);
 
         $this->assertSame(ClosureFixture::class, $d['prepared'][0]);
         $this->assertSame('staticMethod', $d['prepared'][1]);
@@ -550,14 +550,14 @@ class DeepCloneTest extends TestCase
 
     public function testClosureStaticMethodRoundTrip()
     {
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod']), allow_named_closures: true), allow_named_closures: true);
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([ClosureFixture::class, 'staticMethod']), null, true), null, true);
         $this->assertSame('static', $clone());
     }
 
     public function testClosureInstanceMethodWireFormat()
     {
         $obj = new ClosureFixture();
-        $d = deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod']), allow_named_closures: true);
+        $d = deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod']), null, true);
 
         $this->assertSame(ClosureFixture::class, $d['classes']);
     }
@@ -565,7 +565,7 @@ class DeepCloneTest extends TestCase
     public function testClosureInstanceMethodRoundTrip()
     {
         $obj = new ClosureFixture();
-        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod']), allow_named_closures: true), allow_named_closures: true);
+        $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable([$obj, 'instanceMethod']), null, true), null, true);
         $this->assertSame('instance', $clone());
     }
 
@@ -573,11 +573,11 @@ class DeepCloneTest extends TestCase
     {
         $obj = new ClosureFixture();
         $fn = $obj->getPrivateClosure();
-        $d = deepclone_to_array($fn, allow_named_closures: true);
+        $d = deepclone_to_array($fn, null, true);
 
         $this->assertSame(0, $d['mask']);
 
-        $clone = deepclone_from_array($d, allow_named_closures: true);
+        $clone = deepclone_from_array($d, null, true);
         $this->assertSame('private', $clone());
     }
 
@@ -592,7 +592,7 @@ class DeepCloneTest extends TestCase
 
     public function testFromArrayNamedClosureRequiresOptIn()
     {
-        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), null, true);
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('resolving a closure over a named callable requires enabling the "allow_named_closures" option');
         deepclone_from_array($d);
@@ -602,7 +602,7 @@ class DeepCloneTest extends TestCase
     {
         $h = new \stdClass();
         $h->cb = \Closure::fromCallable('strlen');
-        $d = deepclone_to_array($h, allow_named_closures: true);
+        $d = deepclone_to_array($h, null, true);
 
         try {
             deepclone_from_array($d);
@@ -611,7 +611,7 @@ class DeepCloneTest extends TestCase
             $this->assertStringContainsString('resolving a closure over a named callable requires enabling the "allow_named_closures" option', $e->getMessage());
         }
 
-        $clone = deepclone_from_array($d, allow_named_closures: true);
+        $clone = deepclone_from_array($d, null, true);
         $this->assertSame(4, ($clone->cb)('abcd'));
     }
 
@@ -1118,7 +1118,7 @@ class DeepCloneTest extends TestCase
 
     public function testFromArrayAllowedClassesRejectsClosureInMask()
     {
-        $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
+        $d = deepclone_to_array(\Closure::fromCallable('strlen'), null, true);
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('"Closure" is not allowed');
         deepclone_from_array($d, ['stdClass']);
