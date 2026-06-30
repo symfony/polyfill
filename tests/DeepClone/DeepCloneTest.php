@@ -594,7 +594,7 @@ class DeepCloneTest extends TestCase
     {
         $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
         $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('resolving a closure over a named callable requires enabling the allow_named_closures option');
+        $this->expectExceptionMessage('resolving a closure over a named callable requires enabling the "allow_named_closures" option');
         deepclone_from_array($d);
     }
 
@@ -608,7 +608,7 @@ class DeepCloneTest extends TestCase
             deepclone_from_array($d);
             $this->fail('Expected ValueError was not thrown');
         } catch (\ValueError $e) {
-            $this->assertStringContainsString('resolving a closure over a named callable requires enabling the allow_named_closures option', $e->getMessage());
+            $this->assertStringContainsString('resolving a closure over a named callable requires enabling the "allow_named_closures" option', $e->getMessage());
         }
 
         $clone = deepclone_from_array($d, allow_named_closures: true);
