@@ -218,6 +218,16 @@ class GraphemeTest extends TestCase
         $this->assertSame($expectedValues, grapheme_str_split($string, $length));
     }
 
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_str_split
+     */
+    public function testGraphemeStrSplitNegativeLength()
+    {
+        $this->expectException(\ValueError::class);
+
+        grapheme_str_split('abc', -1);
+    }
+
     public static function graphemeStrSplitDataProvider(): array
     {
         $cases = [
@@ -288,12 +298,11 @@ class GraphemeTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
-     *
-     * @requires PHP 8
      */
     public function testGraphemeLevenshteinNegativeCost()
     {
         $this->expectException(\ValueError::class);
+
         grapheme_levenshtein('a', 'b', -1);
     }
 

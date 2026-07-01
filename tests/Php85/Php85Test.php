@@ -154,6 +154,26 @@ class Php85Test extends TestCase
         $this->assertFalse(locale_is_right_to_left('zh'));
         $this->assertFalse(locale_is_right_to_left(''));
     }
+
+    /**
+     * @requires extension intl
+     */
+    public function testGraphemeLevenshtein()
+    {
+        $this->assertSame(3, grapheme_levenshtein('kitten', 'sitting'));
+        $this->assertSame(1, grapheme_levenshtein('한국어', '한국'));
+        $this->assertFalse(grapheme_levenshtein("\xFF", 'a'));
+    }
+
+    /**
+     * @requires extension intl
+     */
+    public function testGraphemeLevenshteinNegativeCost()
+    {
+        $this->expectException(\ValueError::class);
+
+        grapheme_levenshtein('a', 'b', -1);
+    }
 }
 
 class TestHandler
