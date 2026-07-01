@@ -50,9 +50,13 @@ final class Php74
         }
 
         if (1 > $split_length = (int) $split_length) {
-            trigger_error('The length of each segment must be greater than zero', \E_USER_WARNING);
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error('The length of each segment must be greater than zero', \E_USER_WARNING);
 
-            return false;
+                return false;
+            }
+
+            throw new \ValueError('Argument #2 ($length) must be greater than 0');
         }
 
         if (null === $encoding) {
@@ -60,7 +64,14 @@ final class Php74
         }
 
         if ('UTF-8' === $encoding || \in_array(strtoupper($encoding), ['UTF-8', 'UTF8'], true)) {
-            return preg_split("/(.{{$split_length}})/us", $string, -1, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
+            $rx = '/(';
+            while (65535 < $split_length) {
+                $rx .= '.{65535}';
+                $split_length -= 65535;
+            }
+            $rx .= '.{'.$split_length.'})/us';
+
+            return preg_split($rx, $string, -1, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
         }
 
         $result = [];
