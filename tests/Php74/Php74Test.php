@@ -12,6 +12,7 @@
 namespace Symfony\Polyfill\Tests\Php74;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Polyfill\Php74\Php74;
 
 /**
  * @author Ion Bazan <ion.bazan@gmail.com>
@@ -115,6 +116,27 @@ class Php74Test extends TestCase
         $this->expectWarning();
         $this->expectWarningMessage('The length of each segment must be greater than zero');
         mb_str_split('победа', 0);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
+     *
+     * @requires PHP 8
+     */
+    public function testStrSplitThrowsOnInvalidLength()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('Argument #2 ($length) must be greater than 0');
+
+        Php74::mb_str_split('победа', 0);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
+     */
+    public function testStrSplitWithLengthAbovePcreLimit()
+    {
+        $this->assertSame([str_repeat('x', 70000)], Php74::mb_str_split(str_repeat('x', 70000), 70000, 'UTF-8'));
     }
 }
 
