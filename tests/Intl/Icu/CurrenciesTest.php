@@ -24,6 +24,10 @@ class CurrenciesTest extends TestCase
     {
         $dataDir = \dirname(__DIR__, 3).'/vendor/symfony/intl/Resources/data/currencies/';
 
+        if (!is_dir($dataDir)) {
+            $this->markTestSkipped('symfony/intl is not installed.');
+        }
+
         if (is_file($dataDir.'en.php')) {
             $en = require $dataDir.'en.php';
             $meta = require $dataDir.'meta.php';

@@ -53,6 +53,10 @@ jobs:
                     php --ri deepclone || echo "extension=deepclone" | sudo tee "$(php -r 'echo PHP_CONFIG_FILE_SCAN_DIR;')/99-deepclone.ini"
                     php -m | grep -q deepclone && echo "deepclone loaded" || echo "deepclone NOT loaded"
 
+            -   name: Drop symfony/intl on PHP < 8.1
+                if: matrix.php < '8.1'
+                run: composer remove --dev --no-update symfony/intl
+
             -   name: Install dependencies
                 run: |
                     composer --prefer-source --no-progress --ansi install
