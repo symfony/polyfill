@@ -197,10 +197,6 @@ final class Grapheme
     public static function grapheme_str_split($s, $len = 1)
     {
         if (0 > $len || 1073741823 < $len) {
-            if (80000 > \PHP_VERSION_ID) {
-                return false;
-            }
-
             throw new \ValueError('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823.');
         }
 
@@ -232,10 +228,6 @@ final class Grapheme
         }
 
         if (0 > $insertion_cost || 0 > $replacement_cost || 0 > $deletion_cost) {
-            if (80000 > \PHP_VERSION_ID) {
-                return false;
-            }
-
             throw new \ValueError('grapheme_levenshtein(): Argument #3 ($insertion_cost), #4 ($replacement_cost), and #5 ($deletion_cost) must be greater than or equal to 0');
         }
 
