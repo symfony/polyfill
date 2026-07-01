@@ -1,0 +1,12 @@
+---------------------------------------------------------------------------
+
+by stof at 2026-07-01T16:29:05Z
+
+I would also add the mention of constants being polyfilled only when they can produce a meaningful effect. When the constant is meant to enable a new feature in an existing function, it is better to skip polyfilling it as the effect cannot be polyfilled (and the absence of the constant can be used as feature detection).
+See for instance https://github.com/symfony/polyfill/pull/543 which was rejected because of that.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-07-01T17:41:04Z
+
+Good point, added a bullet: a constant whose only role is to toggle behavior in a function we can't polyfill (like `FILTER_THROW_ON_FAILURE` for `filter_var()`, ref #543) is left undefined so its absence stays usable for feature detection. I also noted the contrast with attributes, which are polyfilled because reflection still conveys their semantics without engine support.
