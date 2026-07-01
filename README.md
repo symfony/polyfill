@@ -97,6 +97,43 @@ It is strongly recommended to upgrade your PHP version and/or install the missin
 extensions whenever possible. This polyfill should be used only when there is no
 better choice or when portability is a requirement.
 
+Design principles
+=================
+
+Polyfills target the API of the latest PHP version and backport it to older ones.
+The goal is that code written for a recent PHP runs unchanged on the oldest
+supported version; it is not to reproduce the historical behavior of every
+intermediate version. In practice:
+
+- New functions, classes, constants and arguments are backported; removed or
+  legacy behavior is not. For example, the `is_hex` argument that
+  `mb_decode_numericentity()` lost in PHP 8.0 is not accepted by the polyfill.
+- A symbol is backported only when defining it carries the native effect.
+  A constant whose sole purpose is to switch on behavior in a function that
+  cannot be polyfilled is left undefined, so its absence stays usable for feature
+  detection, e.g. `FILTER_THROW_ON_FAILURE`, which only configures `filter_var()`.
+  Declarative symbols such as attributes are polyfilled even when their runtime
+  effect needs engine support, since reflection still conveys their semantics.
+- A polyfill runs only when the native symbol is missing, so it reproduces the
+  contract of the function it shims rather than a blanket "PHP 7" or "PHP 8"
+  behavior. Functions that always raised a `ValueError` on invalid input throw on
+  every supported version (a `ValueError` stub is declared on PHP < 8 where
+  needed); functions whose native contract returned `false` keep returning
+  `false`.
+- The signatures declared by the bootstrap files match the native signature of
+  the PHP version being run, so the polyfill stays a drop-in that the engine can
+  supersede. New arguments that cannot be implemented are accepted and ignored,
+  e.g. the `$locale` argument added to the `grapheme_*()` functions in PHP 8.5.
+- Extensions that were never bundled with PHP, such as `uuid` and `deepclone`,
+  follow the extension's own release history rather than PHP's. Since a polyfill
+  cannot influence `extension_loaded()` nor conditionally define constants, it
+  mirrors the newest native state, including deprecations: `UUID_TYPE_DCE` and
+  `UUID_TYPE_NAME` are defined with a `Deprecated` attribute on PHP 8.5+.
+- When a function is provided by both an extension polyfill (`Mbstring`) and a
+  version polyfill (`Php74`, `Php83`, `Php84`), both implementations must behave
+  identically, because either one may end up registered depending on the PHP
+  version and whether the extension is loaded.
+
 Compatibility notes
 ===================
 
