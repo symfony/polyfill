@@ -332,7 +332,7 @@ final class DeepClone
         // closure references (marker 1) are unaffected. The scan runs before
         // anything is instantiated so such a payload is rejected wholesale.
         if (!$allow_named_closures && self::payloadHasNamedClosure($data)) {
-            throw new \ValueError('deepclone_from_array(): resolving a closure over a named callable requires enabling the allow_named_closures option');
+            throw new \ValueError('deepclone_from_array(): resolving a closure over a named callable requires enabling the "allow_named_closures" option');
         }
 
         // $expectedStates maps ids that flag a state replay to their wakeup
@@ -709,10 +709,11 @@ final class DeepClone
                 }
 
                 if (\PHP_VERSION_ID >= 80600 && null !== $id = $r->getConstExprId()) {
-                    // The engine gives a canonical per-class id to closures declared
-                    // in attribute arguments and in parameter default values; closures
-                    // declared in class constant values and in property default values
-                    // have no id and keep using the site-based reference below
+                    // The engine names closures declared in attribute arguments and
+                    // in parameter default values by an element-scoped "<site>@<rank>"
+                    // id, the exact reference the site-based lookup below derives;
+                    // closures declared in class constant values and in property
+                    // default values have no engine id and use the lookup
                     $value = [$r->getClosureScopeClass()->name, $id, $r->getStartLine()];
                     $mask[$k] = 1;
 
@@ -726,11 +727,9 @@ final class DeepClone
                     goto handle_value;
                 }
 
-                if (\PHP_VERSION_ID >= 80600) {
-                    // No engine id and no usable declaration site: let
-                    // Closure::__serialize() throw the engine's refusal
-                    $value->__serialize();
-                }
+                // Not declared in a constant expression: refuse like on PHP < 8.6,
+                // where the generic object path below reaches the same conclusion
+                throw new \DeepClone\NotInstantiableException('Type "Closure" is not instantiable.');
             }
 
             $class = $value::class;
@@ -1291,9 +1290,11 @@ final class DeepClone
     }
 
     /**
-     * Resolves an anonymous closure declared in a constant expression (attribute
-     * argument, class constant, property or parameter default) to its declaration
-     * site: [class, site, attribute index or null, closure index, start line].
+     * Resolves a closure declared in a constant expression (attribute argument,
+     * class constant, property or parameter default) to its element-scoped
+     * declaration-site reference: [class, "<site>@<rank>", start line], where
+     * site names the declaring reflection element and rank is the closure's
+     * position among the element's closures.
      */
     private static function locateConstExprClosure(\ReflectionFunction $r, ?string $declaringClass = null): ?array
     {
@@ -1326,12 +1327,12 @@ final class DeepClone
         // First-class callables are keyed by their target method's identity, so
         // several declaration sites can map to the same key; they are
         // equivalent and the first one wins, exactly like the extension. The
-        // checks below (the 8.6 engine-id exclusion, the same-site ambiguity
+        // checks below (the 8.6 engine-id exclusion, the same-element ambiguity
         // guard and the runtime-aliasing refusal) only concern anonymous
         // closure literals, which are told apart by source position; an fcc has
         // no engine id here and never reaches the engine-id encoder.
         if (!$r->isAnonymous()) {
-            return [$scope->name, $candidates[0][0], $candidates[0][1], $candidates[0][2], $line ?: 0];
+            return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $line ?: 0];
         }
 
         if (\PHP_VERSION_ID >= 80600) {
@@ -1339,7 +1340,7 @@ final class DeepClone
             // default values carry an engine id and are encoded through it, so
             // they never reach this lookup; a closure matching such a candidate
             // merely shares its declaration site.
-            $candidates = array_values(array_filter($candidates, static fn ($c) => null === $c[1] && !preg_match('/\)#\d+$/', $c[0])));
+            $candidates = array_values(array_filter($candidates, static fn ($c) => !$c[2]));
 
             if (!$candidates) {
                 return null;
@@ -1348,10 +1349,10 @@ final class DeepClone
 
         $sites = [];
         foreach ($candidates as $candidate) {
-            if (isset($sites[$siteKey = $candidate[0].'#'.$candidate[1]])) {
+            if (isset($sites[$candidate[0]])) {
                 throw new \ValueError('deepclone_to_array(): cannot reference anonymous closure declared at '.$file.':'.$line.', multiple closures share this declaration site');
             }
-            $sites[$siteKey] = true;
+            $sites[$candidate[0]] = true;
         }
 
         // Closures declared in method or hook attributes are named after that
@@ -1363,7 +1364,7 @@ final class DeepClone
             throw new \ValueError('deepclone_to_array(): cannot reference anonymous closure declared at '.$file.':'.$line.', multiple closures share this declaration site');
         }
 
-        return [$scope->name, $candidates[0][0], $candidates[0][1], $candidates[0][2], $line ?: 0];
+        return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $line ?: 0];
     }
 
     private static function countClosureLiterals(string $file, int $line): int
@@ -1400,15 +1401,23 @@ final class DeepClone
     }
 
     /**
-     * Maps every anonymous closure found in the constant expressions of a class to
-     * its declaration site. Sites are keyed by name:file:start:end:signature; the
-     * name encodes the lexical nesting chain, which keeps closures created at
-     * runtime inside a const-expr closure's body from matching the outer literal.
-     * The same literal can legitimately surface through several sites (an attribute
+     * Maps every closure found in the constant expressions of a class to its
+     * element-scoped declaration site: [site, rank, engine-addressable]. The rank
+     * counts the element's closures in evaluation order: attribute arguments
+     * (declaration order, arguments and their nested surfaces depth-first), then
+     * parameter defaults, then the constant or property default value itself.
+     * That order matches the engine's element walk, so for purely literal
+     * elements the rank equals the engine's; value sites, which the engine never
+     * addresses, extend each element's rank space past its attribute closures.
+     * Sites are keyed by name:file:start:end:signature; the name encodes the
+     * lexical nesting chain, which keeps closures created at runtime inside a
+     * const-expr closure's body from matching the outer literal. The same
+     * literal can legitimately surface through several elements (an attribute
      * argument referencing a class constant, a trait alias, a promoted default
-     * applied by a constructor evaluated in another site); candidates in distinct
-     * sites are interchangeable and the first one wins. Two candidates in the SAME
-     * site are distinct literals sharing a declaration line: those are ambiguous.
+     * applied by a constructor evaluated in another site); candidates in
+     * distinct elements are interchangeable and the first one wins. Two
+     * candidates in the SAME element are distinct literals sharing a declaration
+     * line: those are ambiguous.
      */
     private static function indexConstExprClosures(\ReflectionClass $rc): array
     {
@@ -1417,52 +1426,74 @@ final class DeepClone
         $lines = [];
         $retained = [];
         $seen = [];
-        $add = static function ($values, string $site, ?int $attrIndex) use ($class, &$index, &$lines, &$retained, &$seen) {
-            $i = 0;
-            $objects = [];
-            $walk = static function ($value) use ($class, &$walk, &$i, &$index, &$lines, &$retained, &$seen, &$objects, $site, $attrIndex) {
-                if ($value instanceof \Closure) {
-                    $n = $i++;
-                    $retained[] = $value;
-                    if (isset($seen[$id = spl_object_id($value)])) {
-                        return;
-                    }
+        $rank = 0;
+        $objects = [];
+        $add = static function ($value, string $site, bool $engineSpace) use ($class, &$add, &$index, &$lines, &$retained, &$seen, &$rank, &$objects) {
+            if ($value instanceof \Closure) {
+                $n = $rank++;
+                $retained[] = $value;
+                $r = new \ReflectionFunction($value);
+                if (!isset($seen[$id = spl_object_id($value)])) {
                     $seen[$id] = true;
-                    $r = new \ReflectionFunction($value);
                     // Index every first-class callable found in this class's
                     // constant expressions, whatever its target (own method,
-                    // another class's method, or a global function) -- the class
-                    // declares the reference. Anonymous closures must be scoped
-                    // to this class (a foreign literal reached through a const
-                    // reference is not declared here).
-                    if ($r->isAnonymous() && $r->getClosureScopeClass()?->name !== $class) {
-                        return;
+                    // another class's method, or a global function) -- the
+                    // class declares the reference. Anonymous closures must be
+                    // scoped to this class (a foreign literal reached through
+                    // a const reference is not declared here).
+                    if (!$r->isAnonymous() || $r->getClosureScopeClass()?->name === $class) {
+                        $index[$r->name.':'.$r->getFileName().':'.$r->getStartLine().':'.$r->getEndLine().':'.self::closureSignature($r)][] = [$site, $n, $engineSpace];
                     }
-                    $index[$r->name.':'.$r->getFileName().':'.$r->getStartLine().':'.$r->getEndLine().':'.self::closureSignature($r)][] = [$site, $attrIndex, $n];
                     if ($r->isAnonymous()) {
                         // The runtime-aliasing refusal keys off source lines and
                         // only concerns anonymous closure literals.
                         $lines[$k = $r->getFileName().':'.$r->getStartLine()] = ($lines[$k] ?? 0) + 1;
                     }
-                } elseif (\is_array($value)) {
-                    foreach ($value as $v) {
-                        $walk($v);
+                }
+                if ($r->isAnonymous()) {
+                    // The closure may itself declare closures in its attributes
+                    // or in its parameter default values; they rank right after
+                    // it, like in the engine's walk
+                    foreach ($r->getAttributes() as $a) {
+                        try {
+                            $add($a->getArguments(), $site, $engineSpace);
+                        } catch (\Throwable) {
+                        }
                     }
-                } elseif (\is_object($value) && !isset($objects[$id = spl_object_id($value)])) {
-                    $objects[$id] = true;
-                    foreach ((array) $value as $v) {
-                        $walk($v);
+                    foreach ($r->getParameters() as $p) {
+                        foreach ($p->getAttributes() as $a) {
+                            try {
+                                $add($a->getArguments(), $site, $engineSpace);
+                            } catch (\Throwable) {
+                            }
+                        }
+                    }
+                    foreach ($r->getParameters() as $p) {
+                        try {
+                            if ($p->isDefaultValueAvailable()) {
+                                $add($p->getDefaultValue(), $site, $engineSpace);
+                            }
+                        } catch (\Throwable) {
+                        }
                     }
                 }
-            };
-            $walk($values);
-            // Break the closure <-> &$walk reference cycle
-            $walk = null;
+            } elseif (\is_array($value)) {
+                foreach ($value as $v) {
+                    $add($v, $site, $engineSpace);
+                }
+            } elseif (\is_object($value) && !isset($objects[$id = spl_object_id($value)])) {
+                $objects[$id] = true;
+                foreach ((array) $value as $v) {
+                    $add($v, $site, $engineSpace);
+                }
+            }
         };
 
-        foreach ($rc->getAttributes() as $i => $a) {
+        $rank = 0;
+        $objects = [];
+        foreach ($rc->getAttributes() as $a) {
             try {
-                $add($a->getArguments(), '', $i);
+                $add($a->getArguments(), '', true);
             } catch (\Throwable) {
             }
         }
@@ -1470,14 +1501,16 @@ final class DeepClone
             if ($rcc->getDeclaringClass()->name !== $class) {
                 continue;
             }
-            foreach ($rcc->getAttributes() as $i => $a) {
+            $rank = 0;
+            $objects = [];
+            foreach ($rcc->getAttributes() as $a) {
                 try {
-                    $add($a->getArguments(), $rcc->name, $i);
+                    $add($a->getArguments(), $rcc->name, true);
                 } catch (\Throwable) {
                 }
             }
             try {
-                $add([$rcc->getValue()], $rcc->name, null);
+                $add([$rcc->getValue()], $rcc->name, false);
             } catch (\Throwable) {
             }
         }
@@ -1485,15 +1518,17 @@ final class DeepClone
             if ($rp->class !== $class || $rp->isPromoted()) {
                 continue;
             }
-            foreach ($rp->getAttributes() as $i => $a) {
+            $rank = 0;
+            $objects = [];
+            foreach ($rp->getAttributes() as $a) {
                 try {
-                    $add($a->getArguments(), '$'.$rp->name, $i);
+                    $add($a->getArguments(), '$'.$rp->name, true);
                 } catch (\Throwable) {
                 }
             }
             try {
                 if ($rp->hasDefaultValue()) {
-                    $add([$rp->getDefaultValue()], '$'.$rp->name, null);
+                    $add([$rp->getDefaultValue()], '$'.$rp->name, false);
                 }
             } catch (\Throwable) {
             }
@@ -1501,17 +1536,20 @@ final class DeepClone
                 if (!$hook = $rp->getHook(\PropertyHookType::from($hookName))) {
                     continue;
                 }
+                $rank = 0;
+                $objects = [];
+            $objects = [];
                 $hSite = '$'.$rp->name.'::'.$hookName.'()';
-                foreach ($hook->getAttributes() as $i => $a) {
+                foreach ($hook->getAttributes() as $a) {
                     try {
-                        $add($a->getArguments(), $hSite, $i);
+                        $add($a->getArguments(), $hSite, true);
                     } catch (\Throwable) {
                     }
                 }
-                foreach ($hook->getParameters() as $pi => $hp) {
-                    foreach ($hp->getAttributes() as $i => $a) {
+                foreach ($hook->getParameters() as $hp) {
+                    foreach ($hp->getAttributes() as $a) {
                         try {
-                            $add($a->getArguments(), $hSite.'#'.$pi, $i);
+                            $add($a->getArguments(), $hSite, true);
                         } catch (\Throwable) {
                         }
                     }
@@ -1522,28 +1560,34 @@ final class DeepClone
             if ($rm->class !== $class) {
                 continue;
             }
+            $rank = 0;
+            $objects = [];
             $mSite = $rm->name.'()';
-            foreach ($rm->getAttributes() as $i => $a) {
+            foreach ($rm->getAttributes() as $a) {
                 try {
-                    $add($a->getArguments(), $mSite, $i);
+                    $add($a->getArguments(), $mSite, true);
                 } catch (\Throwable) {
                 }
             }
-            foreach ($rm->getParameters() as $pi => $rp) {
-                foreach ($rp->getAttributes() as $i => $a) {
+            foreach ($rm->getParameters() as $rp) {
+                foreach ($rp->getAttributes() as $a) {
                     try {
-                        $add($a->getArguments(), $mSite.'#'.$pi, $i);
+                        $add($a->getArguments(), $mSite, true);
                     } catch (\Throwable) {
                     }
                 }
+            }
+            foreach ($rm->getParameters() as $rp) {
                 try {
                     if ($rp->isDefaultValueAvailable()) {
-                        $add([$rp->getDefaultValue()], $mSite.'#'.$pi, null);
+                        $add([$rp->getDefaultValue()], $mSite, true);
                     }
                 } catch (\Throwable) {
                 }
             }
         }
+        // Break the closure <-> &$add reference cycle
+        $add = null;
 
         return [$index, $lines];
     }
@@ -1563,70 +1607,16 @@ final class DeepClone
         if (!\is_array($value)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must be of type array, '.self::valueName($value).' given');
         }
-
-        // Engine-id reference [class, id, line], emitted on PHP >= 8.6; the type
-        // of element 1 (int id vs string site) discriminates it from the
-        // site-based reference handled below
-        if (\is_int($value[1] ?? null)) {
-            if (!\array_key_exists(0, $value) || !\array_key_exists(2, $value) || 3 !== \count($value)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 3 elements');
-            }
-            [$class, $id, $line] = $value;
-
-            if (!\is_string($class)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure class name must be of type string, '.self::valueName($class).' given');
-            }
-            if (!\is_int($line)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure line must be of type int, '.self::valueName($line).' given');
-            }
-
-            if (null !== $allowedClasses && !isset(array_change_key_case(array_flip($allowedClasses))[strtolower($class)])) {
-                throw new \ValueError('deepclone_from_array(): class "'.$class.'" is not allowed');
-            }
-
-            if (\PHP_VERSION_ID < 80600) {
-                throw new \ValueError('deepclone_from_array(): const-expr-closure payload was created on PHP 8.6 or later and cannot be resolved on PHP '.\PHP_VERSION);
-            }
-
-            try {
-                new \ReflectionClass($class);
-            } catch (\ReflectionException) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown class "'.$class.'"');
-            }
-
-            try {
-                $found = \Closure::fromConstExpr($class, $id);
-            } catch (\ValueError) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure id '.$id.' in class "'.$class.'"');
-            }
-
-            $r = new \ReflectionFunction($found);
-            if (!str_contains($r->name, '{closure')) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references a first-class callable site');
-            }
-            if ($line !== $foundLine = $r->getStartLine()) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) stale payload, const-expr-closure moved from line '.$line.' to line '.$foundLine);
-            }
-
-            return $found;
+        if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value) || !\array_key_exists(2, $value) || 3 !== \count($value)) {
+            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 3 elements');
         }
-
-        if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value) || !\array_key_exists(2, $value) || !\array_key_exists(3, $value) || !\array_key_exists(4, $value) || 5 !== \count($value)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 5 elements');
-        }
-        [$class, $site, $attrIndex, $closureIndex, $line] = $value;
+        [$class, $id, $line] = $value;
 
         if (!\is_string($class)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure class name must be of type string, '.self::valueName($class).' given');
         }
-        if (!\is_string($site)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure site must be of type string, '.self::valueName($site).' given');
-        }
-        if (null !== $attrIndex && !\is_int($attrIndex)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure attribute index must be of type int or null, '.self::valueName($attrIndex).' given');
-        }
-        if (!\is_int($closureIndex)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure closure index must be of type int, '.self::valueName($closureIndex).' given');
+        if (!\is_string($id)) {
+            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure id must be of type string, '.self::valueName($id).' given');
         }
         if (!\is_int($line)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure line must be of type int, '.self::valueName($line).' given');
@@ -1636,97 +1626,115 @@ final class DeepClone
             throw new \ValueError('deepclone_from_array(): class "'.$class.'" is not allowed');
         }
 
+        $rank = false === ($at = strrpos($id, '@')) ? '' : substr($id, $at + 1);
+        if ('' === $rank || \strlen($rank) !== strspn($rank, '0123456789') || ('0' === $rank[0] && '0' !== $rank)) {
+            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure id must be of the form "<site>@<rank>", "'.$id.'" given');
+        }
+        $site = substr($id, 0, $at);
+        $rank = (int) $rank;
+
         try {
             $rc = new \ReflectionClass($class);
         } catch (\ReflectionException) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown class "'.$class.'"');
         }
 
+        if (\PHP_VERSION_ID >= 80600) {
+            // The engine resolves its own ids fastest. Its walk reads the raw
+            // constant expressions though, while this reference counts evaluated
+            // values, so fall back to the evaluating walk below when the engine
+            // does not know the id or resolves it to another line; internal
+            // functions (e.g. a global strlen(...) reference) have no start
+            // line, getStartLine() returns false, normalized to 0 like on the
+            // encoding side.
+            try {
+                $found = \Closure::fromConstExpr($class, $id);
+                if ($line === ((new \ReflectionFunction($found))->getStartLine() ?: 0)) {
+                    return $found;
+                }
+            } catch (\ValueError) {
+            }
+        }
+
         if ('' === $site) {
-            $target = $rc;
+            $element = $rc;
         } elseif ('$' === $site[0]) {
             if (false !== $pos = strpos($site, '::')) {
-                $target = null;
+                $element = null;
                 $hookSpec = substr($site, $pos + 2);
-                $paramIndex = null;
-                if (false !== $hashPos = strpos($hookSpec, ')#')) {
-                    $paramIndex = substr($hookSpec, $hashPos + 2);
-                    $hookSpec = substr($hookSpec, 0, $hashPos + 1);
-                }
-                if (('get()' === $hookSpec || 'set()' === $hookSpec) && (null === $paramIndex || $paramIndex === (string) (int) $paramIndex)) {
+                if ('get()' === $hookSpec || 'set()' === $hookSpec) {
                     try {
-                        $target = $rc->getProperty(substr($site, 1, $pos - 1))->getHook(\PropertyHookType::from(substr($hookSpec, 0, 3)));
-                        if ($target && null !== $paramIndex) {
-                            $target = $target->getParameters()[(int) $paramIndex] ?? null;
-                        }
+                        $element = $rc->getProperty(substr($site, 1, $pos - 1))->getHook(\PropertyHookType::from(substr($hookSpec, 0, 3)));
                     } catch (\ReflectionException) {
                     }
                 }
-                if (!$target) {
+                if (!$element) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown hook "'.$site.'"');
                 }
             } else {
                 try {
-                    $target = $rc->getProperty(substr($site, 1));
+                    $element = $rc->getProperty(substr($site, 1));
                 } catch (\ReflectionException) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown property "'.$site.'"');
                 }
             }
-        } elseif (false !== $pos = strpos($site, ')#')) {
-            $num = substr($site, $pos + 2);
-            $target = null;
-            if (2 <= $pos && '(' === $site[$pos - 1] && $num === (string) (int) $num) {
-                try {
-                    $target = $rc->getMethod(substr($site, 0, $pos - 1))->getParameters()[(int) $num] ?? null;
-                } catch (\ReflectionException) {
-                }
-            }
-            if (null === $target) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown parameter "'.$site.'"');
-            }
         } elseif (str_ends_with($site, '()')) {
             try {
-                $target = $rc->getMethod(substr($site, 0, -2));
+                $element = $rc->getMethod(substr($site, 0, -2));
             } catch (\ReflectionException) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown method "'.$site.'"');
             }
-        } elseif (!$target = $rc->getReflectionConstant($site)) {
+        } elseif (!$element = $rc->getReflectionConstant($site)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown constant "'.$site.'"');
         }
 
-        if (null !== $attrIndex) {
-            $attrs = $target->getAttributes();
-            if (!isset($attrs[$attrIndex])) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown attribute index '.$attrIndex);
-            }
-            try {
-                $values = $attrs[$attrIndex]->getArguments();
-            } catch (\Throwable $e) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
-            }
-        } elseif ($target instanceof \ReflectionClass || $target instanceof \ReflectionMethod) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure attribute index is required for site "'.$site.'"');
-        } else {
-            try {
-                if ($target instanceof \ReflectionClassConstant) {
-                    $values = [$target->getValue()];
-                } elseif ($target instanceof \ReflectionParameter) {
-                    $values = $target->isDefaultValueAvailable() ? [$target->getDefaultValue()] : [];
-                } else {
-                    $values = $target->hasDefaultValue() ? [$target->getDefaultValue()] : [];
-                }
-            } catch (\Throwable $e) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
-            }
-        }
-
+        // Enumerate the element's closures in the rank order used by
+        // indexConstExprClosures(): attribute arguments in declaration order,
+        // nested const-expr surfaces depth-first, then parameter defaults, then
+        // the constant or property default value
         $found = null;
         $i = 0;
         $objects = [];
-        $walk = static function ($value) use (&$walk, &$found, &$i, $closureIndex, &$objects) {
+        $walk = static function ($value) use (&$walk, &$found, &$i, $rank, &$objects) {
             if ($value instanceof \Closure) {
-                if ($i++ === $closureIndex) {
+                if ($i++ === $rank) {
                     $found = $value;
+
+                    return;
+                }
+                $r = new \ReflectionFunction($value);
+                if ($r->isAnonymous()) {
+                    foreach ($r->getAttributes() as $a) {
+                        try {
+                            $walk($a->getArguments());
+                        } catch (\Throwable) {
+                        }
+                        if (null !== $found) {
+                            return;
+                        }
+                    }
+                    foreach ($r->getParameters() as $p) {
+                        foreach ($p->getAttributes() as $a) {
+                            try {
+                                $walk($a->getArguments());
+                            } catch (\Throwable) {
+                            }
+                            if (null !== $found) {
+                                return;
+                            }
+                        }
+                    }
+                    foreach ($r->getParameters() as $p) {
+                        try {
+                            if ($p->isDefaultValueAvailable()) {
+                                $walk($p->getDefaultValue());
+                            }
+                        } catch (\Throwable) {
+                        }
+                        if (null !== $found) {
+                            return;
+                        }
+                    }
                 }
             } elseif (\is_array($value)) {
                 foreach ($value as $v) {
@@ -1745,16 +1753,65 @@ final class DeepClone
                 }
             }
         };
-        $walk($values);
-        // Break the closure <-> &$walk reference cycle
-        $walk = null;
+
+        try {
+            foreach ($element->getAttributes() as $a) {
+                try {
+                    $walk($a->getArguments());
+                } catch (\Throwable $e) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
+                }
+                if (null !== $found) {
+                    break;
+                }
+            }
+            if (null === $found && $element instanceof \ReflectionMethod) {
+                foreach ($element->getParameters() as $p) {
+                    foreach ($p->getAttributes() as $a) {
+                        try {
+                            $walk($a->getArguments());
+                        } catch (\Throwable $e) {
+                            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
+                        }
+                        if (null !== $found) {
+                            break 2;
+                        }
+                    }
+                }
+                foreach ($element->getParameters() as $p) {
+                    try {
+                        if ($p->isDefaultValueAvailable()) {
+                            $walk($p->getDefaultValue());
+                        }
+                    } catch (\Throwable $e) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
+                    }
+                    if (null !== $found) {
+                        break;
+                    }
+                }
+            }
+            if (null === $found) {
+                try {
+                    if ($element instanceof \ReflectionClassConstant) {
+                        $walk($element->getValue());
+                    } elseif ($element instanceof \ReflectionProperty && $element->hasDefaultValue()) {
+                        $walk($element->getDefaultValue());
+                    }
+                } catch (\ValueError $e) {
+                    throw $e;
+                } catch (\Throwable $e) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
+                }
+            }
+        } finally {
+            // Break the closure <-> &$walk reference cycle
+            $walk = null;
+        }
 
         if (null === $found) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure index '.$closureIndex);
+            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure id "'.$id.'" in class "'.$class.'"');
         }
-        // Internal functions (e.g. a global strlen(...) reference) have no
-        // start line; getStartLine() returns false, which the extension encodes
-        // as 0. Normalize so such a reference does not look stale.
         $foundLine = (new \ReflectionFunction($found))->getStartLine() ?: 0;
         if ($line !== $foundLine) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) stale payload, const-expr-closure moved from line '.$line.' to line '.$foundLine);

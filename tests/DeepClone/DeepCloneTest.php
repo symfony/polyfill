@@ -594,7 +594,7 @@ class DeepCloneTest extends TestCase
     {
         $d = deepclone_to_array(\Closure::fromCallable('strlen'), allow_named_closures: true);
         $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('resolving a closure over a named callable requires enabling the allow_named_closures option');
+        $this->expectExceptionMessage('resolving a closure over a named callable requires enabling the "allow_named_closures" option');
         deepclone_from_array($d);
     }
 
@@ -608,7 +608,7 @@ class DeepCloneTest extends TestCase
             deepclone_from_array($d);
             $this->fail('Expected ValueError was not thrown');
         } catch (\ValueError $e) {
-            $this->assertStringContainsString('resolving a closure over a named callable requires enabling the allow_named_closures option', $e->getMessage());
+            $this->assertStringContainsString('resolving a closure over a named callable requires enabling the "allow_named_closures" option', $e->getMessage());
         }
 
         $clone = deepclone_from_array($d, allow_named_closures: true);
@@ -2050,18 +2050,15 @@ class DeepCloneTest extends TestCase
     }
 
     /**
-     * On PHP 8.6 closures declared in attribute arguments and in parameter
-     * default values are referenced as [class, engine id, line] instead of the
-     * site-based 5-element form.
+     * Element-scoped reference [class, "<site>@<rank>", line], identical on
+     * every PHP version and to the engine's own id for attribute and
+     * parameter-default closures.
      */
-    private static function expectedConstExprPayload(\Closure $closure, array $siteForm): array
+    private static function expectedConstExprPayload(\Closure $closure, string $id): array
     {
-        if (\PHP_VERSION_ID < 80600) {
-            return $siteForm;
-        }
         $r = new \ReflectionFunction($closure);
 
-        return [$r->getConstExprClass(), $r->getConstExprId(), $r->getStartLine()];
+        return [$r->getClosureScopeClass()->name, $id, $r->getStartLine()];
     }
 
     /**
@@ -2074,7 +2071,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprClosureFixture::class, '', 0, 0, $line]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, '@0'), $d['prepared']);
         $this->assertSame(1, $d['mask']);
     }
 
@@ -2102,7 +2099,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprClosureFixture::class, '$tagged', 0, 0, $line]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, '$tagged@0'), $d['prepared']);
         $this->assertSame(6, deepclone_from_array($d)(3));
     }
 
@@ -2117,7 +2114,7 @@ class DeepCloneTest extends TestCase
             $line = (new \ReflectionFunction($args[$i]))->getStartLine();
             $d = deepclone_to_array($args[$i]);
 
-            $this->assertSame(self::expectedConstExprPayload($args[$i], [ConstExprClosureFixture::class, 'TAGGED', 0, $i, $line]), $d['prepared']);
+            $this->assertSame(self::expectedConstExprPayload($args[$i], 'TAGGED@'.$i), $d['prepared']);
             $this->assertSame($expected, deepclone_from_array($d)());
         }
     }
@@ -2132,7 +2129,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprClosureFixture::class, 'tagged()', 1, 0, $line]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, 'tagged()@0'), $d['prepared']);
         $this->assertSame('repeated', deepclone_from_array($d)());
     }
 
@@ -2146,7 +2143,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprClosureFixture::class, 'tagged()#0', 0, 0, $line]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, 'tagged()@1'), $d['prepared']);
         $this->assertSame('param-attr', deepclone_from_array($d)());
     }
 
@@ -2160,7 +2157,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprClosureFixture::class, 'tagged()#0', null, 0, $line]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, 'tagged()@2'), $d['prepared']);
         $this->assertSame('param-default', deepclone_from_array($d)());
     }
 
@@ -2174,7 +2171,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame([ConstExprClosureFixture::class, '$factory', null, 0, $line], $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, '$factory@0'), $d['prepared']);
         $this->assertSame('prop-default', deepclone_from_array($d)());
     }
 
@@ -2188,7 +2185,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame([ConstExprClosureFixture::class, '$staticFactory', null, 0, $line], $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, '$staticFactory@0'), $d['prepared']);
         $this->assertSame('static-prop-default', deepclone_from_array($d)());
     }
 
@@ -2202,7 +2199,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame([ConstExprClosureFixture::class, 'CALLBACKS', null, 0, $line], $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, 'CALLBACKS@0'), $d['prepared']);
         $this->assertSame('const-value', deepclone_from_array($d)());
     }
 
@@ -2216,7 +2213,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprEnumFixture::class, 'Active', 0, 0, $line]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, 'Active@0'), $d['prepared']);
         $this->assertSame('enum-case-attr', deepclone_from_array($d)());
     }
 
@@ -2230,7 +2227,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame([ConstExprEnumFixture::class, 'FILTER', null, 0, $line], $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, 'FILTER@0'), $d['prepared']);
         $this->assertSame('enum-const', deepclone_from_array($d)());
     }
 
@@ -2257,7 +2254,7 @@ class DeepCloneTest extends TestCase
 
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprPromotedFixture::class, '__construct()#0', 0, 0, $line]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, \PHP_VERSION_ID >= 80600 ? '$promoted@0' : '__construct()@0'), $d['prepared']);
         $this->assertSame('promoted-attr', deepclone_from_array($d)());
     }
 
@@ -2301,15 +2298,8 @@ class DeepCloneTest extends TestCase
     {
         $closure = static function (): string { return 'runtime'; };
 
-        if (\PHP_VERSION_ID >= 80600) {
-            // Closure::__serialize() exists and refuses closures that were not
-            // declared in a constant expression
-            $this->expectException(\Exception::class);
-            $this->expectExceptionMessage("Serialization of 'Closure' is not allowed");
-        } else {
-            $this->expectException(\DeepClone\NotInstantiableException::class);
-            $this->expectExceptionMessage('Type "Closure" is not instantiable.');
-        }
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        $this->expectExceptionMessage('Type "Closure" is not instantiable.');
         deepclone_to_array($closure);
     }
 
@@ -2350,7 +2340,7 @@ class DeepCloneTest extends TestCase
     {
         $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
         $d = deepclone_to_array($closure);
-        ++$d['prepared'][\PHP_VERSION_ID >= 80600 ? 2 : 4];
+        ++$d['prepared'][2];
 
         $this->expectException(\ValueError::class);
         $this->expectExceptionMessage('stale payload');
@@ -2441,11 +2431,11 @@ class DeepCloneTest extends TestCase
 
         if (\PHP_VERSION_ID >= 80600) {
             // Engine ids tell the attribute literal and the same-line runtime
-            // literal apart; the latter hits Closure::__serialize(), which refuses.
+            // literal apart; the latter is not declared in a constant
+            // expression and refuses.
             $this->assertSame('const-expr', deepclone_from_array(deepclone_to_array($attrClosure))());
 
-            $this->expectException(\Exception::class);
-            $this->expectExceptionMessage("Serialization of 'Closure' is not allowed");
+            $this->expectException(\DeepClone\NotInstantiableException::class);
             deepclone_to_array(ConstExprRuntimeCollisionFixture::make());
 
             return;
@@ -2530,13 +2520,13 @@ class DeepCloneTest extends TestCase
         $closure = (new \ReflectionProperty(ConstExprHookedFixture::class, 'virtual'))->getHook(\PropertyHookType::Get)->getAttributes()[0]->getArguments()[0];
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprHookedFixture::class, '$virtual::get()', 0, 0, (new \ReflectionFunction($closure))->getStartLine()]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, '$virtual::get()@0'), $d['prepared']);
         $this->assertSame('get-hook-attr', deepclone_from_array($d)());
 
         $closure = (new \ReflectionProperty(ConstExprHookedFixture::class, 'stored'))->getHook(\PropertyHookType::Set)->getParameters()[0]->getAttributes()[0]->getArguments()[0];
         $d = deepclone_to_array($closure);
 
-        $this->assertSame(self::expectedConstExprPayload($closure, [ConstExprHookedFixture::class, '$stored::set()#0', 0, 0, (new \ReflectionFunction($closure))->getStartLine()]), $d['prepared']);
+        $this->assertSame(self::expectedConstExprPayload($closure, '$stored::set()@0'), $d['prepared']);
         $this->assertSame('set-hook-param-attr', deepclone_from_array($d)());
     }
 
@@ -2548,26 +2538,22 @@ class DeepCloneTest extends TestCase
         $line = (new \ReflectionFunction((new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0]))->getStartLine();
         $cases = [
             ['foo', 'const-expr-closure value must be of type array, string given'],
-            [[ConstExprClosureFixture::class], 'const-expr-closure value must have 5 elements'],
-            [[42, '', 0, 0, $line], 'const-expr-closure class name must be of type string, int given'],
-            [['No\\Such\\ClassAtAll', '', 0, 0, $line], 'const-expr-closure references unknown class "No\\Such\\ClassAtAll"'],
-            [[ConstExprClosureFixture::class, 42, 0, 0, $line], 'const-expr-closure value must have 3 elements'],
-            [[ConstExprClosureFixture::class, '', 'x', 0, $line], 'const-expr-closure attribute index must be of type int or null, string given'],
-            [[ConstExprClosureFixture::class, '', 0, 'x', $line], 'const-expr-closure closure index must be of type int, string given'],
-            [[ConstExprClosureFixture::class, '', 0, 0, 'x'], 'const-expr-closure line must be of type int, string given'],
-            [[ConstExprClosureFixture::class, '$nope', 0, 0, $line], 'const-expr-closure references unknown property "$nope"'],
-            [[ConstExprClosureFixture::class, 'nope()', 0, 0, $line], 'const-expr-closure references unknown method "nope()"'],
-            [[ConstExprClosureFixture::class, 'NOPE', 0, 0, $line], 'const-expr-closure references unknown constant "NOPE"'],
-            [[ConstExprClosureFixture::class, 'tagged()#9', 0, 0, $line], 'const-expr-closure references unknown parameter "tagged()#9"'],
-            [[ConstExprClosureFixture::class, '', 9, 0, $line], 'const-expr-closure references unknown attribute index 9'],
-            [[ConstExprClosureFixture::class, '', 0, 9, $line], 'const-expr-closure references unknown closure index 9'],
-            [[ConstExprClosureFixture::class, '', null, 0, $line], 'const-expr-closure attribute index is required for site ""'],
-            [[ConstExprClosureFixture::class, 'tagged()', null, 0, $line], 'const-expr-closure attribute index is required for site "tagged()"'],
-            // an int element 1 makes the payload an engine-id reference [class, id, line]
-            [[ConstExprClosureFixture::class, 0], 'const-expr-closure value must have 3 elements'],
-            [[ConstExprClosureFixture::class, 0, $line, 'x'], 'const-expr-closure value must have 3 elements'],
-            [[42, 0, $line], 'const-expr-closure class name must be of type string, int given'],
-            [[ConstExprClosureFixture::class, 0, 'x'], 'const-expr-closure line must be of type int, string given'],
+            [[ConstExprClosureFixture::class], 'const-expr-closure value must have 3 elements'],
+            [[ConstExprClosureFixture::class, '@0', $line, 'x'], 'const-expr-closure value must have 3 elements'],
+            [[42, '@0', $line], 'const-expr-closure class name must be of type string, int given'],
+            [[ConstExprClosureFixture::class, 0, $line], 'const-expr-closure id must be of type string, int given'],
+            [[ConstExprClosureFixture::class, '@0', 'x'], 'const-expr-closure line must be of type int, string given'],
+            [[ConstExprClosureFixture::class, 'nope', $line], 'const-expr-closure id must be of the form "<site>@<rank>", "nope" given'],
+            [[ConstExprClosureFixture::class, '@', $line], 'const-expr-closure id must be of the form "<site>@<rank>", "@" given'],
+            [[ConstExprClosureFixture::class, '@01', $line], 'const-expr-closure id must be of the form "<site>@<rank>", "@01" given'],
+            [[ConstExprClosureFixture::class, '@1x', $line], 'const-expr-closure id must be of the form "<site>@<rank>", "@1x" given'],
+            [['No\\Such\\ClassAtAll', '@0', $line], 'const-expr-closure references unknown class "No\\Such\\ClassAtAll"'],
+            [[ConstExprClosureFixture::class, '$nope@0', $line], 'const-expr-closure references unknown property "$nope"'],
+            [[ConstExprClosureFixture::class, 'nope()@0', $line], 'const-expr-closure references unknown method "nope()"'],
+            [[ConstExprClosureFixture::class, 'NOPE@0', $line], 'const-expr-closure references unknown constant "NOPE"'],
+            [[ConstExprClosureFixture::class, '$tagged::bad()@0', $line], 'const-expr-closure references unknown hook "$tagged::bad()"'],
+            [[ConstExprClosureFixture::class, '@9', $line], 'const-expr-closure references unknown closure id "@9" in class "'.ConstExprClosureFixture::class.'"'],
+            [[ConstExprClosureFixture::class, 'tagged()@9', $line], 'const-expr-closure references unknown closure id "tagged()@9" in class "'.ConstExprClosureFixture::class.'"'],
         ];
 
         foreach ($cases as [$prepared, $expected]) {
@@ -2609,7 +2595,7 @@ class DeepCloneTest extends TestCase
         // these (no reflection hook), but must decode them: ReflectionFunction
         // reports no start line for an internal function, so the line-0
         // reference must not be treated as stale.
-        $payload = ['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprGlobalFccFixture::class, '$p', 0, 0, 0], 'mask' => 1];
+        $payload = ['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprGlobalFccFixture::class, '$p@0', 0], 'mask' => 1];
 
         $r = deepclone_from_array($payload);
         $this->assertSame(5, $r('hello'));
@@ -2622,53 +2608,23 @@ class DeepCloneTest extends TestCase
     {
         $args = (new \ReflectionClass(ConstExprAmbiguousFixture::class))->getAttributes()[0]->getArguments();
 
-        $this->assertSame(0, deepclone_to_array($args[0])['prepared'][1]);
-        $this->assertSame(1, deepclone_to_array($args[1])['prepared'][1]);
+        $this->assertSame('@0', deepclone_to_array($args[0])['prepared'][1]);
+        $this->assertSame('@1', deepclone_to_array($args[1])['prepared'][1]);
     }
 
     /**
-     * @requires PHP 8.6
+     * @requires PHP 8.5
      */
-    public function testFromArrayConstExprClosureEngineIdErrorPayloads()
+    public function testFromArrayConstExprClosureResolvesFccByRank()
     {
-        $line = (new \ReflectionFunction((new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0]))->getStartLine();
-        $cases = [
-            [[ConstExprClosureFixture::class, 999, $line], 'const-expr-closure references unknown closure id 999 in class "'.ConstExprClosureFixture::class.'"'],
-            [['No\\Such\\ClassAtAll', 0, 1], 'const-expr-closure references unknown class "No\\Such\\ClassAtAll"'],
-            [[ConstExprFccFixture::class, 0, 1], 'const-expr-closure references a first-class callable site'],
-        ];
+        // A first-class callable consumes a rank in its element like any other
+        // closure; a reference to it resolves on every version. Its line is the
+        // target function's, like on the encoding side.
+        $line = (new \ReflectionMethod(ConstExprFccFixture::class, 'helper'))->getStartLine();
 
-        foreach ($cases as [$prepared, $expected]) {
-            try {
-                deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => $prepared, 'mask' => 1]);
-                $this->fail('Expected ValueError was not thrown for: '.$expected);
-            } catch (\ValueError $e) {
-                $this->assertStringContainsString($expected, $e->getMessage());
-            }
-        }
-    }
+        $r = deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprFccFixture::class, 'helper()@0', $line], 'mask' => 1]);
 
-    /**
-     * @requires PHP 8.6
-     */
-    public function testFromArrayConstExprClosureSiteFormWrittenOnPhp85StillResolves()
-    {
-        $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
-        $line = (new \ReflectionFunction($closure))->getStartLine();
-
-        $clone = deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprClosureFixture::class, '', 0, 0, $line], 'mask' => 1]);
-
-        $this->assertSame('class-secret', $clone());
-    }
-
-    /**
-     * @requires PHP < 8.6
-     */
-    public function testFromArrayConstExprClosureEngineIdPayloadRequiresPhp86()
-    {
-        $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('const-expr-closure payload was created on PHP 8.6 or later and cannot be resolved on PHP '.\PHP_VERSION);
-        deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => [\stdClass::class, 0, 1], 'mask' => 1]);
+        $this->assertTrue($r());
     }
 
     /**
