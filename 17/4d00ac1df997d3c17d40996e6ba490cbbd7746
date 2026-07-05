@@ -1,0 +1,39 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-06-30T12:09:07Z
+
+@symfony/mergers this one is ready for review!
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-07-02T12:18:05Z
+
+Status update on the changes pushed since the first review round:
+
+**Review fixes** (amended into the first commit)
+- `wait()` now throws `FailedPollWaitException` when interrupted by a signal instead of returning `[]`, matching `io_poll.c` (no EINTR retry in any backend). Covered by a test that triggers a real EINTR via `pcntl_alarm()`.
+- The parentheses around enum cases in the tests had to stay: `Backend::Auto->isAvailable()` is a parse error before PHP 8.0 and PHPUnit parses every test file regardless of `@requires`, so dropping them broke the 7.2-7.4 jobs.
+
+**Native-parity rework** (`c32e070`)
+A close review against php-src (`ext/standard/io_poll.c`, `main/poll/poll_backend_poll.c`) surfaced ten behavioral divergences, all fixed:
+- `StreamPollHandle::__construct()` rejects closed resources with the native `TypeError`; `isValid()` also checks EOF like `php_stream_poll_handle_is_valid()`.
+- `Watcher::modify()` no longer erases the user data when the argument is omitted; watched events are normalized to declaration order like the native bitmask; `Event::EdgeTriggered` is rejected with `ERROR_NOSUPPORT`.
+- After a `OneShot` watcher fires, only the fd entry is dropped: the watcher stays active, `remove()` succeeds and `modify*()` throws `FailedWatcherModificationException` with `ERROR_NOTFOUND`.
+- Destroying the `Context` deactivates its watchers; the watcher references the context through a `WeakReference` so this happens as eagerly as with native refcounting.
+- `wait()` drops watchers on closed streams like `POLLNVAL` and returns immediately instead of sleeping the whole timeout; wake-ups that map to no watched event keep waiting instead of returning `[]` early; the select except set is unused since it signals OOB data, which native never reports, so `Event::Error` is never emitted; `HangUp` is reported alongside `Read` like `POLLIN|POLLHUP`, never for regular files or datagram sockets, and even when not watched; `ReadHangUp` is never emitted since the native poll backend never requests `POLLRDHUP`.
+- Exception messages and codes match `io_poll.c`, including `Poll wait failed`, `Cannot modify/remove inactive watcher`, `Invalid handle for polling` and `Failed to add handle`.
+
+Remaining divergences, documented in the component README: a TCP half-close reports `Read|HangUp` where native reports plain `Read` (the distinction is kernel-only), and hang-ups on write-only watchers are not detectable (peeking without readability would block).
+
+**Package split** (`c3756da`)
+The polyfill moved from `Php86` to a dedicated `symfony/polyfill-io-poll` package (`src/Io/Poll/`) requiring PHP >= 8.1, since `polyfill-php86` supports PHP >= 7.2. The split repository and Packagist entry will need to be created before the next release.
+
+Tests went from 35 to 64, CI is green on the whole 7.2-8.6 matrix.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-07-02T13:33:45Z
+
+Now with phpt borrowed from php-src
+
+Note the proposal: split this into its own `symfony/polyfill-io-poll` package.
