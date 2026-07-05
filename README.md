@@ -92,6 +92,7 @@ Polyfills are provided for:
 - the `ARRAY_FILTER_USE_VALUE` constant introduced in PHP 8.6;
 - the `SortDirection` enum introduced in PHP 8.6;
 - the `grapheme_strrev` function introduced in PHP 8.6;
+- the `Io\Poll` API and `StreamPollHandle` introduced in PHP 8.6 (requires PHP >= 8.1; only the `Poll` backend is available);
 
 It is strongly recommended to upgrade your PHP version and/or install the missing
 extensions whenever possible. This polyfill should be used only when there is no
@@ -170,6 +171,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-intl-icu` for using the intl functions and classes,
 - `symfony/polyfill-intl-messageformatter` for using the intl messageformatter,
 - `symfony/polyfill-intl-normalizer` for using the intl normalizer,
+- `symfony/polyfill-io-poll` for using the `Io\Poll` API and `StreamPollHandle`,
 - `symfony/polyfill-mbstring` for using the mbstring functions,
 - `symfony/polyfill-util` for using the polyfill utility helpers.
 - `symfony/polyfill-uuid` for using the `uuid_*` functions,

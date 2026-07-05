@@ -1,0 +1,32 @@
+{
+    "name": "symfony/polyfill-io-poll",
+    "type": "library",
+    "description": "Symfony polyfill for the Io\\Poll API",
+    "keywords": ["polyfill", "shim", "compatibility", "portable", "io", "poll"],
+    "homepage": "https://symfony.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nicolas Grekas",
+            "email": "p@tchwork.com"
+        },
+        {
+            "name": "Symfony Community",
+            "homepage": "https://symfony.com/contributors"
+        }
+    ],
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": { "Symfony\\Polyfill\\Io\\Poll\\": "" },
+        "classmap": [ "Resources/stubs" ]
+    },
+    "minimum-stability": "dev",
+    "extra": {
+        "thanks": {
+            "name": "symfony/polyfill",
+            "url": "https://github.com/symfony/polyfill"
+        }
+    }
+}
