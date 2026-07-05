@@ -658,18 +658,23 @@ final class DeepClone
                 $r = new \ReflectionFunction($value);
 
                 if (!(\PHP_VERSION_ID >= 80200 ? $r->isAnonymous() : str_contains($r->name, "@anonymous\0"))) {
-                    // First-class callable. When it references a method of its
-                    // own declaring class declared in a constant expression
-                    // (e.g. #[When(self::isStrict(...))]), encode it as a
-                    // declaration-site reference like the extension does, so it
-                    // round-trips without the allow_named_closures opt-in.
-                    // Closure is allow-list-gated first, mirroring the
-                    // extension (reported before any const-expr is evaluated).
-                    if (\PHP_VERSION_ID >= 80500 && !$r->getClosureThis() && $r->getClosureScopeClass()) {
+                    // First-class callable declared in a constant expression,
+                    // encoded as a declaration-site reference (like the
+                    // extension) so it round-trips without the
+                    // allow_named_closures opt-in. On PHP 8.6 the engine names
+                    // the declaring class (getConstExprClass), covering
+                    // cross-class (#[When(Validators::check(...))]) and global
+                    // (#[When(strlen(...))]) references; on 8.5 only a callable
+                    // over a method of its own declaring class is locatable.
+                    // Closure is allow-list-gated first, mirroring the extension.
+                    $declaringClass = \PHP_VERSION_ID >= 80600 ? $r->getConstExprClass() : null;
+                    if (\PHP_VERSION_ID >= 80500 && !$r->getClosureThis()
+                        && (null !== $declaringClass || $r->getClosureScopeClass())
+                    ) {
                         if (null !== $allowedSet && !isset($allowedSet['closure'])) {
                             throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
                         }
-                        if (null !== $ref = self::locateConstExprClosure($r)) {
+                        if (null !== $ref = self::locateConstExprClosure($r, $declaringClass)) {
                             $value = $ref;
                             $mask[$k] = 1;
 
@@ -703,11 +708,28 @@ final class DeepClone
                     throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
                 }
 
+                if (\PHP_VERSION_ID >= 80600 && null !== $id = $r->getConstExprId()) {
+                    // The engine gives a canonical per-class id to closures declared
+                    // in attribute arguments and in parameter default values; closures
+                    // declared in class constant values and in property default values
+                    // have no id and keep using the site-based reference below
+                    $value = [$r->getClosureScopeClass()->name, $id, $r->getStartLine()];
+                    $mask[$k] = 1;
+
+                    goto handle_value;
+                }
+
                 if (\PHP_VERSION_ID >= 80500 && null !== $ref = self::locateConstExprClosure($r)) {
                     $value = $ref;
                     $mask[$k] = 1;
 
                     goto handle_value;
+                }
+
+                if (\PHP_VERSION_ID >= 80600) {
+                    // No engine id and no usable declaration site: let
+                    // Closure::__serialize() throw the engine's refusal
+                    $value->__serialize();
                 }
             }
 
@@ -1273,14 +1295,28 @@ final class DeepClone
      * argument, class constant, property or parameter default) to its declaration
      * site: [class, site, attribute index or null, closure index, start line].
      */
-    private static function locateConstExprClosure(\ReflectionFunction $r): ?array
+    private static function locateConstExprClosure(\ReflectionFunction $r, ?string $declaringClass = null): ?array
     {
-        if (!$r->isStatic() || $r->getClosureThis() || $r->getClosureUsedVariables() || !($scope = $r->getClosureScopeClass())) {
+        if ($r->getClosureThis() || $r->getClosureUsedVariables()) {
+            return null;
+        }
+        if (null !== $declaringClass) {
+            // PHP 8.6: the engine named the declaring class (ReflectionFunction::
+            // getConstExprClass), which for a cross-class or global first-class
+            // callable differs from the closure's scope. Index that class.
+            try {
+                $scope = new \ReflectionClass($declaringClass);
+            } catch (\ReflectionException) {
+                return null;
+            }
+        } elseif (!$r->isStatic() || !($scope = $r->getClosureScopeClass())) {
             return null;
         }
 
         [$index, $lines] = self::$constExprIndex[$scope->name] ??= self::indexConstExprClosures($scope);
         $file = $r->getFileName();
+        // Raw value (false for an internal function) so it matches the key built
+        // by indexConstExprClosures(); normalized to 0 in the returned payload.
         $line = $r->getStartLine();
 
         if (!$candidates = $index[$r->name.':'.$file.':'.$line.':'.$r->getEndLine().':'.self::closureSignature($r)] ?? null) {
@@ -1290,11 +1326,24 @@ final class DeepClone
         // First-class callables are keyed by their target method's identity, so
         // several declaration sites can map to the same key; they are
         // equivalent and the first one wins, exactly like the extension. The
-        // anonymous-only checks below (the same-site ambiguity guard and the
-        // runtime-aliasing refusal) only concern anonymous closure literals,
-        // which are told apart by source position.
+        // checks below (the 8.6 engine-id exclusion, the same-site ambiguity
+        // guard and the runtime-aliasing refusal) only concern anonymous
+        // closure literals, which are told apart by source position; an fcc has
+        // no engine id here and never reaches the engine-id encoder.
         if (!$r->isAnonymous()) {
-            return [$scope->name, $candidates[0][0], $candidates[0][1], $candidates[0][2], $line];
+            return [$scope->name, $candidates[0][0], $candidates[0][1], $candidates[0][2], $line ?: 0];
+        }
+
+        if (\PHP_VERSION_ID >= 80600) {
+            // Anonymous closures declared in attribute arguments and parameter
+            // default values carry an engine id and are encoded through it, so
+            // they never reach this lookup; a closure matching such a candidate
+            // merely shares its declaration site.
+            $candidates = array_values(array_filter($candidates, static fn ($c) => null === $c[1] && !preg_match('/\)#\d+$/', $c[0])));
+
+            if (!$candidates) {
+                return null;
+            }
         }
 
         $sites = [];
@@ -1314,7 +1363,7 @@ final class DeepClone
             throw new \ValueError('deepclone_to_array(): cannot reference anonymous closure declared at '.$file.':'.$line.', multiple closures share this declaration site');
         }
 
-        return [$scope->name, $candidates[0][0], $candidates[0][1], $candidates[0][2], $line];
+        return [$scope->name, $candidates[0][0], $candidates[0][1], $candidates[0][2], $line ?: 0];
     }
 
     private static function countClosureLiterals(string $file, int $line): int
@@ -1380,13 +1429,13 @@ final class DeepClone
                     }
                     $seen[$id] = true;
                     $r = new \ReflectionFunction($value);
-                    // Index anonymous closures declared in this class, and
-                    // first-class callables over a method of this class (their
-                    // scope is the target method's class): both are closures
-                    // the class declares about itself. Cross-class and
-                    // global-function callables have a different (or null)
-                    // scope and are addressed by name instead.
-                    if ($r->getClosureScopeClass()?->name !== $class) {
+                    // Index every first-class callable found in this class's
+                    // constant expressions, whatever its target (own method,
+                    // another class's method, or a global function) -- the class
+                    // declares the reference. Anonymous closures must be scoped
+                    // to this class (a foreign literal reached through a const
+                    // reference is not declared here).
+                    if ($r->isAnonymous() && $r->getClosureScopeClass()?->name !== $class) {
                         return;
                     }
                     $index[$r->name.':'.$r->getFileName().':'.$r->getStartLine().':'.$r->getEndLine().':'.self::closureSignature($r)][] = [$site, $attrIndex, $n];
@@ -1514,6 +1563,54 @@ final class DeepClone
         if (!\is_array($value)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must be of type array, '.self::valueName($value).' given');
         }
+
+        // Engine-id reference [class, id, line], emitted on PHP >= 8.6; the type
+        // of element 1 (int id vs string site) discriminates it from the
+        // site-based reference handled below
+        if (\is_int($value[1] ?? null)) {
+            if (!\array_key_exists(0, $value) || !\array_key_exists(2, $value) || 3 !== \count($value)) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 3 elements');
+            }
+            [$class, $id, $line] = $value;
+
+            if (!\is_string($class)) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure class name must be of type string, '.self::valueName($class).' given');
+            }
+            if (!\is_int($line)) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure line must be of type int, '.self::valueName($line).' given');
+            }
+
+            if (null !== $allowedClasses && !isset(array_change_key_case(array_flip($allowedClasses))[strtolower($class)])) {
+                throw new \ValueError('deepclone_from_array(): class "'.$class.'" is not allowed');
+            }
+
+            if (\PHP_VERSION_ID < 80600) {
+                throw new \ValueError('deepclone_from_array(): const-expr-closure payload was created on PHP 8.6 or later and cannot be resolved on PHP '.\PHP_VERSION);
+            }
+
+            try {
+                new \ReflectionClass($class);
+            } catch (\ReflectionException) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown class "'.$class.'"');
+            }
+
+            try {
+                $found = \Closure::fromConstExpr($class, $id);
+            } catch (\ValueError) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure id '.$id.' in class "'.$class.'"');
+            }
+
+            $r = new \ReflectionFunction($found);
+            if (!str_contains($r->name, '{closure')) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references a first-class callable site');
+            }
+            if ($line !== $foundLine = $r->getStartLine()) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) stale payload, const-expr-closure moved from line '.$line.' to line '.$foundLine);
+            }
+
+            return $found;
+        }
+
         if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value) || !\array_key_exists(2, $value) || !\array_key_exists(3, $value) || !\array_key_exists(4, $value) || 5 !== \count($value)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 5 elements');
         }
