@@ -13,6 +13,7 @@
         "polyfill-php85": "src/Php85",
         "polyfill-php86": "src/Php86",
         "polyfill-iconv": "src/Iconv",
+        "polyfill-io-poll": "src/Io/Poll",
         "polyfill-intl-grapheme": "src/Intl/Grapheme",
         "polyfill-intl-icu": "src/Intl/Icu",
         "polyfill-intl-idn": "src/Intl/Idn",
