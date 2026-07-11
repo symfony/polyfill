@@ -713,8 +713,10 @@ final class DeepClone
                     // in parameter default values by an element-scoped "<site>@<rank>"
                     // id, the exact reference the site-based lookup below derives;
                     // closures declared in class constant values and in property
-                    // default values have no engine id and use the lookup
-                    $value = [$r->getClosureScopeClass()->name, $id, $r->getStartLine()];
+                    // default values have no engine id and use the lookup. The line
+                    // is stored relative to the declaring class (its scope class).
+                    $scope = $r->getClosureScopeClass();
+                    $value = [$scope->name, $id, $r->getStartLine() - $scope->getStartLine()];
                     $mask[$k] = 1;
 
                     goto handle_value;
@@ -1317,8 +1319,12 @@ final class DeepClone
         [$index, $lines] = self::$constExprIndex[$scope->name] ??= self::indexConstExprClosures($scope);
         $file = $r->getFileName();
         // Raw value (false for an internal function) so it matches the key built
-        // by indexConstExprClosures(); normalized to 0 in the returned payload.
+        // by indexConstExprClosures().
         $line = $r->getStartLine();
+        // The payload line is relative to the declaring class, so an edit above
+        // the class does not invalidate the reference (matches the extension);
+        // an internal function has no line and stores 0.
+        $relLine = false === $line ? 0 : $line - $scope->getStartLine();
 
         if (!$candidates = $index[$r->name.':'.$file.':'.$line.':'.$r->getEndLine().':'.self::closureSignature($r)] ?? null) {
             return null;
@@ -1332,7 +1338,7 @@ final class DeepClone
         // closure literals, which are told apart by source position; an fcc has
         // no engine id here and never reaches the engine-id encoder.
         if (!$r->isAnonymous()) {
-            return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $line ?: 0];
+            return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $relLine];
         }
 
         if (\PHP_VERSION_ID >= 80600) {
@@ -1364,7 +1370,7 @@ final class DeepClone
             throw new \ValueError('deepclone_to_array(): cannot reference anonymous closure declared at '.$file.':'.$line.', multiple closures share this declaration site');
         }
 
-        return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $line ?: 0];
+        return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $relLine];
     }
 
     private static function countClosureLiterals(string $file, int $line): int
@@ -1643,13 +1649,14 @@ final class DeepClone
             // The engine resolves its own ids fastest. Its walk reads the raw
             // constant expressions though, while this reference counts evaluated
             // values, so fall back to the evaluating walk below when the engine
-            // does not know the id or resolves it to another line; internal
-            // functions (e.g. a global strlen(...) reference) have no start
-            // line, getStartLine() returns false, normalized to 0 like on the
-            // encoding side.
+            // does not know the id or resolves it to another line. The stored
+            // line is relative to the declaring class; internal functions
+            // (e.g. a global strlen(...) reference) have no start line and
+            // store 0, like on the encoding side.
             try {
                 $found = \Closure::fromConstExpr($class, $id);
-                if ($line === ((new \ReflectionFunction($found))->getStartLine() ?: 0)) {
+                $fl = (new \ReflectionFunction($found))->getStartLine();
+                if ($line === (false === $fl ? 0 : $fl - $rc->getStartLine())) {
                     return $found;
                 }
             } catch (\ValueError) {
@@ -1812,9 +1819,10 @@ final class DeepClone
         if (null === $found) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure id "'.$id.'" in class "'.$class.'"');
         }
-        $foundLine = (new \ReflectionFunction($found))->getStartLine() ?: 0;
+        $fl = (new \ReflectionFunction($found))->getStartLine();
+        $foundLine = false === $fl ? 0 : $fl - $rc->getStartLine();
         if ($line !== $foundLine) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) stale payload, const-expr-closure moved from line '.$line.' to line '.$foundLine);
+            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) stale payload, const-expr-closure moved from class-relative line '.$line.' to '.$foundLine);
         }
 
         return $found;

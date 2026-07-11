@@ -2057,8 +2057,10 @@ class DeepCloneTest extends TestCase
     private static function expectedConstExprPayload(\Closure $closure, string $id): array
     {
         $r = new \ReflectionFunction($closure);
+        $scope = $r->getClosureScopeClass();
 
-        return [$r->getClosureScopeClass()->name, $id, $r->getStartLine()];
+        // The stored line is relative to the declaring class.
+        return [$scope->name, $id, ($r->getStartLine() ?: 0) ? $r->getStartLine() - $scope->getStartLine() : 0];
     }
 
     /**
@@ -2619,8 +2621,10 @@ class DeepCloneTest extends TestCase
     {
         // A first-class callable consumes a rank in its element like any other
         // closure; a reference to it resolves on every version. Its line is the
-        // target function's, like on the encoding side.
-        $line = (new \ReflectionMethod(ConstExprFccFixture::class, 'helper'))->getStartLine();
+        // target function's relative to the declaring class, like on the
+        // encoding side.
+        $line = (new \ReflectionMethod(ConstExprFccFixture::class, 'helper'))->getStartLine()
+            - (new \ReflectionClass(ConstExprFccFixture::class))->getStartLine();
 
         $r = deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprFccFixture::class, 'helper()@0', $line], 'mask' => 1]);
 
