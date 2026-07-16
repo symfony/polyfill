@@ -713,10 +713,10 @@ final class DeepClone
                     // in parameter default values by an element-scoped "<site>@<rank>"
                     // id, the exact reference the site-based lookup below derives;
                     // closures declared in class constant values and in property
-                    // default values have no engine id and use the lookup. The line
-                    // is stored relative to the declaring class (its scope class).
-                    $scope = $r->getClosureScopeClass();
-                    $value = [$scope->name, $id, $r->getStartLine() - $scope->getStartLine()];
+                    // default values have no engine id and use the lookup. The id
+                    // already carries a "#<hash>" of the closure's code, so the
+                    // reference needs no separate staleness field.
+                    $value = [$r->getClosureScopeClass()->name, $id];
                     $mask[$k] = 1;
 
                     goto handle_value;
@@ -1321,10 +1321,6 @@ final class DeepClone
         // Raw value (false for an internal function) so it matches the key built
         // by indexConstExprClosures().
         $line = $r->getStartLine();
-        // The payload line is relative to the declaring class, so an edit above
-        // the class does not invalidate the reference (matches the extension);
-        // an internal function has no line and stores 0.
-        $relLine = false === $line ? 0 : $line - $scope->getStartLine();
 
         if (!$candidates = $index[$r->name.':'.$file.':'.$line.':'.$r->getEndLine().':'.self::closureSignature($r)] ?? null) {
             return null;
@@ -1338,7 +1334,7 @@ final class DeepClone
         // closure literals, which are told apart by source position; an fcc has
         // no engine id here and never reaches the engine-id encoder.
         if (!$r->isAnonymous()) {
-            return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $relLine];
+            return [$scope->name, $candidates[0][0].'@'.$candidates[0][1]];
         }
 
         if (\PHP_VERSION_ID >= 80600) {
@@ -1370,7 +1366,7 @@ final class DeepClone
             throw new \ValueError('deepclone_to_array(): cannot reference anonymous closure declared at '.$file.':'.$line.', multiple closures share this declaration site');
         }
 
-        return [$scope->name, $candidates[0][0].'@'.$candidates[0][1], $relLine];
+        return [$scope->name, $candidates[0][0].'@'.$candidates[0][1]];
     }
 
     private static function countClosureLiterals(string $file, int $line): int
@@ -1613,10 +1609,10 @@ final class DeepClone
         if (!\is_array($value)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must be of type array, '.self::valueName($value).' given');
         }
-        if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value) || !\array_key_exists(2, $value) || 3 !== \count($value)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 3 elements');
+        if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value) || 2 !== \count($value)) {
+            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 2 elements');
         }
-        [$class, $id, $line] = $value;
+        [$class, $id] = $value;
 
         if (!\is_string($class)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure class name must be of type string, '.self::valueName($class).' given');
@@ -1624,19 +1620,23 @@ final class DeepClone
         if (!\is_string($id)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure id must be of type string, '.self::valueName($id).' given');
         }
-        if (!\is_int($line)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure line must be of type int, '.self::valueName($line).' given');
-        }
 
         if (null !== $allowedClasses && !isset(array_change_key_case(array_flip($allowedClasses))[strtolower($class)])) {
             throw new \ValueError('deepclone_from_array(): class "'.$class.'" is not allowed');
         }
 
-        $rank = false === ($at = strrpos($id, '@')) ? '' : substr($id, $at + 1);
+        // An engine-produced id may carry a "#<hash>" code fingerprint after the
+        // rank. The polyfill cannot recompute it (the closure's source is
+        // discarded at compile time), so on the value-walk below the hash is
+        // stripped and the reference resolves positionally; on 8.6 the
+        // hash-bearing id is verified by Closure::fromConstExpr first.
+        $hasHash = false !== ($sharp = strrpos($id, '#'));
+        $coreId = $hasHash ? substr($id, 0, $sharp) : $id;
+        $rank = false === ($at = strrpos($coreId, '@')) ? '' : substr($coreId, $at + 1);
         if ('' === $rank || \strlen($rank) !== strspn($rank, '0123456789') || ('0' === $rank[0] && '0' !== $rank)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure id must be of the form "<site>@<rank>", "'.$id.'" given');
         }
-        $site = substr($id, 0, $at);
+        $site = substr($coreId, 0, $at);
         $rank = (int) $rank;
 
         try {
@@ -1646,20 +1646,19 @@ final class DeepClone
         }
 
         if (\PHP_VERSION_ID >= 80600) {
-            // The engine resolves its own ids fastest. Its walk reads the raw
-            // constant expressions though, while this reference counts evaluated
-            // values, so fall back to the evaluating walk below when the engine
-            // does not know the id or resolves it to another line. The stored
-            // line is relative to the declaring class; internal functions
-            // (e.g. a global strlen(...) reference) have no start line and
-            // store 0, like on the encoding side.
+            // The engine resolves its own ids, verifying the "#<hash>"
+            // fingerprint. Its walk reads the raw constant expressions, while
+            // this reference counts evaluated values, so a hash-less id the
+            // engine does not know (a closure in a constant or property value)
+            // falls through to the evaluating walk. A hash-bearing id is fully
+            // the engine's to judge: if it rejects one, the reference is stale,
+            // so surface that instead of healing positionally.
             try {
-                $found = \Closure::fromConstExpr($class, $id);
-                $fl = (new \ReflectionFunction($found))->getStartLine();
-                if ($line === (false === $fl ? 0 : $fl - $rc->getStartLine())) {
-                    return $found;
+                return \Closure::fromConstExpr($class, $id);
+            } catch (\ValueError $e) {
+                if ($hasHash) {
+                    throw $e;
                 }
-            } catch (\ValueError) {
             }
         }
 
@@ -1819,12 +1818,10 @@ final class DeepClone
         if (null === $found) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure id "'.$id.'" in class "'.$class.'"');
         }
-        $fl = (new \ReflectionFunction($found))->getStartLine();
-        $foundLine = false === $fl ? 0 : $fl - $rc->getStartLine();
-        if ($line !== $foundLine) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) stale payload, const-expr-closure moved from class-relative line '.$line.' to '.$foundLine);
-        }
 
+        // This value-walk resolves positionally: a hash-less id carries no
+        // staleness check (the polyfill cannot recompute the engine's code
+        // hash), so the rank alone selects the closure.
         return $found;
     }
 
