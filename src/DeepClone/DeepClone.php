@@ -40,6 +40,7 @@ final class DeepClone
     private static array $classInfo = [];
     private static array $constExprIndex = [];
     private static array $closureLiteralLines = [];
+    private static ?bool $nativeConstExpr = null;
     private static \stdClass $sentinel;
 
     /**
@@ -657,24 +658,41 @@ final class DeepClone
             if ($value instanceof \Closure) {
                 $r = new \ReflectionFunction($value);
 
+                // On an engine that serializes const-expr closures natively, use
+                // that first: Closure::__serialize() yields the [class, id]
+                // declaration-site reference for the closures it addresses
+                // (attribute arguments and parameter defaults, cross-class and
+                // global first-class callables included) and throws for the rest,
+                // which fall through to the reflection-based lookup below. Such a
+                // reference round-trips without the allow_named_closures opt-in;
+                // Closure is allow-list-gated, as in the by-name and lookup paths.
+                if ((self::$nativeConstExpr ??= method_exists('Closure', '__serialize'))
+                    && null !== $ref = self::nativeConstExprRef($value)
+                ) {
+                    if (null !== $allowedSet && !isset($allowedSet['closure'])) {
+                        throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
+                    }
+                    $value = $ref;
+                    $mask[$k] = 1;
+
+                    goto handle_value;
+                }
+
                 if (!(\PHP_VERSION_ID >= 80200 ? $r->isAnonymous() : str_contains($r->name, "@anonymous\0"))) {
-                    // First-class callable declared in a constant expression,
-                    // encoded as a declaration-site reference (like the
-                    // extension) so it round-trips without the
-                    // allow_named_closures opt-in. On PHP 8.6 the engine names
-                    // the declaring class (getConstExprClass), covering
-                    // cross-class (#[When(Validators::check(...))]) and global
-                    // (#[When(strlen(...))]) references; on 8.5 only a callable
-                    // over a method of its own declaring class is locatable.
-                    // Closure is allow-list-gated first, mirroring the extension.
-                    $declaringClass = \PHP_VERSION_ID >= 80600 ? $r->getConstExprClass() : null;
-                    if (\PHP_VERSION_ID >= 80500 && !$r->getClosureThis()
-                        && (null !== $declaringClass || $r->getClosureScopeClass())
-                    ) {
+                    // First-class callable declared in a constant expression over
+                    // a method of its own declaring class, encoded as a
+                    // declaration-site reference (like the extension) so it
+                    // round-trips without the allow_named_closures opt-in. On 8.6
+                    // the engine-addressable references, cross-class and global
+                    // ones included, are handled natively above; this reflection
+                    // lookup covers PHP 8.5, where only a callable over a method
+                    // of its own declaring class is locatable. Closure is
+                    // allow-list-gated first, mirroring the extension.
+                    if (\PHP_VERSION_ID >= 80500 && !$r->getClosureThis() && $r->getClosureScopeClass()) {
                         if (null !== $allowedSet && !isset($allowedSet['closure'])) {
                             throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
                         }
-                        if (null !== $ref = self::locateConstExprClosure($r, $declaringClass)) {
+                        if (null !== $ref = self::locateConstExprClosure($r)) {
                             $value = $ref;
                             $mask[$k] = 1;
 
@@ -708,20 +726,10 @@ final class DeepClone
                     throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
                 }
 
-                if (\PHP_VERSION_ID >= 80600 && null !== $id = $r->getConstExprId()) {
-                    // The engine names closures declared in attribute arguments and
-                    // in parameter default values by an element-scoped "<site>@<rank>"
-                    // id, the exact reference the site-based lookup below derives;
-                    // closures declared in class constant values and in property
-                    // default values have no engine id and use the lookup. The id
-                    // already carries a "#<hash>" of the closure's code, so the
-                    // reference needs no separate staleness field.
-                    $value = [$r->getClosureScopeClass()->name, $id];
-                    $mask[$k] = 1;
-
-                    goto handle_value;
-                }
-
+                // Anonymous const-expr closures the engine addresses are handled
+                // natively above (on 8.6); this reflection lookup covers PHP 8.5
+                // and, on 8.6, the closures the engine does not address (constant
+                // and property default values).
                 if (\PHP_VERSION_ID >= 80500 && null !== $ref = self::locateConstExprClosure($r)) {
                     $value = $ref;
                     $mask[$k] = 1;
@@ -1292,27 +1300,65 @@ final class DeepClone
     }
 
     /**
+     * Reads a const-expr closure's [class, id] declaration-site reference out of
+     * the engine's native Closure::__serialize(), which yields
+     *   [ [], ["const-expr", [class, id]] ]
+     * for the closures it addresses and throws for the rest. Returns null (rather
+     * than throwing) for a closure the engine does not address, so the caller
+     * falls back to the reflection-based lookup.
+     */
+    private static function nativeConstExprRef(\Closure $closure): ?array
+    {
+        try {
+            $data = $closure->__serialize();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (isset($data[1][0], $data[1][1]) && 'const-expr' === $data[1][0]
+            && \is_array($ref = $data[1][1]) && 2 === \count($ref)
+            && isset($ref[0], $ref[1]) && \is_string($ref[0]) && \is_string($ref[1])
+        ) {
+            return [$ref[0], $ref[1]];
+        }
+
+        return null;
+    }
+
+    /**
+     * deepclone_from_array() counterpart of nativeConstExprRef(): resolves a
+     * [class, id] reference through the engine's own Closure unserialization,
+     * which re-evaluates the reference bounded to what the class declares and
+     * verifies any "#<hash>" fingerprint. The serialized form is synthesized
+     * directly (the class and id are length-prefixed, so no escaping is needed);
+     * $allowedClasses gates the Closure the payload instantiates. Throws the
+     * engine's exception when the reference is stale or unknown; returns null if
+     * unserialization yields anything other than a Closure.
+     */
+    private static function nativeConstExprResolve(string $class, string $id, ?array $allowedClasses): ?\Closure
+    {
+        $payload = 'O:7:"Closure":'.substr(serialize([[], ['const-expr', [$class, $id]]]), 2);
+        $result = unserialize($payload, ['allowed_classes' => $allowedClasses ?? true]);
+
+        return $result instanceof \Closure ? $result : null;
+    }
+
+    /**
      * Resolves a closure declared in a constant expression (attribute argument,
      * class constant, property or parameter default) to its element-scoped
      * declaration-site reference: [class, "<site>@<rank>", start line], where
      * site names the declaring reflection element and rank is the closure's
      * position among the element's closures.
      */
-    private static function locateConstExprClosure(\ReflectionFunction $r, ?string $declaringClass = null): ?array
+    private static function locateConstExprClosure(\ReflectionFunction $r): ?array
     {
         if ($r->getClosureThis() || $r->getClosureUsedVariables()) {
             return null;
         }
-        if (null !== $declaringClass) {
-            // PHP 8.6: the engine named the declaring class (ReflectionFunction::
-            // getConstExprClass), which for a cross-class or global first-class
-            // callable differs from the closure's scope. Index that class.
-            try {
-                $scope = new \ReflectionClass($declaringClass);
-            } catch (\ReflectionException) {
-                return null;
-            }
-        } elseif (!$r->isStatic() || !($scope = $r->getClosureScopeClass())) {
+        // Only a callable over a method of its own declaring class is locatable
+        // here: the engine records no declaring class on 8.5, and on 8.6 the
+        // cross-class and global references are resolved natively before this.
+        if (!$r->isStatic() || !($scope = $r->getClosureScopeClass())) {
             return null;
         }
 
@@ -1624,13 +1670,39 @@ final class DeepClone
         if (null !== $allowedClasses && !isset(array_change_key_case(array_flip($allowedClasses))[strtolower($class)])) {
             throw new \ValueError('deepclone_from_array(): class "'.$class.'" is not allowed');
         }
+        // Closure is gated too, matching deepclone_to_array(): resolving a
+        // reference mints one.
+        if (null !== $allowedClasses && !isset(array_change_key_case(array_flip($allowedClasses))['closure'])) {
+            throw new \ValueError('deepclone_from_array(): class "Closure" is not allowed');
+        }
 
         // An engine-produced id may carry a "#<hash>" code fingerprint after the
         // rank. The polyfill cannot recompute it (the closure's source is
         // discarded at compile time), so on the value-walk below the hash is
-        // stripped and the reference resolves positionally; on 8.6 the
-        // hash-bearing id is verified by Closure::fromConstExpr first.
+        // stripped and the reference resolves positionally.
         $hasHash = false !== ($sharp = strrpos($id, '#'));
+
+        if (self::$nativeConstExpr ??= method_exists('Closure', '__serialize')) {
+            // Resolve through the engine's own unserialization first: it reads the
+            // raw constant expressions, verifies the "#<hash>" fingerprint, and
+            // alone understands the engine's first-class-callable ids (a
+            // "<site>@<name>" the rank parse below would reject). A hash-bearing id
+            // is fully the engine's to judge (a rejection means the reference is
+            // stale, surfaced rather than healed positionally); a hash-less id it
+            // does not know (a closure counted among a constant or property's
+            // evaluated values, or one written by an older producer) falls through
+            // to the value-walk.
+            try {
+                if (null !== $c = self::nativeConstExprResolve($class, $id, $allowedClasses)) {
+                    return $c;
+                }
+            } catch (\Exception $e) {
+                if ($hasHash) {
+                    throw $e;
+                }
+            }
+        }
+
         $coreId = $hasHash ? substr($id, 0, $sharp) : $id;
         $rank = false === ($at = strrpos($coreId, '@')) ? '' : substr($coreId, $at + 1);
         if ('' === $rank || \strlen($rank) !== strspn($rank, '0123456789') || ('0' === $rank[0] && '0' !== $rank)) {
@@ -1643,23 +1715,6 @@ final class DeepClone
             $rc = new \ReflectionClass($class);
         } catch (\ReflectionException) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown class "'.$class.'"');
-        }
-
-        if (\PHP_VERSION_ID >= 80600) {
-            // The engine resolves its own ids, verifying the "#<hash>"
-            // fingerprint. Its walk reads the raw constant expressions, while
-            // this reference counts evaluated values, so a hash-less id the
-            // engine does not know (a closure in a constant or property value)
-            // falls through to the evaluating walk. A hash-bearing id is fully
-            // the engine's to judge: if it rejects one, the reference is stale,
-            // so surface that instead of healing positionally.
-            try {
-                return \Closure::fromConstExpr($class, $id);
-            } catch (\ValueError $e) {
-                if ($hasHash) {
-                    throw $e;
-                }
-            }
         }
 
         if ('' === $site) {

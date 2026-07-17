@@ -2340,14 +2340,15 @@ class DeepCloneTest extends TestCase
     public function testFromArrayConstExprClosureStaleHashThrows()
     {
         // On PHP 8.6 the id carries a "#<hash>" of the closure's code; tampering
-        // it is rejected. On 8.5 the polyfill cannot compute the hash, so
-        // references resolve positionally with no staleness check.
+        // it is rejected by the engine's own unserialization. On 8.5 the polyfill
+        // cannot compute the hash, so references resolve positionally with no
+        // staleness check.
         $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
         $d = deepclone_to_array($closure);
         $id = $d['prepared'][1];
         $d['prepared'][1] = substr($id, 0, -1).dechex(hexdec(substr($id, -1)) ^ 1);
 
-        $this->expectException(\ValueError::class);
+        $this->expectException(\Exception::class);
         $this->expectExceptionMessage('changed');
         deepclone_from_array($d);
     }
