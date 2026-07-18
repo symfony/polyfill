@@ -2050,15 +2050,18 @@ class DeepCloneTest extends TestCase
     }
 
     /**
-     * A reference payload [class, "<site>@<rank>"] with any engine "#<hash>"
-     * suffix stripped from the actual, so a single expected value matches on
-     * both PHP 8.5 (no hash) and 8.6 (the engine suffixes the rank).
+     * A reference payload [class, site, key, hash] checked against the expected
+     * "<site>@<rank>" rendering. The hash (field 3) is an int, non-zero only for
+     * an anonymous closure the engine addresses (PHP 8.6), so it is not asserted
+     * here; a single expected value thus matches on both PHP 8.5 and 8.6.
      */
     private static function assertPrepared(\Closure $closure, string $id, array $prepared): void
     {
         $scope = (new \ReflectionFunction($closure))->getClosureScopeClass();
-        self::assertCount(2, $prepared);
-        self::assertSame([$scope->name, $id], [$prepared[0], preg_replace('/#[0-9a-f]{8}$/', '', $prepared[1])]);
+        $at = strrpos($id, '@');
+        self::assertCount(4, $prepared);
+        self::assertSame([$scope->name, substr($id, 0, $at), (int) substr($id, $at + 1)], [$prepared[0], $prepared[1], $prepared[2]]);
+        self::assertIsInt($prepared[3]);
     }
 
 
@@ -2339,14 +2342,13 @@ class DeepCloneTest extends TestCase
      */
     public function testFromArrayConstExprClosureStaleHashThrows()
     {
-        // On PHP 8.6 the id carries a "#<hash>" of the closure's code; tampering
-        // it is rejected by the engine's own unserialization. On 8.5 the polyfill
-        // cannot compute the hash, so references resolve positionally with no
-        // staleness check.
+        // On PHP 8.6 the reference carries a code hash of the anonymous closure;
+        // tampering it is rejected by the engine's own unserialization. On 8.5 the
+        // polyfill cannot compute the hash, so references resolve positionally
+        // with no staleness check.
         $closure = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
         $d = deepclone_to_array($closure);
-        $id = $d['prepared'][1];
-        $d['prepared'][1] = substr($id, 0, -1).dechex(hexdec(substr($id, -1)) ^ 1);
+        $d['prepared'][3] ^= 1;
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('changed');
@@ -2541,23 +2543,27 @@ class DeepCloneTest extends TestCase
      */
     public function testFromArrayConstExprClosureMalformedPayloads()
     {
+        // The reference is [class, site, key, hash]. A hash of 0 means
+        // "unverified"; these all pass 0, so on PHP 8.6 the engine's own
+        // resolution throws and the polyfill heals positionally through its
+        // value-walk, surfacing these messages on every version.
         $cases = [
             ['foo', 'const-expr-closure value must be of type array, string given'],
-            [[ConstExprClosureFixture::class], 'const-expr-closure value must have 2 elements'],
-            [[ConstExprClosureFixture::class, '@0', 1], 'const-expr-closure value must have 2 elements'],
-            [[42, '@0'], 'const-expr-closure class name must be of type string, int given'],
-            [[ConstExprClosureFixture::class, 0], 'const-expr-closure id must be of type string, int given'],
-            [[ConstExprClosureFixture::class, 'nope'], 'const-expr-closure id must be of the form "<site>@<rank>", "nope" given'],
-            [[ConstExprClosureFixture::class, '@'], 'const-expr-closure id must be of the form "<site>@<rank>", "@" given'],
-            [[ConstExprClosureFixture::class, '@01'], 'const-expr-closure id must be of the form "<site>@<rank>", "@01" given'],
-            [[ConstExprClosureFixture::class, '@1x'], 'const-expr-closure id must be of the form "<site>@<rank>", "@1x" given'],
-            [['No\\Such\\ClassAtAll', '@0'], 'const-expr-closure references unknown class "No\\Such\\ClassAtAll"'],
-            [[ConstExprClosureFixture::class, '$nope@0'], 'const-expr-closure references unknown property "$nope"'],
-            [[ConstExprClosureFixture::class, 'nope()@0'], 'const-expr-closure references unknown method "nope()"'],
-            [[ConstExprClosureFixture::class, 'NOPE@0'], 'const-expr-closure references unknown constant "NOPE"'],
-            [[ConstExprClosureFixture::class, '$tagged::bad()@0'], 'const-expr-closure references unknown hook "$tagged::bad()"'],
-            [[ConstExprClosureFixture::class, '@9'], 'const-expr-closure references unknown closure id "@9" in class "'.ConstExprClosureFixture::class.'"'],
-            [[ConstExprClosureFixture::class, 'tagged()@9'], 'const-expr-closure references unknown closure id "tagged()@9" in class "'.ConstExprClosureFixture::class.'"'],
+            [[ConstExprClosureFixture::class], 'const-expr-closure value must have 4 elements'],
+            [[ConstExprClosureFixture::class, '', 0], 'const-expr-closure value must have 4 elements'],
+            [[ConstExprClosureFixture::class, '', 0, 0, 0], 'const-expr-closure value must have 4 elements'],
+            [[42, '', 0, 0], 'const-expr-closure reference must be [string class, string site, int|string key, int hash]'],
+            [[ConstExprClosureFixture::class, 0, 0, 0], 'const-expr-closure reference must be [string class, string site, int|string key, int hash]'],
+            [[ConstExprClosureFixture::class, '', [], 0], 'const-expr-closure reference must be [string class, string site, int|string key, int hash]'],
+            [[ConstExprClosureFixture::class, '', 0, '0'], 'const-expr-closure reference must be [string class, string site, int|string key, int hash]'],
+            [['No\\Such\\ClassAtAll', '', 0, 0], 'const-expr-closure references unknown class "No\\Such\\ClassAtAll"'],
+            [[ConstExprClosureFixture::class, '$nope', 0, 0], 'const-expr-closure references unknown property "$nope"'],
+            [[ConstExprClosureFixture::class, 'nope()', 0, 0], 'const-expr-closure references unknown method "nope()"'],
+            [[ConstExprClosureFixture::class, 'NOPE', 0, 0], 'const-expr-closure references unknown constant "NOPE"'],
+            [[ConstExprClosureFixture::class, '$tagged::bad()', 0, 0], 'const-expr-closure references unknown hook "$tagged::bad()"'],
+            [[ConstExprClosureFixture::class, '', 'x', 0], 'const-expr-closure references unknown closure at site "" of class "'.ConstExprClosureFixture::class.'"'],
+            [[ConstExprClosureFixture::class, '', 9, 0], 'const-expr-closure references unknown closure "@9" in class "'.ConstExprClosureFixture::class.'"'],
+            [[ConstExprClosureFixture::class, 'tagged()', 9, 0], 'const-expr-closure references unknown closure "tagged()@9" in class "'.ConstExprClosureFixture::class.'"'],
         ];
 
         foreach ($cases as [$prepared, $expected]) {
@@ -2596,7 +2602,7 @@ class DeepCloneTest extends TestCase
         // The extension can reference a global internal function declared in an
         // attribute (e.g. #[ConstExprAttr(strlen(...))]). The polyfill cannot
         // produce these (no reflection hook), but must decode them positionally.
-        $payload = ['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprGlobalFccFixture::class, '$p@0'], 'mask' => 1];
+        $payload = ['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprGlobalFccFixture::class, '$p', 0, 0], 'mask' => 1];
 
         $r = deepclone_from_array($payload);
         $this->assertSame(5, $r('hello'));
@@ -2609,9 +2615,15 @@ class DeepCloneTest extends TestCase
     {
         $args = (new \ReflectionClass(ConstExprAmbiguousFixture::class))->getAttributes()[0]->getArguments();
 
-        // Distinct ranks; the engine suffixes each with a "#<hash>" of its code.
-        $this->assertSame('@0', preg_replace('/#[0-9a-f]{8}$/', '', deepclone_to_array($args[0])['prepared'][1]));
-        $this->assertSame('@1', preg_replace('/#[0-9a-f]{8}$/', '', deepclone_to_array($args[1])['prepared'][1]));
+        $d0 = deepclone_to_array($args[0])['prepared'];
+        $d1 = deepclone_to_array($args[1])['prepared'];
+
+        // Same class-attribute site, distinct ranks; the engine also stamps each
+        // with a non-zero code hash (field 3), so the two references never collide.
+        $this->assertSame(['', 0], [$d0[1], $d0[2]]);
+        $this->assertSame(['', 1], [$d1[1], $d1[2]]);
+        $this->assertNotSame(0, $d0[3]);
+        $this->assertNotSame(0, $d1[3]);
     }
 
     /**
@@ -2621,7 +2633,7 @@ class DeepCloneTest extends TestCase
     {
         // A first-class callable consumes a rank in its element like any other
         // closure; a reference to it resolves positionally on every version.
-        $r = deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprFccFixture::class, 'helper()@0'], 'mask' => 1]);
+        $r = deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => [ConstExprFccFixture::class, 'helper()', 0, 0], 'mask' => 1]);
 
         $this->assertTrue($r());
     }
