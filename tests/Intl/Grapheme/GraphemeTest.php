@@ -201,6 +201,53 @@ class GraphemeTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_position
+     */
+    public function testGraphemeStrposWithOutOfRangeOffset()
+    {
+        // the haystack has 3 graphemes, so offsets -3 to 3 are in range
+        $this->assertFalse(grapheme_strpos('abc', 'b', 3));
+        $this->assertSame(1, grapheme_strpos('abc', 'b', -3));
+        $this->assertFalse(grapheme_strrpos('abc', 'b', 3));
+        $this->assertFalse(grapheme_strrpos('abc', 'b', -3));
+
+        // the empty haystack has no grapheme, so only offset 0 is in range
+        $this->assertFalse(grapheme_strpos('', 'b', 0));
+        $this->assertFalse(grapheme_strrpos('', 'b', 0));
+
+        // the calls must be literal, a variable function would bypass the polyfilled functions
+        $calls = [
+            'grapheme_strpos' => static function ($s, $offset) { return grapheme_strpos($s, 'b', $offset); },
+            'grapheme_stripos' => static function ($s, $offset) { return grapheme_stripos($s, 'b', $offset); },
+            'grapheme_strrpos' => static function ($s, $offset) { return grapheme_strrpos($s, 'b', $offset); },
+            'grapheme_strripos' => static function ($s, $offset) { return grapheme_strripos($s, 'b', $offset); },
+        ];
+
+        foreach ($calls as $function => $call) {
+            foreach ([['abc', 4], ['abc', -4], ['', 1], ['', -1]] as [$s, $offset]) {
+                $case = $function.'() with haystack "'.$s.'" and offset '.$offset;
+
+                if (80000 > \PHP_VERSION_ID) {
+                    $this->assertFalse(@$call($s, $offset), $case.' should return false');
+
+                    continue;
+                }
+
+                try {
+                    $call($s, $offset);
+                    $this->fail($case.' should have thrown a ValueError');
+                } catch (\ValueError $e) {
+                    $this->assertSame($function.'(): Argument #3 ($offset) must be contained in argument #1 ($haystack)', $e->getMessage());
+                }
+            }
+        }
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strstr
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stristr
      */

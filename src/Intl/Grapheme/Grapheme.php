@@ -45,6 +45,9 @@ final class Grapheme
         ['μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'],
     ];
 
+    // indexed by the $mode argument of grapheme_position()
+    private const POSITION_FUNCTIONS = ['grapheme_strpos', 'grapheme_stripos', 'grapheme_strrpos', 'grapheme_strripos'];
+
     public static function grapheme_extract($s, $size, $type = \GRAPHEME_EXTR_COUNT, $start = 0, &$next = 0)
     {
         if (0 > $start) {
@@ -272,14 +275,25 @@ final class Grapheme
             return false;
         }
         $s = (string) $s;
-        if (!preg_match('/./us', $s)) {
+        // let the empty string through: it accepts no offset but 0, which is checked below
+        if ('' !== $s && !preg_match('/./us', $s)) {
+            return false;
+        }
+        if ($offset && ($offset > ($len = self::grapheme_strlen($s)) || $offset < -$len)) {
+            if (80000 > \PHP_VERSION_ID) {
+                return false;
+            }
+
+            throw new \ValueError(self::POSITION_FUNCTIONS[$mode].'(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+        }
+        if ('' === $s) {
             return false;
         }
         if ($offset > 0) {
             $s = self::grapheme_substr($s, $offset);
         } elseif ($offset < 0) {
             if (2 > $mode) {
-                $offset += self::grapheme_strlen($s);
+                $offset += $len;
                 $s = self::grapheme_substr($s, $offset);
                 if (0 > $offset) {
                     $offset = 0;
