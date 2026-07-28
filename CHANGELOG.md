@@ -1,3 +1,10 @@
+# 1.41.0
+
+  * Add polyfill for the `Io\Poll` API and `StreamPollHandle`
+  * Throw `ValueError` on PHP 7 for `json_validate()`, `str_increment()`, `str_decrement()`, `grapheme_str_split()` and `grapheme_levenshtein()`
+  * Reject out-of-range offsets in the `grapheme_str[ri]?pos()` family
+  * Align the Php74 `mb_str_split()` polyfill with Mbstring and native
+
 # 1.40.0
 
   * Gate deepcloning closures over named callables behind an `$allow_named_closures` option
