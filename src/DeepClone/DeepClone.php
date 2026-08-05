@@ -443,14 +443,17 @@ final class DeepClone
         // parent-privates are reachable via "\0Parent\0foo". Unknown
         // keys fall through to the object's own class scope.
         //
-        // Scan first: if every key maps to $class, hand $vars straight
-        // to the $class hydrator and skip the intermediate grouping.
+        // Scan first: if every key is a bare name that maps to $class, hand
+        // $vars straight to the $class hydrator and skip the intermediate
+        // grouping. Mangled keys always take the grouped path, which re-keys
+        // them to their real name — the simple hydrators write keys verbatim,
+        // so a mangled name would fail even when its scope resolves to $class.
         $r ??= self::$reflectors[$class] ?? new \ReflectionClass($class);
         $propertyScopes = self::$propertyScopes[$class] ??= self::getPropertyScopes($r);
 
         $needsGroup = false;
         foreach ($vars as $name => $_) {
-            if (\array_key_exists($name, $propertyScopes) ? $class !== $propertyScopes[$name][0] : "\0" === ($name[0] ?? '')) {
+            if ("\0" === ($name[0] ?? '') || $class !== ($propertyScopes[$name][0] ?? $class)) {
                 $needsGroup = true;
                 break;
             }
