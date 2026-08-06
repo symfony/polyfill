@@ -1304,6 +1304,20 @@ class DeepCloneTest extends TestCase
         $this->assertSame($expected, $actual);
     }
 
+    public function testHydrateFlatOwnScopeMangledKeys()
+    {
+        $src = new HydrateFoo();
+        (function () {
+            $this->prot = 345;
+            $this->priv = 123;
+        })->call($src);
+
+        $vars = (array) $src;
+        $obj = deepclone_hydrate(HydrateFoo::class, $vars);
+
+        $this->assertSame($vars, (array) $obj);
+    }
+
     public function testHydrateFlatExceptionTrace()
     {
         $e = deepclone_hydrate('Exception', ['trace' => [234]]);
