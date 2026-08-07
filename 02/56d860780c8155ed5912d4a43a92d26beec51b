@@ -1,0 +1,29 @@
+---------------------------------------------------------------------------
+
+by stof at 2026-08-07T12:06:30Z
+
+> which looks like a leftover from the old signature, since `$timeout` is argument #1 and #2 is now `$maxEvents`. No phpt covers it. The polyfill reports #1; if upstream keeps #2 I will align.
+
+I suggest reporting an issue upstream about that.
+
+---------------------------------------------------------------------------
+
+by stof at 2026-08-07T12:07:32Z
+
+> the three that already differed (`poll.inc`, `poll_stream_sock_rw_close.phpt`, `poll_stream_sock_rw_multi_level.phpt`, all stale rather than adapted) keep exactly the differences they had.
+
+do they differ intentionally or because php-src updated them after we vendored them ? In the later case, maybe we should sync them.
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2026-08-07T12:23:32Z
+
+> I suggest reporting an issue upstream about that.
+
+php/php-src#23099
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-08-07T13:00:53Z
+
+php/php-src#23099 settles the argument number question: the negative timeout is reported as argument #1, which is what this polyfill already did, so there is nothing to align. Its new `poll_ctx_wait.phpt` is now vendored here byte-identical and passes as is, both messages included.
