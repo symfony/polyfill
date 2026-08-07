@@ -83,8 +83,11 @@ class Php73Test extends TestCase
         usleep(1000);
         $hrtime2 = hrtime();
 
-        $this->assertSame(0, $hrtime2[0] - $hrtime[0]);
-        $this->assertGreaterThanOrEqual(1000000, $hrtime2[1] - $hrtime[1]);
+        // don't compare the components separately: the pair can straddle a whole second
+        $elapsed = 1000000000 * ($hrtime2[0] - $hrtime[0]) + $hrtime2[1] - $hrtime[1];
+
+        $this->assertGreaterThanOrEqual(1000000, $elapsed);
+        $this->assertLessThan(1000000000, $hrtime2[1]);
     }
 
     public function testHardwareTimeAsArraySeconds()

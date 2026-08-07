@@ -25,6 +25,7 @@ final class DeepClone
         'XMLReader' => true,
         'SNMP' => true,
         'tidy' => true,
+        'tidyNode' => true,
     ];
 
     private static array $reflectors = [];
