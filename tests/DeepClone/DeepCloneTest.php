@@ -1193,18 +1193,31 @@ class DeepCloneTest extends TestCase
     /**
      * @requires extension tidy
      */
-    public function testTidyNodeRoundTrip()
+    public function testTidyNodeIsNotInstantiable()
     {
         $tidy = new \tidy();
         $tidy->parseString('<p><b>hello</b></p>', [], 'utf8');
         $b = $tidy->body()->child[0]->child[0]; // <b> node
 
-        $clone = deepclone_from_array(deepclone_to_array($b));
+        if (\PHP_VERSION_ID < 80600 && \extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
+            // tidyNode is final and bare-instantiable there, so the extension
+            // still restores it property by property.
+            $clone = deepclone_from_array(deepclone_to_array($b));
 
-        $this->assertInstanceOf(\tidyNode::class, $clone);
-        $this->assertNotSame($b, $clone);
-        $this->assertSame($b->name, $clone->name);
-        $this->assertSame($b->value, $clone->value);
+            $this->assertInstanceOf(\tidyNode::class, $clone);
+            $this->assertNotSame($b, $clone);
+            $this->assertSame($b->name, $clone->name);
+            $this->assertSame($b->value, $clone->value);
+
+            return;
+        }
+
+        // tidyNode wraps a libTidy handle that cannot survive serialization; PHP 8.6
+        // marks it NOT_SERIALIZABLE, and the polyfill mirrors that on every version.
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        $this->expectExceptionMessage('Type "tidyNode" is not instantiable.');
+
+        deepclone_to_array($b);
     }
 
     public function testHydrateScopedInstantiate()

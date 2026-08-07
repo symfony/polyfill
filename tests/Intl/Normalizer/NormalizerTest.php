@@ -97,7 +97,7 @@ class NormalizerTest extends TestCase
     {
         if (80000 <= \PHP_VERSION_ID) {
             $this->expectException(\ValueError::class);
-            $this->expectExceptionMessage('normalizer_normalize(): Argument #2 ($form) must be a a valid normalization form');
+            $this->expectExceptionMessage('normalizer_normalize(): Argument #2 ($form) must be a '.(80600 > \PHP_VERSION_ID ? 'a ' : '').'valid normalization form');
         }
 
         $this->assertFalse(normalizer_normalize('foo', -1));
