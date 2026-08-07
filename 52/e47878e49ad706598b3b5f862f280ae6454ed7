@@ -1,0 +1,95 @@
+---------------------------------------------------------------------------
+
+by stof at 2026-07-30T09:13:21Z
+
+I suggest waiting for the official PHP implementation (also waiting for the actual approval of the RFC even though the result of the vote seems clear). This will allow us to also copy the upstream phpt testcases and to run them with our polyfill (we alreeady do that for the IO Poll polyfill).
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2026-08-05T20:11:18Z
+
+php/php-src#23073
+
+---------------------------------------------------------------------------
+
+by nyamsprod at 2026-08-06T21:13:35Z
+
+Added the latest version of the tests from https://github.com/php/php-src/pull/23073
+
+The following adaptation are applied:
+
+The pipe operator used in the helper function is backported to a version compatible with older version of PHP (see [helper.inc](https://github.com/php/php-src/pull/23073/changes#diff-81cf9b5192b3c498cacb105ad941b2c79f8689fcb1e61a7fa740286e6f09ae12) )
+
+The Test that validated that `Time\Duration` is an internal class is removed
+
+```php
+ReflectionException: Class Time\Duration is an internal class marked as final that cannot be instantiated without invoking its constructor
+```
+
+A polyfill can never satisfy this test by definition.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-08-07T03:47:58Z
+
+Pushed a commit on top: I ran the php-src phpt files (php/php-src#23073) unmodified against the polyfill, and fixed what they don't cover:
+
+- `multiplyBy(-1)`/`divideBy(-1)`: native ZPP wording, and `ValueError` instead of `DivisionByZeroError` for a negative divisor
+- `Duration::fromSeconds(0, 999999999)->multiplyBy(\PHP_INT_MAX)` threw `TypeError: ... must be of type int, float given`, now `TimeException`
+- `PT1HS` and `PTS` were accepted, native rejects them
+- `fromSeconds()` validates `$nanoseconds` before the range of `$seconds`, as native does
+- `fromMinutes()`/`fromHours()`/`fromMicroseconds()`/`fromMilliseconds()` and the ISO-8601 overflow reported `Cannot convert ...` instead of the native range message
+- dynamic properties are rejected, as on the native readonly class
+
+The range and the sign of zero durations are now enforced in `create()` only, so no operation can return a `Duration` breaking the invariants.
+
+Tests: the phpt files are byte-identical to `ext/date/tests/time/duration/`, except `helper.inc` (`|>` and `f(?)` don't parse below 8.5). `new.phpt` is dropped rather than kept with a truncated `--EXPECT--`, since a userland class cannot reject `newInstanceWithoutConstructor()`; its other assertions are in `DurationTest`, which now also runs against the native class on 8.6.
+
+Also added the `splitsh.json` subtree split, without which the standalone package is never published.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-08-07T04:43:47Z
+
+Followed up on the 32 bit side, where `multiplyBy()` and `divideBy()` were the two operations whose intermediates don't fit in an integer (a duration holds up to 2**61 nanoseconds). They used to throw `Time\TimeException` there, including for ordinary values like `Duration::fromSeconds(11)->divideBy(4)`, while the native implementation computes the result with 64 bit arithmetic.
+
+- `multiplyBy()` multiplies by doubling and adding `(seconds, nanoseconds)` pairs, which is exact whatever the integer width, and dropped the nanoseconds overflow guard
+- `divideBy()` falls back to a digit-wise division when the dividend doesn't fit; every intermediate stays below 2**53, where floats represent integers exactly
+
+`add()`/`sub()` and the `from*()` methods were already exact: their intermediates stay below 2**31.
+
+Since no CI job runs on 32 bit, I checked it with a copy of the stub where `MAX_SECONDS` and the divide threshold are lowered to the 32 bit values: the five `*_32.phpt` pass against it, including `multiplyBy_32.phpt`, and a 400k operations differential run against the 64 bit implementation shows no mismatch. The digit-wise division is also checked against `intdiv()` in `DurationTest`, which is the only coverage it can get from a 64 bit job.
+
+Last commit is unrelated: PHP 8.6 doesn't provide the `Time` extension yet and the polyfill disables itself there, so every `DurationTest` case was erroring with `Class "Time\Duration" not found` on the 8.6 jobs. Skipping on the class rather than on the version keeps them running against the native implementation as soon as it lands.
+
+CI is now at parity with `1.x`: the only red job is `8.6, apc, ... intl-73.2, tidy`, which fails on `1.x` too on `NormalizerTest::testNormalizeWithInvalidForm` and `DeepCloneTest::testTidyNodeRoundTrip`.
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2026-08-07T09:12:45Z
+
+> the phpt files are byte-identical to `ext/date/tests/time/duration/`, except `helper.inc` (`|>` and `f(?)` don't parse below 8.5)
+
+I just adjusted helper.inc upstream to not use PFA / Pipe. I thought it was nice to leverage the new PHP 8.6 functionality there, but if it causes troubles, then it's not worth it.
+
+There is also a `readonly.phpt` that you didn't take. There is not much value for that in a userland polyfill, but it should just work, so consider also taking that one. It's included for the native implementation to make double-sure that there is no way for the visible properties and the internal representation to diverge.
+
+---------------------------------------------------------------------------
+
+by TimWolla at 2026-08-07T09:15:45Z
+
+And as a heads up: You'll also need to adjust the polling API polyfill, since php/php-src#23092 will be merged shortly after merging Time\Duration. Both will be in Beta 1.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-08-07T11:46:45Z
+
+@TimWolla thanks, both taken care of.
+
+`helper.inc` is now a byte-identical copy again, so the only adaptation left in `tests/Time/phpt/` is that two files are not taken at all.
+
+About `readonly.phpt`: everything in it passes against the polyfill, up to the last statement. `ReflectionProperty::isWritable()` is PHP 8.6 only (`e4f727d61eb`, master), and the polyfill disables itself on 8.6, so the file can never run green here — on 8.1-8.5 it fatals on that call, and on 8.6 there is no polyfill left to test. Rather than carry an edited copy, I moved its assertions to `DurationTest::testPropertiesAreReadonly()`: direct write, `setValue()`, and `setRawValue()`/`setRawValueWithoutLazyInitialization()` when the version has them, before and after cloning. Same for `new.phpt`, whose first two assertions are in `DurationTest`.
+
+The polyfill declares `final class Duration` with promoted `public readonly` properties rather than a `readonly` class, since the package supports PHP 8.1. That turns out to be indistinguishable from the native class for those tests, including the `clone($d, ['seconds' => 2])` message, which reports `protected(set) readonly` in both cases. `newInstanceWithoutConstructor()` is the one place where it is not, and dynamic properties are rejected explicitly by a `__set()` that throws.
+
+Noted for php/php-src#23092, thanks for the heads up: `Io\Poll\Context::wait()` taking a `Time\Duration` will need `symfony/polyfill-io-poll` to depend on `symfony/polyfill-time`. That is a separate PR, once this one lands.
