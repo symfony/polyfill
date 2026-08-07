@@ -20,6 +20,7 @@
         "polyfill-intl-messageformatter": "src/Intl/MessageFormatter",
         "polyfill-intl-normalizer": "src/Intl/Normalizer",
         "polyfill-mbstring": "src/Mbstring",
+        "polyfill-time": "src/Time",
         "polyfill-util": "src/Util",
         "polyfill-uuid": "src/Uuid"
     },

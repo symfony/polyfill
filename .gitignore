@@ -6,4 +6,6 @@ phpunit.xml
 .phpunit
 vendor/
 /tests/Io/Poll/phpt/*.php
+/tests/Time/phpt/*.php
+/tests/Time/phpt/methods/*.php
 /tests/unicode
