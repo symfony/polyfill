@@ -98,20 +98,17 @@ if (\PHP_VERSION_ID < 80600) {
             return $this->watchers[$id] = $create(\WeakReference::create($this), $handle, $events, $data);
         }
 
-        public function wait(?int $timeoutSeconds = null, int $timeoutMicroseconds = 0, ?int $maxEvents = null): array
+        public function wait(?\Time\Duration $timeout = null, ?int $maxEvents = null): array
         {
-            if (null !== $timeoutSeconds) {
-                if ($timeoutSeconds < 0) {
-                    throw new \ValueError(\sprintf('%s(): Argument #1 ($timeoutSeconds) must be greater than or equal to 0', __METHOD__));
-                }
-                if ($timeoutMicroseconds < 0) {
-                    throw new \ValueError(\sprintf('%s(): Argument #2 ($timeoutMicroseconds) must be greater than or equal to 0', __METHOD__));
-                }
+            if (null !== $timeout && $timeout->negative) {
+                throw new \ValueError(\sprintf('%s(): Argument #1 ($timeout) must not be negative', __METHOD__));
             }
 
             if (null !== $maxEvents && $maxEvents <= 0) {
-                throw new \ValueError(\sprintf('%s(): Argument #3 ($maxEvents) must be greater than 0', __METHOD__));
+                throw new \ValueError(\sprintf('%s(): Argument #2 ($maxEvents) must be greater than 0', __METHOD__));
             }
+
+            $timeoutNanoseconds = null !== $timeout ? $timeout->seconds * 1_000_000_000 + $timeout->nanoseconds : null;
 
             // Like poll() reporting POLLNVAL, drop watchers whose stream has been
             // closed; poll() returns immediately in that case, without sleeping
@@ -124,7 +121,7 @@ if (\PHP_VERSION_ID < 80600) {
             }
 
             if (!$this->watchers) {
-                if (!$evicted && null !== $timeoutSeconds && 0 < $micros = $timeoutSeconds * 1_000_000 + $timeoutMicroseconds) {
+                if (!$evicted && null !== $timeoutNanoseconds && 0 < $micros = \intdiv($timeoutNanoseconds, 1000)) {
                     usleep($micros);
                 }
 
@@ -147,8 +144,8 @@ if (\PHP_VERSION_ID < 80600) {
 
             if ($evicted) {
                 $deadline = 0;
-            } elseif (null !== $timeoutSeconds) {
-                $deadline = hrtime(true) + ($timeoutSeconds * 1_000_000 + $timeoutMicroseconds) * 1000;
+            } elseif (null !== $timeoutNanoseconds) {
+                $deadline = hrtime(true) + $timeoutNanoseconds;
             } else {
                 $deadline = null;
             }

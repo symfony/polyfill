@@ -27,6 +27,7 @@ use Io\Poll\InvalidHandleException;
 use Io\Poll\PollException;
 use Io\Poll\Watcher;
 use PHPUnit\Framework\TestCase;
+use Time\Duration;
 
 /**
  * @requires PHP >= 8.1
@@ -319,28 +320,20 @@ class PollTest extends TestCase
         }
     }
 
-    public function testWaitNegativeTimeoutSecondsThrows()
+    public function testWaitNegativeTimeoutThrows()
     {
         $context = new Context();
         $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('Io\\Poll\\Context::wait(): Argument #1 ($timeoutSeconds) must be greater than or equal to 0');
-        $context->wait(-1);
-    }
-
-    public function testWaitNegativeTimeoutMicrosecondsThrows()
-    {
-        $context = new Context();
-        $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('Io\\Poll\\Context::wait(): Argument #2 ($timeoutMicroseconds) must be greater than or equal to 0');
-        $context->wait(0, -1);
+        $this->expectExceptionMessage('Io\\Poll\\Context::wait(): Argument #1 ($timeout) must not be negative');
+        $context->wait(Duration::fromSeconds(1)->negate());
     }
 
     public function testWaitNonPositiveMaxEventsThrows()
     {
         $context = new Context();
         $this->expectException(\ValueError::class);
-        $this->expectExceptionMessage('Io\\Poll\\Context::wait(): Argument #3 ($maxEvents) must be greater than 0');
-        $context->wait(0, 0, 0);
+        $this->expectExceptionMessage('Io\\Poll\\Context::wait(): Argument #2 ($maxEvents) must be greater than 0');
+        $context->wait(Duration::fromSeconds(0), 0);
     }
 
     public function testWaitThrowsWhenInterruptedBySignal()
@@ -360,7 +353,7 @@ class PollTest extends TestCase
         $this->expectException(FailedPollWaitException::class);
         $this->expectExceptionMessage('Poll wait failed');
         try {
-            $context->wait(10);
+            $context->wait(Duration::fromSeconds(10));
         } finally {
             pcntl_alarm(0);
             pcntl_signal_dispatch();
@@ -370,14 +363,14 @@ class PollTest extends TestCase
         }
     }
 
-    public function testWaitNullTimeoutIgnoresNegativeMicroseconds()
+    public function testWaitNullTimeoutWaitsForReadiness()
     {
         [$r, $w] = stream_socket_pair(\STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
         fwrite($w, 'hello');
         $context = new Context();
         $watcher = $context->add(new \StreamPollHandle($r), [Event::Read]);
 
-        $result = $context->wait(null, -1);
+        $result = $context->wait();
 
         $this->assertSame([$watcher], $result);
 
@@ -392,7 +385,7 @@ class PollTest extends TestCase
         $context = new Context();
         $context->add($handle, [Event::Read]);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertSame([], $result);
         fclose($r);
@@ -408,7 +401,7 @@ class PollTest extends TestCase
         $handle = new \StreamPollHandle($r);
         $watcher = $context->add($handle, [Event::Read]);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertCount(1, $result);
         $this->assertSame($watcher, $result[0]);
@@ -427,7 +420,7 @@ class PollTest extends TestCase
         $handle = new \StreamPollHandle($w);
         $watcher = $context->add($handle, [Event::Write]);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertCount(1, $result);
         $this->assertSame($watcher, $result[0]);
@@ -445,7 +438,7 @@ class PollTest extends TestCase
         $context->add($handle, [Event::Read]);
 
         $start = hrtime(true);
-        $result = $context->wait(0, 50000);
+        $result = $context->wait(Duration::fromMicroseconds(50000));
         $elapsed = (hrtime(true) - $start) / 1000000;
 
         $this->assertSame([], $result);
@@ -464,7 +457,7 @@ class PollTest extends TestCase
         $context->add(new \StreamPollHandle($r), [Event::HangUp]);
 
         $start = hrtime(true);
-        $result = $context->wait(0, 60000);
+        $result = $context->wait(Duration::fromMicroseconds(60000));
         $elapsed = (hrtime(true) - $start) / 1000000;
 
         $this->assertSame([], $result);
@@ -484,7 +477,7 @@ class PollTest extends TestCase
 
         fclose($w);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertSame([$watcher], $result);
         $this->assertSame([Event::Read, Event::HangUp], $watcher->getTriggeredEvents());
@@ -501,7 +494,7 @@ class PollTest extends TestCase
 
         fclose($w);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertSame([$watcher], $result);
         $this->assertSame([Event::HangUp], $watcher->getTriggeredEvents());
@@ -520,7 +513,7 @@ class PollTest extends TestCase
         $context = new Context();
         $watcher = $context->add(new \StreamPollHandle($stream), [Event::Read]);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertSame([$watcher], $result);
         $this->assertTrue($watcher->hasTriggered(Event::Read));
@@ -543,7 +536,7 @@ class PollTest extends TestCase
         $context = new Context();
         $watcher = $context->add(new \StreamPollHandle($pipe), [Event::Read]);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertSame([$watcher], $result);
         $this->assertTrue($watcher->hasTriggered(Event::HangUp));
@@ -561,7 +554,7 @@ class PollTest extends TestCase
         $context = new Context();
         $watcher = $context->add(new \StreamPollHandle($server), [Event::Read]);
 
-        $result = $context->wait(1, 0);
+        $result = $context->wait(Duration::fromSeconds(1));
 
         $this->assertSame([$watcher], $result);
         $this->assertTrue($watcher->hasTriggered(Event::Read));
@@ -581,7 +574,7 @@ class PollTest extends TestCase
         $context = new Context();
         $watcher = $context->add(new \StreamPollHandle($stream), [Event::Read]);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
 
         $this->assertSame([$watcher], $result);
         $this->assertTrue($watcher->hasTriggered(Event::Read));
@@ -598,12 +591,12 @@ class PollTest extends TestCase
         $context = new Context();
         $watcher = $context->add(new \StreamPollHandle($r), [Event::Read]);
 
-        $context->wait(0, 0);
+        $context->wait(Duration::fromSeconds(0));
         $this->assertSame([Event::Read], $watcher->getTriggeredEvents());
 
         fread($r, 5);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
         $this->assertSame([], $result);
         $this->assertSame([Event::Read], $watcher->getTriggeredEvents());
 
@@ -622,7 +615,7 @@ class PollTest extends TestCase
         $context->add(new \StreamPollHandle($r1), [Event::Read]);
         $context->add(new \StreamPollHandle($r2), [Event::Read]);
 
-        $result = $context->wait(0, 0, 1);
+        $result = $context->wait(Duration::fromSeconds(0), 1);
         $this->assertCount(1, $result);
 
         fclose($r1);
@@ -641,7 +634,7 @@ class PollTest extends TestCase
         fclose($w);
 
         $start = hrtime(true);
-        $result = $context->wait(5, 0);
+        $result = $context->wait(Duration::fromSeconds(5));
         $elapsed = (hrtime(true) - $start) / 1000000;
 
         $this->assertSame([], $result);
@@ -649,7 +642,7 @@ class PollTest extends TestCase
         $this->assertTrue($watcher->isActive());
 
         $start = hrtime(true);
-        $result = $context->wait(0, 50000);
+        $result = $context->wait(Duration::fromMicroseconds(50000));
         $elapsed = (hrtime(true) - $start) / 1000000;
 
         $this->assertSame([], $result);
@@ -665,11 +658,11 @@ class PollTest extends TestCase
         $handle = new \StreamPollHandle($r);
         $watcher = $context->add($handle, [Event::Read, Event::OneShot]);
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
         $this->assertCount(1, $result);
         $this->assertTrue($watcher->isActive());
 
-        $result = $context->wait(0, 0);
+        $result = $context->wait(Duration::fromSeconds(0));
         $this->assertSame([], $result);
 
         try {
@@ -936,7 +929,7 @@ class PollTest extends TestCase
         $context->add($handle, [Event::Read]);
 
         $start = hrtime(true);
-        $context->wait(0, 1100000);
+        $context->wait(Duration::fromMicroseconds(1100000));
         $elapsed = (hrtime(true) - $start) / 1000000;
 
         $this->assertGreaterThanOrEqual(1000, $elapsed);
