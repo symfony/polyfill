@@ -16,6 +16,10 @@ never reported, and a TCP half-close reports `Read|HangUp` where native
 reports plain `Read`. The phpt tests of the native implementation, borrowed
 from php-src, run against the polyfill as part of the test suite.
 
+`Context::wait()` takes its timeout as a `Time\Duration`. That class is not
+required to call `wait()` without a timeout; install `symfony/polyfill-time`
+to build one on PHP < 8.6.
+
 More information can be found in the
 [main Polyfill README](https://github.com/symfony/polyfill/blob/main/README.md).
 
