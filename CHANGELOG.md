@@ -1,3 +1,7 @@
+# 1.x
+
+  * Fix hydrating from mangled keys when using `deepclone_from_array()`
+
 # 1.41.0
 
   * Add polyfill for the `Io\Poll` API and `StreamPollHandle`
