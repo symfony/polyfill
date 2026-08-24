@@ -602,4 +602,38 @@ class IdnTest extends TestCase
 
         return $errors;
     }
+
+    /**
+     * A domain with more code points than the ASCII form could ever fit is refused
+     * before any Punycode encoding happens, the way the intl extension refuses it.
+     */
+    public function testIdnToAsciiRefusesDomainsLongerThanTheOutputBuffer()
+    {
+        $domain = str_repeat("\xE4\xB8\x80", 256);
+        $info = [];
+
+        $this->assertFalse(Idn::idn_to_ascii($domain, Idn::IDNA_DEFAULT, Idn::INTL_IDNA_VARIANT_UTS46, $info));
+        $this->assertSame([], $info);
+    }
+
+    /**
+     * Bytes that cannot start a UTF-8 sequence still count towards the bound, so a
+     * label cannot be padded with them to stay under it while growing the work.
+     */
+    public function testIdnToAsciiCountsMalformedBytesTowardsTheBound()
+    {
+        $domain = str_repeat("\xE4\xB8\x80", 200).str_repeat("\x80", 60000);
+        $info = [];
+
+        $this->assertFalse(Idn::idn_to_ascii($domain, Idn::IDNA_DEFAULT, Idn::INTL_IDNA_VARIANT_UTS46, $info));
+        $this->assertSame([], $info);
+    }
+
+    public function testIdnToAsciiStillConvertsDomainsThatFitTheOutputBuffer()
+    {
+        $info = [];
+
+        $this->assertSame('xn--4gq.example', Idn::idn_to_ascii("\xE4\xB8\x80.example", Idn::IDNA_DEFAULT, Idn::INTL_IDNA_VARIANT_UTS46, $info));
+        $this->assertSame(0, $info['errors']);
+    }
 }
