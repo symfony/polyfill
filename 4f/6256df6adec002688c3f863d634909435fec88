@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by iliaal at 2026-08-22T19:04:24Z
+
+The single failing job (PHP 8.6 + APC) is pre-existing CI breakage on `1.x` itself: APC 3.1.9 no longer compiles against PHP 8.6 (`apc.h:69: TSRMLS_DC`). Recent runs on the base branch fail the same way (e.g. runs 31153435446, 30343456194). All Idn tests pass in every matrix cell that gets that far, including the no-intl cells this change targets.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-08-24T09:55:01Z
+
+Opened #648 as a companion for the encoder, which has the mirror problem: `punycodeEncode()` rescans the code point array once per distinct code point, so a label of distinct code points costs 25 s at 64 KB. Same root cause as here, in that the polyfill converts input ext-intl refuses outright, and the two changes do not overlap. This one keeps the decoder bound as you wrote it.
