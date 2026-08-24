@@ -1,5 +1,9 @@
-# 1.x
+# 1.42.0
 
+  * Add polyfill for the `Time\Duration` class
+  * Take the `Io\Poll\Context::wait()` timeout as a `Time\Duration`
+  * Bound the Punycode decoder input length in `idn_to_ascii()`/`idn_to_utf8()`
+  * Don't Punycode-encode domains that the intl extension would refuse
   * Fix hydrating from mangled keys when using `deepclone_from_array()`
 
 # 1.41.0
