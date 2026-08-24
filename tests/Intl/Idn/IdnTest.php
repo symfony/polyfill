@@ -352,6 +352,45 @@ class IdnTest extends TestCase
     }
 
     /**
+     * Punycode decoding does work quadratic in the payload length. Valid ACE
+     * labels are limited to 63 bytes, so a multi-kilobyte payload is always
+     * invalid input and must be rejected without being decoded (like ext-intl,
+     * which never decodes absurdly long labels).
+     */
+    public function testHugeAcePayloadIsRejectedWithoutDecoding()
+    {
+        $input = 'example.xn--'.str_repeat('w', 5000).'.com';
+
+        $info = [];
+        $r = idn_to_utf8($input, \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertFalse($r);
+        // ext-intl does not populate $info when it bails out early.
+        if ([] !== $info) {
+            $this->assertSame(\IDNA_ERROR_PUNYCODE, \IDNA_ERROR_PUNYCODE & $info['errors']);
+        }
+
+        $info = [];
+        $r = idn_to_ascii($input, \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertFalse($r);
+        if ([] !== $info) {
+            $this->assertSame(\IDNA_ERROR_PUNYCODE, \IDNA_ERROR_PUNYCODE & $info['errors']);
+        }
+    }
+
+    /**
+     * Labels above the DNS limit but below the decoder bound still decode:
+     * ToUnicode reports their decoded form even though they are invalid.
+     */
+    public function testOverLongButDecodableAceLabelStillDecodes()
+    {
+        $input = 'example.xn--'.str_repeat('w', 101).'.de';
+
+        idn_to_utf8($input, \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertStringContainsString('example.', $info['result']);
+        $this->assertStringNotContainsString('xn--', $info['result']);
+    }
+
+    /**
      * UTS #46 revision 33: a label starting with "xn--" whose Punycode payload decodes
      * to an empty string or to a string containing only ASCII code points must be rejected.
      *
