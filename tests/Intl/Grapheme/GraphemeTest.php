@@ -388,4 +388,43 @@ class GraphemeTest extends TestCase
     {
         $this->assertFalse(grapheme_strrev("\xFF"));
     }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_str_split
+     */
+    public function testGraphemeStrSplitInvalidUtf8()
+    {
+        // Ill-formed bytes are kept, and cluster the way U+FFFD would.
+        $this->assertSame(['a', 'b', "\xFF", 'c', 'd'], grapheme_str_split("ab\xFFcd"));
+        $this->assertSame(['a', "\xE4\xB8", 'b'], grapheme_str_split("a\xE4\xB8b"));
+        $this->assertSame(["\xC3\u{0301}"], grapheme_str_split("\xC3\u{0301}"));
+
+        // One cluster per maximal subpart: the truncated 4-byte sequence is one
+        // subpart, the encoded surrogate is three.
+        $this->assertSame(["\xF0\x9F\x98"], grapheme_str_split("\xF0\x9F\x98"));
+        $this->assertSame(["\xED", "\xA0", "\x80"], grapheme_str_split("\xED\xA0\x80"));
+
+        $this->assertSame(['ab', "\xFFc", 'd'], grapheme_str_split("ab\xFFcd", 2));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_substr
+     */
+    public function testGraphemeSubstrInvalidUtf8()
+    {
+        $this->assertFalse(grapheme_substr("ab\xFFcd", 0, 2));
+        $this->assertFalse(grapheme_substr("\xFF", 0));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strstr
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stristr
+     */
+    public function testGraphemeStrstrInvalidUtf8()
+    {
+        $this->assertFalse(grapheme_strstr("ab\xFFcd", 'a'));
+        $this->assertFalse(grapheme_stristr("ab\xFFcd", 'A'));
+        $this->assertFalse(grapheme_strstr('abcd', "\xFF"));
+        $this->assertFalse(grapheme_stristr('abcd', "\xFF"));
+    }
 }
