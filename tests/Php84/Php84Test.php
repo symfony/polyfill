@@ -724,6 +724,21 @@ class Php84Test extends TestCase
         $this->assertSame($expectedValues, grapheme_str_split($string, $length));
     }
 
+    public function testGraphemeStrSplitInvalidUtf8()
+    {
+        // Ill-formed bytes are kept, and cluster the way U+FFFD would.
+        $this->assertSame(['a', 'b', "\xFF", 'c', 'd'], grapheme_str_split("ab\xFFcd"));
+        $this->assertSame(['a', "\xE4\xB8", 'b'], grapheme_str_split("a\xE4\xB8b"));
+        $this->assertSame(["\xC3\u{0301}"], grapheme_str_split("\xC3\u{0301}"));
+
+        // One cluster per maximal subpart: the truncated 4-byte sequence is one
+        // subpart, the encoded surrogate is three.
+        $this->assertSame(["\xF0\x9F\x98"], grapheme_str_split("\xF0\x9F\x98"));
+        $this->assertSame(["\xED", "\xA0", "\x80"], grapheme_str_split("\xED\xA0\x80"));
+
+        $this->assertSame(['ab', "\xFFc", 'd'], grapheme_str_split("ab\xFFcd", 2));
+    }
+
     public static function graphemeStrSplitDataProvider(): array
     {
         $cases = [
