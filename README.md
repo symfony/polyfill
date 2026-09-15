@@ -166,6 +166,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php83` for using the PHP 8.3 functions,
 - `symfony/polyfill-php84` for using the PHP 8.4 functions,
 - `symfony/polyfill-php85` for using the PHP 8.5 functions,
+- `symfony/polyfill-php86` for using the PHP 8.6 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,
