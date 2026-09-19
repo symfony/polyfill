@@ -11,7 +11,7 @@
 
 namespace Io\Poll;
 
-if (\PHP_VERSION_ID < 80600) {
+if (\PHP_VERSION_ID < 80600 && !interface_exists(Handle::class, false)) {
     /**
      * @internal only classes provided by PHP core or extensions may implement this interface
      */
