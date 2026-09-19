@@ -132,7 +132,7 @@ if (\PHP_VERSION_ID < 80600) {
                 throw new InactiveWatcherException('Cannot modify inactive watcher');
             }
 
-            if (!$this->handle instanceof \StreamPollHandle || !\is_resource($this->handle->getStream())) {
+            if (!\method_exists($this->handle, 'getStream') || !\is_resource($this->handle->getStream())) {
                 throw new InvalidHandleException('Invalid handle for polling');
             }
 

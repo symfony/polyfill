@@ -60,8 +60,8 @@ if (\PHP_VERSION_ID < 80600) {
 
         public function add(Handle $handle, array $events, mixed $data = null): Watcher
         {
-            if (!$handle instanceof \StreamPollHandle) {
-                throw new InvalidHandleException(\sprintf('Handle of type "%s" is not supported by the polyfill; only %s is.', \get_class($handle), \StreamPollHandle::class));
+            if (!\method_exists($handle, 'getStream')) {
+                throw new InvalidHandleException(\sprintf('Handle of type "%s" is not supported by the polyfill; it should expose the stream to poll through a getStream() method, as %s does.', \get_class($handle), \StreamPollHandle::class));
             }
 
             $stream = $handle->getStream();
