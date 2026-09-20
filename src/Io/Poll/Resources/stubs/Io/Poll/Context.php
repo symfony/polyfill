@@ -150,7 +150,7 @@ if (\PHP_VERSION_ID < 80600) {
                 $deadline = null;
             }
 
-            $triggered = [];
+            $triggered = $parked = $park = [];
             while (true) {
                 $r = $read;
                 $w = $write;
@@ -172,8 +172,10 @@ if (\PHP_VERSION_ID < 80600) {
                 }
 
                 foreach ($this->watchers as $id => $watcher) {
-                    $isReadable = isset($r[$id]);
                     $isWritable = isset($w[$id]);
+                    // a parked stream is only looked at again when it turns writable,
+                    // which is when it could carry an error or a hang-up
+                    $isReadable = isset($r[$id]) || ($isWritable && isset($parked[$id]));
 
                     if (!$isReadable && !$isWritable) {
                         continue;
@@ -224,6 +226,8 @@ if (\PHP_VERSION_ID < 80600) {
                         if (null !== $maxEvents && \count($triggered) === $maxEvents) {
                             break;
                         }
+                    } elseif (isset($r[$id], $write[$id])) {
+                        $park[$id] = true;
                     }
                 }
 
@@ -236,7 +240,21 @@ if (\PHP_VERSION_ID < 80600) {
                 if (null !== $deadline && hrtime(true) >= $deadline) {
                     return [];
                 }
-                usleep(1000);
+
+                if (!$park) {
+                    usleep(1000);
+
+                    continue;
+                }
+
+                // Pending data keeps select() returning at once while poll() would sleep.
+                // Since nothing can consume it until wait() returns, stop selecting these
+                // streams for reading: their writability, which is what's watched here,
+                // still wakes us up. The cost is a hang-up on them being reported only
+                // once they turn writable, which a hang-up does
+                $parked += $park;
+                $read = array_diff_key($read, $park);
+                $park = [];
             }
 
             static $setTriggered;

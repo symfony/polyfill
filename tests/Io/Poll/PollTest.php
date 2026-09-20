@@ -467,6 +467,90 @@ class PollTest extends TestCase
         fclose($w);
     }
 
+    public function testWaitSleepsWhileReadinessMatchesNoWatchedEvent()
+    {
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Socket send buffers cannot be saturated reliably on Windows.');
+        }
+
+        [$r, $w] = stream_socket_pair(\STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
+        fwrite($w, 'pending data');
+        $this->saturate($r);
+
+        $context = new Context();
+        $context->add(new \StreamPollHandle($r), [Event::Write]);
+
+        $before = getrusage();
+        $start = hrtime(true);
+        $result = $context->wait(Duration::fromMicroseconds(200000));
+        $elapsed = (hrtime(true) - $start) / 1000000;
+        $cpu = self::cpuMillisecondsSince($before);
+
+        $this->assertSame([], $result);
+        $this->assertGreaterThanOrEqual(190, $elapsed);
+        $this->assertLessThan(5, $cpu, sprintf('wait() burned %.1fms of CPU while it should have been sleeping', $cpu));
+
+        fclose($r);
+        fclose($w);
+    }
+
+    public function testWaitKeepsWatchingOtherStreamsWhileOneIsParked()
+    {
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Pipes are not selectable on Windows.');
+        }
+
+        [$r, $w] = stream_socket_pair(\STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
+        fwrite($w, 'pending data');
+        $this->saturate($r);
+
+        $process = proc_open('sleep 0.05; echo ready', [1 => ['pipe', 'w']], $pipes);
+
+        $context = new Context();
+        $context->add(new \StreamPollHandle($r), [Event::Write]);
+        $watcher = $context->add(new \StreamPollHandle($pipes[1]), [Event::Read]);
+
+        $start = hrtime(true);
+        $result = $context->wait(Duration::fromMicroseconds(1000000));
+        $elapsed = (hrtime(true) - $start) / 1000000;
+
+        $this->assertSame([$watcher], $result);
+        $this->assertGreaterThanOrEqual(40, $elapsed);
+        $this->assertLessThan(900, $elapsed);
+
+        fclose($pipes[1]);
+        proc_close($process);
+        fclose($r);
+        fclose($w);
+    }
+
+    public function testParkedStreamIsStillWatchedByTheNextWait()
+    {
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Socket send buffers cannot be saturated reliably on Windows.');
+        }
+
+        [$r, $w] = stream_socket_pair(\STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
+        fwrite($w, 'pending data');
+        $buffered = $this->saturate($r);
+
+        $context = new Context();
+        $watcher = $context->add(new \StreamPollHandle($r), [Event::Write]);
+
+        $this->assertSame([], $context->wait(Duration::fromMicroseconds(50000)));
+
+        // draining the peer makes room in the send buffer, so writability comes back
+        stream_get_contents($w, $buffered);
+
+        $result = $context->wait(Duration::fromMicroseconds(500000));
+
+        $this->assertSame([$watcher], $result);
+        $this->assertSame([Event::Write], $watcher->getTriggeredEvents());
+
+        fclose($r);
+        fclose($w);
+    }
+
     public function testWaitReportsReadAndHangUpOnClosedSocketPeer()
     {
         [$r, $w] = stream_socket_pair(\STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
@@ -936,5 +1020,32 @@ class PollTest extends TestCase
 
         fclose($r);
         fclose($w);
+    }
+
+    private function saturate($stream): int
+    {
+        stream_set_blocking($stream, false);
+        $chunk = str_repeat('x', 65536);
+        $buffered = 0;
+
+        while ($buffered < 64 * 1024 * 1024) {
+            if (!$written = @fwrite($stream, $chunk)) {
+                break;
+            }
+
+            $buffered += $written;
+        }
+
+        $this->assertGreaterThan(0, $buffered, 'The send buffer could not be filled.');
+
+        return $buffered;
+    }
+
+    private static function cpuMillisecondsSince(array $before): float
+    {
+        $after = getrusage();
+
+        return ($after['ru_utime.tv_sec'] - $before['ru_utime.tv_sec'] + $after['ru_stime.tv_sec'] - $before['ru_stime.tv_sec']) * 1000
+            + ($after['ru_utime.tv_usec'] - $before['ru_utime.tv_usec'] + $after['ru_stime.tv_usec'] - $before['ru_stime.tv_usec']) / 1000;
     }
 }
