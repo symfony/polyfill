@@ -96,6 +96,7 @@ if (\PHP_VERSION_ID < 80600) {
                 static function (Context $ctx, Watcher $w, int $key): void {
                     if (($ctx->watchers[$key] ?? null) === $w) {
                         unset($ctx->watchers[$key]);
+                        $ctx->sync($key, null);
                     }
                 },
                 null,
@@ -150,6 +151,14 @@ if (\PHP_VERSION_ID < 80600) {
             if (!$contains($context, $this, $this->key)) {
                 throw new FailedWatcherModificationException('Failed to modify watcher in polling system', FailedPollOperationException::ERROR_NOTFOUND);
             }
+
+            static $sync;
+            $sync ??= \Closure::bind(
+                static fn (Context $ctx, int $key, mixed $stream, array $events) => $ctx->sync($key, $stream, $events),
+                null,
+                Context::class,
+            );
+            $sync($context, $this->key, $this->handle->getStream(), $events);
 
             $this->events = $events;
         }
