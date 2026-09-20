@@ -76,7 +76,7 @@ if (\PHP_VERSION_ID < 80600) {
                 Watcher::class,
             );
             $create ??= \Closure::bind(
-                static fn (\WeakReference $ctx, Handle $h, array $e, mixed $d): Watcher => new Watcher($ctx, $h, $e, $d),
+                static fn (\WeakReference $ctx, int $k, Handle $h, array $e, mixed $d): Watcher => new Watcher($ctx, $k, $h, $e, $d),
                 null,
                 Watcher::class,
             );
@@ -95,7 +95,7 @@ if (\PHP_VERSION_ID < 80600) {
                 unset($this->watchers[$id]); // the resource id was recycled from a closed stream
             }
 
-            return $this->watchers[$id] = $create(\WeakReference::create($this), $handle, $events, $data);
+            return $this->watchers[$id] = $create(\WeakReference::create($this), $id, $handle, $events, $data);
         }
 
         public function wait(?\Time\Duration $timeout = null, ?int $maxEvents = null): array
