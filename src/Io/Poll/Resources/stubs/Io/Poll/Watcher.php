@@ -24,6 +24,7 @@ if (\PHP_VERSION_ID < 80600) {
          */
         private function __construct(
             private ?\WeakReference $context,
+            private readonly int $key,
             private readonly Handle $handle,
             private array $events,
             private mixed $data,
@@ -92,15 +93,15 @@ if (\PHP_VERSION_ID < 80600) {
 
             static $detach;
             $detach ??= \Closure::bind(
-                static function (Context $ctx, Watcher $w): void {
-                    if (false !== $id = \array_search($w, $ctx->watchers, true)) {
-                        unset($ctx->watchers[$id]);
+                static function (Context $ctx, Watcher $w, int $key): void {
+                    if (($ctx->watchers[$key] ?? null) === $w) {
+                        unset($ctx->watchers[$key]);
                     }
                 },
                 null,
                 Context::class,
             );
-            $detach($context, $this);
+            $detach($context, $this, $this->key);
             $this->active = false;
             $this->context = null;
         }
@@ -142,11 +143,11 @@ if (\PHP_VERSION_ID < 80600) {
 
             static $contains;
             $contains ??= \Closure::bind(
-                static fn (Context $ctx, Watcher $w): bool => \in_array($w, $ctx->watchers, true),
+                static fn (Context $ctx, Watcher $w, int $key): bool => ($ctx->watchers[$key] ?? null) === $w,
                 null,
                 Context::class,
             );
-            if (!$contains($context, $this)) {
+            if (!$contains($context, $this, $this->key)) {
                 throw new FailedWatcherModificationException('Failed to modify watcher in polling system', FailedPollOperationException::ERROR_NOTFOUND);
             }
 
