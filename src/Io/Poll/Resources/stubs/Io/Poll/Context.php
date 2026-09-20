@@ -14,6 +14,10 @@ namespace Io\Poll;
 if (\PHP_VERSION_ID < 80600) {
     final class Context
     {
+        private const IS_SOCKET = 1;
+        private const IS_SEEKABLE = 2;
+        private const IS_DATAGRAM = 4;
+
         private Backend $backend;
 
         /**
@@ -22,6 +26,33 @@ if (\PHP_VERSION_ID < 80600) {
          * @var array<int, Watcher>
          */
         private array $watchers = [];
+
+        /**
+         * The select() sets, kept in sync with the fd table so that wait() does not
+         * have to walk every watcher on each call.
+         *
+         * $selectRead holds every watched stream, because poll() reports hang-ups and
+         * errors even when they were not requested and detecting them requires
+         * select() readability; $wantsRead tells which of them asked for Event::Read.
+         *
+         * @var array<int, resource>
+         */
+        private array $selectRead = [];
+
+        /** @var array<int, resource> */
+        private array $selectWrite = [];
+
+        /** @var array<int, true> */
+        private array $wantsRead = [];
+
+        /**
+         * Traits of each watched stream that hang-up detection needs, as a bitmask of
+         * self::IS_SOCKET, self::IS_SEEKABLE and self::IS_DATAGRAM. They never change
+         * for a given stream, so they are read once instead of on every wake-up.
+         *
+         * @var array<int, int>
+         */
+        private array $streamTraits = [];
 
         public function __construct(Backend $backend = Backend::Auto)
         {
@@ -58,6 +89,52 @@ if (\PHP_VERSION_ID < 80600) {
             return $this->backend;
         }
 
+        /**
+         * Keeps the select() sets in sync with the fd table.
+         *
+         * @param resource|null $stream Null to drop the entry
+         */
+        private function sync(int $key, mixed $stream, array $events = []): void
+        {
+            if (null === $stream) {
+                unset($this->selectRead[$key], $this->selectWrite[$key], $this->wantsRead[$key], $this->streamTraits[$key]);
+
+                return;
+            }
+
+            $this->selectRead[$key] = $stream;
+
+            if (\in_array(Event::Read, $events, true)) {
+                $this->wantsRead[$key] = true;
+            } else {
+                unset($this->wantsRead[$key]);
+            }
+
+            if (\in_array(Event::Write, $events, true)) {
+                $this->selectWrite[$key] = $stream;
+            } else {
+                unset($this->selectWrite[$key]);
+            }
+        }
+
+        /**
+         * Drops the watchers whose stream has been closed, as poll() drops the fds it reports POLLNVAL for.
+         */
+        private function evictClosed(): int
+        {
+            $evicted = 0;
+
+            foreach ($this->watchers as $key => $watcher) {
+                if (!\is_resource($watcher->getHandle()->getStream())) {
+                    unset($this->watchers[$key]);
+                    $this->sync($key, null);
+                    ++$evicted;
+                }
+            }
+
+            return $evicted;
+        }
+
         public function add(Handle $handle, array $events, mixed $data = null): Watcher
         {
             if (!\method_exists($handle, 'getStream')) {
@@ -65,7 +142,7 @@ if (\PHP_VERSION_ID < 80600) {
             }
 
             $stream = $handle->getStream();
-            if (!\is_resource($stream) || 'MEMORY' === stream_get_meta_data($stream)['stream_type']) {
+            if (!\is_resource($stream) || 'MEMORY' === ($meta = stream_get_meta_data($stream))['stream_type']) {
                 throw new InvalidHandleException('Invalid handle for polling');
             }
 
@@ -95,6 +172,11 @@ if (\PHP_VERSION_ID < 80600) {
                 unset($this->watchers[$id]); // the resource id was recycled from a closed stream
             }
 
+            $this->sync($id, $stream, $events);
+            $this->streamTraits[$id] = (str_contains($meta['stream_type'], 'socket') ? self::IS_SOCKET : 0)
+                | ($meta['seekable'] ? self::IS_SEEKABLE : 0)
+                | (\in_array($meta['stream_type'], ['udp_socket', 'udg_socket'], true) ? self::IS_DATAGRAM : 0);
+
             return $this->watchers[$id] = $create(\WeakReference::create($this), $id, $handle, $events, $data);
         }
 
@@ -110,45 +192,17 @@ if (\PHP_VERSION_ID < 80600) {
 
             $timeoutNanoseconds = null !== $timeout ? $timeout->seconds * 1_000_000_000 + $timeout->nanoseconds : null;
 
-            // Like poll() reporting POLLNVAL, drop watchers whose stream has been
-            // closed; poll() returns immediately in that case, without sleeping
-            $evicted = false;
-            foreach ($this->watchers as $id => $watcher) {
-                if (!\is_resource($watcher->getHandle()->getStream())) {
-                    unset($this->watchers[$id]);
-                    $evicted = true;
-                }
-            }
-
             if (!$this->watchers) {
-                if (!$evicted && null !== $timeoutNanoseconds && 0 < $micros = \intdiv($timeoutNanoseconds, 1000)) {
+                if (null !== $timeoutNanoseconds && 0 < $micros = \intdiv($timeoutNanoseconds, 1000)) {
                     usleep($micros);
                 }
 
                 return [];
             }
 
-            $read = $write = [];
-            foreach ($this->watchers as $id => $watcher) {
-                $stream = $watcher->getHandle()->getStream();
-
-                // poll() reports hang-ups and errors even when not requested;
-                // detecting them requires select() readability for every stream,
-                // at the cost of spurious wake-ups that the retry loop below absorbs
-                $read[$id] = $stream;
-
-                if (\in_array(Event::Write, $watcher->getWatchedEvents(), true)) {
-                    $write[$id] = $stream;
-                }
-            }
-
-            if ($evicted) {
-                $deadline = 0;
-            } elseif (null !== $timeoutNanoseconds) {
-                $deadline = hrtime(true) + $timeoutNanoseconds;
-            } else {
-                $deadline = null;
-            }
+            $read = $this->selectRead;
+            $write = $this->selectWrite;
+            $deadline = null !== $timeoutNanoseconds ? hrtime(true) + $timeoutNanoseconds : null;
 
             $triggered = $parked = $park = [];
             while (true) {
@@ -156,28 +210,38 @@ if (\PHP_VERSION_ID < 80600) {
                 $w = $write;
                 $e = null;
 
-                $errno = 0;
-                set_error_handler(static function (int $type, string $message) use (&$errno): bool {
-                    // "stream_select(): Unable to select [4]: Interrupted system call (max_fd=5)"
-                    if (preg_match('/ \[(\d+)\]: /', $message, $m)) {
-                        $errno = (int) $m[1];
-                    }
-
-                    return true;
-                });
+                error_clear_last();
 
                 try {
                     if (null === $deadline) {
-                        $result = stream_select($r, $w, $e, null);
+                        $result = @stream_select($r, $w, $e, null);
                     } else {
                         $remaining = max(0, $deadline - hrtime(true));
-                        $result = stream_select($r, $w, $e, \intdiv($remaining, 1_000_000_000), \intdiv($remaining % 1_000_000_000, 1000));
+                        $result = @stream_select($r, $w, $e, \intdiv($remaining, 1_000_000_000), \intdiv($remaining % 1_000_000_000, 1000));
                     }
-                } finally {
-                    restore_error_handler();
+                } catch (\TypeError|\ValueError $selectError) {
+                    // Like poll() reporting POLLNVAL, drop the watchers whose stream has been closed
+                    // and report what the others have to say at once, without sleeping
+                    if (!$this->evictClosed()) {
+                        throw $selectError;
+                    }
+
+                    if (!$this->watchers) {
+                        return [];
+                    }
+
+                    $read = $this->selectRead;
+                    $write = $this->selectWrite;
+                    $parked = [];
+                    $deadline = 0;
+
+                    continue;
                 }
 
                 if (false === $result) {
+                    // "stream_select(): Unable to select [4]: Interrupted system call (max_fd=5)"
+                    $errno = preg_match('/ \[(\d+)\]: /', error_get_last()['message'] ?? '', $m) ? (int) $m[1] : 0;
+
                     // like the native backends, which map errno through php_poll_errno_to_error()
                     throw new FailedPollWaitException('Poll wait failed', match ($errno) {
                         4 => FailedPollOperationException::ERROR_INTERRUPTED, // EINTR
@@ -191,36 +255,34 @@ if (\PHP_VERSION_ID < 80600) {
                     return [];
                 }
 
-                foreach ($this->watchers as $id => $watcher) {
-                    $isWritable = isset($w[$id]);
-                    // a parked stream is only looked at again when it turns writable,
-                    // which is when it could carry an error or a hang-up
-                    $isReadable = isset($r[$id]) || ($isWritable && isset($parked[$id]));
-
-                    if (!$isReadable && !$isWritable) {
+                foreach ($r + $w as $id => $stream) {
+                    if (null === $watcher = $this->watchers[$id] ?? null) {
                         continue;
                     }
 
-                    $stream = $watcher->getHandle()->getStream();
-                    $watched = $watcher->getWatchedEvents();
+                    $isWritable = isset($w[$id]); // only watchers that asked for Event::Write are selected
+                    // a parked stream is only looked at again when it turns writable,
+                    // which is when it could carry an error or a hang-up
+                    $isReadable = isset($r[$id]) || isset($parked[$id]);
+
                     $hangUp = $error = false;
                     $readable = $isReadable;
 
                     if ($isReadable) {
+                        $traits = $this->streamTraits[$id];
                         $peek = @stream_socket_recvfrom($stream, 1, \STREAM_PEEK);
-                        $meta = stream_get_meta_data($stream);
                         if (false === $peek) {
-                            if (str_contains($meta['stream_type'], 'socket')) {
+                            if ($traits & self::IS_SOCKET) {
                                 // peeking a readable socket only fails when the connection
                                 // was reset (peer closed with unread data): POLLERR|POLLHUP
                                 $error = $hangUp = true;
-                            } elseif (!$meta['seekable'] && feof($stream)) {
+                            } elseif (!($traits & self::IS_SEEKABLE) && feof($stream)) {
                                 // a pipe at EOF raises POLLHUP without POLLIN,
                                 // while a regular file always raises plain POLLIN
                                 $hangUp = true;
                                 $readable = false;
                             }
-                        } elseif ('' === $peek && !\in_array($meta['stream_type'], ['udp_socket', 'udg_socket'], true)) {
+                        } elseif ('' === $peek && !($traits & self::IS_DATAGRAM)) {
                             // a stream socket at EOF raises POLLIN|POLLHUP,
                             // while an empty datagram is plain POLLIN
                             $hangUp = true;
@@ -228,10 +290,10 @@ if (\PHP_VERSION_ID < 80600) {
                     }
 
                     $events = [];
-                    if ($readable && \in_array(Event::Read, $watched, true)) {
+                    if ($readable && isset($this->wantsRead[$id])) {
                         $events[] = Event::Read;
                     }
-                    if ($isWritable && \in_array(Event::Write, $watched, true)) {
+                    if ($isWritable) {
                         $events[] = Event::Write;
                     }
                     if ($error) {
@@ -242,7 +304,7 @@ if (\PHP_VERSION_ID < 80600) {
                     }
 
                     if ($events) {
-                        $triggered[] = [$watcher, $events];
+                        $triggered[$id] = [$watcher, $events];
                         if (null !== $maxEvents && \count($triggered) === $maxEvents) {
                             break;
                         }
@@ -285,13 +347,14 @@ if (\PHP_VERSION_ID < 80600) {
             );
 
             $result = [];
-            foreach ($triggered as [$watcher, $events]) {
+            foreach ($triggered as $id => [$watcher, $events]) {
                 $setTriggered($watcher, $events);
                 $result[] = $watcher;
 
                 if (\in_array(Event::OneShot, $watcher->getWatchedEvents(), true)) {
                     // like the native backend, only the fd entry is dropped; the watcher stays active
-                    unset($this->watchers[get_resource_id($watcher->getHandle()->getStream())]);
+                    unset($this->watchers[$id]);
+                    $this->sync($id, null);
                 }
             }
 
