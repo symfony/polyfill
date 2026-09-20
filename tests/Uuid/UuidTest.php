@@ -98,6 +98,24 @@ class UuidTest extends TestCase
         $this->assertCount($count, $uuids);
     }
 
+    public function testCreateTimeNoOverlapWithinOneMicrosecond()
+    {
+        require_once __DIR__.'/frozen_clock.php';
+
+        $GLOBALS['__uuid_frozen_microtime'] = '0.12345600 1758000000';
+
+        try {
+            $uuids = [];
+            for ($i = 0; $i < 10000; ++$i) {
+                $uuids[] = Uuid::uuid_create(Uuid::UUID_TYPE_TIME);
+            }
+        } finally {
+            unset($GLOBALS['__uuid_frozen_microtime']);
+        }
+
+        $this->assertCount(10000, array_unique($uuids));
+    }
+
     public static function provideIsValidTest(): array
     {
         return [

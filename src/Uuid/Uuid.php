@@ -392,9 +392,18 @@ final class Uuid
         }
 
         // https://tools.ietf.org/html/rfc4122#section-4.1.5
-        // We are using a random data for the sake of simplicity: since we are
-        // not able to get a super precise timeOfDay as a unique sequence
-        $clockSeq = random_int(0, 0x3FFF);
+        // microtime() gives microseconds where the timestamp field holds hundreds of
+        // nanoseconds, so the clock sequence is what separates UUIDs generated within
+        // the same microsecond: draw it at random when the clock moved, and count from
+        // there when it did not, instead of drawing 14 bits that collide by birthday
+        static $lastTime = null, $clockSeq = 0;
+
+        if ($time !== $lastTime) {
+            $lastTime = $time;
+            $clockSeq = random_int(0, 0x3FFF);
+        } else {
+            $clockSeq = ($clockSeq + 1) & 0x3FFF;
+        }
 
         static $node;
         if (null === $node) {
