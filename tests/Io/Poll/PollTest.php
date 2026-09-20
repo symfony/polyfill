@@ -905,6 +905,37 @@ class PollTest extends TestCase
         fclose($stream);
     }
 
+    /**
+     * @requires extension pcntl
+     */
+    public function testWaitInterruptedBySignalReportsInterrupted()
+    {
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            $this->markTestSkipped('Signals do not interrupt select() on Windows');
+        }
+
+        [$r, $w] = stream_socket_pair(\STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
+        $context = new Context();
+        $context->add(new \StreamPollHandle($r), [Event::Read]);
+
+        pcntl_async_signals(true);
+        pcntl_signal(\SIGALRM, static function () {});
+        pcntl_alarm(1);
+
+        try {
+            $context->wait(Duration::fromSeconds(5));
+            $this->fail('wait() should have been interrupted');
+        } catch (FailedPollWaitException $e) {
+            $this->assertSame(FailedPollOperationException::ERROR_INTERRUPTED, $e->getCode());
+        } finally {
+            pcntl_alarm(0);
+            pcntl_signal(\SIGALRM, \SIG_DFL);
+            pcntl_async_signals(false);
+            fclose($r);
+            fclose($w);
+        }
+    }
+
     public function testWatcherModifyAfterRemoveThrows()
     {
         $stream = fopen('php://temp', 'r+');

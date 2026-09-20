@@ -156,15 +156,35 @@ if (\PHP_VERSION_ID < 80600) {
                 $w = $write;
                 $e = null;
 
-                if (null === $deadline) {
-                    $result = @stream_select($r, $w, $e, null);
-                } else {
-                    $remaining = max(0, $deadline - hrtime(true));
-                    $result = @stream_select($r, $w, $e, \intdiv($remaining, 1_000_000_000), \intdiv($remaining % 1_000_000_000, 1000));
+                $errno = 0;
+                set_error_handler(static function (int $type, string $message) use (&$errno): bool {
+                    // "stream_select(): Unable to select [4]: Interrupted system call (max_fd=5)"
+                    if (preg_match('/ \[(\d+)\]: /', $message, $m)) {
+                        $errno = (int) $m[1];
+                    }
+
+                    return true;
+                });
+
+                try {
+                    if (null === $deadline) {
+                        $result = stream_select($r, $w, $e, null);
+                    } else {
+                        $remaining = max(0, $deadline - hrtime(true));
+                        $result = stream_select($r, $w, $e, \intdiv($remaining, 1_000_000_000), \intdiv($remaining % 1_000_000_000, 1000));
+                    }
+                } finally {
+                    restore_error_handler();
                 }
 
                 if (false === $result) {
-                    throw new FailedPollWaitException('Poll wait failed');
+                    // like the native backends, which map errno through php_poll_errno_to_error()
+                    throw new FailedPollWaitException('Poll wait failed', match ($errno) {
+                        4 => FailedPollOperationException::ERROR_INTERRUPTED, // EINTR
+                        9, 22 => FailedPollOperationException::ERROR_INVALID, // EBADF, EINVAL
+                        12 => FailedPollOperationException::ERROR_NOMEM, // ENOMEM
+                        default => FailedPollOperationException::ERROR_SYSTEM,
+                    });
                 }
 
                 if (0 === $result) {
