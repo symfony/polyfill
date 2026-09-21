@@ -50,7 +50,7 @@ if (\PHP_VERSION_ID < 80600) {
          * self::IS_SOCKET, self::IS_SEEKABLE and self::IS_DATAGRAM. They never change
          * for a given stream, so they are read once instead of on every wake-up.
          *
-         * @var array<int, int>
+         * @var array<int, int-mask-of<self::IS_*>>
          */
         private array $streamTraits = [];
 
@@ -93,6 +93,7 @@ if (\PHP_VERSION_ID < 80600) {
          * Keeps the select() sets in sync with the fd table.
          *
          * @param resource|null $stream Null to drop the entry
+         * @param list<Event>   $events
          */
         private function sync(int $key, mixed $stream, array $events = []): void
         {
@@ -180,6 +181,7 @@ if (\PHP_VERSION_ID < 80600) {
             return $this->watchers[$id] = $create(\WeakReference::create($this), $id, $handle, $events, $data);
         }
 
+        /** @return list<Watcher> */
         public function wait(?\Time\Duration $timeout = null, ?int $maxEvents = null): array
         {
             if (null !== $timeout && $timeout->negative) {
