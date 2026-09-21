@@ -12,6 +12,7 @@
 namespace Symfony\Polyfill\Tests\Uuid;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Bridge\PhpUnit\ClockMock;
 use Symfony\Polyfill\Uuid\Uuid;
 
 class UuidTest extends TestCase
@@ -98,11 +99,18 @@ class UuidTest extends TestCase
         $this->assertCount($count, $uuids);
     }
 
+    public static function setUpBeforeClass(): void
+    {
+        // before any call to Uuid::uuid_create(), or its microtime() call site binds to the global one
+        ClockMock::register(Uuid::class);
+    }
+
+    /**
+     * @group time-sensitive
+     */
     public function testCreateTimeNoOverlapWithinOneMicrosecond()
     {
-        require_once __DIR__.'/frozen_clock.php';
-
-        $GLOBALS['__uuid_frozen_microtime'] = '0.12345600 1758000000';
+        ClockMock::withClockMock(1758000000.123456);
 
         try {
             $uuids = [];
@@ -110,10 +118,14 @@ class UuidTest extends TestCase
                 $uuids[] = Uuid::uuid_create(Uuid::UUID_TYPE_TIME);
             }
         } finally {
-            unset($GLOBALS['__uuid_frozen_microtime']);
+            ClockMock::withClockMock(false);
         }
 
         $this->assertCount(10000, array_unique($uuids));
+
+        // the clock did not move, so all of them share the timestamp and only the clock sequence varies
+        $timestamps = array_map(function ($uuid) { return substr($uuid, 0, 18); }, $uuids);
+        $this->assertCount(1, array_unique($timestamps));
     }
 
     public static function provideIsValidTest(): array
