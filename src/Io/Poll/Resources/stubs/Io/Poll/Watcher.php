@@ -36,11 +36,13 @@ if (\PHP_VERSION_ID < 80600) {
             return $this->handle;
         }
 
+        /** @return list<Event> */
         public function getWatchedEvents(): array
         {
             return $this->events;
         }
 
+        /** @return list<Event> */
         public function getTriggeredEvents(): array
         {
             return $this->triggeredEvents;
@@ -127,6 +129,7 @@ if (\PHP_VERSION_ID < 80600) {
             throw new \Exception(\sprintf("Unserialization of '%s' is not allowed", self::class));
         }
 
+        /** @param list<Event> $events */
         private function applyEvents(array $events): void
         {
             $context = $this->active ? $this->context?->get() : null;
@@ -167,6 +170,7 @@ if (\PHP_VERSION_ID < 80600) {
          * Native stores events as a bitmask: duplicates collapse and getWatchedEvents()
          * returns the cases in declaration order.
          */
+        /** @return list<Event> */
         private static function normalizeEvents(array $events, string $method, int $argument): array
         {
             foreach ($events as $event) {

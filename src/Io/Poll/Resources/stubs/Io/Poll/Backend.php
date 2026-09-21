@@ -34,6 +34,7 @@ if (\PHP_VERSION_ID < 80600) {
             return false;
         }
 
+        /** @return list<Backend> */
         public static function getAvailableBackends(): array
         {
             return [self::Poll];
