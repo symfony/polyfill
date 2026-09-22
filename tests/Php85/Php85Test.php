@@ -137,22 +137,49 @@ class Php85Test extends TestCase
         $this->assertTrue(locale_is_right_to_left('yi'));
         $this->assertTrue(locale_is_right_to_left('dv'));
         $this->assertTrue(locale_is_right_to_left('nqo'));
+        $this->assertTrue(locale_is_right_to_left('ks'));
+        $this->assertTrue(locale_is_right_to_left('syr'));
 
         // Explicit RTL script subtag
         $this->assertTrue(locale_is_right_to_left('ku_Arab'));
         $this->assertTrue(locale_is_right_to_left('ku-arab'));
         $this->assertTrue(locale_is_right_to_left('ar-EG'));
+        $this->assertTrue(locale_is_right_to_left('und-Hung'));
 
         // Explicit LTR script subtag overrides language default
         $this->assertFalse(locale_is_right_to_left('ar-Latn'));
         $this->assertFalse(locale_is_right_to_left('he-Latn'));
+
+        // Only the subtag that follows the language can be a script
+        $this->assertFalse(locale_is_right_to_left('en-US-Arab'));
+        $this->assertFalse(locale_is_right_to_left('en-u-ca-hebr'));
+        $this->assertFalse(locale_is_right_to_left('en-x-hebr'));
+        $this->assertTrue(locale_is_right_to_left('ar-x-latn'));
 
         // LTR locales
         $this->assertFalse(locale_is_right_to_left('en'));
         $this->assertFalse(locale_is_right_to_left('fr'));
         $this->assertFalse(locale_is_right_to_left('de'));
         $this->assertFalse(locale_is_right_to_left('zh'));
-        $this->assertFalse(locale_is_right_to_left(''));
+        $this->assertFalse(locale_is_right_to_left('ku'));
+    }
+
+    /**
+     * @requires extension intl
+     */
+    public function testLocaleIsRightToLeftUsesDefaultLocaleWhenEmpty()
+    {
+        $default = \Locale::getDefault();
+
+        try {
+            \Locale::setDefault('ar');
+            $this->assertTrue(locale_is_right_to_left(''));
+
+            \Locale::setDefault('en');
+            $this->assertFalse(locale_is_right_to_left(''));
+        } finally {
+            \Locale::setDefault($default);
+        }
     }
 
     /**
