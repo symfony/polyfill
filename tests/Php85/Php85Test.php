@@ -162,6 +162,8 @@ class Php85Test extends TestCase
     {
         $this->assertSame(3, grapheme_levenshtein('kitten', 'sitting'));
         $this->assertSame(1, grapheme_levenshtein('한국어', '한국'));
+        $this->assertSame(10, grapheme_levenshtein('a', 'abc', 5, 2, 3));
+        $this->assertSame(6, grapheme_levenshtein('abc', 'a', 5, 2, 3));
         $this->assertFalse(grapheme_levenshtein("\xFF", 'a'));
     }
 

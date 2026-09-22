@@ -329,6 +329,8 @@ class GraphemeTest extends TestCase
             [2, 'a', 'b', 1, 2, 1],
             [3, 'a', '', 1, 1, 3],
             [5, '', 'a', 5, 1, 1],
+            [10, 'a', 'abc', 5, 2, 3],
+            [6, 'abc', 'a', 5, 2, 3],
 
             // emoji (single codepoint)
             [0, '😊', '😊'],
