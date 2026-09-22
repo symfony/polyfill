@@ -858,6 +858,16 @@ class Php84Test extends TestCase
         yield ['-1', '-1.0000'];
         yield ['-1', '-1.0001'];
         yield ['-100000', '-100000.000000000000000000000000000000000000000001'];
+
+        yield ['0', ''];
+        yield ['0', '.'];
+        yield ['0', '-'];
+        yield ['0', '+'];
+        yield ['0', '-.'];
+        yield ['1', '.5'];
+        yield ['0', '-.5'];
+        yield ['5', '5.'];
+        yield ['-5', '-5.'];
     }
 
     /**
@@ -878,6 +888,13 @@ class Php84Test extends TestCase
         // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcceil_error.phpt
         yield ['hoge'];
         yield ['0.00.1'];
+
+        yield ['1e3'];
+        yield ['1e-3'];
+        yield [' 1.5'];
+        yield ['1.5 '];
+        yield ["1.5\n"];
+        yield ['..'];
     }
 
     /**
@@ -910,6 +927,16 @@ class Php84Test extends TestCase
         yield ['-1', '-1.0000'];
         yield ['-2', '-1.0001'];
         yield ['-100001', '-100000.000000000000000000000000000000000000000001'];
+
+        yield ['0', ''];
+        yield ['0', '.'];
+        yield ['0', '-'];
+        yield ['0', '+'];
+        yield ['0', '-.'];
+        yield ['0', '.5'];
+        yield ['-1', '-.5'];
+        yield ['5', '5.'];
+        yield ['-5', '-5.'];
     }
 
     /**
@@ -930,6 +957,84 @@ class Php84Test extends TestCase
         // Tests cases from https://github.com/php/php-src/blob/php-8.4.4/ext/bcmath/tests/bcfloor_error.phpt
         yield ['hoge'];
         yield ['0.00.1'];
+
+        yield ['1e3'];
+        yield ['1e-3'];
+        yield [' 1.5'];
+        yield ['1.5 '];
+        yield ["1.5\n"];
+        yield ['..'];
+    }
+
+    /**
+     * @dataProvider bcRoundProvider
+     *
+     * @requires extension bcmath
+     */
+    public function testBcRound(string $expected, string $num, int $precision)
+    {
+        $this->assertSame($expected, bcround($num, $precision));
+    }
+
+    public static function bcRoundProvider(): iterable
+    {
+        yield ['0', '', 0];
+        yield ['0.0', '', 1];
+        yield ['0', '', -1];
+        yield ['0', '.', 0];
+        yield ['0', '-', 0];
+        yield ['0', '+', 0];
+        yield ['0', '-.', 0];
+        yield ['1', '.5', 0];
+        yield ['0.5', '.5', 1];
+        yield ['-1', '-.5', 0];
+        yield ['5', '5.', 0];
+        yield ['10', '5.', -1];
+        yield ['-10', '-5.', -1];
+    }
+
+    /**
+     * @dataProvider bcRoundProviderError
+     *
+     * @requires extension bcmath
+     * @requires PHP 8.2
+     */
+    public function testBcRoundError(string $num)
+    {
+        $this->expectError();
+        $this->expectErrorMessage('bcround(): Argument #1 ($num) is not well-formed');
+        bcround($num);
+    }
+
+    public static function bcRoundProviderError(): iterable
+    {
+        yield ['hoge'];
+        yield ['0.00.1'];
+
+        yield ['1e3'];
+        yield ['1e-3'];
+        yield [' 1.5'];
+        yield ['1.5 '];
+        yield ["1.5\n"];
+        yield ['..'];
+    }
+
+    /**
+     * @requires extension bcmath
+     * @requires PHP 8.2
+     */
+    public function testBcRoundLongMalformedNumber()
+    {
+        preg_match('//', '');
+
+        try {
+            bcround(str_repeat('1', 100000).'x');
+            $this->fail('A ValueError should have been thrown');
+        } catch (\ValueError $e) {
+            $this->assertSame('bcround(): Argument #1 ($num) is not well-formed', $e->getMessage());
+        }
+
+        $this->assertSame(\PREG_NO_ERROR, preg_last_error());
     }
 
     /**
