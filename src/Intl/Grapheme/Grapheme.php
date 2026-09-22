@@ -271,23 +271,23 @@ final class Grapheme
             return $l1 * $deletion_cost;
         }
 
-        $dp = array_fill(0, $l1 + 1, array_fill(0, $l2 + 1, 0));
-
-        for ($i = 1; $i <= $l1; ++$i) {
-            $dp[$i][0] = $dp[$i - 1][0] + $deletion_cost;
-        }
+        $previousRow = $currentRow = array_fill(0, $l2 + 1, 0);
         for ($j = 1; $j <= $l2; ++$j) {
-            $dp[0][$j] = $dp[0][$j - 1] + $insertion_cost;
+            $previousRow[$j] = $previousRow[$j - 1] + $insertion_cost;
         }
 
         for ($i = 1; $i <= $l1; ++$i) {
+            $currentRow[0] = $previousRow[0] + $deletion_cost;
+
             for ($j = 1; $j <= $l2; ++$j) {
                 $cost = ($s1[$i - 1] === $s2[$j - 1]) ? 0 : $replacement_cost;
-                $dp[$i][$j] = min($dp[$i - 1][$j] + $deletion_cost, $dp[$i][$j - 1] + $insertion_cost, $dp[$i - 1][$j - 1] + $cost);
+                $currentRow[$j] = min($previousRow[$j] + $deletion_cost, $currentRow[$j - 1] + $insertion_cost, $previousRow[$j - 1] + $cost);
             }
+
+            [$previousRow, $currentRow] = [$currentRow, $previousRow];
         }
 
-        return $dp[$l1][$l2];
+        return $previousRow[$l2];
     }
 
     private static function grapheme_position($s, $needle, $offset, $mode)
