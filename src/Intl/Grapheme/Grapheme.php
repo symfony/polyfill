@@ -252,8 +252,14 @@ final class Grapheme
             return false;
         }
 
-        if (0 > $insertion_cost || 0 > $replacement_cost || 0 > $deletion_cost) {
-            throw new \ValueError('grapheme_levenshtein(): Argument #3 ($insertion_cost), #4 ($replacement_cost), and #5 ($deletion_cost) must be greater than or equal to 0');
+        if ($insertion_cost <= 0 || $insertion_cost > 1073741823) {
+            throw new \ValueError('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
+        }
+        if ($replacement_cost <= 0 || $replacement_cost > 1073741823) {
+            throw new \ValueError('grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823');
+        }
+        if ($deletion_cost <= 0 || $deletion_cost > 1073741823) {
+            throw new \ValueError('grapheme_levenshtein(): Argument #5 ($deletion_cost) must be greater than 0 and less than or equal to 1073741823');
         }
 
         preg_match_all('/'.SYMFONY_GRAPHEME_CLUSTER_RX.'/u', $s1, $s1);

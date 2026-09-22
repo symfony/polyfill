@@ -349,12 +349,28 @@ class GraphemeTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     *
+     * @dataProvider provideGraphemeLevenshteinInvalidCost
      */
-    public function testGraphemeLevenshteinNegativeCost()
+    public function testGraphemeLevenshteinInvalidCost(array $costs, string $message)
     {
         $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage($message);
 
-        grapheme_levenshtein('a', 'b', -1);
+        grapheme_levenshtein('a', 'b', ...$costs);
+    }
+
+    public static function provideGraphemeLevenshteinInvalidCost(): array
+    {
+        return [
+            [[-1], 'grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[0], 'grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1073741824], 'grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 0], 'grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 1073741824], 'grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 1, 0], 'grapheme_levenshtein(): Argument #5 ($deletion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 1, 1073741824], 'grapheme_levenshtein(): Argument #5 ($deletion_cost) must be greater than 0 and less than or equal to 1073741823'],
+        ];
     }
 
     /**
