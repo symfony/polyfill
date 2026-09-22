@@ -898,6 +898,25 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_str_pad
+     *
+     * @requires function memory_reset_peak_usage
+     */
+    public function testMbStrPadMemoryUsage()
+    {
+        $padString = str_repeat('€', 300);
+        mb_str_pad('', 1, $padString);
+
+        memory_reset_peak_usage();
+        $usage = memory_get_usage();
+        $result = mb_str_pad('', 300, $padString);
+        $peak = memory_get_peak_usage() - $usage;
+
+        $this->assertSame($padString, $result);
+        $this->assertLessThan(1 << 16, $peak);
+    }
+
+    /**
      * @dataProvider ucFirstDataProvider
      */
     public function testMbUcFirst(string $string, string $expected)
