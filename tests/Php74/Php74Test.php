@@ -134,6 +134,22 @@ class Php74Test extends TestCase
     /**
      * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
      */
+    public function testStrSplitWithExcessiveLength()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->expectWarning();
+            $this->expectWarningMessage('The length of each segment is too large');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('Argument #2 ($length) is too large');
+        }
+
+        Php74::mb_str_split('a', 0x40000000);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
+     */
     public function testStrSplitWithLengthAbovePcreLimit()
     {
         $this->assertSame([str_repeat('x', 70000)], Php74::mb_str_split(str_repeat('x', 70000), 70000, 'UTF-8'));

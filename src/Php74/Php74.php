@@ -18,6 +18,8 @@ namespace Symfony\Polyfill\Php74;
  */
 final class Php74
 {
+    private const MB_STR_SPLIT_MAX_LENGTH = 0x3FFFFFFF;
+
     public static function get_mangled_object_vars($obj)
     {
         if (!\is_object($obj)) {
@@ -57,6 +59,16 @@ final class Php74
             }
 
             throw new \ValueError('Argument #2 ($length) must be greater than 0');
+        }
+
+        if (self::MB_STR_SPLIT_MAX_LENGTH < $split_length) {
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error('The length of each segment is too large', \E_USER_WARNING);
+
+                return false;
+            }
+
+            throw new \ValueError('Argument #2 ($length) is too large');
         }
 
         if (null === $encoding) {

@@ -531,6 +531,22 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_str_split
+     */
+    public function testStrSplitWithExcessiveLength()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->expectWarning();
+            $this->expectWarningMessage('The length of each segment is too large');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('Argument #2 ($length) is too large');
+        }
+
+        p::mb_str_split('a', 0x40000000);
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strstr
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stristr
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrchr
