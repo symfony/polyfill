@@ -264,9 +264,14 @@ final class Grapheme
         $l1 = \count($s1);
         $l2 = \count($s2);
 
-        if (0 === $l1) {
-            return $l2 * $insertion_cost;
+        // Keep the rows as short as possible. Reversing the transformation
+        // swaps the meaning of insertion and deletion.
+        if ($l1 < $l2) {
+            [$s1, $s2] = [$s2, $s1];
+            [$l1, $l2] = [$l2, $l1];
+            [$insertion_cost, $deletion_cost] = [$deletion_cost, $insertion_cost];
         }
+
         if (0 === $l2) {
             return $l1 * $deletion_cost;
         }
