@@ -148,8 +148,19 @@ class LocaleTest extends AbstractLocaleTest
         $this->assertTrue(Locale::isRightToLeft('he'));
         $this->assertTrue(Locale::isRightToLeft('fa'));
         $this->assertTrue(Locale::isRightToLeft('ku-Arab'));
+        $this->assertTrue(Locale::isRightToLeft('ks'));
+        $this->assertTrue(Locale::isRightToLeft('syr'));
+        $this->assertTrue(Locale::isRightToLeft('und-Hung'));
+        $this->assertTrue(Locale::isRightToLeft('ar-x-latn'));
+        $this->assertTrue(Locale::isRightToLeft('ar@calendar=islamic'));
+        $this->assertTrue(Locale::isRightToLeft('ar.UTF-8'));
         $this->assertFalse(Locale::isRightToLeft('ar-Latn'));
+        $this->assertFalse(Locale::isRightToLeft('ar-Latn@calendar=gregorian'));
         $this->assertFalse(Locale::isRightToLeft('en'));
+        $this->assertFalse(Locale::isRightToLeft('en-US-Arab'));
+        $this->assertFalse(Locale::isRightToLeft('en-u-ca-hebr'));
+        $this->assertFalse(Locale::isRightToLeft('en-x-hebr'));
+        $this->assertFalse(Locale::isRightToLeft('ku'));
         $this->assertFalse(Locale::isRightToLeft(''));
     }
 
