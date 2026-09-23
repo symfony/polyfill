@@ -175,7 +175,7 @@ final class Php84
         }
 
         if ('' === $characters) {
-            return null === $encoding ? $string : mb_convert_encoding($string, $encoding);
+            return $string;
         }
 
         if ('UTF-8' === $encoding || \in_array(strtolower($encoding), ['utf-8', 'utf8'], true)) {

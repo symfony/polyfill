@@ -356,6 +356,8 @@ class Php84Test extends TestCase
         yield ['', " \f\n\r\v\x00\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}"];
 
         yield [' abcd ', ' abcd ', ''];
+        yield [" a\xC3 ", " a\xC3 ", ''];
+        yield [" \xE9 ", " \xE9 ", '', 'ISO-8859-1'];
 
         yield ['f', 'foo', 'oo'];
 
