@@ -735,6 +735,16 @@ final class DeepClone
             }
 
             $reflector = self::$reflectors[$class] ??= self::getClassReflector($class);
+
+            // A payload cannot carry a lazy-object initializer: initialize lazy
+            // objects first, like clone does. On a lazy proxy, this returns its
+            // real instance, which may itself have been reset as lazy since.
+            if (\PHP_VERSION_ID >= 80400 && $value !== $instance = $reflector->initializeLazyObject($value)) {
+                while ($instance !== $next = (self::$reflectors[$instance::class] ??= self::getClassReflector($instance::class))->initializeLazyObject($instance)) {
+                    $instance = $next;
+                }
+            }
+
             $properties = [];
             $sleep = null;
             $proto = self::$prototypes[$class];

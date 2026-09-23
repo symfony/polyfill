@@ -427,6 +427,38 @@ class ScopeChild extends ScopeParent
     public int $child = 0;
 }
 
+class DeepCloneLazyBase
+{
+    private string $secret = 'default';
+
+    public function __construct(public string $value = '')
+    {
+    }
+
+    public function setSecret(string $secret): void
+    {
+        $this->secret = $secret;
+    }
+
+    public function getSecret(): string
+    {
+        return $this->secret;
+    }
+}
+
+class DeepCloneLazyChild extends DeepCloneLazyBase
+{
+}
+
+class DeepCloneLazyNode
+{
+    public ?DeepCloneLazyNode $next = null;
+
+    public function __construct(public string $name, public ?\Closure $cb = null)
+    {
+    }
+}
+
 if (\PHP_VERSION_ID >= 80400) {
     eval(<<<'PHP'
 namespace Symfony\Polyfill\Tests\DeepClone;
