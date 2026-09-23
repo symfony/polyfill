@@ -258,6 +258,19 @@ class MbstringTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_encode_numericentity
+     */
+    public function testEncodeNumericEntityAboveUnicodeRange()
+    {
+        $convmap = [0x80, 0x10FFFF, 0, 0x1FFFFF];
+        $this->assertSame('ab', str_replace('?', '', mb_encode_numericentity("a\xF8\x88\x80\x80\x80b", $convmap, 'UTF-8')));
+        $this->assertSame('ab', str_replace('?', '', mb_encode_numericentity("a\xFC\x84\x80\x80\x80\x80b", $convmap, 'UTF-8')));
+
+        $convmap = [0x100, 0x10FFFF, 0, 0x1FFFFF];
+        $this->assertSame(pack('N*', 0x61, 0x200000, 0x4000000, ...unpack('C*', '&#256;')), mb_encode_numericentity(pack('N*', 0x61, 0x200000, 0x4000000, 0x100), $convmap, 'UCS-4BE'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_encode_numericentity
      *
      * @requires PHP < 8
      */
@@ -330,6 +343,20 @@ class MbstringTest extends TestCase
         }
         $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
         $this->assertSame('hi ssΐὤιմխ', p::mb_convert_case('HI ßΐᾬﬗ', p::MB_CASE_FOLD));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strtolower
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strtoupper
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_case
+     */
+    public function testStrCaseAboveUnicodeRange()
+    {
+        $this->assertSame('AB', str_replace('?', '', mb_strtoupper("a\xF8\x88\x80\x80\x80b", 'UTF-8')));
+        $this->assertSame('ab', str_replace('?', '', mb_strtolower("A\xFC\x84\x80\x80\x80\x80B", 'UTF-8')));
+        $this->assertSame('Ab', str_replace('?', '', mb_convert_case("a\xF4\x90\x80\x80b", \MB_CASE_TITLE, 'UTF-8')));
+
+        $this->assertSame(pack('N*', 0x41, 0x200000, 0x4000000, 0x42), mb_strtoupper(pack('N*', 0x61, 0x200000, 0x4000000, 0x62), 'UCS-4BE'));
     }
 
     /**
