@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T14:21:21Z
+
+I replaced the require by a bigger translit map: the 495 characters whose canonical decomposition starts with an ASCII character are now generated into `translit.php`, which is what the `Normalizer` call computed at runtime. Output is unchanged, and polyfill-iconv stays free of dependencies.
