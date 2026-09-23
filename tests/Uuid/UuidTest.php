@@ -310,6 +310,11 @@ class UuidTest extends TestCase
         $this->assertSame($expected, @uuid_type($uuid));
     }
 
+    public function testTypeSecurity()
+    {
+        $this->assertSame(\UUID_TYPE_SECURITY, uuid_type('000003e8-cbb9-21ea-b201-00045a86c8a1'));
+    }
+
     public function testTypeWithInvalidUuid()
     {
         if (80000 <= \PHP_VERSION_ID) {
