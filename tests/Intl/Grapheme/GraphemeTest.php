@@ -386,6 +386,17 @@ class GraphemeTest extends TestCase
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrev
      *
+     * @requires extension intl
+     */
+    public function testGraphemeStrrevWithIntl()
+    {
+        $this->assertSame("a\u{200D}x", grapheme_strrev("xa\u{200D}"));
+        $this->assertSame("b\u{0600}a", grapheme_strrev("\u{0600}ab"));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrev
+     *
      * @requires PHP < 8.6
      */
     public function testGraphemeStrrevInvalidUtf8()

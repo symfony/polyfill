@@ -69,10 +69,16 @@ final class Php86
             return false;
         }
 
-        if (false === $units = grapheme_str_split($string)) {
-            return false;
+        $iterator = \IntlBreakIterator::createCharacterInstance();
+        $iterator->setText($string);
+        $reversed = '';
+        $end = $iterator->last();
+
+        while (\IntlBreakIterator::DONE !== $start = $iterator->previous()) {
+            $reversed .= substr($string, $start, $end - $start);
+            $end = $start;
         }
 
-        return implode('', array_reverse($units));
+        return $reversed;
     }
 }
