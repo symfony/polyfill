@@ -37,6 +37,15 @@ class IconvTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv
+     */
+    public function testIconvTranslitToBaseLetter()
+    {
+        $this->assertSame('u c K A', p::iconv('UTF-8', 'ASCII//TRANSLIT', "\u{01D6} \u{1E09} \u{212A} \u{212B}"));
+        $this->assertFalse(@p::iconv('UTF-8', 'ASCII//TRANSLIT', "\u{2126}"));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_strlen
      */
     public function testIconvStrlen()
