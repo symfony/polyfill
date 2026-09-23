@@ -360,7 +360,7 @@ class MessageFormatter
                     }
                     // Explicit values take precedence over keywords
                     if ('=' === $selector[0] && (float) substr($selector, 1, \strlen($selector)) == $arg) {
-                        $message = implode(',', str_replace('#', $number, $plural[$i]));
+                        $message = $plural[$i];
                         break;
                     }
                     // Like intl, keywords are selected from the number as printed
@@ -368,11 +368,19 @@ class MessageFormatter
                         || 'plural' === $type && 'one' === $selector && '1' === ltrim($number, '-')
                         || 'selectordinal' === $type && self::getEnglishOrdinalCategory((float) str_replace(',', '', $number)) === $selector
                     ) {
-                        $message = implode(',', str_replace('#', $number, $plural[$i]));
+                        $message = $plural[$i];
                     }
                 }
                 if (false !== $message) {
-                    return self::parseTokens(self::tokenizePattern($message), $values, $locale);
+                    $message = self::tokenizePattern(implode(',', $message));
+                    // Replace # outside of nested arguments only
+                    foreach ($message as $j => $part) {
+                        if (\is_string($part)) {
+                            $message[$j] = str_replace('#', $number, $part);
+                        }
+                    }
+
+                    return self::parseTokens($message, $values, $locale);
                 }
                 break;
         }

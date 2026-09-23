@@ -199,6 +199,17 @@ class MessageFormatterTest extends TestCase
             ],
 
             [
+                '{a, plural, other{# boxes of {b, plural, one{# item} other{# items}}}} {c, selectordinal, other{#th with {d, select, x{# x} other{none}}}}', // pattern
+                '2 boxes of 3 items 4th with # x', // expected
+                [ // params
+                    'a' => 2,
+                    'b' => 3,
+                    'c' => 4,
+                    'd' => 'x',
+                ],
+            ],
+
+            [
                 '{a, number} {b, number} {c, number} {d, number}', // pattern
                 '1,234.5 -1,234.5 1.235 1,234.5', // expected
                 [ // params
