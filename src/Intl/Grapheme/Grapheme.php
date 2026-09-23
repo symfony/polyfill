@@ -215,8 +215,8 @@ final class Grapheme
 
     public static function grapheme_str_split($s, $len = 1)
     {
-        if (0 > $len || 1073741823 < $len) {
-            throw new \ValueError('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823.');
+        if (0 >= $len || 1073741823 < $len) {
+            throw new \ValueError('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823');
         }
 
         if ('' === $s) {

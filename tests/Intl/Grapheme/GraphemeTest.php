@@ -269,12 +269,22 @@ class GraphemeTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_str_split
+     *
+     * @dataProvider provideGraphemeStrSplitInvalidLength
      */
-    public function testGraphemeStrSplitNegativeLength()
+    public function testGraphemeStrSplitInvalidLength(int $length)
     {
-        $this->expectException(\ValueError::class);
+        try {
+            grapheme_str_split('abc', $length);
+            $this->fail('A ValueError should have been thrown');
+        } catch (\ValueError $e) {
+            $this->assertSame('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823', $e->getMessage());
+        }
+    }
 
-        grapheme_str_split('abc', -1);
+    public static function provideGraphemeStrSplitInvalidLength(): array
+    {
+        return [[-1], [0], [1073741824]];
     }
 
     public static function graphemeStrSplitDataProvider(): array

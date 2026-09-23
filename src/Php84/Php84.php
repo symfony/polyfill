@@ -200,8 +200,8 @@ final class Php84
 
     public static function grapheme_str_split(string $string, int $length)
     {
-        if (0 > $length || 1073741823 < $length) {
-            throw new \ValueError('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823.');
+        if (0 >= $length || 1073741823 < $length) {
+            throw new \ValueError('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823');
         }
 
         if ('' === $string) {
