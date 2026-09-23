@@ -56,7 +56,7 @@ final class Php83
             $errorToTrigger = \sprintf('mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "%s" given', $encoding);
         }
 
-        if (null === $errorToTrigger && mb_strlen($pad_string, $encoding) <= 0) {
+        if (null === $errorToTrigger && 0 >= $padStringLength = mb_strlen($pad_string, $encoding)) {
             $errorToTrigger = 'mb_str_pad(): Argument #3 ($pad_string) must be a non-empty string';
         }
 
@@ -82,15 +82,20 @@ final class Php83
 
         switch ($pad_type) {
             case \STR_PAD_LEFT:
-                return mb_substr(str_repeat($pad_string, $paddingRequired), 0, $paddingRequired, $encoding).$string;
+                $leftPaddingLength = $paddingRequired;
+                break;
             case \STR_PAD_RIGHT:
-                return $string.mb_substr(str_repeat($pad_string, $paddingRequired), 0, $paddingRequired, $encoding);
+                $leftPaddingLength = 0;
+                break;
             default:
-                $leftPaddingLength = floor($paddingRequired / 2);
-                $rightPaddingLength = $paddingRequired - $leftPaddingLength;
-
-                return mb_substr(str_repeat($pad_string, $leftPaddingLength), 0, $leftPaddingLength, $encoding).$string.mb_substr(str_repeat($pad_string, $rightPaddingLength), 0, $rightPaddingLength, $encoding);
+                $leftPaddingLength = intdiv($paddingRequired, 2);
         }
+
+        $rightPaddingLength = $paddingRequired - $leftPaddingLength;
+
+        return str_repeat($pad_string, intdiv($leftPaddingLength, $padStringLength)).mb_substr($pad_string, 0, $leftPaddingLength % $padStringLength, $encoding)
+            .$string
+            .str_repeat($pad_string, intdiv($rightPaddingLength, $padStringLength)).mb_substr($pad_string, 0, $rightPaddingLength % $padStringLength, $encoding);
     }
 
     public static function str_increment(string $string): string
