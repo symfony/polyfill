@@ -24,6 +24,9 @@ final class Uuid
     public const UUID_VARIANT_OTHER = 3;
     public const UUID_TYPE_DEFAULT = 0;
     public const UUID_TYPE_TIME = 1;
+    public const UUID_TYPE_TIME_V6 = 6;
+    public const UUID_TYPE_TIME_V7 = 7;
+    public const UUID_TYPE_VENDOR = 8;
     public const UUID_TYPE_MD5 = 3;
     public const UUID_TYPE_DCE = 4; // Deprecated alias
     public const UUID_TYPE_NAME = 1; // Deprecated alias
@@ -51,6 +54,10 @@ final class Uuid
             case self::UUID_TYPE_NAME:
             case self::UUID_TYPE_TIME:
                 return self::uuid_generate_time();
+            case self::UUID_TYPE_TIME_V6:
+                return self::uuid_generate_time(6);
+            case self::UUID_TYPE_TIME_V7:
+                return self::uuid_generate_time_v7();
             case self::UUID_TYPE_DCE:
             case self::UUID_TYPE_RANDOM:
             case self::UUID_TYPE_DEFAULT:
@@ -382,7 +389,7 @@ final class Uuid
     /**
      * @see http://tools.ietf.org/html/rfc4122#section-4.2.2
      */
-    private static function uuid_generate_time()
+    private static function uuid_generate_time($version = 1)
     {
         $time = microtime(false);
         $time = substr($time, 11).substr($time, 2, 7);
@@ -428,6 +435,24 @@ final class Uuid
             }
         }
 
+        if (6 === $version) {
+            // https://www.rfc-editor.org/rfc/rfc9562#section-5.6
+            return \sprintf('%08s-%04s-6%03s-%04x-%012s',
+                // 32 bits for "time_high"
+                substr($time, -15, 8),
+
+                // 16 bits for "time_mid"
+                substr($time, -7, 4),
+
+                // 16 bits for "time_low_and_version",
+                // four most significant bits holds version number 6
+                substr($time, -3),
+
+                $clockSeq | 0x8000,
+                $node
+            );
+        }
+
         return \sprintf('%08s-%04s-1%03s-%04x-%012s',
             // 32 bits for "time_low"
             substr($time, -8),
@@ -447,6 +472,40 @@ final class Uuid
 
             // 48 bits for "node"
             $node
+        );
+    }
+
+    /**
+     * @see https://www.rfc-editor.org/rfc/rfc9562#section-5.7
+     */
+    private static function uuid_generate_time_v7()
+    {
+        $time = microtime(false);
+        $time = substr($time, 11).substr($time, 2, 3);
+
+        if (\PHP_INT_SIZE >= 8) {
+            $time = str_pad(dechex($time), 12, '0', \STR_PAD_LEFT);
+        } else {
+            $time = bin2hex(str_pad(self::toBinary($time), 6, "\0", \STR_PAD_LEFT));
+        }
+
+        $uuid = bin2hex(random_bytes(10));
+
+        return \sprintf('%08s-%04s-7%03s-%04x-%012s',
+            // 48 bits for "unix_ts_ms"
+            substr($time, 0, 8),
+            substr($time, 8, 4),
+
+            // 16 bits for "ver" and "rand_a",
+            // four most significant bits holds version number 7
+            substr($uuid, 0, 3),
+
+            // 16 bits for "var" and "rand_b",
+            // two most significant bits holds one and zero for the RFC 9562 variant
+            hexdec(substr($uuid, 4, 4)) & 0x3FFF | 0x8000,
+
+            // 48 bits for the rest of "rand_b"
+            substr($uuid, 8, 12)
         );
     }
 

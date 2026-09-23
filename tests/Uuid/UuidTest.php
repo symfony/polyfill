@@ -13,6 +13,7 @@ namespace Symfony\Polyfill\Tests\Uuid;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\PhpUnit\ClockMock;
+use Symfony\Polyfill\Util\TestListenerTrait;
 use Symfony\Polyfill\Uuid\Uuid;
 
 class UuidTest extends TestCase
@@ -35,6 +36,30 @@ class UuidTest extends TestCase
         }
 
         $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', @uuid_create(99));
+    }
+
+    public function testCreateTimeV6()
+    {
+        $this->skipIfNativeCannotCreate(Uuid::UUID_TYPE_TIME_V6);
+
+        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-6[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $uuid = uuid_create(Uuid::UUID_TYPE_TIME_V6));
+        $this->assertSame(Uuid::UUID_TYPE_TIME_V6, uuid_type($uuid));
+    }
+
+    public function testCreateTimeV7()
+    {
+        $this->skipIfNativeCannotCreate(Uuid::UUID_TYPE_TIME_V7);
+
+        $before = floor(microtime(true) * 1000);
+        $uuid = uuid_create(Uuid::UUID_TYPE_TIME_V7);
+        $after = floor(microtime(true) * 1000);
+
+        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $uuid);
+        $this->assertSame(Uuid::UUID_TYPE_TIME_V7, uuid_type($uuid));
+
+        $time = hexdec(substr(str_replace('-', '', $uuid), 0, 12));
+        $this->assertGreaterThanOrEqual($before, $time);
+        $this->assertLessThanOrEqual($after, $time);
     }
 
     public function testGenerateMd5()
@@ -92,12 +117,16 @@ class UuidTest extends TestCase
         return [
             [Uuid::UUID_TYPE_RANDOM],
             [Uuid::UUID_TYPE_TIME],
+            [Uuid::UUID_TYPE_TIME_V6],
+            [Uuid::UUID_TYPE_TIME_V7],
         ];
     }
 
     /** @dataProvider provideCreateNoOverlapTests */
     public function testCreateNoOverlap(int $type)
     {
+        $this->skipIfNativeCannotCreate($type);
+
         $uuids = [];
         $count = 100000;
         for ($i = 0; $i < $count; ++$i) {
@@ -115,17 +144,27 @@ class UuidTest extends TestCase
         ClockMock::register(Uuid::class);
     }
 
+    public static function provideCreateTimeNoOverlapWithinOneMicrosecondTests(): array
+    {
+        return [
+            [Uuid::UUID_TYPE_TIME],
+            [Uuid::UUID_TYPE_TIME_V6],
+        ];
+    }
+
     /**
      * @group time-sensitive
+     *
+     * @dataProvider provideCreateTimeNoOverlapWithinOneMicrosecondTests
      */
-    public function testCreateTimeNoOverlapWithinOneMicrosecond()
+    public function testCreateTimeNoOverlapWithinOneMicrosecond(int $type)
     {
         ClockMock::withClockMock(1758000000.123456);
 
         try {
             $uuids = [];
             for ($i = 0; $i < 10000; ++$i) {
-                $uuids[] = Uuid::uuid_create(Uuid::UUID_TYPE_TIME);
+                $uuids[] = Uuid::uuid_create($type);
             }
         } finally {
             ClockMock::withClockMock(false);
@@ -136,6 +175,27 @@ class UuidTest extends TestCase
         // the clock did not move, so all of them share the timestamp and only the clock sequence varies
         $timestamps = array_map(function ($uuid) { return substr($uuid, 0, 18); }, $uuids);
         $this->assertCount(1, array_unique($timestamps));
+    }
+
+    /**
+     * @group time-sensitive
+     */
+    public function testCreateTimeLayout()
+    {
+        ClockMock::withClockMock(1758000000.123456);
+
+        try {
+            $v1 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME);
+            $v6 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME_V6);
+            $v7 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME_V7);
+        } finally {
+            ClockMock::withClockMock(false);
+        }
+
+        // libuuid generates the same timestamp fields at that time
+        $this->assertStringStartsWith('cabad680-92bc-11f0-', $v1);
+        $this->assertStringStartsWith('1f092bcc-abad-6680-', $v6);
+        $this->assertStringStartsWith('019950f7-2c7b-7', $v7);
     }
 
     public static function provideIsValidTest(): array
@@ -237,6 +297,9 @@ class UuidTest extends TestCase
             [Uuid::UUID_TYPE_RANDOM, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
             [Uuid::UUID_TYPE_TIME, 'dbc6260f-e9cc-11e9-8dac-9cb6d0897f07'],
             [Uuid::UUID_TYPE_TIME, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
+            [Uuid::UUID_TYPE_TIME_V6, '1ee9c9a6-2b52-6e1c-8d2a-0242ac120002'],
+            [Uuid::UUID_TYPE_TIME_V7, '01890a5d-ac96-774b-bcce-b302099a8057'],
+            [Uuid::UUID_TYPE_VENDOR, '01890a5d-ac96-874b-bcce-b302099a8057'],
         ];
     }
 
@@ -319,6 +382,9 @@ class UuidTest extends TestCase
             ['123e4567-e89b-12d3-4a56-426614174000'],
             ['123e4567-e89b-12d3-c456-426614174000'],
             ['123e4567-e89b-12d3-e456-426614174000'],
+            ['1ee9c9a6-2b52-6e1c-8d2a-0242ac120002'],
+            ['01890a5d-ac96-774b-bcce-b302099a8057'],
+            ['01890a5d-ac96-874b-bcce-b302099a8057'],
         ];
     }
 
@@ -358,6 +424,9 @@ class UuidTest extends TestCase
             ['123e4567-e89b-12d3-4a56-426614174000'],
             ['123e4567-e89b-12d3-c456-426614174000'],
             ['123e4567-e89b-12d3-e456-426614174000'],
+            ['1ee9c9a6-2b52-6e1c-8d2a-0242ac120002'],
+            ['01890a5d-ac96-774b-bcce-b302099a8057'],
+            ['01890a5d-ac96-874b-bcce-b302099a8057'],
         ];
     }
 
@@ -473,5 +542,23 @@ class UuidTest extends TestCase
         $this->assertStringContainsString($name, $deprecation);
 
         return $value;
+    }
+
+    private function skipIfNativeCannotCreate(int $type): void
+    {
+        if (TestListenerTrait::$enabledPolyfills || !\extension_loaded('uuid')) {
+            return;
+        }
+
+        // The extension creates v6 and v7 UUIDs only when built against util-linux >= 2.41
+        try {
+            $supported = $type === uuid_type(@uuid_create($type));
+        } catch (\ValueError $e) {
+            $supported = false;
+        }
+
+        if (!$supported) {
+            $this->markTestSkipped(\sprintf('The uuid extension cannot create UUIDs of type %d.', $type));
+        }
     }
 }
