@@ -81,6 +81,16 @@ class Php83Test extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Php83\Php83::mb_str_pad
+     */
+    public function testMbStrPadCopiesPadStringBytes()
+    {
+        $this->assertSame('+AOk-+AOk-', mb_str_pad('', 2, '+AOk-', \STR_PAD_RIGHT, 'UTF-7'));
+        $this->assertSame('+AOk-+AOk-+AOk-a', mb_str_pad('a', 4, '+AOk-', \STR_PAD_LEFT, 'UTF-7'));
+        $this->assertSame('+AOk-+AOk-a+AOk-+AOk-', mb_str_pad('a', 5, '+AOk-', \STR_PAD_BOTH, 'UTF-7'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::mb_str_pad
      *
      * @requires function memory_reset_peak_usage
      */
