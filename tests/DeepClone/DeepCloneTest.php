@@ -1859,6 +1859,162 @@ class DeepCloneTest extends TestCase
         $this->assertSame(99, $ghost->x);
     }
 
+    /**
+     * @requires PHP 8.4
+     */
+    public function testToArrayInitializesLazyGhost()
+    {
+        $this->skipIfExtensionKeepsLazyObjectsUninitialized();
+
+        $rc = new \ReflectionClass(DeepCloneLazyBase::class);
+        $initRan = 0;
+        $ghost = $rc->newLazyGhost(static function (DeepCloneLazyBase $o) use (&$initRan) {
+            ++$initRan;
+            $o->__construct('ghost');
+        });
+
+        $clone = deepclone_from_array(deepclone_to_array($ghost));
+
+        $this->assertSame(1, $initRan);
+        $this->assertFalse($rc->isUninitializedLazyObject($ghost));
+        $this->assertSame('ghost', $clone->value);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testToArrayInitializesLazyProxy()
+    {
+        $this->skipIfExtensionKeepsLazyObjectsUninitialized();
+
+        $factoryCalls = 0;
+        $proxy = (new \ReflectionClass(DeepCloneLazyChild::class))->newLazyProxy(static function () use (&$factoryCalls) {
+            ++$factoryCalls;
+            $instance = new DeepCloneLazyBase('proxied');
+            $instance->setSecret('s3cr3t');
+
+            return $instance;
+        });
+
+        // Like serialize(), the copy is a regular instance of the proxy's class
+        // holding the state of its real instance
+        $clone = deepclone_from_array(deepclone_to_array($proxy));
+
+        $this->assertSame(1, $factoryCalls);
+        $this->assertSame(DeepCloneLazyChild::class, \get_class($clone));
+        $this->assertSame('proxied', $clone->value);
+        $this->assertSame('s3cr3t', $clone->getSecret());
+
+        $clone = deepclone_from_array(deepclone_to_array($proxy));
+
+        $this->assertSame(1, $factoryCalls);
+        $this->assertSame('proxied', $clone->value);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testToArrayKeepsLazyProxyAndItsInstanceDistinct()
+    {
+        $this->skipIfExtensionKeepsLazyObjectsUninitialized();
+
+        $instance = new DeepCloneLazyBase('shared');
+        $proxy = (new \ReflectionClass(DeepCloneLazyBase::class))->newLazyProxy(static function () use ($instance) {
+            return $instance;
+        });
+
+        [$p, $i] = deepclone_from_array(deepclone_to_array([$proxy, $instance]));
+
+        $this->assertNotSame($p, $i);
+        $this->assertSame('shared', $p->value);
+        $this->assertSame('shared', $i->value);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testToArrayInitializesResetInstanceOfLazyProxy()
+    {
+        $this->skipIfExtensionKeepsLazyObjectsUninitialized();
+
+        $rc = new \ReflectionClass(DeepCloneLazyBase::class);
+        $instance = new DeepCloneLazyBase('orig');
+        $proxy = $rc->newLazyProxy(static function () use ($instance) {
+            return $instance;
+        });
+        $rc->initializeLazyObject($proxy);
+        $rc->resetAsLazyGhost($instance, static function (DeepCloneLazyBase $o) {
+            $o->__construct('reset');
+        });
+
+        $this->assertSame('reset', deepclone_from_array(deepclone_to_array($proxy))->value);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testToArrayIgnoresSkipInitializationOnSerialize()
+    {
+        $this->skipIfExtensionKeepsLazyObjectsUninitialized();
+
+        $rc = new \ReflectionClass(DeepCloneLazyBase::class);
+        $ghost = $rc->newLazyGhost(static function (DeepCloneLazyBase $o) {
+            $o->__construct('ghost');
+        }, \ReflectionClass::SKIP_INITIALIZATION_ON_SERIALIZE);
+        $proxy = $rc->newLazyProxy(static function () {
+            return new DeepCloneLazyBase('proxy');
+        }, \ReflectionClass::SKIP_INITIALIZATION_ON_SERIALIZE);
+
+        [$g, $p] = deepclone_from_array(deepclone_to_array([$ghost, $proxy]));
+
+        $this->assertSame('ghost', $g->value);
+        $this->assertSame('proxy', $p->value);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testToArrayPropagatesLazyInitializerException()
+    {
+        $this->skipIfExtensionKeepsLazyObjectsUninitialized();
+
+        $rc = new \ReflectionClass(DeepCloneLazyBase::class);
+        $proxy = $rc->newLazyProxy(static function () {
+            throw new \DomainException('boom');
+        });
+
+        try {
+            deepclone_to_array($proxy);
+            $this->fail('DomainException expected');
+        } catch (\DomainException $e) {
+            $this->assertSame('boom', $e->getMessage());
+        }
+
+        $this->assertTrue($rc->isUninitializedLazyObject($proxy));
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testToArrayExportsUntouchedGhostsFromFromArray()
+    {
+        $this->skipIfExtensionKeepsLazyObjectsUninitialized();
+
+        // The extension hydrates closure-bearing nodes as lazy ghosts
+        $a = new DeepCloneLazyNode('a', \Closure::fromCallable('strlen'));
+        $a->next = new DeepCloneLazyNode('b', \Closure::fromCallable('strtoupper'));
+        $a->next->next = $a;
+
+        $copy = deepclone_from_array(deepclone_to_array($a, null, true), null, true);
+        $again = deepclone_from_array(deepclone_to_array($copy, null, true), null, true);
+
+        $this->assertSame('a', $again->name);
+        $this->assertSame(3, ($again->cb)('abc'));
+        $this->assertSame('b', $again->next->name);
+        $this->assertSame('ABC', ($again->next->cb)('abc'));
+        $this->assertSame($again, $again->next->next);
+    }
+
     public function testHydrateReadonlyIdempotentSkipsSameValue()
     {
         $obj = new HydrateReadonly(123);
@@ -2599,5 +2755,12 @@ class DeepCloneTest extends TestCase
 
         $r = deepclone_from_array($payload);
         $this->assertSame(5, $r('hello'));
+    }
+
+    private function skipIfExtensionKeepsLazyObjectsUninitialized(): void
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.4', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.4 does not initialize lazy objects in deepclone_to_array().');
+        }
     }
 }
