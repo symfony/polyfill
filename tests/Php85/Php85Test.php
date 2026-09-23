@@ -198,6 +198,30 @@ class Php85Test extends TestCase
 
         grapheme_levenshtein('a', 'b', 1, 1, 1073741824);
     }
+
+    /**
+     * @requires extension intl
+     */
+    public function testGraphemeLevenshteinInvalidCostAndInvalidUtf8()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
+
+        grapheme_levenshtein("\xFF", 'a', 0);
+    }
+
+    /**
+     * @requires extension intl
+     *
+     * @group legacy
+     */
+    public function testGraphemeLevenshteinNullCost()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823');
+
+        @grapheme_levenshtein('a', 'b', 1, null);
+    }
 }
 
 class TestHandler

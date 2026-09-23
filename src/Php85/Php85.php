@@ -91,10 +91,6 @@ final class Php85
 
     public static function grapheme_levenshtein(string $s1, string $s2, int $insertion_cost = 1, int $replacement_cost = 1, int $deletion_cost = 1)
     {
-        if (!preg_match('//u', $s1) || !preg_match('//u', $s2)) {
-            return false;
-        }
-
         if ($insertion_cost <= 0 || $insertion_cost > 1073741823) {
             throw new \ValueError('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
         }
@@ -103,6 +99,10 @@ final class Php85
         }
         if ($deletion_cost <= 0 || $deletion_cost > 1073741823) {
             throw new \ValueError('grapheme_levenshtein(): Argument #5 ($deletion_cost) must be greater than 0 and less than or equal to 1073741823');
+        }
+
+        if (!preg_match('//u', $s1) || !preg_match('//u', $s2)) {
+            return false;
         }
 
         $regex = ((float) \PCRE_VERSION >= 10.44)

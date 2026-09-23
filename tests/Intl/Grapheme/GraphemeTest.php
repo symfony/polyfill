@@ -374,6 +374,30 @@ class GraphemeTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     */
+    public function testGraphemeLevenshteinInvalidCostAndInvalidUtf8()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
+
+        grapheme_levenshtein("\xFF", 'a', 0);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     *
+     * @group legacy
+     */
+    public function testGraphemeLevenshteinNullCost()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823');
+
+        @grapheme_levenshtein('a', 'b', 1, null);
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrev
      *
      * @dataProvider provideGraphemeStrrev

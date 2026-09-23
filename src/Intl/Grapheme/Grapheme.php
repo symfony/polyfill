@@ -248,10 +248,6 @@ final class Grapheme
 
     public static function grapheme_levenshtein($s1, $s2, $insertion_cost = 1, $replacement_cost = 1, $deletion_cost = 1)
     {
-        if (!preg_match('//u', $s1) || !preg_match('//u', $s2)) {
-            return false;
-        }
-
         if ($insertion_cost <= 0 || $insertion_cost > 1073741823) {
             throw new \ValueError('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
         }
@@ -260,6 +256,10 @@ final class Grapheme
         }
         if ($deletion_cost <= 0 || $deletion_cost > 1073741823) {
             throw new \ValueError('grapheme_levenshtein(): Argument #5 ($deletion_cost) must be greater than 0 and less than or equal to 1073741823');
+        }
+
+        if (!preg_match('//u', $s1) || !preg_match('//u', $s2)) {
+            return false;
         }
 
         preg_match_all('/'.SYMFONY_GRAPHEME_CLUSTER_RX.'/u', $s1, $s1);
