@@ -63,6 +63,14 @@ class IconvTest extends TestCase
     public function testIconvSubstr()
     {
         $this->assertSame('x', iconv_substr('x', 0, 1, 'UTF-8'));
+        $this->assertSame('éj', iconv_substr('déjà', 1, 2, 'utf-8'));
+        $this->assertFalse(@iconv_substr("d\xE9j\xE0", 1, 2, 'UTF-8'));
+
+        $this->assertSame("\xE9j", iconv_substr("d\xE9j\xE0", 1, 2, 'ISO-8859-1'));
+        $this->assertSame("\xE9j", iconv_substr("d\xE9j\xE0", -3, 2, 'iso-8859-1'));
+        $this->assertSame("\xE9j", iconv_substr("d\xE9j\xE0", 1, -1, 'ISO-8859-1'));
+        $this->assertSame("\x80", iconv_substr("d\xE9j\xE0 \x80", -1, 1, 'Windows-1252'));
+        $this->assertSame("j\xE0 \x80", iconv_substr("d\xE9j\xE0 \x80", 2, 10, 'windows-1252'));
     }
 
     /**
