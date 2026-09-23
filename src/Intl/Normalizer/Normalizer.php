@@ -115,10 +115,6 @@ class Normalizer
 
     public static function normalize(string $string, int $form = self::FORM_C)
     {
-        if (!preg_match('//u', $string)) {
-            return false;
-        }
-
         switch ($form) {
             case self::NFC: $C = true; $K = false; break;
             case self::NFD: $C = false; $K = false; break;
@@ -126,7 +122,7 @@ class Normalizer
             case self::NFKD: $C = false; $K = true; break;
             default:
                 if (\defined('Normalizer::NONE') && \Normalizer::NONE == $form) {
-                    return $string;
+                    return preg_match('//u', $string) ? $string : false;
                 }
 
                 if (80000 > \PHP_VERSION_ID) {
@@ -135,6 +131,10 @@ class Normalizer
 
                 // the doubled article was fixed in PHP 8.6
                 throw new \ValueError('normalizer_normalize(): Argument #2 ($form) must be a '.(80600 > \PHP_VERSION_ID ? 'a ' : '').'valid normalization form');
+        }
+
+        if (!preg_match('//u', $string)) {
+            return false;
         }
 
         if ('' === $string) {

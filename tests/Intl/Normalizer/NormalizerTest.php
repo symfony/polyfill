@@ -129,6 +129,19 @@ class NormalizerTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
+     */
+    public function testNormalizeChecksTheFormFirst()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('normalizer_normalize(): Argument #2 ($form) must be a '.(80600 > \PHP_VERSION_ID ? 'a ' : '').'valid normalization form');
+        }
+
+        $this->assertFalse(normalizer_normalize("\xFF", -1));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::getRawDecomposition
      */
     public function testGetRawDecomposition()
