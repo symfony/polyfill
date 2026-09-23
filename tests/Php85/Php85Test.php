@@ -156,6 +156,11 @@ class Php85Test extends TestCase
         $this->assertFalse(locale_is_right_to_left('en-x-hebr'));
         $this->assertTrue(locale_is_right_to_left('ar-x-latn'));
 
+        // Keywords and charsets are not subtags
+        $this->assertTrue(locale_is_right_to_left('ar@calendar=islamic'));
+        $this->assertTrue(locale_is_right_to_left('ar.UTF-8'));
+        $this->assertFalse(locale_is_right_to_left('ar-Latn@calendar=gregorian'));
+
         // LTR locales
         $this->assertFalse(locale_is_right_to_left('en'));
         $this->assertFalse(locale_is_right_to_left('fr'));

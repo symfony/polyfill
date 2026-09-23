@@ -102,7 +102,7 @@ final class Php85
             $locale = \Locale::getDefault();
         }
 
-        $parts = preg_split('/[_-]/', $locale);
+        $parts = preg_split('/[_-]/', substr($locale, 0, strcspn($locale, '@.')));
         $language = strtolower($parts[0]);
 
         if (isset($parts[1]) && 4 === \strlen($parts[1]) && ctype_alpha($parts[1])) {
