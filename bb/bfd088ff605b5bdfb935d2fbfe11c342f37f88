@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T14:26:14Z
+
+I replaced the change by a test: util-linux fixed this overflow in 2.42 (util-linux/util-linux@e6bd5aaa722c), and libuuid now returns the same negative value as the polyfill. For extensions that aren't bundled with PHP, the polyfill follows the newest native behavior, so the test pins that and skips when ext-uuid is linked to an older libuuid.
