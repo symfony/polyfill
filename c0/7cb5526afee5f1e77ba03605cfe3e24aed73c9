@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T12:46:46Z
+
+I replaced the require by `IntlBreakIterator`: the function is only declared when intl is loaded, and walking the boundaries backwards is what the native implementation does. With PCRE < 10.44, the regex behind `grapheme_str_split()` split ZWJ and Prepend sequences wrongly (`"xa\u{200D}"` gave `"\u{200D}ax"`). I did the same in the Grapheme copy so that both behave the same.
