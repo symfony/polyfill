@@ -19,6 +19,8 @@ namespace Symfony\Polyfill\Php84;
  */
 final class Php84
 {
+    private const BCMATH_WELL_FORMED = '/^[+-]?[0-9]*+(?:\.[0-9]*+)?$/D';
+
     /** @return string|false */
     public static function mb_ucfirst(string $string, ?string $encoding = null)
     {
@@ -234,7 +236,7 @@ final class Php84
 
     public static function bcceil(string $num): string
     {
-        if (!is_numeric($num)) {
+        if (!preg_match(self::BCMATH_WELL_FORMED, $num)) {
             throw new \ValueError('bcceil(): Argument #1 ($num) is not well-formed');
         }
 
@@ -253,7 +255,7 @@ final class Php84
 
     public static function bcfloor(string $num): string
     {
-        if (!is_numeric($num)) {
+        if (!preg_match(self::BCMATH_WELL_FORMED, $num)) {
             throw new \ValueError('bcfloor(): Argument #1 ($num) is not well-formed');
         }
 
@@ -265,7 +267,7 @@ final class Php84
      */
     public static function bcround(string $num, int $precision = 0, $mode = \RoundingMode::HalfAwayFromZero): string
     {
-        if (!is_numeric($num)) {
+        if (!preg_match(self::BCMATH_WELL_FORMED, $num)) {
             throw new \ValueError('bcround(): Argument #1 ($num) is not well-formed');
         }
 
