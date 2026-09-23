@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T13:04:45Z
+
+I added two commits: costs are now checked before the UTF-8 validation, and a null cost gives the ValueError native throws outside strict mode. `grapheme_str_split()` also rejected a zero length through `array_chunk()`'s own error.
