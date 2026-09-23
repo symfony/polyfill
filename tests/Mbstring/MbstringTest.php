@@ -569,6 +569,21 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_check_encoding
+     */
+    public function testCheckEncodingAboveMaxCodePoint()
+    {
+        $this->assertTrue(mb_check_encoding("\xF4\x8F\xBF\xBF", 'UTF-8'));
+        $this->assertFalse(mb_check_encoding("\xF4\x90\x80\x80", 'UTF-8'));
+        $this->assertFalse(mb_check_encoding("\xF7\xBF\xBF\xBF", 'UTF-8'));
+        $this->assertFalse(mb_check_encoding("\xF8\x88\x80\x80\x80", 'UTF-8'));
+        $this->assertFalse(mb_check_encoding("\xFD\xBF\xBF\xBF\xBF\xBF", 'UTF-8'));
+        $this->assertFalse(mb_check_encoding("a\xF4\x90\x80\x80b", 'UTF8'));
+        $this->assertFalse(mb_check_encoding(['a', "\xF4\x90\x80\x80"], 'UTF-8'));
+        $this->assertFalse(mb_check_encoding(["\xF4\x90\x80\x80" => 'a'], 'UTF-8'));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_detect_encoding
      */
     public function testDetectEncoding()
