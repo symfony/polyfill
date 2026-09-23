@@ -384,8 +384,29 @@ CP_STATUS;
     {
         $handle = fopen(self::getFile('DerivedBidiClass.txt'), 'r');
         $bidiData = [];
+        $missingData = [];
+        $bidiAliases = [
+            'Left_To_Right' => 'L',
+            'Right_To_Left' => 'R',
+            'Arabic_Letter' => 'AL',
+            'European_Terminator' => 'ET',
+            'Boundary_Neutral' => 'BN',
+        ];
 
         while (false !== ($line = fgets($handle))) {
+            // Unassigned code points whose default is not L are only listed in @missing lines
+            if (preg_match('/^# @missing: ([[:xdigit:]]+)\.\.([[:xdigit:]]+); (\w+)/', $line, $matches)) {
+                if (!isset($bidiAliases[$matches[3]])) {
+                    throw new \RuntimeException(\sprintf('Unknown bidi class "%s".', $matches[3]));
+                }
+
+                if ('L' !== $bidiAliases[$matches[3]]) {
+                    $missingData[] = [[\intval($matches[1], 16), \intval($matches[2], 16)], $bidiAliases[$matches[3]]];
+                }
+
+                continue;
+            }
+
             if ("\n" === $line || '#' === $line[0]) {
                 continue;
             }
@@ -406,6 +427,28 @@ CP_STATUS;
 
             return $a[0][0] < $b[0][0] ? -1 : 1;
         };
+        usort($bidiData, $cpSort);
+        $defaultData = [];
+
+        foreach ($missingData as [[$start, $end], $bidiClass]) {
+            foreach ($bidiData as [[$from, $to]]) {
+                if ($to < $start || $from > $end) {
+                    continue;
+                }
+
+                if ($from > $start) {
+                    $defaultData[] = [[$start, $from - 1], $bidiClass];
+                }
+
+                $start = $to + 1;
+            }
+
+            if ($start <= $end) {
+                $defaultData[] = [[$start, $end], $bidiClass];
+            }
+        }
+
+        $bidiData = array_merge($bidiData, $defaultData);
         $buildCharClass = static function (array $data) {
             $out = '';
 

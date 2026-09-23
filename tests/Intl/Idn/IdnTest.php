@@ -13,6 +13,7 @@ namespace Symfony\Polyfill\Tests\Intl\Idn;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Intl\Idn\Idn;
+use Symfony\Polyfill\Util\TestListenerTrait;
 
 /**
  * @author Renan Gonçalves <renan.saddam@gmail.com>
@@ -122,8 +123,8 @@ class IdnTest extends TestCase
      */
     public function testToUnicode($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
     {
-        if (\defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '74', '>=')) {
-            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 13.0.0; ICU 74+ uses newer Unicode data.');
+        if (!TestListenerTrait::$enabledPolyfills && \defined('INTL_ICU_VERSION') && (version_compare(\INTL_ICU_VERSION, '74', '<') || version_compare(\INTL_ICU_VERSION, '76', '>='))) {
+            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 15.1.0, which only ICU 74 and 75 use.');
         }
 
         if (\PHP_VERSION_ID >= 80400 && '' === $source) {
@@ -158,8 +159,8 @@ class IdnTest extends TestCase
      */
     public function testToAsciiNonTransitional($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
     {
-        if (\defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '74', '>=')) {
-            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 13.0.0; ICU 74+ uses newer Unicode data.');
+        if (!TestListenerTrait::$enabledPolyfills && \defined('INTL_ICU_VERSION') && (version_compare(\INTL_ICU_VERSION, '74', '<') || version_compare(\INTL_ICU_VERSION, '76', '>='))) {
+            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 15.1.0, which only ICU 74 and 75 use.');
         }
 
         if (\PHP_VERSION_ID >= 80400 && '' === $source) {
@@ -194,8 +195,8 @@ class IdnTest extends TestCase
      */
     public function testToAsciiTransitional($source, $toUnicode, $toUnicodeStatus, $toAsciiN, $toAsciiNStatus, $toAsciiT, $toAsciiTStatus)
     {
-        if (\defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '74', '>=')) {
-            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 13.0.0; ICU 74+ uses newer Unicode data.');
+        if (!TestListenerTrait::$enabledPolyfills && \defined('INTL_ICU_VERSION') && (version_compare(\INTL_ICU_VERSION, '74', '<') || version_compare(\INTL_ICU_VERSION, '76', '>='))) {
+            $this->markTestSkipped('IdnaTestV2.txt is based on Unicode 15.1.0, which only ICU 74 and 75 use.');
         }
 
         if (\PHP_VERSION_ID >= 80400 && '' === $source) {
@@ -635,5 +636,27 @@ class IdnTest extends TestCase
 
         $this->assertSame('xn--4gq.example', Idn::idn_to_ascii("\xE4\xB8\x80.example", Idn::IDNA_DEFAULT, Idn::INTL_IDNA_VARIANT_UTS46, $info));
         $this->assertSame(0, $info['errors']);
+    }
+
+    /**
+     * @dataProvider joinControlProvider
+     */
+    public function testContextJUsesRecentUnicodeData($domain, $errors)
+    {
+        idn_to_ascii($domain, \IDNA_CHECK_CONTEXTJ | \IDNA_NONTRANSITIONAL_TO_ASCII, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame($errors, $info['errors']);
+
+        idn_to_utf8($domain, \IDNA_CHECK_CONTEXTJ | \IDNA_NONTRANSITIONAL_TO_UNICODE, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame($errors, $info['errors']);
+    }
+
+    public static function joinControlProvider()
+    {
+        return [
+            // U+1734 is not transparent since Unicode 14.0
+            ["\u{0628}\u{200C}\u{1734}\u{0628}", Idn::ERROR_CONTEXTJ],
+            // U+1715 is a virama since Unicode 14.0
+            ["\u{1703}\u{1715}\u{200C}\u{1703}", 0],
+        ];
     }
 }
