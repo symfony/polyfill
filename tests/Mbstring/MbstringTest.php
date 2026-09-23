@@ -684,6 +684,96 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_chr
+     */
+    public function testChrWithInvalidEncoding()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_chr(65, 'FOO'));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_chr(): Unknown encoding "FOO"');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_chr(): Argument #2 ($encoding) must be a valid encoding, "FOO" given');
+        }
+
+        mb_chr(65, 'FOO');
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_chr
+     */
+    public function testChrWithUnsupportedEncoding()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_chr(65, 'utf7'));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_chr(): Unsupported encoding');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_chr() does not support the "UTF-7" encoding');
+        }
+
+        mb_chr(65, 'utf7');
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_ord
+     */
+    public function testOrdWithEmptyString()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_ord(''));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_ord(): Empty string');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_ord(): Argument #1 ($string) must not be empty');
+        }
+
+        mb_ord('');
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_ord
+     */
+    public function testOrdWithInvalidEncoding()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_ord('A', 'FOO'));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_ord(): Unknown encoding "FOO"');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_ord(): Argument #2 ($encoding) must be a valid encoding, "FOO" given');
+        }
+
+        mb_ord('A', 'FOO');
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_ord
+     */
+    public function testOrdWithUnsupportedEncoding()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_ord('A', 'ISO-2022-JP'));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_ord(): Unsupported encoding "ISO-2022-JP"');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_ord() does not support the "ISO-2022-JP" encoding');
+        }
+
+        mb_ord('A', 'ISO-2022-JP');
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_ord
      */
     public function testOrd()
