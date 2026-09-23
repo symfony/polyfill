@@ -27,6 +27,16 @@ class UuidTest extends TestCase
         $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', uuid_create(\UUID_TYPE_TIME));
     }
 
+    public function testCreateWithInvalidType()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('uuid_create(): Argument #1 ($uuid_type) Unknown/invalid UUID type \'99\'');
+        }
+
+        $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', @uuid_create(99));
+    }
+
     public function testGenerateMd5()
     {
         $uuidNs = uuid_create();
@@ -166,6 +176,13 @@ class UuidTest extends TestCase
         }
 
         $this->assertSame($expected, $result);
+    }
+
+    public function testCompareTimeFields()
+    {
+        $this->assertSame(-1, uuid_compare('00000000-0000-0000-0000-000000000000', 'ffffffff-ffff-ffff-ffff-ffffffffffff'));
+        $this->assertSame(1, uuid_compare('6ba7b810-9dad-11d1-80b4-00c04fd430c8', '1ee9c9a6-2b52-6e1c-8d2a-0242ac120002'));
+        $this->assertSame(0, uuid_compare('6BA7B810-9DAD-11D1-80B4-00C04FD430C8', '6ba7b810-9dad-11d1-80b4-00c04fd430c8'));
     }
 
     public function testCompareWithInvalidUuidLeft()

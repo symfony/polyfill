@@ -56,6 +56,10 @@ final class Uuid
             case self::UUID_TYPE_DEFAULT:
                 return self::uuid_generate_random();
             default:
+                if (80000 <= \PHP_VERSION_ID) {
+                    throw new \ValueError(\sprintf('uuid_create(): Argument #1 ($uuid_type) Unknown/invalid UUID type \'%d\'', $uuid_type));
+                }
+
                 trigger_error(\sprintf("Unknown/invalid UUID type '%d' requested, using default type instead", $uuid_type), \E_USER_WARNING);
 
                 return self::uuid_generate_random();
@@ -187,7 +191,7 @@ final class Uuid
             throw new \ValueError('uuid_compare(): Argument #2 ($uuid2) UUID expected');
         }
 
-        return strcasecmp($uuid1, $uuid2);
+        return strcasecmp($uuid1, $uuid2) <=> 0;
     }
 
     public static function uuid_is_null($uuid)
