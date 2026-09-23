@@ -700,6 +700,11 @@ final class Idn
 
             $n += intdiv($i, $outPlusOne);
             $i %= $outPlusOne;
+
+            if ($n > 0x10FFFF || ($n >= 0xD800 && $n <= 0xDFFF)) {
+                throw new \Exception('Invalid code point');
+            }
+
             array_splice($output, $i++, 0, [mb_chr($n, 'utf-8')]);
         }
 
