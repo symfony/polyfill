@@ -665,17 +665,27 @@ final class Mbstring
             throw new \ValueError('Argument #2 ($length) must be greater than 0');
         }
 
+        if (80300 <= \PHP_VERSION_ID && 0x3FFFFFFF < $split_length) {
+            throw new \ValueError('Argument #2 ($length) is too large');
+        }
+
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
         }
 
         if ('UTF-8' === $encoding = self::getEncoding($encoding)) {
+            $string = (string) $string;
+
+            if (\strlen($string) <= $split_length) {
+                return '' === $string ? [] : [$string];
+            }
+
             $rx = '/(';
             while (65535 < $split_length) {
                 $rx .= '.{65535}';
                 $split_length -= 65535;
             }
-            $rx .= '.{'.$split_length.'})/us';
+            $rx .= '.{'.$split_length.'})/Aus';
 
             return preg_split($rx, $string, -1, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
         }
