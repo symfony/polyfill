@@ -186,6 +186,8 @@ class Php86Test extends TestCase
 
     /**
      * @dataProvider provideGraphemeStrrev
+     *
+     * @requires extension intl
      */
     public function testGraphemeStrrev(string $expected, string $string)
     {
@@ -205,6 +207,8 @@ class Php86Test extends TestCase
             ['🎉👍🏽🎊', '🎊👍🏽🎉'],
             ['C👍🏽A', 'A👍🏽C'],
             ["B\0A", "A\0B"],
+            ["a\u{200D}x", "xa\u{200D}"],
+            ["b\u{0600}a", "\u{0600}ab"],
         ];
     }
 

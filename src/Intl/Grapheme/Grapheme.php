@@ -366,6 +366,20 @@ final class Grapheme
             return false;
         }
 
+        if (\extension_loaded('intl')) {
+            $iterator = \IntlBreakIterator::createCharacterInstance();
+            $iterator->setText($string);
+            $reversed = '';
+            $end = $iterator->last();
+
+            while (\IntlBreakIterator::DONE !== $start = $iterator->previous()) {
+                $reversed .= substr($string, $start, $end - $start);
+                $end = $start;
+            }
+
+            return $reversed;
+        }
+
         $units = grapheme_str_split($string);
 
         if (false === $units) {
