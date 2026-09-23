@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T14:36:00Z
+
+I added a commit that builds the padding like ext/mbstring does: whole copies of the pad string, then its first characters for the remainder. With a one-character pad, keeping the repeated string alive raised peak memory above the previous level (`mb_str_pad($s, 58000003, ' ', STR_PAD_BOTH)` ran out of 128M where it didn't), and UTF-7 pad bytes were re-encoded.
