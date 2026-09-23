@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T13:23:09Z
+
+I added two commits: keywords and charsets are now ignored like ICU does, which also matters for the empty-locale path since `Locale::getDefault()` can return such IDs, and `Locale::isRightToLeft()` in the Icu polyfill gets the same fixes, since it had the same tables. I also added assertions for the new cases.
