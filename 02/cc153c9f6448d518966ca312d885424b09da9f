@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T12:17:06Z
+
+I made the regex possessive: with `[0-9]*\.?[0-9]*`, a long run of digits followed by an invalid byte backtracked until `pcre.backtrack_limit` and left `preg_last_error()` set. Test added.
