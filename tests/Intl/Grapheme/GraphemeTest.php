@@ -269,12 +269,22 @@ class GraphemeTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_str_split
+     *
+     * @dataProvider provideGraphemeStrSplitInvalidLength
      */
-    public function testGraphemeStrSplitNegativeLength()
+    public function testGraphemeStrSplitInvalidLength(int $length)
     {
-        $this->expectException(\ValueError::class);
+        try {
+            grapheme_str_split('abc', $length);
+            $this->fail('A ValueError should have been thrown');
+        } catch (\ValueError $e) {
+            $this->assertSame('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823', $e->getMessage());
+        }
+    }
 
-        grapheme_str_split('abc', -1);
+    public static function provideGraphemeStrSplitInvalidLength(): array
+    {
+        return [[-1], [0], [1073741824]];
     }
 
     public static function graphemeStrSplitDataProvider(): array
@@ -349,12 +359,52 @@ class GraphemeTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     *
+     * @dataProvider provideGraphemeLevenshteinInvalidCost
      */
-    public function testGraphemeLevenshteinNegativeCost()
+    public function testGraphemeLevenshteinInvalidCost(array $costs, string $message)
     {
         $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage($message);
 
-        grapheme_levenshtein('a', 'b', -1);
+        grapheme_levenshtein('a', 'b', ...$costs);
+    }
+
+    public static function provideGraphemeLevenshteinInvalidCost(): array
+    {
+        return [
+            [[-1], 'grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[0], 'grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1073741824], 'grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 0], 'grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 1073741824], 'grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 1, 0], 'grapheme_levenshtein(): Argument #5 ($deletion_cost) must be greater than 0 and less than or equal to 1073741823'],
+            [[1, 1, 1073741824], 'grapheme_levenshtein(): Argument #5 ($deletion_cost) must be greater than 0 and less than or equal to 1073741823'],
+        ];
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     */
+    public function testGraphemeLevenshteinInvalidCostAndInvalidUtf8()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
+
+        grapheme_levenshtein("\xFF", 'a', 0);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     *
+     * @group legacy
+     */
+    public function testGraphemeLevenshteinNullCost()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('grapheme_levenshtein(): Argument #4 ($replacement_cost) must be greater than 0 and less than or equal to 1073741823');
+
+        @grapheme_levenshtein('a', 'b', 1, null);
     }
 
     /**

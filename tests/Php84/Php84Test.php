@@ -724,6 +724,24 @@ class Php84Test extends TestCase
         $this->assertSame($expectedValues, grapheme_str_split($string, $length));
     }
 
+    /**
+     * @dataProvider provideGraphemeStrSplitInvalidLength
+     */
+    public function testGraphemeStrSplitInvalidLength(int $length)
+    {
+        try {
+            grapheme_str_split('abc', $length);
+            $this->fail('A ValueError should have been thrown');
+        } catch (\ValueError $e) {
+            $this->assertSame('grapheme_str_split(): Argument #2 ($length) must be greater than 0 and less than or equal to 1073741823', $e->getMessage());
+        }
+    }
+
+    public static function provideGraphemeStrSplitInvalidLength(): array
+    {
+        return [[-1], [0], [1073741824]];
+    }
+
     public function testGraphemeStrSplitInvalidUtf8()
     {
         // Ill-formed bytes are kept, and cluster the way U+FFFD would.
