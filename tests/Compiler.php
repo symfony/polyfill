@@ -27,10 +27,16 @@ class Compiler
     public static function translitMap($out_dir)
     {
         $map = [];
+        $canonical = [];
 
         $h = fopen(self::getFile('UnicodeData.txt'), 'r');
         while (false !== $line = fgets($h)) {
             $m = [];
+
+            if (preg_match('/^([^;]*);[^;]*;[^;]*;[^;]*;[^;]*;([0-9A-F]++)[ ;]/', $line, $m)) {
+                $canonical[hexdec($m[1])] = hexdec($m[2]);
+                $m = [];
+            }
 
             if (preg_match('/^([^;]*);[^;]*;[^;]*;[^;]*;[^;]*;<(circle|compat|font|fraction|narrow|small|square|wide)> ([^;]*);/', $line, $m)) {
                 $m[1] = self::chr(hexdec($m[1]));
@@ -78,6 +84,18 @@ class Compiler
                 }
 
                 isset($map[$m[1]]) || $map[$m[1]] = $m[2];
+            }
+        }
+
+        // Characters whose canonical decomposition starts with an ASCII character, e.g. "é" => "e"
+        foreach ($canonical as $c => $base) {
+            while (isset($canonical[$base])) {
+                $base = $canonical[$base];
+            }
+
+            if (0x80 > $base) {
+                $c = self::chr($c);
+                isset($map[$c]) || $map[$c] = \chr($base);
             }
         }
 

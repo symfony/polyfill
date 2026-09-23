@@ -663,16 +663,6 @@ final class Iconv
             } elseif ($translit) {
                 if (isset(self::$translitMap[$uchr])) {
                     $uchr = self::$translitMap[$uchr];
-                } elseif ($uchr >= "\xC3\x80") {
-                    $uchr = \Normalizer::normalize($uchr, \Normalizer::NFD);
-
-                    if ($uchr[0] < "\x80") {
-                        $uchr = $uchr[0];
-                    } elseif ($ignore) {
-                        continue;
-                    } else {
-                        return false;
-                    }
                 } elseif ($ignore) {
                     continue;
                 } else {
