@@ -201,7 +201,7 @@ class MessageFormatter
                             throw new \DomainException('Message pattern is invalid.');
                         }
                         $selector = trim($sub[$i]);
-                        if ('plural' === $type && 0 === $i && 0 === strncmp($selector, 'offset:', 7)) {
+                        if ('select' !== $type && 0 === $i && 0 === strncmp($selector, 'offset:', 7)) {
                             $offsetEnd = strpos(str_replace(["\n", "\r", "\t"], ' ', $selector), ' ', 7);
                             $selector = false !== $offsetEnd ? trim(substr($selector, 1 + $offsetEnd)) : '';
                         }

@@ -148,6 +148,14 @@ class MessageFormatterTest extends TestCase
             ],
 
             [
+                '{a, selectordinal, offset:1 other{#th} one{#st} two{#nd} few{#rd}}', // pattern
+                '2nd', // expected
+                [ // params
+                    'a' => 3,
+                ],
+            ],
+
+            [
                 '{a, plural, =1{exactly one} one{# item} other{# items}} {b, plural, =2{a pair} other{# items}}', // pattern
                 'exactly one a pair', // expected
                 [ // params
