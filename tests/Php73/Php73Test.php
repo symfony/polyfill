@@ -61,11 +61,8 @@ class Php73Test extends TestCase
         usleep(100000);
         $hrtime2 = hrtime(true);
 
-        if (\PHP_INT_SIZE === 4) {
-            $this->assertGreaterThanOrEqual(90000000.0, $hrtime2 - $hrtime);
-        } else {
-            $this->assertGreaterThanOrEqual(100000000.0, $hrtime2 - $hrtime);
-        }
+        // since PHP 8.6, hrtime() reads the raw clock, on which NTP can make usleep() up to 10% shorter
+        $this->assertGreaterThanOrEqual(90000000.0, $hrtime2 - $hrtime);
     }
 
     public function testHardwareTimeAsArrayType()
@@ -96,8 +93,10 @@ class Php73Test extends TestCase
         usleep(1000000);
         $hrtime2 = hrtime();
 
-        $this->assertGreaterThanOrEqual(1, $hrtime2[0] - $hrtime[0]);
-        $this->assertGreaterThanOrEqual(0, $hrtime2[1] - $hrtime[1]);
+        // compare the whole duration, with the 10% margin of testHardwareTimeAsNum
+        $elapsed = 1000000000 * ($hrtime2[0] - $hrtime[0]) + $hrtime2[1] - $hrtime[1];
+
+        $this->assertGreaterThanOrEqual(900000000, $elapsed);
     }
 
     /**
