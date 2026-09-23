@@ -187,6 +187,18 @@ class MessageFormatterTest extends TestCase
             ],
 
             [
+                '{a, plural, one{# item} other{# items}} {b, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {c, plural, offset:1 other{# others}} {d, plural, one{# item} other{# items}} {e, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '1,000 items 1,001st 1,234.568 others 1 item 21st', // expected
+                [ // params
+                    'a' => 1000,
+                    'b' => 1001,
+                    'c' => 1235.5678,
+                    'd' => 0.9999,
+                    'e' => 21.0004,
+                ],
+            ],
+
+            [
                 '{a, number} {b, number} {c, number} {d, number}', // pattern
                 '1,234.5 -1,234.5 1.235 1,234.5', // expected
                 [ // params

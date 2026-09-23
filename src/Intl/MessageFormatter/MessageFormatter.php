@@ -345,6 +345,7 @@ class MessageFormatter
                 $message = false;
                 $offset = 0;
                 $arg = (float) $arg; // like intl, which reads the argument as a double
+                $number = self::formatNumber($arg);
                 for ($i = 0; 1 + $i < $c; ++$i) {
                     if (\is_array($plural[$i]) || !\is_array($plural[1 + $i])) {
                         throw new \DomainException('Message pattern is invalid.');
@@ -355,17 +356,19 @@ class MessageFormatter
                         $pos = strpos(str_replace(["\n", "\r", "\t"], ' ', $selector), ' ', 7);
                         $offset = (int) trim(substr($selector, 7, $pos - 7));
                         $selector = trim(substr($selector, 1 + $pos, \strlen($selector)));
+                        $number = self::formatNumber($arg - $offset);
                     }
                     // Explicit values take precedence over keywords
                     if ('=' === $selector[0] && (float) substr($selector, 1, \strlen($selector)) == $arg) {
-                        $message = implode(',', str_replace('#', $arg - $offset, $plural[$i]));
+                        $message = implode(',', str_replace('#', $number, $plural[$i]));
                         break;
                     }
+                    // Like intl, keywords are selected from the number as printed
                     if (false === $message && 'other' === $selector
-                        || 'plural' === $type && 'one' === $selector && 1 == abs($arg - $offset)
-                        || 'selectordinal' === $type && self::getEnglishOrdinalCategory($arg - $offset) === $selector
+                        || 'plural' === $type && 'one' === $selector && '1' === ltrim($number, '-')
+                        || 'selectordinal' === $type && self::getEnglishOrdinalCategory((float) str_replace(',', '', $number)) === $selector
                     ) {
-                        $message = implode(',', str_replace('#', $arg - $offset, $plural[$i]));
+                        $message = implode(',', str_replace('#', $number, $plural[$i]));
                     }
                 }
                 if (false !== $message) {
