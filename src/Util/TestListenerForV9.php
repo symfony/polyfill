@@ -73,7 +73,9 @@ class TestListenerForV9 extends TestSuite implements TestListenerInterface
 
     public function endTestSuite(TestSuite $suite): void
     {
-        TestListenerTrait::$enabledPolyfills = false;
+        if ($suite instanceof TestListener) {
+            TestListenerTrait::$enabledPolyfills = false;
+        }
     }
 
     public function startTest(Test $test): void
