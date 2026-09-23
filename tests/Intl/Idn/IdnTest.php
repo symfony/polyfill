@@ -416,6 +416,30 @@ class IdnTest extends TestCase
         ];
     }
 
+    /**
+     * @dataProvider invalidCodePointPunycodeProvider
+     */
+    public function testLabelDecodingToAnInvalidCodePointIsRejected($input)
+    {
+        $this->assertFalse(idn_to_ascii($input, \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info));
+        $this->assertSame(\IDNA_ERROR_PUNYCODE, $info['errors']);
+
+        $this->assertFalse(idn_to_utf8($input, \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46, $info));
+        $this->assertSame(\IDNA_ERROR_PUNYCODE, $info['errors']);
+    }
+
+    public static function invalidCodePointPunycodeProvider()
+    {
+        return [
+            ['xn--zzzzzzzzzzzzzzzzz1262e'], // U+885E U+9CE5 U+7BA5 U+13C726 U+7CEA U+7E16 U+B047
+            ['xn--4gqz7135h'], // U+4E00 U+110000
+            ['xn--8016146o'], // U+7FFFFFFF
+            ['example.xn--en32g.com'], // U+110000
+            ['xn--9ca0421i'], // U+00E9 U+D800
+            ['xn--9caa3442o'], // U+00E9 U+DFFF U+00E9
+        ];
+    }
+
     public static function captialSharpSProvider()
     {
         return [
