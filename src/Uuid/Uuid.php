@@ -24,6 +24,7 @@ final class Uuid
     public const UUID_VARIANT_OTHER = 3;
     public const UUID_TYPE_DEFAULT = 0;
     public const UUID_TYPE_TIME = 1;
+    public const UUID_TYPE_SECURITY = 2;
     public const UUID_TYPE_TIME_V6 = 6;
     public const UUID_TYPE_TIME_V7 = 7;
     public const UUID_TYPE_VENDOR = 8;

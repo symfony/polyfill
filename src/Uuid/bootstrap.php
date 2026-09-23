@@ -37,6 +37,9 @@ if (!defined('UUID_TYPE_DEFAULT')) {
 if (!defined('UUID_TYPE_TIME')) {
     define('UUID_TYPE_TIME', 1);
 }
+if (!defined('UUID_TYPE_SECURITY')) {
+    define('UUID_TYPE_SECURITY', 2);
+}
 if (!defined('UUID_TYPE_TIME_V6')) {
     define('UUID_TYPE_TIME_V6', 6);
 }
