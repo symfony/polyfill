@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T14:42:17Z
+
+I made the test call `idn_to_ascii()`/`idn_to_utf8()` so that it checks native too, and added one case per changed line. Note this also fixes false rejects: `"aaaa\u{0628}\u{200C}\u{0628}\u{200C}\u{0628}"` failed with `ERROR_CONTEXTJ` before.
