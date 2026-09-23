@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T14:52:29Z
+
+I added two commits: native accepts any positive length before PHP 8.3, with no warning on PHP 7 either, so the check now only applies from 8.3, and the tests run against native too. The regex is also anchored: unanchored matching was quadratic, and 400000 bytes with a 300000 length took 2.8s, now 1.3ms.
