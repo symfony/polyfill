@@ -13,6 +13,7 @@ namespace Symfony\Polyfill\Tests\Mbstring;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Polyfill\Mbstring\Mbstring as p;
+use Symfony\Polyfill\Util\TestListenerTrait;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
@@ -267,6 +268,9 @@ class MbstringTest extends TestCase
 
         $convmap = [0x100, 0x10FFFF, 0, 0x1FFFFF];
         $this->assertSame(pack('N*', 0x61, 0x200000, 0x4000000, ...unpack('C*', '&#256;')), mb_encode_numericentity(pack('N*', 0x61, 0x200000, 0x4000000, 0x100), $convmap, 'UCS-4BE'));
+
+        $convmap = [0x0, 0x10FFFF, 0, 0x1FFFFF];
+        $this->assertSame(pack('N*', ...unpack('C*', '&#97;')).pack('N', 0x200000).pack('N*', ...unpack('C*', '&#98;')), mb_encode_numericentity(pack('N*', 0x61, 0x200000, 0x62), $convmap, 'UCS-4BE'));
     }
 
     /**
@@ -780,6 +784,33 @@ class MbstringTest extends TestCase
     {
         $this->assertSame(0x20BB7, mb_ord("\xF0\xA0\xAE\xB7"));
         $this->assertSame(0xE9, mb_ord("\xE9", 'CP1252'));
+
+        $this->assertSame(0x7F, mb_ord("\x7F", 'UTF-8'));
+        $this->assertSame(0x80, mb_ord("\xC2\x80", 'UTF-8'));
+        $this->assertSame(0x7FF, mb_ord("\xDF\xBF", 'UTF-8'));
+        $this->assertSame(0x800, mb_ord("\xE0\xA0\x80", 'UTF-8'));
+        $this->assertSame(0xD7FF, mb_ord("\xED\x9F\xBF", 'UTF-8'));
+        $this->assertSame(0xE000, mb_ord("\xEE\x80\x80", 'UTF-8'));
+        $this->assertSame(0xFFFF, mb_ord("\xEF\xBF\xBF", 'UTF-8'));
+        $this->assertSame(0x10000, mb_ord("\xF0\x90\x80\x80", 'UTF-8'));
+        $this->assertSame(0x10FFFF, mb_ord("\xF4\x8F\xBF\xBF", 'UTF-8'));
+    }
+
+    public function testOrdRejectsMalformedUtf8()
+    {
+        if (\PHP_VERSION_ID < 70300 && false === TestListenerTrait::$enabledPolyfills) {
+            $this->markTestSkipped('Native mb_ord() does not reject malformed UTF-8 on PHP 7.2.');
+        }
+
+        $malformed = [
+            "\x80", "\xBF", "\xC0\x80", "\xC1\xBF", "\xC3", "\xC3\n", "\xE0\x80\x80", "\xE0\x9F\xBF", "\xE2\x82", "\xE2\x82A",
+            "\xED\xA0\x80", "\xED\xBF\xBF", "\xF0\x80\x80\x80", "\xF0\x8F\xBF\xBF", "\xF0\x90\x80", "\xF0\x90\x80A", "\xF4\x90\x80\x80",
+            "\xF5\x80\x80\x80", "\xF8\x88\x80\x80\x80", "\xFC\x84\x80\x80\x80\x80", "\xFF",
+        ];
+
+        foreach ($malformed as $s) {
+            $this->assertFalse(mb_ord($s, 'UTF-8'), bin2hex($s));
+        }
     }
 
     public function testScrub()

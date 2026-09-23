@@ -322,7 +322,12 @@ final class Mbstring
             $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"] ?? 1;
             $uchr = substr($s, $i, $ulen);
             $i += $ulen;
-            $c = self::mb_ord($uchr);
+
+            // code points above U+10FFFF are outside any convmap, but mb_ord() rejects them
+            if (false === $c = self::mb_ord($uchr)) {
+                $result .= $uchr;
+                continue;
+            }
 
             for ($j = 0; $j < $cnt; $j += 4) {
                 if ($c >= $convmap[$j] && $c <= $convmap[$j + 1]) {
@@ -906,22 +911,46 @@ final class Mbstring
             $s = mb_convert_encoding($s, 'UTF-8', $encoding);
         }
 
-        if (1 === \strlen($s)) {
-            return \ord($s);
+        $s = unpack('C*', substr($s, 0, 4));
+        $code = $s[1] ?? 0;
+        if (0x80 > $code) {
+            return $code;
         }
 
-        $code = ($s = unpack('C*', substr($s, 0, 4))) ? $s[1] : 0;
-        if (0xF0 <= $code) {
-            return (($code - 0xF0) << 18) + (($s[2] - 0x80) << 12) + (($s[3] - 0x80) << 6) + $s[4] - 0x80;
-        }
-        if (0xE0 <= $code) {
-            return (($code - 0xE0) << 12) + (($s[2] - 0x80) << 6) + $s[3] - 0x80;
-        }
-        if (0xC0 <= $code) {
-            return (($code - 0xC0) << 6) + $s[2] - 0x80;
+        if (0xC2 > $code || 0xF4 < $code) {
+            return false;
         }
 
-        return $code;
+        $c2 = $s[2] ?? 0;
+        if (0x80 !== ($c2 & 0xC0)) {
+            return false;
+        }
+
+        if (0xE0 > $code) {
+            return (($code & 0x1F) << 6) | ($c2 & 0x3F);
+        }
+
+        $c3 = $s[3] ?? 0;
+        if (0x80 !== ($c3 & 0xC0)
+            || 0xE0 === $code && 0xA0 > $c2
+            || 0xED === $code && 0xA0 <= $c2
+        ) {
+            return false;
+        }
+
+        if (0xF0 > $code) {
+            return (($code & 0x0F) << 12) | (($c2 & 0x3F) << 6) | ($c3 & 0x3F);
+        }
+
+        $c4 = $s[4] ?? 0;
+        if (0x80 !== ($c4 & 0xC0)
+            || 0xF0 === $code && 0x90 > $c2
+            || 0xF4 === $code && 0x90 <= $c2
+        ) {
+            return false;
+        }
+
+        return (($code & 0x07) << 18) | (($c2 & 0x3F) << 12) | (($c3 & 0x3F) << 6) | ($c4 & 0x3F);
     }
 
     /** @return string|false */
