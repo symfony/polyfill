@@ -125,6 +125,11 @@ final class Php84
 
     public static function fpow(float $num, float $exponent): float
     {
+        if (0.0 === $num && $exponent < 0.0) {
+            // IEEE 754 pow(±0, y < 0), which the ** operator deprecates since PHP 8.4
+            return -1.0 === fmod($exponent, 2.0) && '-' === ((string) $num)[0] ? -\INF : \INF;
+        }
+
         return $num ** $exponent;
     }
 

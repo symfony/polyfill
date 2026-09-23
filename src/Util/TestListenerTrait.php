@@ -48,67 +48,58 @@ class TestListenerTrait
                 continue;
             }
             $testedClass = new \ReflectionClass($m[1].$m[2]);
-            $bootstrap = \dirname($testedClass->getFileName()).'/bootstrap';
-            if (\PHP_VERSION_ID >= 80500 && file_exists($bootstrap.'85.php')) {
-                $bootstrap .= '85';
-            } elseif (\PHP_VERSION_ID >= 80200 && file_exists($bootstrap.'82.php')) {
-                $bootstrap .= '82';
-            } elseif (\PHP_VERSION_ID >= 80100 && file_exists($bootstrap.'81.php')) {
-                $bootstrap .= '81';
-            } elseif (\PHP_VERSION_ID >= 80000 && file_exists($bootstrap.'80.php')) {
-                $bootstrap .= '80';
-            } elseif (\PHP_VERSION_ID < 80000 && file_exists($bootstrap.'72.php')) {
-                $bootstrap .= '72';
-            }
-            $bootstrap = new \SplFileObject($bootstrap.'.php');
+            $chain = self::getBootstraps(\dirname($testedClass->getFileName()));
             $newWarnings = 0;
             $defLine = null;
 
-            foreach (new \RegexIterator($bootstrap, '/define\(\'/') as $defLine) {
-                preg_match("/define\('(?P<name>[^']++)'/", $defLine, $matches);
-                if (\defined($matches['name'])) {
-                    continue;
-                }
+            foreach ($chain as $file) {
+                foreach (new \RegexIterator(new \SplFileObject($file), '/define\(\'/') as $defLine) {
+                    preg_match("/define\('(?P<name>[^']++)'/", $defLine, $matches);
+                    if (\defined($matches['name'])) {
+                        continue;
+                    }
 
-                try {
-                    eval($defLine);
-                } catch (\PHPUnit\Framework\Exception $ex) {
-                    $warnings[] = TestListener::warning($ex->getMessage());
-                    ++$newWarnings;
+                    try {
+                        eval($defLine);
+                    } catch (\PHPUnit\Framework\Exception $ex) {
+                        $warnings[] = TestListener::warning($ex->getMessage());
+                        ++$newWarnings;
+                    }
                 }
             }
 
-            $bootstrap->rewind();
+            foreach ($chain as $file) {
+                $bootstrap = new \SplFileObject($file);
 
-            foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
-                if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)(?: ?: [^ ]++)?) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\n]*?\)); \}$/', $defLine, $f)) {
-                    $warnings[] = TestListener::warning('Invalid line in '.$bootstrap->getPathname().': '.trim($defLine));
-                    ++$newWarnings;
-                    continue;
-                }
-                $testNamespace = substr($testClass, 0, strrpos($testClass, '\\'));
-                if (\function_exists($testNamespace.'\\'.$f['name'])) {
-                    continue;
-                }
-
-                try {
-                    $r = new \ReflectionFunction($f['name']);
-                    if ($r->isUserDefined()) {
-                        throw new \ReflectionException();
+                foreach (new \RegexIterator($bootstrap, '/return p\\\\'.$testedClass->getShortName().'::/') as $defLine) {
+                    if (!preg_match('/^\s*function (?P<name>[^\(]++)(?P<signature>\(.*\)(?: ?: [^ ]++)?) \{ (?<return>return p\\\\'.$testedClass->getShortName().'::[^\(]++)(?P<args>\([^\n]*?\)); \}$/', $defLine, $f)) {
+                        $warnings[] = TestListener::warning('Invalid line in '.$bootstrap->getPathname().': '.trim($defLine));
+                        ++$newWarnings;
+                        continue;
                     }
-                    if ('idn_to_ascii' === $f['name'] || 'idn_to_utf8' === $f['name']) {
-                        $defLine = \sprintf('return PHP_VERSION_ID < 80000 && INTL_IDNA_VARIANT_2003 === $variant ? \\%s($domain, $options, $variant) : \\%1$s%s', $f['name'], $f['args']);
-                    } elseif (false !== strpos($f['signature'], '&') && 'idn_to_ascii' !== $f['name'] && 'idn_to_utf8' !== $f['name']) {
-                        $defLine = \sprintf('return \\%s%s', $f['name'], $f['args']);
-                    } else {
-                        $defLine = \sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
+                    $testNamespace = substr($testClass, 0, strrpos($testClass, '\\'));
+                    if (\function_exists($testNamespace.'\\'.$f['name'])) {
+                        continue;
                     }
-                } catch (\ReflectionException $e) {
-                    $r = null;
-                    $defLine = \sprintf("throw new \\%s('Internal function not found: %s')", SkippedTestError::class, $f['name']);
-                }
 
-                eval(<<<EOPHP
+                    try {
+                        $r = new \ReflectionFunction($f['name']);
+                        if ($r->isUserDefined()) {
+                            throw new \ReflectionException();
+                        }
+                        if ('idn_to_ascii' === $f['name'] || 'idn_to_utf8' === $f['name']) {
+                            $defLine = \sprintf('return PHP_VERSION_ID < 80000 && INTL_IDNA_VARIANT_2003 === $variant ? \\%s($domain, $options, $variant) : \\%1$s%s', $f['name'], $f['args']);
+                        } elseif (false !== strpos($f['signature'], '&') && 'idn_to_ascii' !== $f['name'] && 'idn_to_utf8' !== $f['name']) {
+                            $defLine = \sprintf('return \\%s%s', $f['name'], $f['args']);
+                        } else {
+                            $defLine = \sprintf("return \\call_user_func_array('%s', \\func_get_args())", $f['name']);
+                        }
+                    } catch (\ReflectionException $e) {
+                        $r = null;
+                        $defLine = \sprintf("throw new \\%s('Internal function not found: %s')", SkippedTestError::class, $f['name']);
+                    }
+
+                    eval(<<<EOPHP
 namespace {$testNamespace};
 
 use Symfony\Polyfill\Util\TestListenerTrait;
@@ -123,32 +114,39 @@ function {$f['name']}{$f['signature']}
     {$defLine};
 }
 EOPHP
-                );
+                    );
 
-                if (\PHP_VERSION_ID >= 80000 && $r && false === strpos($bootstrap->getPath(), 'Php7') && false === strpos($bootstrap->getPath(), 'Php80')) {
-                    $originalSignature = ReflectionCaster::getSignature(ReflectionCaster::castFunctionAbstract($r, [], new Stub(), true));
-                    $polyfillSignature = ReflectionCaster::castFunctionAbstract(new \ReflectionFunction($testNamespace.'\\'.$f['name']), [], new Stub(), true);
-                    $polyfillSignature = ReflectionCaster::getSignature($polyfillSignature);
+                    if (\PHP_VERSION_ID >= 80000 && $r && false === strpos($bootstrap->getPath(), 'Php7') && false === strpos($bootstrap->getPath(), 'Php80')) {
+                        $originalSignature = ReflectionCaster::getSignature(ReflectionCaster::castFunctionAbstract($r, [], new Stub(), true));
+                        $polyfillSignature = ReflectionCaster::castFunctionAbstract(new \ReflectionFunction($testNamespace.'\\'.$f['name']), [], new Stub(), true);
+                        $polyfillSignature = ReflectionCaster::getSignature($polyfillSignature);
 
-                    if ('mb_get_info' === $r->name && false === strpos($originalSignature, '|null') && false !== strpos($polyfillSignature, '|null')) {
-                        // Added to PHP 8.2.14/8.3.1
-                        $originalSignature .= '|null';
-                    }
+                        if ('mb_get_info' === $r->name && false === strpos($originalSignature, '|null') && false !== strpos($polyfillSignature, '|null')) {
+                            // Added to PHP 8.2.14/8.3.1
+                            $originalSignature .= '|null';
+                        }
 
-                    if (str_ends_with($bootstrap->getPath(), 'bootstrap.php')) {
-                        // mixed return type cannot be used before PHP 8
-                        $originalSignature = str_replace(': mixed', '', $originalSignature);
-                    }
+                        if ('bcround' === $r->name) {
+                            // The polyfill only runs on the versions that have no
+                            // RoundingMode enum to type the argument with
+                            $originalSignature = str_replace('RoundingMode $mode', '$mode', $originalSignature);
+                        }
 
-                    $map = [
-                        '?' => '',
-                        'array|string|null $string' => 'array|string $string',
-                        'array|string|null $from_encoding = null' => 'array|string|null $from_encoding = null',
-                        'array|string|null $from_encoding' => 'array|string $from_encoding',
-                    ];
+                        if ('bootstrap.php' === $bootstrap->getFilename()) {
+                            // mixed return type cannot be used before PHP 8
+                            $originalSignature = str_replace(': mixed', '', $originalSignature);
+                        }
 
-                    if (strtr($polyfillSignature, $map) !== str_replace('?', '', $originalSignature)) {
-                        $warnings[] = TestListener::warning("Incompatible signature for PHP >= 8 in {$bootstrap->getPathname()}:\n- {$f['name']}$originalSignature\n+ {$f['name']}$polyfillSignature");
+                        $map = [
+                            '?' => '',
+                            'array|string|null $string' => 'array|string $string',
+                            'array|string|null $from_encoding = null' => 'array|string|null $from_encoding = null',
+                            'array|string|null $from_encoding' => 'array|string $from_encoding',
+                        ];
+
+                        if (strtr($polyfillSignature, $map) !== str_replace('?', '', $originalSignature)) {
+                            $warnings[] = TestListener::warning("Incompatible signature for PHP >= 8 in {$bootstrap->getPathname()}:\n- {$f['name']}$originalSignature\n+ {$f['name']}$polyfillSignature");
+                        }
                     }
                 }
             }
@@ -161,6 +159,46 @@ EOPHP
         foreach ($warnings as $w) {
             $mainSuite->addTest($w);
         }
+    }
+
+    /**
+     * Lists the bootstrap files of a polyfill, most specific first.
+     *
+     * They form a chain: the version-specific file declares the signatures of
+     * that PHP version and requires the more generic one for the rest. Reading
+     * only the first leaves the functions it does not mention running natively
+     * in both passes of the test suite, so it compares them with themselves.
+     */
+    private static function getBootstraps($dir)
+    {
+        $suffixes = [];
+
+        if (\PHP_VERSION_ID >= 80500) {
+            $suffixes[] = '85';
+        }
+        if (\PHP_VERSION_ID >= 80200) {
+            $suffixes[] = '82';
+        }
+        if (\PHP_VERSION_ID >= 80100) {
+            $suffixes[] = '81';
+        }
+        if (\PHP_VERSION_ID >= 80000) {
+            $suffixes[] = '80';
+        }
+        if (\PHP_VERSION_ID < 80000) {
+            $suffixes[] = '72';
+        }
+        $suffixes[] = '';
+
+        $bootstraps = [];
+
+        foreach ($suffixes as $suffix) {
+            if (file_exists($file = $dir.'/bootstrap'.$suffix.'.php')) {
+                $bootstraps[] = $file;
+            }
+        }
+
+        return $bootstraps;
     }
 
     public function addError($test, \Exception $e, $time)

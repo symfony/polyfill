@@ -13,6 +13,7 @@ namespace Symfony\Polyfill\Tests\Php84;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Polyfill\Php84\Php84 as p;
 
 class Php84Test extends TestCase
 {
@@ -716,6 +717,32 @@ class Php84Test extends TestCase
         yield [\NAN, \NAN, \NAN];
     }
 
+    public function testFpowOfZeroWithNegativeExponent()
+    {
+        $errors = [];
+        set_error_handler(static function ($errno, $errstr) use (&$errors) {
+            $errors[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $results = [
+                (string) p::fpow(0.0, -1.0),
+                (string) p::fpow(-0.0, -1.0),
+                (string) p::fpow(-0.0, -2.0),
+                (string) p::fpow(-0.0, -0.5),
+                (string) p::fpow(-0.0, -9007199254740991.0),
+                (string) p::fpow(-0.0, -\INF),
+            ];
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $errors);
+        $this->assertSame(['INF', '-INF', 'INF', 'INF', '-INF', 'INF'], $results);
+    }
+
     /**
      * @dataProvider graphemeStrSplitDataProvider
      */
@@ -896,8 +923,8 @@ class Php84Test extends TestCase
      */
     public function testBcCeilError(string $num)
     {
-        $this->expectError();
-        $this->expectErrorMessage('bcceil(): Argument #1 ($num) is not well-formed');
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('bcceil(): Argument #1 ($num) is not well-formed');
         bcceil($num);
     }
 
@@ -965,8 +992,8 @@ class Php84Test extends TestCase
      */
     public function testBcFloorError(string $num)
     {
-        $this->expectError();
-        $this->expectErrorMessage('bcfloor(): Argument #1 ($num) is not well-formed');
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('bcfloor(): Argument #1 ($num) is not well-formed');
         bcfloor($num);
     }
 
@@ -1019,8 +1046,8 @@ class Php84Test extends TestCase
      */
     public function testBcRoundError(string $num)
     {
-        $this->expectError();
-        $this->expectErrorMessage('bcround(): Argument #1 ($num) is not well-formed');
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('bcround(): Argument #1 ($num) is not well-formed');
         bcround($num);
     }
 
