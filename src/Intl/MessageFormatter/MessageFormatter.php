@@ -294,13 +294,11 @@ class MessageFormatter
                     throw new \DomainException('The PHP intl extension is required to use the "number" message format with non-integer values.');
                 }
 
-                $number = number_format($arg); // XXX use NumberFormatter?
-                if (null === $format && false !== $pos = strpos($arg, '.')) {
-                    // add decimals with unknown length
-                    $number .= '.'.substr($arg, $pos + 1);
+                if (null !== $format) {
+                    return number_format($arg);
                 }
 
-                return $number;
+                return self::formatNumber((float) $arg);
 
             case 'none':
                 return $arg;
@@ -370,5 +368,53 @@ class MessageFormatter
         }
 
         throw new \DomainException('Message pattern is invalid.');
+    }
+
+    /**
+     * Formats a float like ICU does in English: from its shortest decimal
+     * form, rounded half-even to at most 3 fraction digits.
+     */
+    private static function formatNumber(float $number): string
+    {
+        if (is_nan($number)) {
+            return 'NaN';
+        }
+
+        $sign = '-' === ((string) $number)[0] ? '-' : '';
+
+        if (is_infinite($number)) {
+            return $sign.'∞';
+        }
+
+        $i = 0;
+        do {
+            $digits = \sprintf('%.'.$i.'e', abs($number));
+        } while (abs($number) !== (float) $digits && 17 > ++$i);
+
+        [$digits, $exp] = explode('e', $digits);
+        $digits = str_replace('.', '', $digits);
+        $exp = (int) $exp;
+
+        if (0 > $exp) {
+            $digits = str_repeat('0', -$exp).$digits;
+            $exp = 0;
+        }
+
+        // Keep the integer digits and 3 fraction digits, then round on the rest
+        $digits = str_pad($digits, $exp + 5, '0');
+        $rest = substr($digits, $exp + 4);
+        $digits = substr($digits, 0, $exp + 4);
+
+        if ('5' < $rest[0] || ('5' === $rest[0] && ('' !== rtrim(substr($rest, 1), '0') || $digits[-1] % 2))) {
+            for ($i = $exp + 3; 0 <= $i && '9' === $digits[$i]; --$i) {
+                $digits[$i] = '0';
+            }
+            $digits = 0 > $i ? '1'.$digits : substr_replace($digits, (string) ($digits[$i] + 1), $i, 1);
+        }
+
+        $int = ltrim(substr($digits, 0, -3), '0') ?: '0';
+        $fraction = rtrim(substr($digits, -3), '0');
+
+        return $sign.preg_replace('/\B(?=(?:\d{3})+$)/', ',', $int).('' === $fraction ? '' : '.'.$fraction);
     }
 }

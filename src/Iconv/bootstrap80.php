@@ -68,7 +68,7 @@ if (extension_loaded('mbstring')) {
         function iconv_strrpos(?string $haystack, ?string $needle, ?string $encoding = null): int|false { return p\Iconv::iconv_strrpos((string) $haystack, (string) $needle, $encoding); }
     }
     if (!function_exists('iconv_substr')) {
-        function iconv_substr(?string $string, ?int $offset, ?int $length = null, ?string $encoding = null): string|false { return p\Iconv::iconv_substr((string) $string, (string) $offset, $length, $encoding); }
+        function iconv_substr(?string $string, ?int $offset, ?int $length = null, ?string $encoding = null): string|false { return p\Iconv::iconv_substr((string) $string, (string) $offset, $length ?? 2147483647, $encoding); }
     }
     if (!function_exists('iconv_mime_decode')) {
         function iconv_mime_decode(?string $string, ?int $mode = 0, ?string $encoding = null): string|false { return p\Iconv::iconv_mime_decode((string) $string, (int) $mode, $encoding); }

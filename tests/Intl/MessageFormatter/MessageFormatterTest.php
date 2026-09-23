@@ -125,6 +125,40 @@ class MessageFormatterTest extends TestCase
                 ],
             ],
 
+            [
+                '{a, number} {b, number} {c, number} {d, number}', // pattern
+                '1,234.5 -1,234.5 1.235 1,234.5', // expected
+                [ // params
+                    'a' => 1234.5,
+                    'b' => -1234.5,
+                    'c' => 1.23456,
+                    'd' => '1234.500',
+                ],
+            ],
+
+            [
+                '{a, number} {b, number} {c, number} {d, number}', // pattern
+                '1 1.002 -0 0', // expected
+                [ // params
+                    'a' => 1.0005,
+                    'b' => 1.0015,
+                    'c' => -0.0001,
+                    'd' => 0.0005,
+                ],
+            ],
+
+            [
+                '{a, number} {b, number} {c, number} {d, number} {e, number}', // pattern
+                '100,000,000,000,000,000,000,000 123,456,789,012,345.67 12,345,678,901,234,567,000 -∞ NaN', // expected
+                [ // params
+                    'a' => 1e23,
+                    'b' => 123456789012345.67,
+                    'c' => '12345678901234567890',
+                    'd' => -\INF,
+                    'e' => \NAN,
+                ],
+            ],
+
             [<<<'_MSG_'
 {eye_color_of_host, select,
   brown {{num_guests, plural, offset:1
