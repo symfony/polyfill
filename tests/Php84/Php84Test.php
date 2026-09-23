@@ -281,6 +281,23 @@ class Php84Test extends TestCase
         $this->assertSame('6f225b57', bin2hex(mb_ltrim(mb_convert_encoding("\u{FEFF}漢字", 'UTF-16BE', 'UTF-8'), mb_convert_encoding("\u{FFFE}\u{FEFF}", 'UTF-16BE', 'UTF-8'), 'UTF-16BE')));
     }
 
+    public function testMbTrimInvalidUtf8()
+    {
+        $subst = mb_substitute_character();
+        mb_substitute_character(0x3F);
+
+        try {
+            $this->assertSame("a\xC3", mb_trim("a\xC3"));
+            $this->assertSame('a?', mb_trim(" a\xC3 "));
+            $this->assertSame('?? a', mb_trim("\xFF\xFE a "));
+            $this->assertSame(' é ?', mb_ltrim("\xE2\x82 é \xE2", "\xFF"));
+            $this->assertSame('?a?', mb_trim('?a?', "\xFF"));
+            $this->assertSame('??? x', mb_rtrim("\xED\xA0\x80 x\xC3", "\xC3"));
+        } finally {
+            mb_substitute_character($subst);
+        }
+    }
+
     public function testMbTrimCharactersEncoding()
     {
         $strUtf8 = "\u{3042}\u{3000}";

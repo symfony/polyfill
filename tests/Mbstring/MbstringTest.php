@@ -1085,6 +1085,28 @@ class MbstringTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_trim
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_ltrim
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_rtrim
+     */
+    public function testMbTrimInvalidUtf8()
+    {
+        $subst = mb_substitute_character();
+        mb_substitute_character('none');
+
+        try {
+            $this->assertSame("a\xC3", mb_trim("a\xC3"));
+            $this->assertSame('a', mb_trim(" a\xC3 "));
+            $this->assertSame(' a', mb_trim("\xFF\xFE a "));
+            $this->assertSame(' é ', mb_ltrim("\xE2\x82 é \xE2", "\xFF"));
+            $this->assertSame('?a?', mb_trim('?a?', "\xFF"));
+            $this->assertSame(' x', mb_rtrim("\xED\xA0\x80 x\xC3", "\xC3"));
+        } finally {
+            mb_substitute_character($subst);
+        }
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Php84\Php84::mb_trim
      *
      * @dataProvider mbTrimProvider
