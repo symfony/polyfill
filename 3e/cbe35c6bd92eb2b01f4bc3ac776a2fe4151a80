@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T16:05:14Z
+
+I pushed a commit that checks the v6 and v7 layouts against what libuuid 2.41 generates at a frozen time, and makes the v7 time window check work on 32-bit PHP.
