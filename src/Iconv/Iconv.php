@@ -500,10 +500,11 @@ final class Iconv
         if (null === $encoding) {
             $encoding = self::$internalEncoding;
         }
-        if (0 !== stripos($encoding, 'utf-8')) {
-            $encoding = null;
-        } elseif (false === $s = self::iconv($encoding, 'utf-8', $s)) {
+        if (false === $s = self::iconv($encoding, 'utf-8', $s)) {
             return false;
+        }
+        if (0 === stripos($encoding, 'utf-8')) {
+            $encoding = null;
         }
 
         $s = (string) $s;
