@@ -41,6 +41,9 @@ final class DeepClone
     private static array $classInfo = [];
     private static array $constExprIndex = [];
     private static array $closureLiteralLines = [];
+    private static array $refHydrators = [];
+    private static array $refBindings = [];
+    private static array $typedRefs = []; // [ReflectionReference id] = Reference, for references that reject markers
     private static \stdClass $sentinel;
 
     /**
@@ -78,27 +81,26 @@ final class DeepClone
         $refMasks = [];
         $topMask = null;
 
+        $typedRefs = self::$typedRefs;
+        self::$typedRefs = [];
+
         try {
             $prepared = self::prepare([$value], $objectsPool, $refsPool, $objectsCount, $isStatic, $topMask, $allowedSet, $allow_named_closures)[0];
         } finally {
+            self::$typedRefs = $typedRefs;
+
             // Snapshot ref state while references still break cycles.
             foreach ($refsPool as $i => $v) {
-                if ($v[0]->count) {
+                if (($marker = $v[0])->count) {
                     if ($v[1] instanceof \UnitEnum) {
                         $refs[1 + $i] = $v[1]::class.'::'.$v[1]->name;
                         $refMasks[1 + $i] = 'e';
-                    } elseif (\is_object($v[1])) {
-                        $oid = spl_object_id($v[1]);
-                        $refs[1 + $i] = isset($objectsPool[$oid]) ? $objectsPool[$oid][0] : $v[2];
-                        $refMasks[1 + $i] = true;
-                    } elseif (\is_array($v[2])) {
+                    } else {
                         $m = null;
-                        $refs[1 + $i] = self::replaceRefs($v[2], $m);
-                        if (null !== $m) {
+                        $refs[1 + $i] = self::replaceRefs($marker->value, $m);
+                        if (null !== $m = self::mergeRefMasks($marker->mask, $m)) {
                             $refMasks[1 + $i] = $m;
                         }
-                    } else {
-                        $refs[1 + $i] = $v[2];
                     }
                 }
                 $v[0] = $v[1];
@@ -141,46 +143,31 @@ final class DeepClone
         if (!\is_int($prepared)) {
             $m = null;
             $prepared = self::replaceRefs($prepared, $m);
-            if (\is_array($preparedMask)) {
-                if (null !== $m) {
-                    $preparedMask = $m + array_filter($preparedMask, static fn ($v) => false !== $v);
-                } else {
-                    $preparedMask = array_filter($preparedMask, static fn ($v) => false !== $v) ?: null;
-                }
-            } elseif (false === $preparedMask) {
-                $preparedMask = $m;
-            }
+            $preparedMask = self::mergeRefMasks($preparedMask, $m);
         }
 
         foreach ($resolve as $scope => $names) {
             foreach ($names as $name => $ids) {
                 foreach ($ids as $id => $marker) {
-                    if (false !== $marker) {
+                    if (false !== $marker && !\is_array($marker)) {
                         continue;
                     }
-                    $v = $properties[$scope][$name][$id];
-                    if (!$v instanceof Reference) {
-                        $m = null;
-                        $properties[$scope][$name][$id] = self::replaceRefs($v, $m);
-                        if (null !== $m) {
-                            $ids[$id] = $m;
-                        } else {
-                            unset($ids[$id]);
-                        }
-                    } elseif ($v->count) {
-                        $properties[$scope][$name][$id] = $v->id;
-                        $ids[$id] = true;
+                    $m = null;
+                    $properties[$scope][$name][$id] = self::replaceRefs($properties[$scope][$name][$id], $m);
+                    if (null !== $m = self::mergeRefMasks($marker, $m)) {
+                        $ids[$id] = $m;
                     } else {
-                        $m = null;
-                        $properties[$scope][$name][$id] = self::replaceRefs($v->value, $m);
-                        if (null !== $m) {
-                            $ids[$id] = $m;
-                        } else {
-                            unset($ids[$id]);
-                        }
+                        unset($ids[$id]);
                     }
                 }
-                $resolve[$scope][$name] = $ids;
+                if ($ids) {
+                    $resolve[$scope][$name] = $ids;
+                } else {
+                    unset($resolve[$scope][$name]);
+                }
+            }
+            if (!$resolve[$scope]) {
+                unset($resolve[$scope]);
             }
         }
 
@@ -188,8 +175,10 @@ final class DeepClone
             if (\is_array($v)) {
                 $m = null;
                 $states[$k][1] = self::replaceRefs($v[1], $m);
-                if ($m) {
-                    $states[$k][2] = isset($v[2]) ? $v[2] + $m : $m;
+                if (null !== $m = self::mergeRefMasks($v[2] ?? null, $m)) {
+                    $states[$k][2] = $m;
+                } else {
+                    unset($states[$k][2]);
                 }
             }
         }
@@ -612,7 +601,7 @@ final class DeepClone
         };
     }
 
-    private static function prepare($values, &$objectsPool, &$refsPool, &$objectsCount, &$valuesAreStatic, &$mask = null, ?array $allowedSet = null, bool $allowNamedClosures = false)
+    private static function prepare($values, &$objectsPool, &$refsPool, &$objectsCount, &$valuesAreStatic, &$mask = null, ?array $allowedSet = null, bool $allowNamedClosures = false, int $refFreeDepth = 0)
     {
         $sentinel = self::$sentinel ??= new \stdClass();
         $refs = $values;
@@ -620,9 +609,22 @@ final class DeepClone
             if (\is_resource($value)) {
                 throw new \DeepClone\NotInstantiableException('Type "'.get_resource_type($value).' resource" is not instantiable.');
             }
-            $refs[$k] = $sentinel;
+            if ($refFreeDepth) {
+                // Known to hold no hard reference
+                $isRef = false;
+            } else {
+                // Writing through a hard reference reveals it; a reference bound
+                // to a typed property rejects the sentinel instead
+                try {
+                    $refs[$k] = $sentinel;
+                    $isRef = $values[$k] === $sentinel;
+                } catch (\TypeError) {
+                    $isRef = true;
+                }
+            }
 
-            if ($isRef = !$valueIsStatic = $values[$k] !== $sentinel) {
+            $valueIsStatic = !$isRef;
+            if ($isRef) {
                 $values[$k] = &$value; // Break hard reference
                 unset($value);
                 $refs[$k] = $value = $values[$k];
@@ -632,14 +634,30 @@ final class DeepClone
                     $mask[$k] = false;
                     continue;
                 }
-                $refsPool[] = [&$refs[$k], $value, &$value];
-                $refs[$k] = $values[$k] = new Reference(-\count($refsPool), $value);
+                if (self::$typedRefs && $marker = self::$typedRefs[\ReflectionReference::fromArrayElement($refs, $k)->getId()] ?? null) {
+                    $values[$k] = $marker;
+                    $valuesAreStatic = false;
+                    ++$marker->count;
+                    $mask[$k] = false;
+                    continue;
+                }
+                $values[$k] = $marker = new Reference(-1 - \count($refsPool), $value);
+                try {
+                    // Mark the reference as seen by storing the marker in it
+                    $refs[$k] = $marker;
+                    $refsPool[] = [&$refs[$k], $value];
+                } catch (\TypeError) {
+                    // Unless a typed property rejects it: keep the marker aside
+                    self::$typedRefs[\ReflectionReference::fromArrayElement($refs, $k)->getId()] = $marker;
+                    $refsPool[] = [&$marker, $value];
+                    unset($marker);
+                }
             }
 
             if (\is_array($value)) {
                 if ($value) {
                     $m = null;
-                    $value = self::prepare($value, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures);
+                    $value = self::prepare($value, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures, $refFreeDepth ? $refFreeDepth - 1 : 0);
                     if (null !== $m) {
                         $mask[$k] = $m;
                     }
@@ -748,6 +766,7 @@ final class DeepClone
             $properties = [];
             $sleep = null;
             $proto = self::$prototypes[$class];
+            $refFree = false;
 
             if (self::$classInfo[$class][2] ??= $reflector->hasMethod('__serialize') ? ($reflector->getMethod('__serialize')->isPublic() ?: $reflector->getMethod('__serialize')) : false) {
                 if (self::$classInfo[$class][2] instanceof \ReflectionMethod) {
@@ -805,6 +824,7 @@ final class DeepClone
                 self::$scopeMaps[$class] = $scopeMap;
             }
 
+            $refFree = true;
             foreach ($arrayValue as $name => $v) {
                 $i = 0;
                 $n = (string) $name;
@@ -825,7 +845,11 @@ final class DeepClone
                     }
                     unset($sleep[$name], $sleep[$n]);
                 }
-                if ("\x00Error\x00trace" === $name || "\x00Exception\x00trace" === $name || "\x00*\x00file" === $name || "\x00*\x00line" === $name || !\array_key_exists($name, $proto) || $proto[$name] !== $v) {
+                // Carry the hard references between properties over
+                if (\ReflectionReference::fromArrayElement($arrayValue, $name)) {
+                    $properties[$c][$n] = &$arrayValue[$name];
+                    $refFree = false;
+                } elseif ("\x00Error\x00trace" === $name || "\x00Exception\x00trace" === $name || "\x00*\x00file" === $name || "\x00*\x00line" === $name || !\array_key_exists($name, $proto) || $proto[$name] !== $v) {
                     $properties[$c][$n] = $v;
                 }
             }
@@ -839,12 +863,15 @@ final class DeepClone
             }
             if ($hasUnserialize = self::$classInfo[$class][0] ??= $reflector->hasMethod('__unserialize')) {
                 $properties = $arrayValue;
+                $refFree = false;
             }
 
             prepare_value:
             $objectsPool[$oid] = [$id = \count($objectsPool)];
             $m = null;
-            $properties = self::prepare($properties, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures);
+            // Grouped by value, the scopes and properties of an object that had
+            // no hard reference can't hold any
+            $properties = self::prepare($properties, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures, $refFree ? 2 : 0);
             ++$objectsCount;
             $objectsPool[$oid] = [$id, $class, $properties, $hasUnserialize ? -$objectsCount : ((self::$classInfo[$class][1] ??= $reflector->hasMethod('__wakeup')) ? $objectsCount : 0), $value, $m];
 
@@ -853,6 +880,9 @@ final class DeepClone
 
             handle_value:
             if ($isRef) {
+                // The marker carries the prepared value, with its mask
+                $values[$k]->value = $value;
+                $values[$k]->mask = $mask[$k] ?? null;
                 $mask[$k] = false;
                 unset($value); // Break the hard reference created above
             } elseif (!$valueIsStatic) {
@@ -977,6 +1007,7 @@ final class DeepClone
                 }
                 $resolveScope = $resolve[$scope];
             }
+            $refSlots = [];
             foreach ($scopeProps as $name => $idValues) {
                 // Numeric property names (e.g. $o->{'999'}) surface as integer
                 // array keys because PHP normalizes numeric string keys; accept
@@ -1008,19 +1039,44 @@ final class DeepClone
                             if (\PHP_INT_MIN === $v) {
                                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
                             }
-                            if (!isset($refs[-$v])) {
+                            if (!(isset($refs[-$v]) || \array_key_exists(-$v, $refs))) {
                                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.(-$v));
                             }
                             $scopeProps[$name][$id] = $refs[-$v];
                         }
                     } elseif (0 === $marker) {
                         $scopeProps[$name][$id] = self::resolveNamedClosureScalar($scopeProps[$name][$id] ?? null, $objects, $refs);
+                    } elseif (false === $marker) {
+                        // Validated and resolved by value, bound below where PHP allows it
+                        $v = $scopeProps[$name][$id] ?? null;
+                        $scopeProps[$name][$id] = self::resolveWithMask($v, false, $objects, $refs, $allowedClasses);
+                        $refSlots[$name][$id] = -$v;
                     } else {
                         $scopeProps[$name][$id] = self::resolveWithMask($scopeProps[$name][$id] ?? null, $marker, $objects, $refs, $allowedClasses);
                     }
                 }
             }
-            (self::$hydrators[$scope] ??= self::getHydrator($scope))($scopeProps, $objects);
+            if ($refSlots) {
+                // Hooked, readonly and internal properties can't take a reference: they get the value
+                $internalScope = 'stdClass' !== $scope && (self::$reflectors[$scope] ?? new \ReflectionClass($scope))->isInternal();
+                foreach ($refSlots as $name => $ids) {
+                    foreach ($ids as $id => $rid) {
+                        $binding = $internalScope || !\is_object($objects[$id] ?? null) ? 0 : self::getRefBinding('stdClass' === $scope ? $objects[$id]::class : $scope, (string) $name);
+                        if (0 > $binding) {
+                            throw new \ValueError('deepclone_from_array(): hard references cannot target virtual properties or dynamic properties behind custom handlers');
+                        }
+                        if (!$binding) {
+                            unset($refSlots[$name][$id]);
+                        }
+                    }
+                }
+                $refSlots = array_filter($refSlots);
+            }
+            if ($refSlots) {
+                (self::$refHydrators[$scope] ??= self::getRefHydrator($scope))($scopeProps, $objects, $refSlots, $refs);
+            } else {
+                (self::$hydrators[$scope] ??= self::getHydrator($scope))($scopeProps, $objects);
+            }
         }
 
         foreach ($states as $state) {
@@ -1095,7 +1151,7 @@ final class DeepClone
             if (\PHP_INT_MIN === $prepared) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "prepared" references unknown ref id out of range');
             }
-            if (!isset($refs[-$prepared])) {
+            if (!(isset($refs[-$prepared]) || \array_key_exists(-$prepared, $refs))) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "prepared" references unknown ref id '.(-$prepared));
             }
 
@@ -1148,7 +1204,7 @@ final class DeepClone
             if (\PHP_INT_MIN === $value) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
             }
-            if (!isset($refs[-$value])) {
+            if (!(isset($refs[-$value]) || \array_key_exists(-$value, $refs))) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.(-$value));
             }
 
@@ -1163,7 +1219,7 @@ final class DeepClone
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
             }
             $rid = -$value;
-            if (!isset($refs[$rid])) {
+            if (!(isset($refs[$rid]) || \array_key_exists($rid, $refs))) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.$rid);
             }
 
@@ -1215,7 +1271,7 @@ final class DeepClone
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
                 }
                 $rid = -$slot;
-                if (!isset($refs[$rid])) {
+                if (!(isset($refs[$rid]) || \array_key_exists($rid, $refs))) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.$rid);
                 }
                 $value[$k] = &$refs[$rid];
@@ -1263,7 +1319,7 @@ final class DeepClone
                 }
                 $obj = $objects[$obj];
             } else {
-                if (\PHP_INT_MIN === $obj || !isset($refs[-$obj])) {
+                if (\PHP_INT_MIN === $obj || !(isset($refs[-$obj]) || \array_key_exists(-$obj, $refs))) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure references unknown id '.$obj);
                 }
                 $obj = $refs[-$obj];
@@ -1781,7 +1837,38 @@ final class DeepClone
         }
 
         // Unshared hard ref (count=0): unwrap the inner value
-        return self::replaceRefs($value->value, $mask);
+        $m = null;
+        $inner = self::replaceRefs($value->value, $m);
+        $mask = self::mergeRefMasks($value->mask, $m);
+
+        return $inner;
+    }
+
+    /**
+     * Merges the markers replaceRefs() derived into a mask built by prepare(),
+     * where hard refs are all marked false: shared ones keep that marker, and
+     * unwrapped ones get the mask of their value.
+     */
+    private static function mergeRefMasks($mask, $refMask)
+    {
+        if (false === $mask) {
+            return $refMask;
+        }
+        if (!\is_array($mask)) {
+            return $mask;
+        }
+        foreach ($mask as $k => $m) {
+            if (false !== $m && !\is_array($m)) {
+                continue;
+            }
+            if (null === $m = self::mergeRefMasks($m, $refMask[$k] ?? null)) {
+                unset($mask[$k]);
+            } else {
+                $mask[$k] = $m;
+            }
+        }
+
+        return $mask ?: null;
     }
 
     private static function getClassReflector($class, $instantiableWithoutConstructor = false, $cloneable = null)
@@ -1929,6 +2016,55 @@ final class DeepClone
                 }
             }
         };
+    }
+
+    /**
+     * Like getHydrator(), binding the slots listed in $refSlots to the hard
+     * references they target.
+     */
+    private static function getRefHydrator(string $class): \Closure
+    {
+        $hydrator = static function ($properties, $objects, $refSlots, &$refs) {
+            foreach ($properties as $name => $values) {
+                $slots = $refSlots[$name] ?? [];
+                foreach ($values as $i => $v) {
+                    if (isset($slots[$i])) {
+                        // Creating a dynamic property this way raised a deprecation on the origin already
+                        @$objects[$i]->$name = &$refs[$slots[$i]];
+                    } else {
+                        $objects[$i]->$name = $v;
+                    }
+                }
+            }
+        };
+
+        return 'stdClass' === $class ? $hydrator : \Closure::bind($hydrator, null, $class);
+    }
+
+    /**
+     * How a hard reference targeting property $name of a $class instance is
+     * restored: 1 by binding it, 0 by writing its value where PHP can't bind
+     * one (hooked, readonly or internal properties), -1 not at all on virtual
+     * properties, like the extension.
+     */
+    private static function getRefBinding(string $class, string $name): int
+    {
+        if (null !== $binding = self::$refBindings[$class][$name] ?? null) {
+            return $binding;
+        }
+
+        $r = self::$reflectors[$class] ?? new \ReflectionClass($class);
+        if (!$r->hasProperty($name)) {
+            // Dynamic property, unless behind the custom handlers of an internal class
+            $binding = 'stdClass' === $class || !$r->isInternal() ? 1 : 0;
+        } elseif (\PHP_VERSION_ID >= 80400 && ($p = $r->getProperty($name))->isVirtual()) {
+            $binding = -1;
+        } else {
+            $p ??= $r->getProperty($name);
+            $binding = $p->getDeclaringClass()->isInternal() || $p->isReadOnly() || (\PHP_VERSION_ID >= 80400 && $p->getHooks()) ? 0 : 1;
+        }
+
+        return self::$refBindings[$class][$name] = $binding;
     }
 
     private static function getSimpleHydrator(string $class, int $flags = 0): \Closure
@@ -2154,10 +2290,11 @@ final class DeepClone
 final class Reference
 {
     public int $count = 0;
+    public mixed $mask = null;
 
     public function __construct(
         public readonly int $id,
-        public readonly mixed $value = null,
+        public mixed $value = null,
     ) {
     }
 }
