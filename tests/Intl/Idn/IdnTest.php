@@ -327,6 +327,29 @@ class IdnTest extends TestCase
     }
 
     /**
+     * @dataProvider contextJProvider
+     */
+    public function testContextJChecksTheCurrentJoiner($domain, $errors)
+    {
+        idn_to_ascii($domain, \IDNA_CHECK_CONTEXTJ | \IDNA_NONTRANSITIONAL_TO_ASCII, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame($errors, $info['errors']);
+
+        idn_to_utf8($domain, \IDNA_CHECK_CONTEXTJ | \IDNA_NONTRANSITIONAL_TO_UNICODE, \INTL_IDNA_VARIANT_UTS46, $info);
+        $this->assertSame($errors, $info['errors']);
+    }
+
+    public static function contextJProvider()
+    {
+        return [
+            ["\u{0627}\u{200C}\u{0627}\u{0628}\u{200C}\u{0628}", Idn::ERROR_CONTEXTJ],
+            ["\u{0627}\u{200C}\u{0628}\u{094D}\u{200C}\u{0628}", Idn::ERROR_CONTEXTJ],
+            ["aaaa\u{0628}\u{200C}\u{0628}\u{200C}\u{0628}", 0],
+            ["\u{0628}\u{094D}\u{200C}\u{0628}\u{200C}\u{0628}", 0],
+            ["\u{0628}\u{200C}\u{0628}\u{200C}\u{0628}", 0],
+        ];
+    }
+
+    /**
      * IDNA 15.1.0 revision 31.
      *
      * This tests the additional validity check in "Section 4.1 Validity Criteria Processing step 4", which is used to

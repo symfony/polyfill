@@ -261,12 +261,15 @@ final class Idn
             self::$virama = require __DIR__.\DIRECTORY_SEPARATOR.'Resources'.\DIRECTORY_SEPARATOR.'unidata'.\DIRECTORY_SEPARATOR.'virama.php';
         }
 
-        $offset = 0;
+        $offset = $joinerOffset = 0;
 
         foreach ($codePoints as $i => $codePoint) {
             if (0x200C !== $codePoint && 0x200D !== $codePoint) {
                 continue;
             }
+
+            $currentOffset = strpos($label, 0x200C === $codePoint ? "\xE2\x80\x8C" : "\xE2\x80\x8D", $joinerOffset);
+            $joinerOffset = $currentOffset + 3;
 
             if (!isset($codePoints[$i - 1])) {
                 return false;
@@ -274,14 +277,18 @@ final class Idn
 
             // If Canonical_Combining_Class(Before(cp)) .eq. Virama Then True;
             if (isset(self::$virama[$codePoints[$i - 1]])) {
+                $offset = $joinerOffset;
+
                 continue;
             }
 
             // If RegExpMatch((Joining_Type:{L,D})(Joining_Type:T)*\u200C(Joining_Type:T)*(Joining_Type:{R,D})) Then
             // True;
             // Generated RegExp = ([Joining_Type:{L,D}][Joining_Type:T]*\u200C[Joining_Type:T]*)[Joining_Type:{R,D}]
-            if (0x200C === $codePoint && 1 === preg_match(Regex::ZWNJ, $label, $matches, \PREG_OFFSET_CAPTURE, $offset)) {
-                $offset += \strlen($matches[1][0]);
+            if (0x200C === $codePoint
+                && preg_match(Regex::ZWNJ, $label, $matches, \PREG_OFFSET_CAPTURE, $offset)
+                && $currentOffset === $matches[1][1] + strpos($matches[1][0], "\xE2\x80\x8C")) {
+                $offset = $matches[1][1] + \strlen($matches[1][0]);
 
                 continue;
             }
