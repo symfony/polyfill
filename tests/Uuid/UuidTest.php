@@ -172,9 +172,15 @@ class UuidTest extends TestCase
 
         $this->assertCount(10000, array_unique($uuids));
 
-        // the clock did not move, so all of them share the timestamp and only the clock sequence varies
         $timestamps = array_map(function ($uuid) { return substr($uuid, 0, 18); }, $uuids);
-        $this->assertCount(1, array_unique($timestamps));
+
+        if (self::sharesTimestampThroughApcu()) {
+            // the timestamp shared through APCu moves forward even when the clock does not
+            $this->assertCount(10000, array_unique($timestamps));
+        } else {
+            // the clock did not move, so all of them share the timestamp and only the clock sequence varies
+            $this->assertCount(1, array_unique($timestamps));
+        }
     }
 
     /**
@@ -185,7 +191,10 @@ class UuidTest extends TestCase
         ClockMock::withClockMock(1758000000.123456);
 
         try {
+            // the timestamp shared through APCu would otherwise move forward from the last one used
+            self::forgetSharedTimestamp();
             $v1 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME);
+            self::forgetSharedTimestamp();
             $v6 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME_V6);
             $v7 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME_V7);
         } finally {
@@ -196,6 +205,38 @@ class UuidTest extends TestCase
         $this->assertStringStartsWith('cabad680-92bc-11f0-', $v1);
         $this->assertStringStartsWith('1f092bcc-abad-6680-', $v6);
         $this->assertStringStartsWith('019950f7-2c7b-7', $v7);
+    }
+
+    /**
+     * @group time-sensitive
+     *
+     * @dataProvider provideCreateTimeNoOverlapWithinOneMicrosecondTests
+     */
+    public function testCreateTimeFollowsTheTimestampSharedThroughApcu(int $type)
+    {
+        if (!self::sharesTimestampThroughApcu()) {
+            $this->markTestSkipped('The timestamp is shared through APCu only when APCu is enabled on 64-bit PHP.');
+        }
+
+        // another process that shares the node already used a timestamp one second ahead of the clock
+        $shared = 17580000001234560 + Uuid::TIME_OFFSET_INT + 10000000;
+        apcu_store('__symfony_uuid_time', $shared);
+        ClockMock::withClockMock(1758000000.123456);
+
+        try {
+            $uuid = Uuid::uuid_create($type);
+        } finally {
+            ClockMock::withClockMock(false);
+        }
+
+        if (Uuid::UUID_TYPE_TIME === $type) {
+            $time = substr($uuid, 15, 3).substr($uuid, 9, 4).substr($uuid, 0, 8);
+        } else {
+            $time = substr($uuid, 0, 8).substr($uuid, 9, 4).substr($uuid, 15, 3);
+        }
+
+        $this->assertSame($shared + 1, hexdec($time));
+        $this->assertSame($shared + 1, apcu_fetch('__symfony_uuid_time'));
     }
 
     public static function provideIsValidTest(): array
@@ -559,6 +600,18 @@ class UuidTest extends TestCase
 
         if (!$supported) {
             $this->markTestSkipped(\sprintf('The uuid extension cannot create UUIDs of type %d.', $type));
+        }
+    }
+
+    private static function sharesTimestampThroughApcu(): bool
+    {
+        return \PHP_INT_SIZE >= 8 && \function_exists('apcu_enabled') && apcu_enabled();
+    }
+
+    private static function forgetSharedTimestamp(): void
+    {
+        if (self::sharesTimestampThroughApcu()) {
+            apcu_delete('__symfony_uuid_time');
         }
     }
 }

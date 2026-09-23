@@ -394,8 +394,29 @@ final class Uuid
         $time = microtime(false);
         $time = substr($time, 11).substr($time, 2, 7);
 
+        // Like libuuid with its clock file, the processes that share the node through APCu
+        // share the last timestamp too, so that they never use the same one. That needs
+        // 64-bit integers, and when APCu cannot store the timestamp, the local clock is used.
+        static $apcu;
+        if (null === $apcu) {
+            $apcu = \PHP_INT_SIZE >= 8 && \function_exists('apcu_enabled') && apcu_enabled();
+        }
+
         if (\PHP_INT_SIZE >= 8) {
-            $time = str_pad(dechex($time + self::TIME_OFFSET_INT), 16, '0', \STR_PAD_LEFT);
+            $time += self::TIME_OFFSET_INT;
+
+            for ($i = 0; $apcu && $i < 100; ++$i) {
+                if (!\is_int($last = apcu_fetch('__symfony_uuid_time'))) {
+                    if (apcu_add('__symfony_uuid_time', $time)) {
+                        break;
+                    }
+                } elseif (apcu_cas('__symfony_uuid_time', $last, $next = max($time, $last + 1))) {
+                    $time = $next;
+                    break;
+                }
+            }
+
+            $time = str_pad(dechex($time), 16, '0', \STR_PAD_LEFT);
         } else {
             $time = str_pad(self::toBinary($time), 8, "\0", \STR_PAD_LEFT);
             $time = self::binaryAdd($time, self::TIME_OFFSET_BIN);
@@ -418,7 +439,7 @@ final class Uuid
 
         static $node;
         if (null === $node) {
-            if (\function_exists('apcu_fetch')) {
+            if ($apcu) {
                 $node = apcu_fetch('__symfony_uuid_node');
                 if (false === $node) {
                     $node = \sprintf('%06x%06x',
