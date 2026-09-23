@@ -170,7 +170,7 @@ class UuidTest extends TestCase
     {
         $result = @uuid_compare($uuid1, $uuid2);
 
-        // Normalize the result because it depends of pecl version.
+        // When only the node differs, native returns the memcmp() result of the libc, which is not limited to -1 and 1
         if (0 !== $result) {
             $result /= abs($result);
         }
