@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-23T16:05:13Z
+
+I pushed two commits: the null length is now handled in bootstrap80.php only, since PHP 7 turns an explicit null into 0, and `{n, number}` now formats from the shortest decimal form of the float, rounded half-even like ICU, eg `1.0005` gives `1` and `1e23` no longer shows float noise.
