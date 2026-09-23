@@ -134,17 +134,29 @@ class Php74Test extends TestCase
     /**
      * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
      */
-    public function testStrSplitWithExcessiveLength()
+    public function testStrSplitWithLargeLength()
     {
-        if (80000 > \PHP_VERSION_ID) {
-            $this->expectWarning();
-            $this->expectWarningMessage('The length of each segment is too large');
-        } else {
-            $this->expectException(\ValueError::class);
-            $this->expectExceptionMessage('Argument #2 ($length) is too large');
+        $this->assertSame(['a'], mb_str_split('a', 0x3FFFFFFF, 'UTF-8'));
+        $this->assertSame(['a'], mb_str_split('a', 0x3FFFFFFF, 'ASCII'));
+        $this->assertSame([], mb_str_split('', 0x3FFFFFFF, 'UTF-8'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php74\Php74::mb_str_split
+     */
+    public function testStrSplitWithTooLargeLength()
+    {
+        if (80300 > \PHP_VERSION_ID) {
+            $this->assertSame(['a'], mb_str_split('a', 0x40000000, 'UTF-8'));
+            $this->assertSame(['a'], mb_str_split('a', \PHP_INT_MAX, 'ASCII'));
+
+            return;
         }
 
-        Php74::mb_str_split('a', 0x40000000);
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('Argument #2 ($length) is too large');
+
+        mb_str_split('a', 0x40000000, 'UTF-8');
     }
 
     /**
