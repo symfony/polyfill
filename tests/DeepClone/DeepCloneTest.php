@@ -257,6 +257,251 @@ class DeepCloneTest extends TestCase
         $this->assertSame($clone, $clone[0]);
     }
 
+    public function testRoundTripHardReferencesNextToObjects()
+    {
+        // Shared reference to an array of objects
+        $x = [new \stdClass()];
+        $clone = deepclone_from_array(deepclone_to_array([&$x, &$x]));
+        $this->assertInstanceOf(\stdClass::class, $clone[0][0]);
+        $this->assertNotSame($x[0], $clone[0][0]);
+        $clone[0] = 'replaced';
+        $this->assertSame('replaced', $clone[1]);
+
+        // Unshared reference to an object: exported as its id, then cloned
+        $y = new \stdClass();
+        $data = deepclone_to_array([&$y, 1]);
+        $this->assertSame([0, 1], $data['prepared']);
+        $this->assertNotSame($y, deepclone_from_array($data)[0]);
+
+        // Nested references next to objects
+        $z = 1;
+        $clone = deepclone_from_array(deepclone_to_array(['k' => [&$z], 'o' => new \stdClass()]));
+        $this->assertSame([1], $clone['k']);
+
+        $w = 1;
+        $clone = deepclone_from_array(deepclone_to_array(['k' => [&$w, &$w, new \stdClass()]]));
+        $this->assertInstanceOf(\stdClass::class, $clone['k'][2]);
+        $clone['k'][0] = 42;
+        $this->assertSame(42, $clone['k'][1]);
+
+        // Shared reference holding null
+        $v = [null];
+        $v[] = &$v[0];
+        $clone = deepclone_from_array(deepclone_to_array($v));
+        $clone[0] = 42;
+        $this->assertSame(42, $clone[1]);
+    }
+
+    public function testRoundTripNestedHardReferencesInPropertiesAndStates()
+    {
+        $x = 1;
+        $o = new DeepCloneRefHolder();
+        $o->a = [&$x, new \stdClass()];
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $this->assertSame(1, $clone->a[0]);
+        $this->assertInstanceOf(\stdClass::class, $clone->a[1]);
+
+        $o = new DeepCloneRefHolder();
+        $o->a = [1, new \stdClass()];
+        $o->a[] = &$o->a[0];
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $this->assertInstanceOf(\stdClass::class, $clone->a[1]);
+        $clone->a[0] = 42;
+        $this->assertSame(42, $clone->a[2]);
+
+        $y = 1;
+        $s = new DeepCloneStateRefs();
+        $s->data = ['k' => [&$y, new \stdClass()]];
+        $clone = deepclone_from_array(deepclone_to_array($s));
+        $this->assertSame(1, $clone->data['k'][0]);
+        $this->assertInstanceOf(\stdClass::class, $clone->data['k'][1]);
+    }
+
+    public function testRoundTripPropertyHardReferences()
+    {
+        $this->skipIfExtensionDropsPropertyReferences();
+
+        // Between declared properties, also once the property table is built
+        $o = new DeepCloneRefHolder();
+        $o->a = 1;
+        $o->b = &$o->a;
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $clone->a = 42;
+        $this->assertSame(42, $clone->b);
+
+        foreach ($o as $v) {
+        }
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $clone->a = 42;
+        $this->assertSame(42, $clone->b);
+
+        // Also when the properties hold their default value
+        $o = new DeepCloneRefHolder();
+        $o->b = &$o->a;
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $clone->a = 42;
+        $this->assertSame(42, $clone->b);
+
+        // Between a parent's private property and a child's public one
+        $o = new DeepCloneRefChild();
+        $o->bind();
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $clone->q = 42;
+        $this->assertSame(42, $clone->getP());
+
+        // Across objects and with array elements, holding an object
+        $o1 = new DeepCloneRefHolder();
+        $o2 = new DeepCloneRefHolder();
+        $o2->b = new \stdClass();
+        $o1->a = &$o2->b;
+        $arr = [&$o2->b];
+        [$c1, $c2, $carr] = deepclone_from_array(deepclone_to_array([$o1, $o2, $arr]));
+        $this->assertSame($c2->b, $c1->a);
+        $c1->a = 'replaced';
+        $this->assertSame('replaced', $c2->b);
+        $this->assertSame('replaced', $carr[0]);
+
+        // With __sleep()
+        $o = new DeepCloneSleepRefs();
+        $o->y = &$o->x;
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $clone->x = 42;
+        $this->assertSame(42, $clone->y);
+
+        // Bound to a variable outside the graph, a property gets a plain value
+        $o = new DeepCloneRefHolder();
+        $o->a = 1;
+        $x = &$o->a;
+        $o->other = [str_repeat('x', 3)];
+        $data = deepclone_to_array($o);
+        $this->assertSame([1], $data['properties']['stdClass']['a']);
+        $this->assertArrayNotHasKey('refs', $data);
+        $this->assertSame(1, deepclone_from_array($data)->a);
+    }
+
+    public function testRoundTripTypedPropertyHardReferences()
+    {
+        $this->skipIfExtensionDropsPropertyReferences();
+
+        $o = new DeepCloneTypedRefs();
+        $o->b = &$o->a;
+        $arr = [&$o->a];
+        [$clone, $carr] = deepclone_from_array(deepclone_to_array([$o, $arr]));
+
+        $clone->a = 5;
+        $this->assertSame(5, $clone->b);
+        $this->assertSame(5, $carr[0]);
+
+        // The reference keeps being type-checked
+        try {
+            $carr[0] = 'x';
+            $this->fail('TypeError expected');
+        } catch (\TypeError $e) {
+            $this->assertSame(5, $clone->a);
+        }
+
+        $this->assertSame(1, $o->a);
+    }
+
+    public function testRoundTripDynamicPropertyHardReferences()
+    {
+        $this->skipIfExtensionDropsPropertyReferences();
+
+        $o = new DeepCloneDynamicRefs();
+        $o->a = 1;
+        $o->b = &$o->a;
+        $o->declared = 2;
+        $o->c = &$o->declared;
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $clone->a = 42;
+        $clone->declared = 43;
+        $this->assertSame(42, $clone->b);
+        $this->assertSame(43, $clone->c);
+
+        $o = new \stdClass();
+        $o->{'1'} = 1;
+        $o->{'2'} = &$o->{'1'};
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $clone->{'1'} = 42;
+        $this->assertSame(42, $clone->{'2'});
+
+        // On a closure-bearing node, which the extension creates as a lazy ghost
+        $o = new DeepCloneDynamicRefs();
+        $o->cb = \Closure::fromCallable('strlen');
+        $o->a = 1;
+        $o->b = &$o->a;
+        $clone = deepclone_from_array(deepclone_to_array($o, null, true), null, true);
+        $clone->a = 42;
+        $this->assertSame(42, $clone->b);
+        $this->assertSame(3, ($clone->cb)('abc'));
+    }
+
+    public function testFromArrayBindsHardReferencesToDynamicProperties()
+    {
+        $this->skipIfExtensionDropsPropertyReferences();
+
+        $payload = [
+            'classes' => DeepCloneNoDynamicAttributeRefs::class,
+            'objectMeta' => 1,
+            'prepared' => 0,
+            'properties' => ['stdClass' => ['a' => [0 => -1], 'b' => [0 => -1]]],
+            'resolve' => ['stdClass' => ['a' => [0 => false], 'b' => [0 => false]]],
+            'refs' => [1 => 3],
+        ];
+
+        // The origin reported the creation of these dynamic properties already
+        set_error_handler(static function ($type, $message) {
+            if (error_reporting() & $type) {
+                throw new \ErrorException($message, 0, $type);
+            }
+
+            return false;
+        });
+        try {
+            $o = deepclone_from_array($payload);
+        } finally {
+            restore_error_handler();
+        }
+        $o->a = 42;
+        $this->assertSame(42, $o->b);
+
+        if (\PHP_VERSION_ID >= 80200) {
+            $payload['classes'] = DeepCloneReadonlyRefs::class;
+            try {
+                deepclone_from_array($payload);
+                $this->fail('Error expected');
+            } catch (\Error $e) {
+                $this->assertSame('Cannot create dynamic property '.DeepCloneReadonlyRefs::class.'::$a', $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testFromArrayRejectsHardReferencesToVirtualProperties()
+    {
+        $this->skipIfExtensionDropsPropertyReferences();
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('hard references cannot target virtual properties');
+        deepclone_from_array([
+            'classes' => DeepCloneVirtualRefs::class,
+            'objectMeta' => 1,
+            'prepared' => 0,
+            'properties' => ['stdClass' => ['virtual' => [0 => -1]]],
+            'resolve' => ['stdClass' => ['virtual' => [0 => false]]],
+            'refs' => [1 => 3],
+        ]);
+    }
+
+    private function skipIfExtensionDropsPropertyReferences(): void
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.4', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.4 does not preserve all property references.');
+        }
+    }
+
     public function testRoundTripNamedClosureGlobalFunction()
     {
         $clone = deepclone_from_array(deepclone_to_array(\Closure::fromCallable('strlen'), null, true), null, true);

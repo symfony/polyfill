@@ -498,3 +498,98 @@ class HookedEnumWiderParam {
 }
 PHP);
 }
+
+class DeepCloneRefHolder
+{
+    public $a;
+    public $b;
+    public $other;
+}
+
+class DeepCloneRefParent
+{
+    public $q = 1;
+    private $p;
+
+    public function bind(): void
+    {
+        $this->p = &$this->q;
+    }
+
+    public function getP()
+    {
+        return $this->p;
+    }
+}
+
+class DeepCloneRefChild extends DeepCloneRefParent
+{
+}
+
+class DeepCloneTypedRefs
+{
+    public int $a = 1;
+    public int $b = 2;
+}
+
+#[\AllowDynamicProperties]
+class DeepCloneDynamicRefs
+{
+    public $declared;
+    public $cb;
+}
+
+class DeepCloneNoDynamicAttributeRefs
+{
+}
+
+class DeepCloneSleepRefs
+{
+    public $x = 1;
+    public $y;
+    public $z = 'skipped';
+
+    public function __sleep(): array
+    {
+        return ['x', 'y'];
+    }
+}
+
+if (\PHP_VERSION_ID >= 80200) {
+    eval(<<<'PHP'
+namespace Symfony\Polyfill\Tests\DeepClone;
+
+readonly class DeepCloneReadonlyRefs
+{
+}
+PHP);
+}
+
+if (\PHP_VERSION_ID >= 80400) {
+    eval(<<<'PHP'
+namespace Symfony\Polyfill\Tests\DeepClone;
+
+class DeepCloneVirtualRefs
+{
+    public int $virtual {
+        get => 7;
+        set {}
+    }
+}
+PHP);
+}
+
+class DeepCloneStateRefs
+{
+    public $data;
+
+    public function __serialize(): array
+    {
+        return $this->data;
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->data = $data;
+    }
+}
