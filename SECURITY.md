@@ -14,14 +14,16 @@ versions, a minimal reproducer, and the expected security impact.
 
 A polyfill bug is a vulnerability only if it would be classified as one by the
 [PHP security classification policy](https://github.com/php/policies/blob/main/security-classification.rst)
-had native PHP behaved the same way. In particular, the following are not
-vulnerabilities:
+had the native implementation behaved the same way. In particular, the
+following are not vulnerabilities:
 
 - behavioral differences from the native implementation, such as parsing
   differentials, when the difference is the only problem;
 - issues that require running malicious PHP code;
 - issues that require passing untrusted input to a function not intended to
-  receive it, e.g., [DeepClone](https://github.com/symfony/polyfill/tree/1.x/src/DeepClone).
+  receive it, such as `deepclone_from_array()`;
+- denial of service, such as excessive CPU or memory use, which the Symfony
+  process treats as hardening.
 
 Report them in a public [issue](https://github.com/symfony/polyfill/issues) or
 [pull request](https://github.com/symfony/polyfill/pulls). They are handled as
@@ -33,6 +35,10 @@ If you are unsure whether an issue has security impact, report it privately.
 
 If a vulnerability also affects native PHP, report it privately to the
 [PHP project](https://github.com/php/php-src/security/advisories/new) first,
-then to **security@symfony.com** with a link to the PHP advisory. Polyfills
-run on PHP versions that do not get the native fix, so the polyfill fix is
-released in coordination with PHP's disclosure.
+then send the same report to **security@symfony.com** and mention the PHP
+report. Polyfills run on PHP versions that do not get the native fix, so the
+polyfill fix is released in coordination with PHP's disclosure.
+
+## Supported versions
+
+Only the latest 1.x release receives security fixes.
