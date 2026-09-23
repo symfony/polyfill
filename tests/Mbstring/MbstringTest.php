@@ -268,6 +268,9 @@ class MbstringTest extends TestCase
 
         $convmap = [0x100, 0x10FFFF, 0, 0x1FFFFF];
         $this->assertSame(pack('N*', 0x61, 0x200000, 0x4000000, ...unpack('C*', '&#256;')), mb_encode_numericentity(pack('N*', 0x61, 0x200000, 0x4000000, 0x100), $convmap, 'UCS-4BE'));
+
+        $convmap = [0x0, 0x10FFFF, 0, 0x1FFFFF];
+        $this->assertSame(pack('N*', ...unpack('C*', '&#97;')).pack('N', 0x200000).pack('N*', ...unpack('C*', '&#98;')), mb_encode_numericentity(pack('N*', 0x61, 0x200000, 0x62), $convmap, 'UCS-4BE'));
     }
 
     /**
