@@ -293,6 +293,8 @@ class Php84Test extends TestCase
             $this->assertSame(' é ', mb_ltrim("\xE2\x82 é \xE2", "\xFF"));
             $this->assertSame('?a?', mb_trim('?a?', "\xFF"));
             $this->assertSame(' x', mb_rtrim("\xED\xA0\x80 x\xC3", "\xC3"));
+            $this->assertSame("a\xC3", mb_trim("a\xC3", null, 'utf8'));
+            $this->assertSame('a', mb_trim(" a\xC3 ", null, 'utf-8'));
         } finally {
             mb_substitute_character($subst);
         }
