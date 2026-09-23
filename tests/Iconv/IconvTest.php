@@ -110,6 +110,16 @@ class IconvTest extends TestCase
     /**
      * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
      *
+     * @requires PHP < 8
+     */
+    public function testIconvSubstrWithNullLengthPrePHP8()
+    {
+        $this->assertSame('', iconv_substr('déjà', 1, null));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
+     *
      * @requires PHP 8
      */
     public function testIconvSubstrReturnsEmptyPostPHP8()

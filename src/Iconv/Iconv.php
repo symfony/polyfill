@@ -500,9 +500,6 @@ final class Iconv
         if (null === $encoding) {
             $encoding = self::$internalEncoding;
         }
-        if (null === $length) {
-            $length = 2147483647;
-        }
         if (false === $s = self::iconv($encoding, 'utf-8', $s)) {
             return false;
         }
