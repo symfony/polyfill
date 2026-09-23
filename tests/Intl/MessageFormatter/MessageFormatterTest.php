@@ -125,6 +125,17 @@ class MessageFormatterTest extends TestCase
                 ],
             ],
 
+            [
+                '{a, number} {b, number} {c, number} {d, number}', // pattern
+                '1,234.5 -1,234.5 1.235 1,234.5', // expected
+                [ // params
+                    'a' => 1234.5,
+                    'b' => -1234.5,
+                    'c' => 1.23456,
+                    'd' => '1234.500',
+                ],
+            ],
+
             [<<<'_MSG_'
 {eye_color_of_host, select,
   brown {{num_guests, plural, offset:1

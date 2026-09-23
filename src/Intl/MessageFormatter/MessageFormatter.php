@@ -295,9 +295,9 @@ class MessageFormatter
                 }
 
                 $number = number_format($arg); // XXX use NumberFormatter?
-                if (null === $format && false !== $pos = strpos($arg, '.')) {
-                    // add decimals with unknown length
-                    $number .= '.'.substr($arg, $pos + 1);
+                if (null === $format && false !== strpos($arg, '.')) {
+                    // ICU shows up to 3 fraction digits by default, without trailing zeros
+                    $number = preg_replace('/\.?0+$/', '', number_format($arg, 3));
                 }
 
                 return $number;

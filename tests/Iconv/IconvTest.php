@@ -64,6 +64,7 @@ class IconvTest extends TestCase
         $this->assertSame(2, iconv_strpos('-11--', '1-', 0, 'UTF-8'));
         $this->assertFalse(iconv_strrpos('한국어', '', 'UTF-8'));
         $this->assertSame(1, iconv_strrpos('한국어', '국', 'UTF-8'));
+        $this->assertSame(0, iconv_strrpos('한국어', '한', 'UTF-8'));
     }
 
     /**
@@ -80,6 +81,17 @@ class IconvTest extends TestCase
         $this->assertSame("\xE9j", iconv_substr("d\xE9j\xE0", 1, -1, 'ISO-8859-1'));
         $this->assertSame("\x80", iconv_substr("d\xE9j\xE0 \x80", -1, 1, 'Windows-1252'));
         $this->assertSame("j\xE0 \x80", iconv_substr("d\xE9j\xE0 \x80", 2, 10, 'windows-1252'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_substr
+     *
+     * @requires PHP 8
+     */
+    public function testIconvSubstrWithNullLength()
+    {
+        $this->assertSame('éjà', iconv_substr('déjà', 1));
+        $this->assertSame('jà', iconv_substr('déjà', -2, null, 'UTF-8'));
     }
 
     /**

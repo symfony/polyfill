@@ -492,13 +492,16 @@ final class Iconv
 
         $pos = isset($needle[0]) ? strrpos($haystack, $needle) : false;
 
-        return false === $pos ? false : self::iconv_strlen($pos ? substr($haystack, 0, $pos) : $haystack, 'utf-8');
+        return false === $pos ? false : self::iconv_strlen(substr($haystack, 0, $pos), 'utf-8');
     }
 
     public static function iconv_substr($s, $start, $length = 2147483647, $encoding = null)
     {
         if (null === $encoding) {
             $encoding = self::$internalEncoding;
+        }
+        if (null === $length) {
+            $length = 2147483647;
         }
         if (false === $s = self::iconv($encoding, 'utf-8', $s)) {
             return false;
