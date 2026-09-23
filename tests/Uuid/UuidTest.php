@@ -50,9 +50,9 @@ class UuidTest extends TestCase
     {
         $this->skipIfNativeCannotCreate(Uuid::UUID_TYPE_TIME_V7);
 
-        $before = (int) (microtime(true) * 1000);
+        $before = floor(microtime(true) * 1000);
         $uuid = uuid_create(Uuid::UUID_TYPE_TIME_V7);
-        $after = (int) (microtime(true) * 1000);
+        $after = floor(microtime(true) * 1000);
 
         $this->assertMatchesRegularExpression('{^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$}', $uuid);
         $this->assertSame(Uuid::UUID_TYPE_TIME_V7, uuid_type($uuid));
@@ -144,17 +144,27 @@ class UuidTest extends TestCase
         ClockMock::register(Uuid::class);
     }
 
+    public static function provideCreateTimeNoOverlapWithinOneMicrosecondTests(): array
+    {
+        return [
+            [Uuid::UUID_TYPE_TIME],
+            [Uuid::UUID_TYPE_TIME_V6],
+        ];
+    }
+
     /**
      * @group time-sensitive
+     *
+     * @dataProvider provideCreateTimeNoOverlapWithinOneMicrosecondTests
      */
-    public function testCreateTimeNoOverlapWithinOneMicrosecond()
+    public function testCreateTimeNoOverlapWithinOneMicrosecond(int $type)
     {
         ClockMock::withClockMock(1758000000.123456);
 
         try {
             $uuids = [];
             for ($i = 0; $i < 10000; ++$i) {
-                $uuids[] = Uuid::uuid_create(Uuid::UUID_TYPE_TIME);
+                $uuids[] = Uuid::uuid_create($type);
             }
         } finally {
             ClockMock::withClockMock(false);
@@ -165,6 +175,27 @@ class UuidTest extends TestCase
         // the clock did not move, so all of them share the timestamp and only the clock sequence varies
         $timestamps = array_map(function ($uuid) { return substr($uuid, 0, 18); }, $uuids);
         $this->assertCount(1, array_unique($timestamps));
+    }
+
+    /**
+     * @group time-sensitive
+     */
+    public function testCreateTimeLayout()
+    {
+        ClockMock::withClockMock(1758000000.123456);
+
+        try {
+            $v1 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME);
+            $v6 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME_V6);
+            $v7 = Uuid::uuid_create(Uuid::UUID_TYPE_TIME_V7);
+        } finally {
+            ClockMock::withClockMock(false);
+        }
+
+        // libuuid generates the same timestamp fields at that time
+        $this->assertStringStartsWith('cabad680-92bc-11f0-', $v1);
+        $this->assertStringStartsWith('1f092bcc-abad-6680-', $v6);
+        $this->assertStringStartsWith('019950f7-2c7b-7', $v7);
     }
 
     public static function provideIsValidTest(): array
@@ -351,6 +382,9 @@ class UuidTest extends TestCase
             ['123e4567-e89b-12d3-4a56-426614174000'],
             ['123e4567-e89b-12d3-c456-426614174000'],
             ['123e4567-e89b-12d3-e456-426614174000'],
+            ['1ee9c9a6-2b52-6e1c-8d2a-0242ac120002'],
+            ['01890a5d-ac96-774b-bcce-b302099a8057'],
+            ['01890a5d-ac96-874b-bcce-b302099a8057'],
         ];
     }
 
@@ -390,6 +424,9 @@ class UuidTest extends TestCase
             ['123e4567-e89b-12d3-4a56-426614174000'],
             ['123e4567-e89b-12d3-c456-426614174000'],
             ['123e4567-e89b-12d3-e456-426614174000'],
+            ['1ee9c9a6-2b52-6e1c-8d2a-0242ac120002'],
+            ['01890a5d-ac96-774b-bcce-b302099a8057'],
+            ['01890a5d-ac96-874b-bcce-b302099a8057'],
         ];
     }
 
@@ -513,7 +550,7 @@ class UuidTest extends TestCase
             return;
         }
 
-        // The extension creates v6 and v7 UUIDs only when built against util-linux >= 2.40
+        // The extension creates v6 and v7 UUIDs only when built against util-linux >= 2.41
         try {
             $supported = $type === uuid_type(@uuid_create($type));
         } catch (\ValueError $e) {
