@@ -344,6 +344,7 @@ class MessageFormatter
                 $c = \count($plural);
                 $message = false;
                 $offset = 0;
+                $arg = (float) $arg; // like intl, which reads the argument as a double
                 for ($i = 0; 1 + $i < $c; ++$i) {
                     if (\is_array($plural[$i]) || !\is_array($plural[1 + $i])) {
                         throw new \DomainException('Message pattern is invalid.');

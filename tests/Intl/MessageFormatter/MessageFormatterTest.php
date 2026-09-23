@@ -177,6 +177,16 @@ class MessageFormatterTest extends TestCase
             ],
 
             [
+                '{a, plural, =0{none} =2{a pair} one{# item} other{# items}} {b, plural, =0{none} other{# items}} {c, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '1 item none 2nd', // expected
+                [ // params
+                    'a' => true,
+                    'b' => 'abc',
+                    'c' => '2abc',
+                ],
+            ],
+
+            [
                 '{a, number} {b, number} {c, number} {d, number}', // pattern
                 '1,234.5 -1,234.5 1.235 1,234.5', // expected
                 [ // params
