@@ -58,8 +58,33 @@ class NormalizerTest extends TestCase
         $this->assertFalse(normalizer_is_normalized("\xFF"));
 
         $this->assertTrue(pn::isNormalized($d, pn::NFD));
+    }
 
-        $this->assertFalse(pn::isNormalized('', 42));
+    /**
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::isNormalized
+     */
+    public function testIsNormalizedWithInvalidForm()
+    {
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('normalizer_is_normalized(): Argument #2 ($form) must be a '.(80600 > \PHP_VERSION_ID ? 'a ' : '').'valid normalization form');
+        }
+
+        $this->assertFalse(normalizer_is_normalized('', 42));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::isNormalized
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::normalize
+     * @covers \Symfony\Polyfill\Intl\Normalizer\Normalizer::getRawDecomposition
+     *
+     * @requires PHP 8
+     */
+    public function testNamedArguments()
+    {
+        $this->assertSame("\u{E9}", \call_user_func_array([pn::class, 'normalize'], ['string' => "e\u{301}"]));
+        $this->assertTrue(\call_user_func_array([pn::class, 'isNormalized'], ['string' => "\u{E9}"]));
+        $this->assertSame("e\u{301}", \call_user_func_array([pn::class, 'getRawDecomposition'], ['string' => "\u{E9}"]));
     }
 
     /**
