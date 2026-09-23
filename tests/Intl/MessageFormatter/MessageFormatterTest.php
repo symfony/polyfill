@@ -126,6 +126,49 @@ class MessageFormatterTest extends TestCase
             ],
 
             [
+                '{a, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {b, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {c, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {d, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {e, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {f, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '1st 22nd 103rd 11th 112th 4th', // expected
+                [ // params
+                    'a' => 1,
+                    'b' => 22,
+                    'c' => 103,
+                    'd' => 11,
+                    'e' => 112,
+                    'f' => 4,
+                ],
+            ],
+
+            [
+                '{a, selectordinal, =3{third} few{#rd} other{#th}} {b, selectordinal, offset:1 one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                'third 2nd', // expected
+                [ // params
+                    'a' => 3,
+                    'b' => 3,
+                ],
+            ],
+
+            [
+                '{a, plural, =1{exactly one} one{# item} other{# items}} {b, plural, =2{a pair} other{# items}}', // pattern
+                'exactly one a pair', // expected
+                [ // params
+                    'a' => 1,
+                    'b' => '2',
+                ],
+            ],
+
+            [
+                '{a, plural, one{# item} other{# items}} {b, plural, one{# item} other{# items}} {c, plural, offset:1 one{# item} other{# items}} {d, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {e, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '-1 item -2 items -1 item -2nd -11th', // expected
+                [ // params
+                    'a' => -1,
+                    'b' => -2,
+                    'c' => 0,
+                    'd' => -2,
+                    'e' => -11,
+                ],
+            ],
+
+            [
                 '{a, number} {b, number} {c, number} {d, number}', // pattern
                 '1,234.5 -1,234.5 1.235 1,234.5', // expected
                 [ // params

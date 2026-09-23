@@ -42,6 +42,7 @@ namespace Symfony\Polyfill\Intl\MessageFormatter;
  *
  * It only supports the following message formats:
  *  * plural formatting for english ('one' and 'other' selectors)
+ *  * ordinal formatting for english ('one', 'two', 'few' and 'other' selectors)
  *  * select format
  *  * simple parameters
  *  * integer number parameters
@@ -286,7 +287,6 @@ class MessageFormatter
             case 'ordinal':
             case 'duration':
             case 'choice':
-            case 'selectordinal':
                 throw new \DomainException(\sprintf('The PHP intl extension is required to use the "%s" message format.', $type));
             case 'number':
                 $format = isset($token[2]) ? trim($token[2]) : null;
@@ -328,6 +328,7 @@ class MessageFormatter
                 break;
 
             case 'plural': // TODO make it locale-dependent based on symfony/translation rules
+            case 'selectordinal':
                 /* http://icu-project.org/apiref/icu4c/classicu_1_1PluralFormat.html
                 pluralStyle = [offsetValue] (selector '{' message '}')+
                 offsetValue = "offset:" number
@@ -354,9 +355,14 @@ class MessageFormatter
                         $offset = (int) trim(substr($selector, 7, $pos - 7));
                         $selector = trim(substr($selector, 1 + $pos, \strlen($selector)));
                     }
+                    // Explicit values take precedence over keywords
+                    if ('=' === $selector[0] && (float) substr($selector, 1, \strlen($selector)) == $arg) {
+                        $message = implode(',', str_replace('#', $arg - $offset, $plural[$i]));
+                        break;
+                    }
                     if (false === $message && 'other' === $selector
-                        || '=' === $selector[0] && (int) substr($selector, 1, \strlen($selector)) === $arg
-                        || 'one' === $selector && 1 == $arg - $offset
+                        || 'plural' === $type && 'one' === $selector && 1 == abs($arg - $offset)
+                        || 'selectordinal' === $type && self::getEnglishOrdinalCategory($arg - $offset) === $selector
                     ) {
                         $message = implode(',', str_replace('#', $arg - $offset, $plural[$i]));
                     }
@@ -368,6 +374,27 @@ class MessageFormatter
         }
 
         throw new \DomainException('Message pattern is invalid.');
+    }
+
+    /**
+     * @see https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html#en
+     */
+    private static function getEnglishOrdinalCategory($number): string
+    {
+        $n10 = fmod(abs($number), 10);
+        $n100 = fmod(abs($number), 100);
+
+        if (1.0 === $n10 && 11.0 !== $n100) {
+            return 'one';
+        }
+        if (2.0 === $n10 && 12.0 !== $n100) {
+            return 'two';
+        }
+        if (3.0 === $n10 && 13.0 !== $n100) {
+            return 'few';
+        }
+
+        return 'other';
     }
 
     /**
