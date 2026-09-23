@@ -593,3 +593,47 @@ class DeepCloneStateRefs
         $this->data = $data;
     }
 }
+
+if (\PHP_VERSION_ID >= 80400) {
+    eval(<<<'PHP'
+namespace Symfony\Polyfill\Tests\DeepClone;
+
+class DeepCloneHookedParent
+{
+    private int $secret = 0 {
+        set => $value * 10;
+    }
+
+    public function setSecret(int $v): void
+    {
+        $this->secret = $v;
+    }
+
+    public function getSecret(): int
+    {
+        return $this->secret;
+    }
+}
+
+class DeepCloneHookedChild extends DeepCloneHookedParent
+{
+    public int $pub = 0 {
+        set => $value * 10;
+    }
+
+    protected int $prot = 0 {
+        set => $value * 10;
+    }
+
+    public function setProt(int $v): void
+    {
+        $this->prot = $v;
+    }
+
+    public function getProt(): int
+    {
+        return $this->prot;
+    }
+}
+PHP);
+}

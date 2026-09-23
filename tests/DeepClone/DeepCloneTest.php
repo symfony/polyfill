@@ -495,6 +495,24 @@ class DeepCloneTest extends TestCase
         ]);
     }
 
+    /**
+     * @requires PHP 8.4
+     */
+    public function testFromArrayWritesHookedPropertiesRaw()
+    {
+        $o = new DeepCloneHookedChild();
+        $o->pub = 1;
+        $o->setProt(2);
+        $o->setSecret(3);
+
+        // Set hooks ran when the origin was built: the copy takes the stored values
+        $clone = deepclone_from_array(deepclone_to_array($o));
+
+        $this->assertSame(10, $clone->pub);
+        $this->assertSame(20, $clone->getProt());
+        $this->assertSame(30, $clone->getSecret());
+    }
+
     private function skipIfExtensionDropsPropertyReferences(): void
     {
         if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.4', '<')) {

@@ -42,6 +42,7 @@ final class DeepClone
     private static array $constExprIndex = [];
     private static array $closureLiteralLines = [];
     private static array $refHydrators = [];
+    private static array $hookedProperties = [];
     private static array $refBindings = [];
     private static array $typedRefs = []; // [ReflectionReference id] = Reference, for references that reject markers
     private static \stdClass $sentinel;
@@ -387,6 +388,7 @@ final class DeepClone
             $data['refMasks'] ?? [],
             $allowed_classes,
             $expectedStates,
+            $classes,
         );
     }
 
@@ -894,7 +896,7 @@ final class DeepClone
         return $values;
     }
 
-    private static function reconstruct($prepared, $objectMeta, $numObjects, $properties, $resolve, $states, $refs, $preparedMask = null, $refMasks = [], ?array $allowedClasses = null, array $expectedStates = [])
+    private static function reconstruct($prepared, $objectMeta, $numObjects, $properties, $resolve, $states, $refs, $preparedMask = null, $refMasks = [], ?array $allowedClasses = null, array $expectedStates = [], array $classes = [])
     {
         $objects = [];
 
@@ -935,6 +937,20 @@ final class DeepClone
                 $objects[$id] = unserialize('C:'.\strlen($class).':"'.$class.'":0:{}');
             } else {
                 $objects[$id] = unserialize('O:'.\strlen($class).':"'.$class.'":0:{}');
+            }
+        }
+
+        // Backed hooked properties of the payload's classes, by payload scope
+        $hooked = [];
+        if (\PHP_VERSION_ID >= 80400) {
+            foreach ($classes as $class) {
+                if (isset(self::$reflectors[$class]) && $classHooked = self::$hookedProperties[$class] ??= self::getHookedProperties(self::$reflectors[$class])) {
+                    foreach ($classHooked as $scope => $props) {
+                        foreach ($props as $name => $propertyReflector) {
+                            $hooked[$scope][$name][self::$reflectors[$class]->name] = $propertyReflector;
+                        }
+                    }
+                }
             }
         }
 
@@ -1071,6 +1087,18 @@ final class DeepClone
                     }
                 }
                 $refSlots = array_filter($refSlots);
+            }
+            if (isset($hooked[$scope])) {
+                // Backed hooked properties are written raw, bypassing their set
+                // hook, like unserialize() and the extension do
+                foreach ($hooked[$scope] as $name => $propertyReflectors) {
+                    foreach ($scopeProps[$name] ?? [] as $id => $v) {
+                        if (\is_object($object = $objects[$id] ?? null) && $propertyReflector = $propertyReflectors[$object::class] ?? null) {
+                            $propertyReflector->setRawValue($object, $v);
+                            unset($scopeProps[$name][$id]);
+                        }
+                    }
+                }
             }
             if ($refSlots) {
                 (self::$refHydrators[$scope] ??= self::getRefHydrator($scope))($scopeProps, $objects, $refSlots, $refs);
@@ -2016,6 +2044,28 @@ final class DeepClone
                 }
             }
         };
+    }
+
+    /**
+     * Lists the backed hooked properties of a class by the scope that the
+     * payload uses for them.
+     *
+     * @return array<string, array<string, \ReflectionProperty>>
+     */
+    private static function getHookedProperties(\ReflectionClass $class): array
+    {
+        $hooked = [];
+        for ($r = $class; $r; $r = $r->getParentClass()) {
+            foreach ($r->getProperties() as $p) {
+                if ($p->class !== $r->name || $p->isStatic() || $p->isAbstract() || $p->isVirtual() || !$p->getHooks()) {
+                    continue;
+                }
+                $scope = $p->isPublic() && !$p->isProtectedSet() && !$p->isPrivateSet() ? 'stdClass' : $p->class;
+                $hooked[$scope][$p->name] ??= $p;
+            }
+        }
+
+        return $hooked;
     }
 
     /**
