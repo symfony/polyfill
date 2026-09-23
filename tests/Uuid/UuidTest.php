@@ -278,6 +278,21 @@ class UuidTest extends TestCase
         $this->assertSame($expected, @uuid_time($uuid));
     }
 
+    public function testTimeBeforeUnixEpoch()
+    {
+        if (\PHP_INT_SIZE < 8) {
+            $this->markTestSkipped('Timestamps before the Unix epoch need 64-bit integers.');
+        }
+        if (\extension_loaded('uuid') && 0 < \uuid_time('00000000-0000-1000-8000-000000000000')) {
+            $this->markTestSkipped('libuuid < 2.42 wraps timestamps before the Unix epoch.');
+        }
+
+        $this->assertSame(-12219292800, uuid_time('00000000-0000-1000-8000-000000000000'));
+        $this->assertSame(-6254595519, uuid_time('123e4567-e89b-10d3-a456-426614174000'));
+        $this->assertSame(-1, uuid_time('12e8a980-1dd2-11b2-8000-000000000000'));
+        $this->assertSame(0, uuid_time('13813fff-1dd2-11b2-8000-000000000000'));
+    }
+
     public static function provideInvalidTimeTest(): array
     {
         return [
