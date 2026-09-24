@@ -451,6 +451,10 @@ class MbstringTest extends TestCase
             $this->assertFalse(@mb_strpos('abc', ''));
         } else {
             $this->assertSame(0, mb_strpos('abc', ''));
+            $this->assertSame(1, mb_strpos('abc', '', 1));
+            $this->assertSame(2, mb_strpos('abc', '', -1));
+            $this->assertSame(2, mb_strpos('한국어', '', 2));
+            $this->assertSame(2, mb_stripos('abc', '', 2));
         }
         $this->assertFalse(@mb_strpos('abc', 'a', -1));
         $this->assertFalse(mb_strpos('abc', 'd'));
@@ -468,6 +472,45 @@ class MbstringTest extends TestCase
         $this->assertSame(1, mb_strripos('aςσb', 'ΣΣ'));
         $this->assertSame(3, mb_strrpos('ababab', 'b', -2));
         $this->assertSame(3, mb_strrpos('ababab', 'b', -3));
+
+        // Native PHP 8 counted the needle in the wrong encoding until 8.4.25 and 8.5.10
+        if (TestListenerTrait::$enabledPolyfills || 80000 > \PHP_VERSION_ID || (80425 <= \PHP_VERSION_ID && 80500 > \PHP_VERSION_ID) || 80510 <= \PHP_VERSION_ID) {
+            $this->assertSame(2, mb_strrpos(mb_convert_encoding('ababab', 'UTF-16LE', 'UTF-8'), mb_convert_encoding('a', 'UTF-16LE', 'UTF-8'), -3, 'UTF-16LE'));
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrpos
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strripos
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrchr
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrichr
+     */
+    public function testStrrposOverlappingMatches()
+    {
+        $this->assertSame(2, mb_strrpos('ababab', 'aba'));
+        $this->assertSame(2, mb_strrpos('ababab', 'aba', -3));
+        $this->assertSame(2, mb_strripos('ABABAB', 'aba'));
+        $this->assertSame(2, mb_strrpos(mb_convert_encoding('ababab', 'UTF-16LE', 'UTF-8'), mb_convert_encoding('aba', 'UTF-16LE', 'UTF-8'), 0, 'UTF-16LE'));
+        $this->assertSame('abab', mb_strrchr('ababab', 'aba'));
+        $this->assertSame('ABAB', mb_strrichr('ABABAB', 'aba'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stripos
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strripos
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stristr
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrichr
+     */
+    public function testCaseInsensitiveSearchInOtherEncodings()
+    {
+        // U+BFC5 is "\xC5\xBF" in UTF-16LE, the bytes of "ſ" in UTF-8
+        $this->assertSame(1, mb_stripos(mb_convert_encoding("\u{BFC5}a", 'UTF-16LE', 'UTF-8'), mb_convert_encoding('A', 'UTF-16LE', 'UTF-8'), 0, 'UTF-16LE'));
+        $this->assertSame(mb_convert_encoding('Σ', 'UTF-16LE', 'UTF-8'), mb_strrichr(mb_convert_encoding('ΣΣ', 'UTF-16LE', 'UTF-8'), mb_convert_encoding('ς', 'UTF-16LE', 'UTF-8'), false, 'UTF-16LE'));
+        $this->assertSame(mb_convert_encoding('ςσb', 'EUC-JP', 'UTF-8'), mb_stristr(mb_convert_encoding('aςσb', 'EUC-JP', 'UTF-8'), mb_convert_encoding('ΣΣ', 'EUC-JP', 'UTF-8'), false, 'EUC-JP'));
+        $this->assertSame(0, mb_stripos("\xC9", "\xE9", 0, '8bit'));
+        $this->assertSame("\xC9b", mb_stristr("a\xC9b", "\xE9", false, '8bit'));
+        $this->assertSame(1, mb_stripos('İa', 'a'));
+        $this->assertSame(2, mb_strripos('aİİ', 'İ'));
     }
 
     /**
@@ -490,6 +533,166 @@ class MbstringTest extends TestCase
     {
         mb_strpos('abc', 'a');
         $this->assertFalse(mb_strpos('abc', 'a', -1));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strpos
+     *
+     * @requires PHP 8
+     */
+    public function testStrposEmptyNeedleWithOffsetOutOfRange()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('mb_strpos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+
+        mb_strpos('abc', '', 4);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stripos
+     *
+     * @requires PHP 8
+     */
+    public function testStriposEmptyNeedleWithNegativeOffsetOutOfRange()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('mb_stripos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+
+        mb_stripos('abc', '', -4);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strpos
+     */
+    public function testStrposWithOffsetOutOfRange()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_strpos('abc', 'a', 4));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_strpos(): Offset not contained in string');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_strpos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+        }
+
+        mb_strpos('abc', 'a', 4);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strpos
+     */
+    public function testStrposWithOffsetOutOfRangeIn8bit()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_strpos('abc', 'a', 4, '8bit'));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_strpos(): Offset not contained in string');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_strpos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+        }
+
+        mb_strpos('abc', 'a', 4, '8bit');
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stripos
+     */
+    public function testStriposWithNegativeOffsetOutOfRange()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_stripos('abc', 'a', -4));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_stripos(): Offset not contained in string');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_stripos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+        }
+
+        mb_stripos('abc', 'a', -4);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrpos
+     */
+    public function testStrrposWithOffsetOutOfRange()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_strrpos('abc', 'a', 4));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_strrpos(): Offset is greater than the length of haystack string');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_strrpos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+        }
+
+        mb_strrpos('abc', 'a', 4);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrpos
+     */
+    public function testStrrposWithNegativeOffsetOutOfRangeIn8bit()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_strrpos('abc', 'a', -4, '8bit'));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_strrpos(): Offset is greater than the length of haystack string');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_strrpos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+        }
+
+        mb_strrpos('abc', 'a', -4, '8bit');
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strripos
+     */
+    public function testStrriposWithNegativeOffsetOutOfRange()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_strripos('abc', 'a', -4));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_strripos(): Offset is greater than the length of haystack string');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_strripos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+        }
+
+        mb_strripos('abc', 'a', -4);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stripos
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strripos
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stristr
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrichr
+     *
+     * @requires PHP 8
+     */
+    public function testCaseInsensitiveSearchInEmptyHaystack()
+    {
+        if (80300 > \PHP_VERSION_ID && !TestListenerTrait::$enabledPolyfills) {
+            $this->markTestSkipped('Native mb_stripos() returns false for an empty haystack before PHP 8.3.');
+        }
+
+        $this->assertSame(0, mb_stripos('', ''));
+        $this->assertSame(0, mb_strripos('', ''));
+        $this->assertSame('', mb_stristr('', ''));
+        $this->assertSame('', mb_strrichr('', ''));
+        $this->assertFalse(mb_strripos('', 'a'));
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('mb_strripos(): Argument #3 ($offset) must be contained in argument #1 ($haystack)');
+
+        mb_strripos('', 'a', 1);
     }
 
     /**
@@ -586,6 +789,62 @@ class MbstringTest extends TestCase
 
         $this->assertSame('éjà', mb_strrchr('déjàdéjà', 'é', false, '8BIT'));
         $this->assertSame('déjàd', mb_strrchr('déjàdéjà', 'é', true, '8BIT'));
+
+        $this->assertFalse(mb_strrchr('abc', 'bz'));
+        $this->assertSame('bXabc', mb_strrchr('abXabc', 'bX'));
+        $this->assertSame('bXabc', mb_strrichr('abXabc', 'Bx'));
+        $this->assertSame(mb_convert_encoding('é', 'UTF-16LE', 'UTF-8'), mb_strrichr(mb_convert_encoding('aÉbé', 'UTF-16LE', 'UTF-8'), mb_convert_encoding('É', 'UTF-16LE', 'UTF-8'), false, 'UTF-16LE'));
+        $this->assertFalse(mb_strstr(mb_convert_encoding('ĀĀ', 'UTF-16LE', 'UTF-8'), "\x01\x00", false, 'UTF-16LE'));
+        $this->assertSame(mb_convert_encoding('Āb', 'UTF-16LE', 'UTF-8'), mb_strstr(mb_convert_encoding('ĀaĀb', 'UTF-16LE', 'UTF-8'), mb_convert_encoding('Āb', 'UTF-16LE', 'UTF-8'), false, 'UTF-16LE'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strstr
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_stristr
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strrchr
+     */
+    public function testStrstrWithIllFormedInput()
+    {
+        $this->assertSame('', mb_strstr("a\x81", 'a', true, 'SJIS'));
+        $this->assertSame('', mb_stristr("A\x81", 'a', true, 'SJIS'));
+        $this->assertSame('', mb_strrchr("a\x81", 'a', true, 'SJIS'));
+
+        if (80000 <= \PHP_VERSION_ID) {
+            $this->assertSame("a\x00", mb_strstr("\x00\xD8a\x00", "a\x00", false, 'UTF-16LE'));
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_substr_count
+     */
+    public function testSubstrCount()
+    {
+        $this->assertSame(1, mb_substr_count('ababa', 'aba'));
+        $this->assertSame(0, mb_substr_count(mb_convert_encoding('ĀĀ', 'UTF-16LE', 'UTF-8'), "\x01\x00", 'UTF-16LE'));
+        $this->assertSame(2, mb_substr_count(mb_convert_encoding('ĀaĀa', 'UTF-16LE', 'UTF-8'), mb_convert_encoding('Āa', 'UTF-16LE', 'UTF-8'), 'UTF-16LE'));
+        $this->assertSame(0, mb_substr_count('abc', "\xFF", 'SJIS'));
+        $this->assertSame(0, mb_substr_count(mb_convert_encoding('ab', 'UTF-16LE', 'UTF-8'), "\x00\xDC", 'UTF-16LE'));
+        $this->assertSame(1, mb_substr_count("a\x81", 'a', 'SJIS'));
+        $this->assertSame(1, mb_substr_count(mb_convert_encoding('ab', 'UTF-16LE', 'UTF-8')."\x00", mb_convert_encoding('b', 'UTF-16LE', 'UTF-8'), 'UTF-16LE'));
+        $this->assertSame(0, mb_substr_count('déjà', "\xA9"));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_substr_count
+     */
+    public function testSubstrCountWithEmptyNeedle()
+    {
+        if (80000 > \PHP_VERSION_ID) {
+            $this->assertFalse(@mb_substr_count('abc', ''));
+
+            $this->expectWarning();
+            $this->expectWarningMessage('mb_substr_count(): Empty substring');
+        } else {
+            $this->expectException(\ValueError::class);
+            $this->expectExceptionMessage('mb_substr_count(): Argument #2 ($needle) must not be empty');
+        }
+
+        mb_substr_count('abc', '');
     }
 
     /**
