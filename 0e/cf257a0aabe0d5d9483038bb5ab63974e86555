@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-24T13:22:34Z
+
+I pushed a few commits: HTML-ENTITIES now gets the same cleanup, objects in arrays are skipped like native does, and a test covers code points above U+10FFFF.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-24T15:07:53Z
+
+I squashed the PR and amended the review findings: native `ValueError`s for invalid encodings, a guard against recursive references, colliding keys, non-string values in `mb_convert_variables()` and `mb_strwidth()` on ill-formed UTF-8.
