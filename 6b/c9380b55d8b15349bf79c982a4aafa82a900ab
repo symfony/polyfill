@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-24T05:19:05Z
+
+I pushed a few commits: mb_trim() now honors mb_substitute_character() and walks the string from both ends instead of splitting it, plus small fixes for an empty `$characters`, other spellings of UTF-8, the validation order in `normalize()`, and a test for the global constant.
