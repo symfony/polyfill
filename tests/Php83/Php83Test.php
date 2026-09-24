@@ -368,6 +368,12 @@ class Php83Test extends TestCase
         yield ['C', 'D'];
         yield ['c', 'd'];
         yield ['3', '4'];
+        yield ['109', '110'];
+        yield ['ZYz', 'ZZa'];
+        yield ['a09', 'a10'];
+        yield ['99', '100'];
+        yield ['Az9', 'Ba0'];
+        yield ['0', '1'];
     }
 
     /**
@@ -399,6 +405,7 @@ class Php83Test extends TestCase
         yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', '1f.5'];
         yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', 'foo.1.txt'];
         yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', '1.f.5'];
+        yield ['str_increment(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', "a\n"];
     }
 
     /**
@@ -424,5 +431,36 @@ class Php83Test extends TestCase
         yield ['str_decrement(): Argument #1 ($string) "00" is out of decrement range', '00'];
         yield ['str_decrement(): Argument #1 ($string) "0a" is out of decrement range', '0a'];
         yield ['str_decrement(): Argument #1 ($string) "0A" is out of decrement range', '0A'];
+        yield ['str_decrement(): Argument #1 ($string) "012" is out of decrement range', '012'];
+        yield ['str_decrement(): Argument #1 ($string) must be composed only of alphanumeric ASCII characters', "a\n"];
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::str_increment
+     * @covers \Symfony\Polyfill\Php83\Php83::str_decrement
+     */
+    public function testLongInvalidStringLeavesNoPcreError()
+    {
+        $string = str_repeat('a', 10000).'!';
+        $backtrackLimit = ini_set('pcre.backtrack_limit', '100');
+
+        try {
+            preg_match('//', '');
+            try {
+                str_increment($string);
+                $this->fail('A ValueError should have been thrown');
+            } catch (\ValueError $e) {
+            }
+            $this->assertSame(\PREG_NO_ERROR, preg_last_error());
+
+            try {
+                str_decrement($string);
+                $this->fail('A ValueError should have been thrown');
+            } catch (\ValueError $e) {
+            }
+            $this->assertSame(\PREG_NO_ERROR, preg_last_error());
+        } finally {
+            ini_set('pcre.backtrack_limit', $backtrackLimit);
+        }
     }
 }
