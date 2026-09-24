@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-24T05:19:07Z
+
+I pushed a few commits on top: `offset:` now works in selectordinal like in plural, arguments are read as floats like intl does, and `#` is formatted like `{n, number}` and no longer replaced inside nested arguments.
