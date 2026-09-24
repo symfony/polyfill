@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-24T13:22:33Z
+
+I added a test for `str_decrement('1')` and aligned the loop with the one in `str_increment()`.
+
+---------------------------------------------------------------------------
+
+by IonBazan at 2026-09-24T13:40:24Z
+
+Thank you @nicolas-grekas, appreciate your support!
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-24T13:48:56Z
+
+I squashed the PR and made the pattern possessive, so a long invalid string no longer leaves `preg_last_error()` set.
