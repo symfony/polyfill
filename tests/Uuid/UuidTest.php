@@ -338,6 +338,7 @@ class UuidTest extends TestCase
             [Uuid::UUID_TYPE_RANDOM, 'fa83b381-328c-46b8-8c90-4e9ba47dfa4b'],
             [Uuid::UUID_TYPE_TIME, 'dbc6260f-e9cc-11e9-8dac-9cb6d0897f07'],
             [Uuid::UUID_TYPE_TIME, '6fec1e70-fb1f-11e9-81dc-b52d3e41ad26'],
+            [Uuid::UUID_TYPE_SECURITY, '000003e8-cbb9-21ea-b201-00045a86c8a1'],
             [Uuid::UUID_TYPE_TIME_V6, '1ee9c9a6-2b52-6e1c-8d2a-0242ac120002'],
             [Uuid::UUID_TYPE_TIME_V7, '01890a5d-ac96-774b-bcce-b302099a8057'],
             [Uuid::UUID_TYPE_VENDOR, '01890a5d-ac96-874b-bcce-b302099a8057'],
@@ -348,6 +349,11 @@ class UuidTest extends TestCase
     public function testType(int $expected, string $uuid)
     {
         $this->assertSame($expected, @uuid_type($uuid));
+    }
+
+    public function testTypeSecurity()
+    {
+        $this->assertSame(\UUID_TYPE_SECURITY, uuid_type('000003e8-cbb9-21ea-b201-00045a86c8a1'));
     }
 
     public function testTypeWithInvalidUuid()

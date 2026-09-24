@@ -175,11 +175,15 @@ final class Php84
         }
 
         if ('' === $characters) {
-            return null === $encoding ? $string : mb_convert_encoding($string, $encoding);
+            return $string;
         }
 
         if ('UTF-8' === $encoding || \in_array(strtolower($encoding), ['utf-8', 'utf8'], true)) {
             $encoding = 'UTF-8';
+        }
+
+        if ('UTF-8' === $encoding && (!preg_match('//u', $string) || (null !== $characters && !preg_match('//u', $characters)))) {
+            return self::mb_trim_invalid_utf8($string, $characters, $function);
         }
 
         $string = mb_convert_encoding($string, 'UTF-8', $encoding);
@@ -201,6 +205,50 @@ final class Php84
         }
 
         return mb_convert_encoding($string, $encoding, 'UTF-8');
+    }
+
+    /**
+     * Trims ill-formed UTF-8 like mbstring: each maximal subpart of an ill-formed
+     * sequence counts as one character, and the string is returned as is when
+     * nothing is trimmed, else re-encoded with the substitute character.
+     */
+    private static function mb_trim_invalid_utf8(string $string, ?string $characters, string $function): string
+    {
+        // Well-formed characters in group 1, then the maximal subparts of ill-formed sequences
+        $regex = '/([\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})|\xE0[\xA0-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]|\xED[\x80-\x9F]|\xF0[\x90-\xBF][\x80-\xBF]?|[\xF1-\xF3][\x80-\xBF]{1,2}|\xF4[\x80-\x8F][\x80-\xBF]?|[\x80-\xFF]/';
+
+        // Ill-formed sequences leave group 1 empty: they are trimmed when $characters has one too
+        preg_match_all($regex, $characters ?? "\0 \f\n\r\t\v\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}", $m);
+        $trimmed = array_flip($m[1]);
+
+        $start = 0;
+        $end = \strlen($string);
+
+        while ('mb_rtrim' !== $function && $start < $end && preg_match($regex, $string, $m, 0, $start) && isset($trimmed[$m[1] ?? ''])) {
+            $start += \strlen($m[0]);
+        }
+
+        while ('mb_ltrim' !== $function && $start < $end) {
+            // Characters are at most 4 bytes long, and only continuation bytes don't start one
+            for ($i = $end - 1; $i > $start && $i > $end - 4 && 0x80 === (\ord($string[$i]) & 0xC0); --$i) {
+            }
+
+            preg_match_all($regex, substr($string, $i, $end - $i), $m);
+
+            if (!isset($trimmed[end($m[1])])) {
+                break;
+            }
+
+            $end -= \strlen(end($m[0]));
+        }
+
+        if (0 === $start && \strlen($string) === $end) {
+            return $string;
+        }
+
+        $string = substr($string, $start, $end - $start);
+
+        return 'none' === mb_substitute_character() ? preg_replace($regex, '$1', $string) : mb_convert_encoding($string, 'UTF-8', 'UTF-8');
     }
 
     public static function grapheme_str_split(string $string, int $length)

@@ -281,6 +281,42 @@ class Php84Test extends TestCase
         $this->assertSame('6f225b57', bin2hex(mb_ltrim(mb_convert_encoding("\u{FEFF}漢字", 'UTF-16BE', 'UTF-8'), mb_convert_encoding("\u{FFFE}\u{FEFF}", 'UTF-16BE', 'UTF-8'), 'UTF-16BE')));
     }
 
+    public function testMbTrimInvalidUtf8()
+    {
+        $subst = mb_substitute_character();
+        mb_substitute_character('none');
+
+        try {
+            $this->assertSame("a\xC3", mb_trim("a\xC3"));
+            $this->assertSame('a', mb_trim(" a\xC3 "));
+            $this->assertSame(' a', mb_trim("\xFF\xFE a "));
+            $this->assertSame(' é ', mb_ltrim("\xE2\x82 é \xE2", "\xFF"));
+            $this->assertSame('?a?', mb_trim('?a?', "\xFF"));
+            $this->assertSame(' x', mb_rtrim("\xED\xA0\x80 x\xC3", "\xC3"));
+            $this->assertSame("a\xC3", mb_trim("a\xC3", null, 'utf8'));
+            $this->assertSame('a', mb_trim(" a\xC3 ", null, 'utf-8'));
+        } finally {
+            mb_substitute_character($subst);
+        }
+    }
+
+    public function testMbTrimInvalidUtf8WithSubstituteCharacter()
+    {
+        $subst = mb_substitute_character();
+        mb_substitute_character(0x3F);
+
+        try {
+            $this->assertSame("a\xC3", mb_trim("a\xC3"));
+            $this->assertSame('a?', mb_trim(" a\xC3 "));
+            $this->assertSame('?? a', mb_trim("\xFF\xFE a "));
+            $this->assertSame(' é ?', mb_ltrim("\xE2\x82 é \xE2", "\xFF"));
+            $this->assertSame('?a?', mb_trim('?a?', "\xFF"));
+            $this->assertSame('??? x', mb_rtrim("\xED\xA0\x80 x\xC3", "\xC3"));
+        } finally {
+            mb_substitute_character($subst);
+        }
+    }
+
     public function testMbTrimCharactersEncoding()
     {
         $strUtf8 = "\u{3042}\u{3000}";
@@ -322,6 +358,8 @@ class Php84Test extends TestCase
         yield ['', " \f\n\r\v\x00\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}"];
 
         yield [' abcd ', ' abcd ', ''];
+        yield [" a\xC3 ", " a\xC3 ", ''];
+        yield [" \xE9 ", " \xE9 ", '', 'ISO-8859-1'];
 
         yield ['f', 'foo', 'oo'];
 

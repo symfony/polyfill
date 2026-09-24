@@ -65,7 +65,7 @@ class Php82
      */
     public static function odbc_connection_string_should_quote(string $str): bool
     {
-        return false !== strpbrk($str, '[]{}(),;?*=!@');
+        return false !== strpbrk($str, '[]{}(),;?*=!@ ');
     }
 
     public static function odbc_connection_string_quote(string $str): string

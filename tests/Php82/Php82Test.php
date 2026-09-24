@@ -12,6 +12,7 @@
 namespace Symfony\Polyfill\Tests\Php82;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Polyfill\Util\TestListenerTrait;
 
 class Php82Test extends TestCase
 {
@@ -35,6 +36,18 @@ class Php82Test extends TestCase
     public function testConnectionStringShouldQuote(string $value, bool $isQuoted, bool $shouldQuote)
     {
         self::assertSame($shouldQuote, odbc_connection_string_should_quote($value));
+    }
+
+    /**
+     * @requires extension odbc
+     */
+    public function testConnectionStringShouldQuoteSpaces()
+    {
+        if ((\PHP_VERSION_ID < 80425 || (80500 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 80510)) && !TestListenerTrait::$enabledPolyfills) {
+            $this->markTestSkipped('Native odbc_connection_string_should_quote() ignores spaces before PHP 8.4.25 and 8.5.10.');
+        }
+
+        self::assertTrue(odbc_connection_string_should_quote('foo bar'));
     }
 
     /**
