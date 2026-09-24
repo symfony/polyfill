@@ -72,6 +72,11 @@ class MbstringTest extends TestCase
         $this->assertSame(iconv('UTF-8', 'ISO-8859-1', 'déjà'), mb_convert_encoding('déjà', 'Windows-1252'));
         $this->assertSame('déjà', mb_convert_encoding(mb_convert_encoding('déjà', 'ISO-8859-1', 'UTF-8'), 'Utf-8', 'ASCII,ISO-2022-JP,UTF-8,ISO-8859-1'));
         $this->assertSame('déjà', mb_convert_encoding(mb_convert_encoding('déjà', 'ISO-8859-1', 'UTF-8'), 'Utf-8', ['ASCII', 'ISO-2022-JP', 'UTF-8', 'ISO-8859-1']));
+        $this->assertSame("d\xE9j\xE0", mb_convert_encoding('déjà', 'ISO-8859-1', '"UTF-8, ISO-8859-1"'));
+
+        $var = ['déjà'];
+        mb_convert_variables('ISO-8859-1', '"UTF-8"', $var);
+        $this->assertSame(["d\xE9j\xE0"], $var);
     }
 
     /**
@@ -125,6 +130,10 @@ class MbstringTest extends TestCase
         // out-of-range and not-an-entity stay untouched, like native does
         $this->assertSame('&#1114112;', mb_convert_encoding('&#1114112;', 'UTF-8', 'Html-entities'));
         $this->assertSame('&apos;', mb_convert_encoding('&apos;', 'UTF-8', 'Html-entities'));
+
+        // native encodes each ill-formed sequence as a numeric entity above U+10FFFF
+        $this->assertSame('a&eacute;b', preg_replace('/&#\d{8,};/', '', mb_convert_encoding("a\xC3\xA9\xFFb", 'Html-entities', 'UTF-8')));
+        $this->assertSame('&eacute;', preg_replace('/&#\d{8,};/', '', mb_convert_encoding("\xC3\xA9\xC3", 'Html-entities', 'UTF-8')));
     }
 
     /**
@@ -133,6 +142,205 @@ class MbstringTest extends TestCase
     public function testConvertEncodingWithArrayValue()
     {
         $this->assertSame(['déjà', 'là'], mb_convert_encoding(['d&eacute;j&#224;', 'l&#224;'], 'Utf-8', 'Html-entities'));
+        $this->assertSame(
+            ['a' => "\xE9", 'n' => 1, 'f' => 1.5, 'b' => true, 'z' => null, "\xE9" => ['x' => "\xE0"]],
+            mb_convert_encoding(['a' => 'é', 'n' => 1, 'f' => 1.5, 'b' => true, 'z' => null, 'é' => ['x' => 'à']], 'ISO-8859-1', 'UTF-8')
+        );
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_encoding
+     */
+    public function testConvertEncodingWithCollidingKeys()
+    {
+        if (80100 > \PHP_VERSION_ID && !TestListenerTrait::$enabledPolyfills) {
+            $this->markTestSkipped('Native mb_convert_encoding() detects the encoding of array keys differently before PHP 8.1');
+        }
+
+        $this->assertSame(['é' => 1, 'a' => 3], mb_convert_encoding(['é' => 1, "\xE9" => 2, 'a' => 3], 'UTF-8', ['UTF-8', 'ISO-8859-1']));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_encoding
+     */
+    public function testConvertEncodingWithObjectInArray()
+    {
+        $errors = [];
+        set_error_handler(static function ($errno, $errstr) use (&$errors) {
+            $errors[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $result = mb_convert_encoding(['a' => 'é', 'o' => new \stdClass(), 'b' => ['c' => new \ArrayObject()]], 'ISO-8859-1', 'UTF-8');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame(['a' => "\xE9", 'b' => []], $result);
+        $this->assertSame(['mb_convert_encoding(): Object is not supported', 'mb_convert_encoding(): Object is not supported'], $errors);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_encoding
+     *
+     * @requires PHP 7.4
+     */
+    public function testConvertEncodingWithRecursiveArray()
+    {
+        $self = ['a' => 'é'];
+        $self['self'] = &$self;
+        $nested = ['x' => ['y' => ['a' => 'é']]];
+        $nested['x']['y']['top'] = &$nested;
+        $a = ['a' => 'é'];
+        $b = ['b' => 'à'];
+        $a['b'] = &$b;
+        $b['a'] = &$a;
+        $byValue = ['b' => 'à'];
+        $byValue['self'] = &$byValue;
+        $x = ['n' => 'é'];
+        $y = ['m' => 'à'];
+        $x['y'] = &$y;
+        $y['x'] = &$x;
+        $shared = ['é'];
+        $lookAlike = ['p' => ['z' => 'é']];
+
+        $errors = [];
+        set_error_handler(static function ($errno, $errstr) use (&$errors) {
+            $errors[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $results = [
+                mb_convert_encoding($self, 'ISO-8859-1', 'UTF-8'),
+                mb_convert_encoding($nested, 'ISO-8859-1', 'UTF-8'),
+                mb_convert_encoding($a, 'ISO-8859-1', 'UTF-8'),
+                mb_convert_encoding(['v' => $byValue], 'ISO-8859-1', 'UTF-8'),
+                mb_convert_encoding(['x' => &$x, 'z' => 1], 'ISO-8859-1', 'UTF-8'),
+                mb_convert_encoding(['p' => &$shared, 'q' => &$shared], 'ISO-8859-1', 'UTF-8'),
+                mb_convert_encoding(['p' => ['r' => &$lookAlike]], 'ISO-8859-1', 'UTF-8'),
+            ];
+        } finally {
+            restore_error_handler();
+        }
+
+        // Native stops at the first reference back to an array being converted, the polyfill one level later
+        $this->assertSame(array_fill(0, 5, 'mb_convert_encoding(): Cannot convert recursively referenced values'), $errors);
+        $this->assertSame("\xE9", $results[0]['a']);
+        $this->assertSame("\xE9", $results[1]['x']['y']['a']);
+        $this->assertSame("\xE0", $results[2]['b']['b']);
+        $this->assertSame("\xE0", $results[3]['v']['b']);
+        $this->assertSame("\xE0", $results[4]['x']['y']['m']);
+        $this->assertSame(1, $results[4]['z']);
+        $this->assertSame(['p' => ["\xE9"], 'q' => ["\xE9"]], $results[5]);
+        $this->assertSame(['p' => ['r' => ['p' => ['z' => "\xE9"]]]], $results[6]);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_encoding
+     *
+     * @dataProvider convertEncodingInvalidEncodingProvider
+     *
+     * @requires PHP 8
+     */
+    public function testConvertEncodingWithInvalidEncoding(string $expectedError, $string, string $toEncoding, $fromEncoding)
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage($expectedError);
+
+        mb_convert_encoding($string, $toEncoding, $fromEncoding);
+    }
+
+    public static function convertEncodingInvalidEncodingProvider(): iterable
+    {
+        yield ['mb_convert_encoding(): Argument #2 ($to_encoding) must be a valid encoding, "FOO" given', 'é', 'FOO', 'UTF-8'];
+        yield ['mb_convert_encoding(): Argument #2 ($to_encoding) must be a valid encoding, "FOO" given', ['a' => 'é'], 'FOO', 'UTF-8'];
+        yield ['mb_convert_encoding(): Argument #2 ($to_encoding) must be a valid encoding, "FOO" given', [], 'FOO', 'UTF-8'];
+        yield ['mb_convert_encoding(): Argument #2 ($to_encoding) must be a valid encoding, "FOO" given', [1, null], 'FOO', 'UTF-8'];
+        yield ['mb_convert_encoding(): Argument #2 ($to_encoding) must be a valid encoding, "FOO" given', ['a' => 'é'], 'FOO', 'BAR'];
+        yield ['mb_convert_encoding(): Argument #2 ($to_encoding) must be a valid encoding, "" given', 'é', '', 'UTF-8'];
+        yield ['mb_convert_encoding(): Argument #3 ($from_encoding) contains invalid encoding "FOO"', 'é', 'ISO-8859-1', 'FOO'];
+        yield ['mb_convert_encoding(): Argument #3 ($from_encoding) contains invalid encoding "FOO"', ['a' => 'é'], 'ISO-8859-1', 'FOO'];
+        yield ['mb_convert_encoding(): Argument #3 ($from_encoding) contains invalid encoding "FOO"', ['a' => 'é'], 'ISO-8859-1', 'UTF-8, FOO'];
+        yield ['mb_convert_encoding(): Argument #3 ($from_encoding) contains invalid encoding "FOO"', ['a' => 'é'], 'ISO-8859-1', ['UTF-8', 'FOO']];
+        yield ['mb_convert_encoding(): Argument #3 ($from_encoding) contains invalid encoding ""', ['a' => 'é'], 'ISO-8859-1', ['']];
+        yield ['mb_convert_encoding(): Argument #3 ($from_encoding) must specify at least one encoding', 'é', 'ISO-8859-1', ''];
+        yield ['mb_convert_encoding(): Argument #3 ($from_encoding) must specify at least one encoding', ['a' => 'é'], 'ISO-8859-1', []];
+
+        if (\PHP_VERSION_ID < 80400) {
+            // PHP 8.4 takes an empty entry for "auto"
+            yield ['mb_convert_encoding(): Argument #3 ($from_encoding) contains invalid encoding ""', 'é', 'ISO-8859-1', 'UTF-8,,ISO-8859-1'];
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_variables
+     */
+    public function testConvertVariablesWithNonStringValues()
+    {
+        $a = ['s' => 'é', 'i' => 1, 'f' => 1.5, 'b' => false, 'n' => null, 'a' => ['x' => 'à', 'y' => 2]];
+        $b = 3;
+        $c = 'é';
+
+        $errors = [];
+        set_error_handler(static function ($errno, $errstr) use (&$errors) {
+            $errors[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $result = mb_convert_variables('ISO-8859-1', 'UTF-8', $a, $b, $c);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame('UTF-8', $result);
+        $this->assertSame(['s' => "\xE9", 'i' => 1, 'f' => 1.5, 'b' => false, 'n' => null, 'a' => ['x' => "\xE0", 'y' => 2]], $a);
+        $this->assertSame(3, $b);
+        $this->assertSame("\xE9", $c);
+
+        if (\PHP_VERSION_ID < 80600) {
+            $this->assertSame([], $errors);
+        } else {
+            $format = 'mb_convert_variables(): Argument #%d must be of type string|array|object or only contain entries of type string|array|object, %s given';
+            $this->assertSame([
+                \sprintf($format, 3, 'int'),
+                \sprintf($format, 3, 'float'),
+                \sprintf($format, 3, 'bool'),
+                \sprintf($format, 3, 'null'),
+                \sprintf($format, 3, 'int'),
+                \sprintf($format, 4, 'int'),
+            ], $errors);
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_variables
+     *
+     * @dataProvider convertVariablesInvalidEncodingProvider
+     *
+     * @requires PHP 8
+     */
+    public function testConvertVariablesWithInvalidEncoding(string $expectedError, string $toEncoding, $fromEncoding)
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage($expectedError);
+
+        $var = ['é'];
+        mb_convert_variables($toEncoding, $fromEncoding, $var);
+    }
+
+    public static function convertVariablesInvalidEncodingProvider(): iterable
+    {
+        yield ['mb_convert_variables(): Argument #1 ($to_encoding) must be a valid encoding, "FOO" given', 'FOO', 'UTF-8'];
+        yield ['mb_convert_variables(): Argument #2 ($from_encoding) contains invalid encoding "FOO"', 'ISO-8859-1', 'UTF-8,FOO'];
+        yield ['mb_convert_variables(): Argument #2 ($from_encoding) contains invalid encoding "FOO"', 'ISO-8859-1', ['UTF-8', 'FOO']];
+        yield ['mb_convert_variables(): Argument #2 ($from_encoding) must specify at least one encoding', 'ISO-8859-1', ''];
+        yield ['mb_convert_variables(): Argument #2 ($from_encoding) must specify at least one encoding', 'ISO-8859-1', []];
     }
 
     /**
@@ -361,6 +569,55 @@ class MbstringTest extends TestCase
         $this->assertSame('Ab', str_replace('?', '', mb_convert_case("a\xF4\x90\x80\x80b", \MB_CASE_TITLE, 'UTF-8')));
 
         $this->assertSame(pack('N*', 0x41, 0x200000, 0x4000000, 0x42), mb_strtoupper(pack('N*', 0x61, 0x200000, 0x4000000, 0x62), 'UCS-4BE'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strtolower
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_encode_numericentity
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_scrub
+     */
+    public function testIncompleteTrailingUtf8()
+    {
+        $convmap = [0x80, 0x10FFFF, 0, 0x1FFFFF];
+
+        $this->assertSame('abc', str_replace('?', '', mb_strtolower("ABC\xC3", 'UTF-8')));
+        $this->assertSame('a&#233;', str_replace('?', '', mb_encode_numericentity("a\xC3\xA9\xE2\x82", $convmap, 'UTF-8')));
+        $this->assertSame('aé', str_replace('?', '', mb_decode_numericentity("a&#233;\xE2\x82", $convmap, 'UTF-8')));
+        $this->assertSame('abc', str_replace('?', '', mb_scrub("abc\xC3", 'UTF-8')));
+        $this->assertSame("d\xE9j", str_replace('?', '', mb_convert_encoding("d\xC3\xA9j\xC3", 'ISO-8859-1', 'UTF-8')));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strtolower
+     */
+    public function testIllFormedUtf8WithoutIconvIgnoreSupport()
+    {
+        $property = new \ReflectionProperty(p::class, 'iconvSupportsIgnore');
+        if (\PHP_VERSION_ID < 80100) {
+            $property->setAccessible(true);
+        }
+        $previous = $property->getValue();
+        $property->setValue(null, false);
+
+        try {
+            $this->assertSame('ab', p::mb_strtolower("A\xFFB", 'UTF-8'));
+            $this->assertSame('ab', p::mb_scrub("a\xFFb", 'UTF-8'));
+        } finally {
+            $property->setValue(null, $previous);
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_scrub
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_convert_encoding
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_decode_numericentity
+     */
+    public function testIllFormedUtf8AboveUnicodeRange()
+    {
+        $this->assertSame('ab', str_replace('?', '', mb_scrub("a\xF4\x90\x80\x80b", 'UTF-8')));
+        $this->assertSame('ab', str_replace('?', '', mb_convert_encoding("a\xF8\x88\x80\x80\x80b", 'UTF-8', 'UTF-8')));
+        $this->assertSame('ab', str_replace('?', '', mb_decode_numericentity("a\xFC\x84\x80\x80\x80\x80b", [0x80, 0x10FFFF, 0, 0x1FFFFF], 'UTF-8')));
     }
 
     /**
@@ -704,6 +961,18 @@ class MbstringTest extends TestCase
         $this->assertSame(3, mb_strwidth("\000実", 'UTF-8'));
         $this->assertSame(4, mb_strwidth('déjà', 'UTF-8'));
         $this->assertSame(4, mb_strwidth(mb_convert_encoding('déjà', 'ISO-8859-1', 'UTF-8'), 'CP1252'));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Mbstring\Mbstring::mb_strwidth
+     */
+    public function testStrwidthWithIllFormedUtf8()
+    {
+        $this->assertSame(4, mb_strwidth("a\xFFb\xC3", 'UTF-8'));
+        $this->assertSame(3, mb_strwidth("a\xE2\x82b", 'UTF-8'));
+        $this->assertSame(5, mb_strwidth("a\xE0\x80\xAFb", 'UTF-8'));
+        $this->assertSame(7, mb_strwidth("a\xF8\x88\x80\x80\x80b", 'UTF-8'));
+        $this->assertSame(5, mb_strwidth("\xE6\x97\xA5\xFF\xE6\x9C\xAC", 'UTF-8'));
     }
 
     /**
