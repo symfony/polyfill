@@ -126,6 +126,90 @@ class MessageFormatterTest extends TestCase
             ],
 
             [
+                '{a, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {b, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {c, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {d, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {e, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {f, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '1st 22nd 103rd 11th 112th 4th', // expected
+                [ // params
+                    'a' => 1,
+                    'b' => 22,
+                    'c' => 103,
+                    'd' => 11,
+                    'e' => 112,
+                    'f' => 4,
+                ],
+            ],
+
+            [
+                '{a, selectordinal, =3{third} few{#rd} other{#th}} {b, selectordinal, offset:1 one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                'third 2nd', // expected
+                [ // params
+                    'a' => 3,
+                    'b' => 3,
+                ],
+            ],
+
+            [
+                '{a, selectordinal, offset:1 other{#th} one{#st} two{#nd} few{#rd}}', // pattern
+                '2nd', // expected
+                [ // params
+                    'a' => 3,
+                ],
+            ],
+
+            [
+                '{a, plural, =1{exactly one} one{# item} other{# items}} {b, plural, =2{a pair} other{# items}}', // pattern
+                'exactly one a pair', // expected
+                [ // params
+                    'a' => 1,
+                    'b' => '2',
+                ],
+            ],
+
+            [
+                '{a, plural, one{# item} other{# items}} {b, plural, one{# item} other{# items}} {c, plural, offset:1 one{# item} other{# items}} {d, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {e, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '-1 item -2 items -1 item -2nd -11th', // expected
+                [ // params
+                    'a' => -1,
+                    'b' => -2,
+                    'c' => 0,
+                    'd' => -2,
+                    'e' => -11,
+                ],
+            ],
+
+            [
+                '{a, plural, =0{none} =2{a pair} one{# item} other{# items}} {b, plural, =0{none} other{# items}} {c, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '1 item none 2nd', // expected
+                [ // params
+                    'a' => true,
+                    'b' => 'abc',
+                    'c' => '2abc',
+                ],
+            ],
+
+            [
+                '{a, plural, one{# item} other{# items}} {b, selectordinal, one{#st} two{#nd} few{#rd} other{#th}} {c, plural, offset:1 other{# others}} {d, plural, one{# item} other{# items}} {e, selectordinal, one{#st} two{#nd} few{#rd} other{#th}}', // pattern
+                '1,000 items 1,001st 1,234.568 others 1 item 21st', // expected
+                [ // params
+                    'a' => 1000,
+                    'b' => 1001,
+                    'c' => 1235.5678,
+                    'd' => 0.9999,
+                    'e' => 21.0004,
+                ],
+            ],
+
+            [
+                '{a, plural, other{# boxes of {b, plural, one{# item} other{# items}}}} {c, selectordinal, other{#th with {d, select, x{# x} other{none}}}}', // pattern
+                '2 boxes of 3 items 4th with # x', // expected
+                [ // params
+                    'a' => 2,
+                    'b' => 3,
+                    'c' => 4,
+                    'd' => 'x',
+                ],
+            ],
+
+            [
                 '{a, number} {b, number} {c, number} {d, number}', // pattern
                 '1,234.5 -1,234.5 1.235 1,234.5', // expected
                 [ // params
