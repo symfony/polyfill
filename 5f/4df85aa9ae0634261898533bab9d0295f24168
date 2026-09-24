@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-24T14:46:51Z
+
+I squashed the PR and amended the review findings: overlapping matches, case folding in UTF-8, native errors for out-of-range offsets, and one UTF-8 conversion per call, which also removes the slowdown on long non-UTF-8 strings.
