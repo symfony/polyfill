@@ -779,13 +779,19 @@ final class DeepClone
                     goto prepare_value;
                 }
             } elseif ($value instanceof \Serializable || $value instanceof \__PHP_Incomplete_Class) {
+                serialize_value:
                 ++$objectsCount;
                 $objectsPool[$oid] = [$id = \count($objectsPool), serialize($value), [], 0, $value, null];
                 $value = $id;
                 $mask[$k] = true;
                 goto handle_value;
             } else {
-                if (self::$classInfo[$class][3] ??= $reflector->hasMethod('__sleep')) {
+                if (self::$classInfo[$class][3] ??= $reflector->hasMethod('__sleep') || \PHP_VERSION_ID < 80200 && $value instanceof \DatePeriod) {
+                    // Before PHP 8.2, DatePeriod rejects writes to the properties that
+                    // its __wakeup() restores it from, which only unserialize() can set
+                    if (\PHP_VERSION_ID < 80200 && $value instanceof \DatePeriod) {
+                        goto serialize_value;
+                    }
                     if (!\is_array($sleep = $value->__sleep())) {
                         trigger_error('serialize(): __sleep should return an array only containing the names of instance-variables to serialize', \E_USER_NOTICE);
                         $value = null;
