@@ -110,6 +110,28 @@ class MessageFormatterTest extends TestCase
             ],
 
             [
+                '{a, number, integer} {b, number, integer} {c, number, integer} {d, number, integer}', // pattern
+                '2 4 -0 1,234,568', // expected
+                [ // params
+                    'a' => 2.5,
+                    'b' => 3.5,
+                    'c' => -0.5,
+                    'd' => 1234567.5,
+                ],
+            ],
+
+            [
+                '{a,number,integer} {b,number,integer} {c,number,integer} {d, number,integer}', // pattern
+                '1 3 0 9,007,199,254,740,993', // expected
+                [ // params
+                    'a' => 1.5,
+                    'b' => 3.5,
+                    'c' => -0.5,
+                    'd' => 9007199254740993,
+                ],
+            ],
+
+            [
                 'Here is a big number: {d, number}', // pattern
                 'Here is a big number: 200,000,000.101', // expected
                 [ // params
@@ -365,6 +387,15 @@ _MSG_
         $formatter = new \MessageFormatter('en_US', $pattern);
         $result = $formatter->format(['begin' => 1, 'end' => 5, 'totalCount' => 10]);
         $this->assertEquals('Showing <b>1-5</b> of <b>10</b> items.', $result);
+    }
+
+    public function testIntegerStyleWithFloatOutOfInt64Range()
+    {
+        $formatter = new MessageFormatter('en_US', '{n,number,integer}');
+        $this->assertFalse($formatter->format(['n' => 1e20]));
+
+        $formatter = new \MessageFormatter('en_US', '{n,number,integer}');
+        $this->assertFalse($formatter->format(['n' => 1e20]));
     }
 
     public function testUnsupportedPercentException()

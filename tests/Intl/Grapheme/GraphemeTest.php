@@ -345,6 +345,11 @@ class GraphemeTest extends TestCase
             // emoji (single codepoint)
             [0, '😊', '😊'],
             [1, '😊', '😂'],
+
+            // canonically equivalent graphemes
+            [0, 'é', "e\u{0301}"],
+            [0, "\u{212B}", "\u{00C5}"],
+            [1, 'café', "cafe\u{0301}s"],
         ];
     }
 
@@ -355,6 +360,19 @@ class GraphemeTest extends TestCase
     {
         $this->assertFalse(grapheme_levenshtein("\xFF", 'a'));
         $this->assertFalse(grapheme_levenshtein('a', "\xFF"));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_levenshtein
+     *
+     * @requires extension intl
+     */
+    public function testGraphemeLevenshteinWithIntl()
+    {
+        $this->assertSame(0, grapheme_levenshtein("\u{908A}\u{E0100}", "\u{908A}"));
+        $this->assertSame(0, grapheme_levenshtein('a', 'A', 1, 1, 1, 'en-u-ks-level2'));
+        $this->assertFalse(grapheme_levenshtein('a', 'b', 1, 1, 1, 'defaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
+        $this->assertSame(3, grapheme_levenshtein('', 'abc', 1, 1, 1, 'defaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
     }
 
     /**
@@ -446,12 +464,12 @@ class GraphemeTest extends TestCase
 
     /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrev
-     *
-     * @requires PHP < 8.6
      */
     public function testGraphemeStrrevInvalidUtf8()
     {
-        $this->assertFalse(grapheme_strrev("\xFF"));
+        $this->assertSame("\xFF", grapheme_strrev("\xFF"));
+        $this->assertSame("b\xFFa", grapheme_strrev("a\xFFb"));
+        $this->assertSame("x\xFF\u{0301}e\u{0301}", grapheme_strrev("e\u{0301}\xFF\u{0301}x"));
     }
 
     /**

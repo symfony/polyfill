@@ -50,7 +50,56 @@ abstract class AbstractCollatorTest extends TestCase
                 Collator::SORT_REGULAR,
                 [2 => 'a', 0 => 'b', 1 => 'c'],
             ],
+            [
+                ['b', 'B', 'a', 'A'],
+                Collator::SORT_REGULAR,
+                [2 => 'a', 3 => 'A', 0 => 'b', 1 => 'B'],
+            ],
+            [
+                ['x10', 'x9', '10', '9'],
+                Collator::SORT_REGULAR,
+                [3 => '9', 2 => '10', 0 => 'x10', 1 => 'x9'],
+            ],
+            [
+                ['x10', 'x9', '10', '9'],
+                Collator::SORT_STRING,
+                [2 => '10', 3 => '9', 0 => 'x10', 1 => 'x9'],
+            ],
+            [
+                ['10', '9', '1.5'],
+                Collator::SORT_NUMERIC,
+                [2 => '1.5', 1 => '9', 0 => '10'],
+            ],
         ];
+    }
+
+    /**
+     * @dataProvider asortProvider
+     */
+    public function testSort($array, $sortFlag, $expected)
+    {
+        $collator = $this->getCollator('en');
+        $collator->sort($array, $sortFlag);
+        $this->assertSame(array_values($expected), $array);
+    }
+
+    public function testSortStringableObjectsAsStrings()
+    {
+        $a = new \SplFileInfo('a');
+        $b = new \SplFileInfo('b');
+        $array = [$b, 'B', $a, 'A'];
+
+        $collator = $this->getCollator('en');
+        $collator->sort($array);
+        $this->assertSame([$a, 'A', $b, 'B'], $array);
+    }
+
+    public function testCompareReturnsMinusOneZeroOrOne()
+    {
+        $collator = $this->getCollator('en');
+        $this->assertSame(-1, $collator->compare('a', 'z'));
+        $this->assertSame(0, $collator->compare('a', 'a'));
+        $this->assertSame(1, $collator->compare('z', 'a'));
     }
 
     /**

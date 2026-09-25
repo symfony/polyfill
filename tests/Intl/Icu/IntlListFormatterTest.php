@@ -75,6 +75,25 @@ class IntlListFormatterTest extends TestCase
         $this->assertSame($expected, $formatter->format($strings));
     }
 
+    /**
+     * @dataProvider provideRegionalFormattingLists
+     */
+    public function testRegionalFormatting(string $locale, int $type, int $width, array $strings, string $expected)
+    {
+        $formatter = new \IntlListFormatter($locale, $type, $width);
+        $this->assertSame($expected, $formatter->format($strings));
+    }
+
+    public static function provideRegionalFormattingLists()
+    {
+        yield ['en_GB', \IntlListFormatter::TYPE_AND, \IntlListFormatter::WIDTH_WIDE, ['a', 'b', 'c'], 'a, b and c'];
+        yield ['en-AU', \IntlListFormatter::TYPE_AND, \IntlListFormatter::WIDTH_SHORT, ['a', 'b'], 'a and b'];
+        yield ['en_001', \IntlListFormatter::TYPE_OR, \IntlListFormatter::WIDTH_WIDE, ['a', 'b', 'c'], 'a, b or c'];
+        yield ['en_IN', \IntlListFormatter::TYPE_AND, \IntlListFormatter::WIDTH_NARROW, ['a', 'b', 'c'], 'a, b, and c'];
+        yield ['en_US', \IntlListFormatter::TYPE_AND, \IntlListFormatter::WIDTH_WIDE, ['a', 'b', 'c'], 'a, b, and c'];
+        yield ['en_PH', \IntlListFormatter::TYPE_AND, \IntlListFormatter::WIDTH_WIDE, ['a', 'b', 'c'], 'a, b, and c'];
+    }
+
     public static function provideFormattingLists()
     {
         yield [\IntlListFormatter::TYPE_AND, \IntlListFormatter::WIDTH_WIDE, [], ''];

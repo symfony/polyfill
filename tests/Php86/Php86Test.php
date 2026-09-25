@@ -213,10 +213,12 @@ class Php86Test extends TestCase
     }
 
     /**
-     * @requires PHP < 8.6
+     * @requires extension intl
      */
     public function testGraphemeStrrevInvalidUtf8()
     {
-        $this->assertFalse(grapheme_strrev("\xFF"));
+        $this->assertSame("\xFF", grapheme_strrev("\xFF"));
+        $this->assertSame("b\xFFa", grapheme_strrev("a\xFFb"));
+        $this->assertSame("x\xFF\u{0301}e\u{0301}", grapheme_strrev("e\u{0301}\xFF\u{0301}x"));
     }
 }
