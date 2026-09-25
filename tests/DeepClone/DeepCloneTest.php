@@ -936,6 +936,54 @@ class DeepCloneTest extends TestCase
         $this->assertSame(7, $clone->d);
     }
 
+    public function testDatePeriodRoundTrip()
+    {
+        $p = new DeepCloneDatePeriod(new \DateTimeImmutable('2020-01-01 10:00:00', new \DateTimeZone('Europe/Paris')), new \DateInterval('P1D'), 3, \DatePeriod::EXCLUDE_START_DATE);
+        $p->label = 'L';
+        $p->self = $p;
+        $it = $p->getIterator();
+        $it->rewind();
+        $it->next();
+
+        $c = deepclone_from_array(deepclone_to_array([$p, $p]));
+
+        $this->assertInstanceOf(DeepCloneDatePeriod::class, $c[0]);
+        $this->assertSame($c[0], $c[1]);
+        $this->assertSame($c[0], $c[0]->self);
+        $this->assertSame('L', $c[0]->label);
+        $this->assertSame($p->recurrences, $c[0]->recurrences);
+        $this->assertSame(3, $c[0]->getRecurrences());
+        $this->assertFalse($c[0]->include_start_date);
+        $this->assertEquals($p->current, $c[0]->current);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $c[0]->getStartDate());
+
+        $dates = static fn (\DatePeriod $p) => array_map(static fn ($d) => $d->format('c'), iterator_to_array($p));
+        $this->assertSame(['2020-01-02T10:00:00+01:00', '2020-01-03T10:00:00+01:00', '2020-01-04T10:00:00+01:00'], $dates($c[0]));
+
+        if (\PHP_VERSION_ID >= 80200) {
+            $p = new \DatePeriod(new \DateTime('2020-01-01 UTC'), new \DateInterval('P1D'), new \DateTime('2020-01-02 UTC'), \DatePeriod::INCLUDE_END_DATE);
+            $c = deepclone_from_array(deepclone_to_array($p));
+
+            $this->assertTrue($c->include_end_date);
+            $this->assertSame(['2020-01-01T00:00:00+00:00', '2020-01-02T00:00:00+00:00'], $dates($c));
+        }
+    }
+
+    public function testUninitializedDatePeriodIsRejectedLikeUnserialize()
+    {
+        $p = (new \ReflectionClass(\DatePeriod::class))->newInstanceWithoutConstructor();
+
+        try {
+            unserialize(serialize($p));
+            $this->fail('Error expected');
+        } catch (\Error $expected) {
+        }
+
+        $this->expectException(\get_class($expected));
+        $this->expectExceptionMessage($expected->getMessage());
+        deepclone_from_array(deepclone_to_array($p));
+    }
+
     public function testEnumIsStaticValue()
     {
         $d = deepclone_to_array(DeepCloneColor::Red);
