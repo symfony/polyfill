@@ -51,6 +51,11 @@ class ConstExprClosureFixture
     }
 }
 
+class ConstExprStdClassFixture extends \stdClass
+{
+    public ?\Closure $factory = static function (): string { return 'std-default'; };
+}
+
 #[ConstExprAttr(static function (): string { return 'first'; }, static function (): string { return 'second'; })]
 class ConstExprAmbiguousFixture
 {
