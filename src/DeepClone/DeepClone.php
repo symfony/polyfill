@@ -35,9 +35,8 @@ final class DeepClone
     private static array $needsFullUnserialize = [];
     private static array $hydrators = [];
     private static array $simpleHydrators = [];
-    private static array $scopeMaps = [];
+    private static array $shapes = [];
     private static array $propertyScopes = []; // [class][key] = [declaring class, real name]; key is bare name, "\0*\0name", or "\0class\0name"
-    private static array $protos = [];
     private static array $classInfo = [];
     private static array $constExprIndex = [];
     private static array $closureLiteralLines = [];
@@ -45,7 +44,6 @@ final class DeepClone
     private static array $hookedProperties = [];
     private static array $refBindings = [];
     private static array $typedRefs = []; // [ReflectionReference id] = Reference, for references that reject markers
-    private static \stdClass $sentinel;
 
     /**
      * @param list<string>|null $allowed_classes      Classes that may be serialized
@@ -112,19 +110,34 @@ final class DeepClone
             return ['value' => $value];
         }
 
+        $classes = [];
+        $classMap = [];
         $objectMeta = [];
+        $metaIsCount = true;
         $properties = [];
         $resolve = [];
         $states = [];
 
-        foreach ($objectsPool as [$id, $class, $props, $wakeup, $v, $propMask]) {
-            $objectMeta[$id] = [$class, $wakeup];
+        foreach ($objectsPool as [$id, $class, $props, $wakeup, , $propMask]) {
+            // Deduplicate class names in objectMeta.
+            if (null === $classId = $classMap[$class] ?? null) {
+                $classMap[$class] = $classId = \count($classes);
+                $classes[] = $class;
+            }
 
-            if (0 < $wakeup) {
-                $states[$wakeup] = $id;
-            } elseif (0 > $wakeup) {
-                $states[-$wakeup] = null !== $propMask ? [$id, $props, $propMask] : [$id, $props];
-                $props = [];
+            if (0 === $wakeup) {
+                $objectMeta[$id] = $classId;
+                $metaIsCount = $metaIsCount && 0 === $classId;
+            } else {
+                $objectMeta[$id] = [$classId, $wakeup];
+                $metaIsCount = false;
+
+                if (0 < $wakeup) {
+                    $states[$wakeup] = $id;
+                } else {
+                    $states[-$wakeup] = null !== $propMask ? [$id, $props, $propMask] : [$id, $props];
+                    continue;
+                }
             }
 
             foreach ($props as $scope => $scopeProps) {
@@ -141,45 +154,47 @@ final class DeepClone
 
         // Unwrap remaining Reference objects into plain integers/arrays.
         $preparedMask = \is_int($prepared) ? null : ($topMask[0] ?? null);
-        if (!\is_int($prepared)) {
-            $m = null;
-            $prepared = self::replaceRefs($prepared, $m);
-            $preparedMask = self::mergeRefMasks($preparedMask, $m);
-        }
-
-        foreach ($resolve as $scope => $names) {
-            foreach ($names as $name => $ids) {
-                foreach ($ids as $id => $marker) {
-                    if (false !== $marker && !\is_array($marker)) {
-                        continue;
-                    }
-                    $m = null;
-                    $properties[$scope][$name][$id] = self::replaceRefs($properties[$scope][$name][$id], $m);
-                    if (null !== $m = self::mergeRefMasks($marker, $m)) {
-                        $ids[$id] = $m;
-                    } else {
-                        unset($ids[$id]);
-                    }
-                }
-                if ($ids) {
-                    $resolve[$scope][$name] = $ids;
-                } else {
-                    unset($resolve[$scope][$name]);
-                }
-            }
-            if (!$resolve[$scope]) {
-                unset($resolve[$scope]);
-            }
-        }
-
-        foreach ($states as $k => $v) {
-            if (\is_array($v)) {
+        if ($refsPool) {
+            if (!\is_int($prepared)) {
                 $m = null;
-                $states[$k][1] = self::replaceRefs($v[1], $m);
-                if (null !== $m = self::mergeRefMasks($v[2] ?? null, $m)) {
-                    $states[$k][2] = $m;
-                } else {
-                    unset($states[$k][2]);
+                $prepared = self::replaceRefs($prepared, $m);
+                $preparedMask = self::mergeRefMasks($preparedMask, $m);
+            }
+
+            foreach ($resolve as $scope => $names) {
+                foreach ($names as $name => $ids) {
+                    foreach ($ids as $id => $marker) {
+                        if (false !== $marker && !\is_array($marker)) {
+                            continue;
+                        }
+                        $m = null;
+                        $properties[$scope][$name][$id] = self::replaceRefs($properties[$scope][$name][$id], $m);
+                        if (null !== $m = self::mergeRefMasks($marker, $m)) {
+                            $ids[$id] = $m;
+                        } else {
+                            unset($ids[$id]);
+                        }
+                    }
+                    if ($ids) {
+                        $resolve[$scope][$name] = $ids;
+                    } else {
+                        unset($resolve[$scope][$name]);
+                    }
+                }
+                if (!$resolve[$scope]) {
+                    unset($resolve[$scope]);
+                }
+            }
+
+            foreach ($states as $k => $v) {
+                if (\is_array($v)) {
+                    $m = null;
+                    $states[$k][1] = self::replaceRefs($v[1], $m);
+                    if (null !== $m = self::mergeRefMasks($v[2] ?? null, $m)) {
+                        $states[$k][2] = $m;
+                    } else {
+                        unset($states[$k][2]);
+                    }
                 }
             }
         }
@@ -189,30 +204,10 @@ final class DeepClone
             return ['value' => $prepared];
         }
 
-        // Deduplicate class names in objectMeta.
-        $classes = [];
-        $classMap = [];
-        $metaOut = [];
-        foreach ($objectMeta as $id => [$class, $wakeup]) {
-            if (!isset($classMap[$class])) {
-                $classMap[$class] = \count($classes);
-                $classes[] = $class;
-            }
-            $metaOut[$id] = 0 !== $wakeup ? [$classMap[$class], $wakeup] : $classMap[$class];
-        }
-
-        // When all entries share class index 0 with wakeup 0, store just the count.
-        $n = \count($metaOut);
-        foreach ($metaOut as $v) {
-            if (0 !== $v) {
-                $n = $metaOut;
-                break;
-            }
-        }
-
         $data = [
             'classes' => 1 === \count($classes) ? $classes[0] : ($classes ?: ''),
-            'objectMeta' => $n,
+            // When all entries share class index 0 with wakeup 0, store just the count.
+            'objectMeta' => $metaIsCount ? \count($objectMeta) : $objectMeta,
             'prepared' => $prepared,
         ];
 
@@ -605,7 +600,6 @@ final class DeepClone
 
     private static function prepare($values, &$objectsPool, &$refsPool, &$objectsCount, &$valuesAreStatic, &$mask = null, ?array $allowedSet = null, bool $allowNamedClosures = false, int $refFreeDepth = 0)
     {
-        $sentinel = self::$sentinel ??= new \stdClass();
         $refs = $values;
         foreach ($values as $k => $value) {
             if (\is_resource($value)) {
@@ -615,14 +609,7 @@ final class DeepClone
                 // Known to hold no hard reference
                 $isRef = false;
             } else {
-                // Writing through a hard reference reveals it; a reference bound
-                // to a typed property rejects the sentinel instead
-                try {
-                    $refs[$k] = $sentinel;
-                    $isRef = $values[$k] === $sentinel;
-                } catch (\TypeError) {
-                    $isRef = true;
-                }
+                $isRef = null !== \ReflectionReference::fromArrayElement($values, $k);
             }
 
             $valueIsStatic = !$isRef;
@@ -767,7 +754,6 @@ final class DeepClone
 
             $properties = [];
             $sleep = null;
-            $proto = self::$prototypes[$class];
             $refFree = false;
 
             if (self::$classInfo[$class][2] ??= $reflector->hasMethod('__serialize') ? ($reflector->getMethod('__serialize')->isPublic() ?: $reflector->getMethod('__serialize')) : false) {
@@ -811,34 +797,26 @@ final class DeepClone
                 $arrayValue = (array) $value;
             }
 
-            $proto = self::$protos[$class] ??= (array) $proto;
-
-            if (null === $scopeMap = self::$scopeMaps[$class] ?? null) {
-                $scopeMap = [];
-                $parent = $reflector;
-                do {
-                    foreach ($parent->getProperties() as $p) {
-                        if (!$p->isStatic() && !isset($scopeMap[$p->name])) {
-                            $scopeMap[$p->name] = !$p->isPublic() || (\PHP_VERSION_ID >= 80400 ? $p->isProtectedSet() || $p->isPrivateSet() : $p->isReadOnly()) ? $p->class : 'stdClass';
-                        }
-                    }
-                } while ($parent = $parent->getParentClass());
-                self::$scopeMaps[$class] = $scopeMap;
-            }
+            [$keys, $defaults] = self::$shapes[$class] ??= self::getShape($reflector, self::$prototypes[$class]);
 
             $refFree = true;
+            $propertiesAreStatic = true;
             foreach ($arrayValue as $name => $v) {
-                $i = 0;
-                $n = (string) $name;
-                if ('' === $n || "\0" !== $n[0]) {
-                    $c = $scopeMap[$n] ?? 'stdClass';
-                } elseif ('*' === $n[1]) {
-                    $n = substr($n, 3);
-                    $c = $scopeMap[$n] ?? $reflector->getProperty($n)->class;
+                if ($key = $keys[$name] ?? null) {
+                    [$c, $n, $i] = $key;
                 } else {
-                    $i = strpos($n, "\0", 2);
-                    $c = substr($n, 1, $i - 1);
-                    $n = substr($n, 1 + $i);
+                    $i = 0;
+                    $n = (string) $name;
+                    if ('' === $n || "\0" !== $n[0]) {
+                        $c = 'stdClass';
+                    } elseif ('*' === $n[1]) {
+                        $n = substr($n, 3);
+                        $c = $reflector->getProperty($n)->class;
+                    } else {
+                        $i = strpos($n, "\0", 2);
+                        $c = substr($n, 1, $i - 1);
+                        $n = substr($n, 1 + $i);
+                    }
                 }
                 if (null !== $sleep) {
                     if (!isset($sleep[$name]) && (!isset($sleep[$n]) || ($i && $c !== $class))) {
@@ -851,8 +829,9 @@ final class DeepClone
                 if (\ReflectionReference::fromArrayElement($arrayValue, $name)) {
                     $properties[$c][$n] = &$arrayValue[$name];
                     $refFree = false;
-                } elseif ("\x00Error\x00trace" === $name || "\x00Exception\x00trace" === $name || "\x00*\x00file" === $name || "\x00*\x00line" === $name || !\array_key_exists($name, $proto) || $proto[$name] !== $v) {
+                } elseif (!\array_key_exists($name, $defaults) || $defaults[$name] !== $v) {
                     $properties[$c][$n] = $v;
+                    $propertiesAreStatic = $propertiesAreStatic && (null === $v || \is_scalar($v) || $v instanceof \UnitEnum);
                 }
             }
             if ($sleep) {
@@ -871,9 +850,19 @@ final class DeepClone
             prepare_value:
             $objectsPool[$oid] = [$id = \count($objectsPool)];
             $m = null;
-            // Grouped by value, the scopes and properties of an object that had
-            // no hard reference can't hold any
-            $properties = self::prepare($properties, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures, $refFree ? 2 : 0);
+            if (!$refFree) {
+                $properties = self::prepare($properties, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $m, $allowedSet, $allowNamedClosures);
+            } elseif (!$propertiesAreStatic) {
+                // Grouped by value, the scopes and properties of an object that had
+                // no hard reference can't hold any
+                foreach ($properties as $c => $scopeProperties) {
+                    $scopeMask = null;
+                    $properties[$c] = self::prepare($scopeProperties, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $scopeMask, $allowedSet, $allowNamedClosures, 1);
+                    if (null !== $scopeMask) {
+                        $m[$c] = $scopeMask;
+                    }
+                }
+            }
             ++$objectsCount;
             $objectsPool[$oid] = [$id, $class, $properties, $hasUnserialize ? -$objectsCount : ((self::$classInfo[$class][1] ??= $reflector->hasMethod('__wakeup')) ? $objectsCount : 0), $value, $m];
 
@@ -1897,6 +1886,38 @@ final class DeepClone
         }
 
         return $mask ?: null;
+    }
+
+    /**
+     * Describes how deepclone_to_array() exports the properties of a class.
+     *
+     * Maps the keys that (array) casts give to declared properties to their scope, name and scope separator position,
+     * and lists the default values that payloads leave out.
+     */
+    private static function getShape(\ReflectionClass $reflector, $proto): array
+    {
+        $keys = [];
+        $parent = $reflector;
+        do {
+            foreach ($parent->getProperties() as $p) {
+                if ($p->isStatic()) {
+                    continue;
+                }
+                $name = $p->name;
+                if ($p->isPrivate()) {
+                    $keys["\0".$p->class."\0".$name] = [$p->class, $name, 1 + \strlen($p->class)];
+                }
+                if (!isset($keys[$name])) {
+                    $keys[$name] = $keys["\0*\0".$name] = [!$p->isPublic() || (\PHP_VERSION_ID >= 80400 ? $p->isProtectedSet() || $p->isPrivateSet() : $p->isReadOnly()) ? $p->class : 'stdClass', $name, 0];
+                }
+            }
+        } while ($parent = $parent->getParentClass());
+
+        // Traces, files and lines of throwables are always exported
+        $defaults = (array) $proto;
+        unset($defaults["\0Error\0trace"], $defaults["\0Exception\0trace"], $defaults["\0*\0file"], $defaults["\0*\0line"]);
+
+        return [$keys, $defaults];
     }
 
     private static function getClassReflector($class, $instantiableWithoutConstructor = false, $cloneable = null)

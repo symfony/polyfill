@@ -212,6 +212,21 @@ class DeepCloneTest extends TestCase
         $this->assertNotSame($o->child, $clone->child);
     }
 
+    public function testRoundTripObjectsInArrayProperty()
+    {
+        $o = new DeepCloneRefHolder();
+        $o->a = [new \stdClass(), 'k' => [new DeepCloneRefHolder()]];
+        $o->a[] = $o->a[0];
+        $o->b = 'b';
+        $clone = deepclone_from_array(deepclone_to_array($o));
+
+        $this->assertInstanceOf(\stdClass::class, $clone->a[0]);
+        $this->assertNotSame($o->a[0], $clone->a[0]);
+        $this->assertSame($clone->a[0], $clone->a[1]);
+        $this->assertInstanceOf(DeepCloneRefHolder::class, $clone->a['k'][0]);
+        $this->assertSame('b', $clone->b);
+    }
+
     public function testRoundTripSharedObjectReference()
     {
         $child = new \stdClass();
@@ -1324,6 +1339,16 @@ class DeepCloneTest extends TestCase
         $this->expectException(\DeepClone\NotInstantiableException::class);
         $this->expectExceptionMessage('stream resource');
         deepclone_to_array(\STDIN);
+    }
+
+    public function testToArrayRejectsResourceInDeclaredProperty()
+    {
+        $o = new DeepCloneRefHolder();
+        $o->a = \STDIN;
+
+        $this->expectException(\DeepClone\NotInstantiableException::class);
+        $this->expectExceptionMessage('stream resource');
+        deepclone_to_array($o);
     }
 
     public function testExceptionClassesExtendInvalidArgumentException()
