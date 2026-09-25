@@ -668,7 +668,8 @@ final class DeepClone
             if ($value instanceof \Closure) {
                 $r = new \ReflectionFunction($value);
 
-                if (!(\PHP_VERSION_ID >= 80200 ? $r->isAnonymous() : str_contains($r->name, "@anonymous\0"))) {
+                // Before PHP 8.2, only anonymous closures are named "{closure}", prefixed by their namespace
+                if (!(\PHP_VERSION_ID >= 80200 ? $r->isAnonymous() : str_ends_with($r->name, '{closure}'))) {
                     // First-class callable. When it references a method of its
                     // own declaring class declared in a constant expression
                     // (e.g. #[When(self::isStrict(...))]), encode it as a

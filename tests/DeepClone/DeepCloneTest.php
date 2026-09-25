@@ -893,6 +893,25 @@ class DeepCloneTest extends TestCase
         $this->assertSame(4, ($clone->cb)('abcd'));
     }
 
+    public function testToArrayAnonymousClosureIsNotInstantiable()
+    {
+        $closures = [
+            function () {},
+            \Closure::bind(fn () => 1, new ClosureFixture(), ClosureFixture::class),
+        ];
+
+        foreach ($closures as $closure) {
+            foreach ([false, true] as $allowNamedClosures) {
+                try {
+                    deepclone_to_array($closure, null, $allowNamedClosures);
+                    $this->fail('Expected NotInstantiableException was not thrown');
+                } catch (\DeepClone\NotInstantiableException $e) {
+                    $this->assertSame('Type "Closure" is not instantiable.', $e->getMessage());
+                }
+            }
+        }
+    }
+
     public function testDateTimeRoundTrip()
     {
         $dt = \DateTime::createFromFormat('U', '0');
