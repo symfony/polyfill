@@ -1389,6 +1389,162 @@ class DeepCloneTest extends TestCase
         }
     }
 
+    private function skipIfExtensionRejectsClassesDifferently(): void
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.6', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.6 rejects some classes differently.');
+        }
+    }
+
+    public function testUninstantiableClassesAreRejected()
+    {
+        $this->skipIfExtensionRejectsClassesDifferently();
+
+        foreach ([AbstractScopeBase::class, DeepCloneInterface::class, HydrateTrait::class, DeepCloneColor::class] as $class) {
+            // Named in lower case: messages use the declared name
+            $calls = [
+                'deepclone_from_array' => static fn () => deepclone_from_array(['classes' => strtolower($class), 'objectMeta' => 1, 'prepared' => 0]),
+                'deepclone_hydrate' => static fn () => deepclone_hydrate(strtolower($class)),
+            ];
+            foreach ($calls as $function => $call) {
+                try {
+                    $call();
+                    $this->fail(\sprintf('%s() accepted "%s".', $function, $class));
+                } catch (\DeepClone\NotInstantiableException $e) {
+                    $this->assertSame('Type "'.$class.'" is not instantiable.', $e->getMessage());
+                    $this->assertNull($e->getPrevious());
+                }
+            }
+        }
+
+        try {
+            deepclone_from_array(['classes' => \Closure::class, 'objectMeta' => 1, 'prepared' => 0]);
+            $this->fail('deepclone_from_array() accepted "Closure".');
+        } catch (\DeepClone\NotInstantiableException $e) {
+            $this->assertSame('Type "Closure" is not instantiable.', $e->getMessage());
+            $this->assertNull($e->getPrevious());
+        }
+    }
+
+    public function testClassesWhoseStateSerializeLosesAreCreatedLikeUnserializeDoes()
+    {
+        $this->skipIfExtensionRejectsClassesDifferently();
+
+        foreach ([\IteratorIterator::class, \LimitIterator::class, \RecursiveIteratorIterator::class, DeepCloneIteratorIterator::class] as $class) {
+            $this->assertInstanceOf($class, unserialize('O:'.\strlen($class).':"'.$class.'":0:{}'));
+            $this->assertInstanceOf($class, deepclone_from_array(['classes' => $class, 'objectMeta' => 1, 'prepared' => 0]));
+        }
+
+        $object = deepclone_from_array([
+            'classes' => DeepCloneIteratorIterator::class,
+            'objectMeta' => 1,
+            'prepared' => 0,
+            'properties' => ['stdClass' => ['a' => [1]], DeepCloneIteratorIterator::class => ['b' => [2]]],
+        ]);
+        $this->assertSame(1, $object->a);
+        $this->assertSame(2, $object->getB());
+
+        // deepclone_to_array() and deepclone_hydrate() still reject them, the latter for internal classes only
+        try {
+            deepclone_to_array(new \IteratorIterator(new \ArrayIterator([1])));
+            $this->fail('deepclone_to_array() accepted an IteratorIterator.');
+        } catch (\DeepClone\NotInstantiableException $e) {
+            $this->assertSame('Type "IteratorIterator" is not instantiable.', $e->getMessage());
+        }
+        try {
+            deepclone_hydrate(\IteratorIterator::class);
+            $this->fail('deepclone_hydrate() accepted "IteratorIterator".');
+        } catch (\DeepClone\NotInstantiableException $e) {
+            $this->assertSame('Type "IteratorIterator" is not instantiable.', $e->getMessage());
+        }
+        $object = deepclone_hydrate(DeepCloneIteratorIterator::class, ['a' => 1, "\0".DeepCloneIteratorIterator::class."\0b" => 2]);
+        $this->assertSame(1, $object->a);
+        $this->assertSame(2, $object->getB());
+    }
+
+    public function testSerializedObjectsThatFailToDecodeAreMalformed()
+    {
+        $payloads = [
+            'O:11:"SplFileInfo":0:{}' => \Exception::class,
+            'O:'.\strlen(DeepCloneInterface::class).':"'.DeepCloneInterface::class.'":0:{}' => \Error::class,
+            'O:8:"stdClass":1:{' => null,
+        ];
+        foreach ($payloads as $serialized => $previous) {
+            try {
+                @deepclone_from_array(['classes' => $serialized, 'objectMeta' => 1, 'prepared' => 0]);
+                $this->fail(\sprintf('deepclone_from_array() accepted "%s".', $serialized));
+            } catch (\ValueError $e) {
+                $this->assertSame('deepclone_from_array(): Argument #1 ($data) failed to unserialize object 0', $e->getMessage());
+                $this->assertSame($previous, $e->getPrevious() ? \get_class($e->getPrevious()) : null);
+            }
+        }
+
+        try {
+            deepclone_from_array(['classes' => 'b:1;', 'objectMeta' => 1, 'prepared' => 0]);
+            $this->fail('deepclone_from_array() accepted a boolean.');
+        } catch (\ValueError $e) {
+            $this->assertSame('deepclone_from_array(): Argument #1 ($data) object 0 did not unserialize to an object, '.(\PHP_VERSION_ID >= 80300 ? 'true' : 'bool').' given', $e->getMessage());
+        }
+
+        // What __wakeup() throws once the object is decoded goes through
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Cannot wake up.');
+        deepclone_from_array(['classes' => 'O:'.\strlen(DeepCloneWakeupThrows::class).':"'.DeepCloneWakeupThrows::class.'":0:{}', 'objectMeta' => 1, 'prepared' => 0]);
+    }
+
+    public function testClassesExtendingAnonymousOnesAreRejected()
+    {
+        $this->skipIfExtensionRejectsClassesDifferently();
+
+        if (!class_exists(DeepCloneExtendsAnonymous::class, false)) {
+            $anonymous = new class {
+                public function __wakeup(): void
+                {
+                }
+            };
+            class_alias($anonymous::class, __NAMESPACE__.'\DeepCloneAnonymousAlias');
+            eval('namespace '.__NAMESPACE__.'; class DeepCloneExtendsAnonymous extends DeepCloneAnonymousAlias {}');
+        }
+
+        try {
+            serialize(new DeepCloneExtendsAnonymous());
+            $this->fail('serialize() accepted a class extending an anonymous one.');
+        } catch (\Exception $e) {
+            $this->assertSame('Serialization of \''.DeepCloneExtendsAnonymous::class.'\' is not allowed', $e->getMessage());
+        }
+
+        $calls = [
+            'deepclone_to_array' => static fn () => deepclone_to_array(new DeepCloneExtendsAnonymous()),
+            'deepclone_from_array' => static fn () => deepclone_from_array(['classes' => DeepCloneExtendsAnonymous::class, 'objectMeta' => 1, 'prepared' => 0]),
+            'deepclone_hydrate' => static fn () => deepclone_hydrate(DeepCloneExtendsAnonymous::class),
+        ];
+        foreach ($calls as $function => $call) {
+            try {
+                $call();
+                $this->fail(\sprintf('%s() accepted a class extending an anonymous one.', $function));
+            } catch (\DeepClone\NotInstantiableException $e) {
+                $this->assertSame('Type "'.DeepCloneExtendsAnonymous::class.'" is not instantiable.', $e->getMessage());
+            }
+        }
+    }
+
+    public function testClassNamesEndAtNulBytesInMessages()
+    {
+        try {
+            deepclone_from_array(['classes' => "Foo\0Bar", 'objectMeta' => 1, 'prepared' => 0], []);
+            $this->fail('deepclone_from_array() accepted a class missing from $allowed_classes.');
+        } catch (\ValueError $e) {
+            $this->assertSame('deepclone_from_array(): class "Foo" is not allowed', $e->getMessage());
+        }
+
+        try {
+            deepclone_from_array(['classes' => "Foo\0Bar", 'objectMeta' => 1, 'prepared' => 0]);
+            $this->fail('deepclone_from_array() accepted a class that does not exist.');
+        } catch (\DeepClone\ClassNotFoundException $e) {
+            $this->assertSame('Class "Foo" not found.', $e->getMessage());
+        }
+    }
+
     public function testDocBehaviorsSensitiveParameterValueIsRejected()
     {
         if (\PHP_VERSION_ID < 80200) {
@@ -2550,12 +2706,14 @@ class DeepCloneTest extends TestCase
      */
     public function testHydrateBcMathNumberThrows()
     {
+        $this->skipIfExtensionRejectsClassesDifferently();
+
         // deepclone_hydrate() injects properties into an empty shell; a class
         // that only becomes valid through __construct()/__unserialize() cannot
         // be built that way and must be rejected rather than yielding a broken
         // (uninitialized) instance.
         $this->expectException(\DeepClone\NotInstantiableException::class);
-        $this->expectExceptionMessage('Class "BcMath\Number" is not instantiable.');
+        $this->expectExceptionMessage('Type "BcMath\Number" is not instantiable.');
         deepclone_hydrate(\BcMath\Number::class, ['value' => '7.5']);
     }
 
