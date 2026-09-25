@@ -1950,7 +1950,11 @@ final class DeepClone
                     }
                 }
             }
-            if (null !== $proto && !$proto instanceof \Throwable && !$proto instanceof \Serializable && !method_exists($class, '__sleep') && !method_exists($class, '__serialize')) {
+            // Only anonymous classes and internal ones other than stdClass can refuse serialization, which their subclasses inherit.
+            // Serializing the prototype of other classes would fail when a property default holds a closure.
+            for ($r = $reflector; $r && !$r->isInternal(); $r = $r->getParentClass()) {
+            }
+            if (($reflector->isAnonymous() || $r && 'stdClass' !== $r->name) && null !== $proto && !$proto instanceof \Throwable && !$proto instanceof \Serializable && !method_exists($class, '__sleep') && !method_exists($class, '__serialize')) {
                 try {
                     serialize($proto);
                 } catch (\Exception $e) {

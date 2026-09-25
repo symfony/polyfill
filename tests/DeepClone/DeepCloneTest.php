@@ -2612,6 +2612,34 @@ class DeepCloneTest extends TestCase
     /**
      * @requires PHP 8.5
      */
+    public function testRoundTripObjectWithClosurePropertyDefault()
+    {
+        $o = new ConstExprClosureFixture();
+        $o->tagged = 'changed';
+
+        $d = deepclone_to_array($o);
+
+        $this->assertSame(['stdClass' => ['tagged' => ['changed']]], $d['properties']);
+
+        $clone = deepclone_from_array($d);
+
+        $this->assertSame('changed', $clone->tagged);
+        $this->assertSame('prop-default', ($clone->factory)());
+        $this->assertSame('prop-default', (deepclone_hydrate(ConstExprClosureFixture::class)->factory)());
+
+        $o->factory = (new \ReflectionClass(ConstExprClosureFixture::class))->getAttributes()[0]->getArguments()[0];
+
+        $this->assertSame('class-secret', (deepclone_from_array(deepclone_to_array($o))->factory)());
+
+        $o = new ConstExprStdClassFixture();
+        $o->dynamic = 1;
+
+        $this->assertSame('std-default', (deepclone_from_array(deepclone_to_array($o))->factory)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
     public function testRoundTripConstExprClosureStaticPropertyDefault()
     {
         $closure = (new \ReflectionProperty(ConstExprClosureFixture::class, 'staticFactory'))->getDefaultValue();
