@@ -1299,6 +1299,96 @@ class DeepCloneTest extends TestCase
         deepclone_to_array(new \SplFileInfo('/etc/hostname'));
     }
 
+    public function testSubclassesOfClassesRefusingSerializationAreRejected()
+    {
+        foreach ([DeepCloneFileInfoSleep::class, DeepCloneFileInfoWakeup::class, DeepCloneFileInfoSerialize::class] as $class) {
+            try {
+                deepclone_to_array(new $class(__FILE__));
+                $this->fail(\sprintf('deepclone_to_array() accepted "%s".', $class));
+            } catch (\DeepClone\NotInstantiableException $e) {
+                $this->assertSame('Type "'.$class.'" is not instantiable.', $e->getMessage());
+            }
+
+            try {
+                deepclone_from_array(['classes' => $class, 'objectMeta' => 1, 'prepared' => 0]);
+                $this->fail(\sprintf('deepclone_from_array() accepted "%s".', $class));
+            } catch (\DeepClone\NotInstantiableException $e) {
+                $this->assertSame('Type "'.$class.'" is not instantiable.', $e->getMessage());
+            }
+
+            try {
+                deepclone_hydrate($class);
+                $this->fail(\sprintf('deepclone_hydrate() accepted "%s".', $class));
+            } catch (\DeepClone\NotInstantiableException $e) {
+                $this->assertStringEndsWith(' "'.$class.'" is not instantiable.', $e->getMessage());
+            }
+        }
+    }
+
+    public function testAnonymousClassesRoundTripWhenTheyRestoreTheirState()
+    {
+        $objects = [
+            new class {
+                public $a = 1;
+
+                public function __wakeup(): void
+                {
+                    $this->a = 2;
+                }
+            },
+            new class {
+                public $a = 1;
+
+                public function __serialize(): array
+                {
+                    return ['a' => 2];
+                }
+
+                public function __unserialize(array $data): void
+                {
+                    $this->a = $data['a'];
+                }
+            },
+        ];
+
+        foreach ($objects as $o) {
+            $clone = deepclone_from_array(deepclone_to_array($o));
+            $this->assertInstanceOf($o::class, $clone);
+            $this->assertSame(2, $clone->a);
+            $this->assertInstanceOf($o::class, deepclone_hydrate($o::class));
+        }
+
+        $e = new class('boom') extends \Exception {};
+        $this->assertSame('boom', deepclone_from_array(deepclone_to_array($e))->getMessage());
+    }
+
+    public function testAnonymousClassesNotRestoringTheirStateAreRejected()
+    {
+        $objects = [
+            new class {
+                public function __sleep(): array
+                {
+                    return [];
+                }
+            },
+            new class {
+                public function __serialize(): array
+                {
+                    return [];
+                }
+            },
+        ];
+
+        foreach ($objects as $o) {
+            try {
+                deepclone_to_array($o);
+                $this->fail('deepclone_to_array() accepted an anonymous class.');
+            } catch (\DeepClone\NotInstantiableException $e) {
+                $this->assertSame('Type "class@anonymous" is not instantiable.', $e->getMessage());
+            }
+        }
+    }
+
     public function testDocBehaviorsSensitiveParameterValueIsRejected()
     {
         if (\PHP_VERSION_ID < 80200) {
