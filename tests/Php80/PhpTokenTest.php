@@ -29,6 +29,21 @@ class PhpTokenTest extends TestCase
         $this->assertEqualsCanonicalizing((array) $tokens[250], (array) $polyfillTokens[250]);
     }
 
+    public function testTokenizeLines()
+    {
+        $code = "<?php\nfoo(\n)/* a\r\nb */;\r\$a = \"\n\";\n?>\nx\n<?= 1;";
+        $tokens = array_map(function ($token) { return [$token->text, $token->line]; }, \PhpToken::tokenize($code));
+        $polyfillTokens = array_map(function ($token) { return [$token->text, $token->line]; }, PhpTokenPolyfill::tokenize($code));
+        $this->assertSame($tokens, $polyfillTokens);
+    }
+
+    public function testTokenizeBinaryDoubleQuotes()
+    {
+        $code = "<?php b\"\$a\"; B\"{\$b}\";";
+        $map = function ($token) { return [$token->id, $token->text, $token->line, $token->pos]; };
+        $this->assertSame(array_map($map, \PhpToken::tokenize($code)), array_map($map, PhpTokenPolyfill::tokenize($code)));
+    }
+
     public function testGetTokenName()
     {
         // named token
@@ -42,6 +57,14 @@ class PhpTokenTest extends TestCase
         // unknown token
         $token = new \PhpToken(10000, "\0");
         $polyfillToken = new PhpTokenPolyfill(10000, "\0");
+        $this->assertSame($token->getTokenName(), $polyfillToken->getTokenName());
+        // single char token with a different text
+        $token = new \PhpToken(\ord(';'), 'x');
+        $polyfillToken = new PhpTokenPolyfill(\ord(';'), 'x');
+        $this->assertSame($token->getTokenName(), $polyfillToken->getTokenName());
+        // unknown token with a single char text
+        $token = new \PhpToken(10000, 'x');
+        $polyfillToken = new PhpTokenPolyfill(10000, 'x');
         $this->assertSame($token->getTokenName(), $polyfillToken->getTokenName());
     }
 
