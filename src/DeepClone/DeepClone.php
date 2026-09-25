@@ -2240,8 +2240,6 @@ final class DeepClone
 
         if ('TypeError' === $class) {
             $class = 'Error';
-        } elseif ('ErrorException' === $class) {
-            $class = 'Exception';
         }
 
         // self::$reflectors must be populated via getClassReflector() (companion caches), so read with ??.
@@ -2457,8 +2455,6 @@ final class DeepClone
 
         if ('TypeError' === $class) {
             $class = 'Error';
-        } elseif ('ErrorException' === $class) {
-            $class = 'Exception';
         } elseif (!class_exists($class, false)) {
             throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
         }
