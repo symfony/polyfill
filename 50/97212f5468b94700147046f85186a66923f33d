@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-25T15:50:24Z
+
+I squashed the PR and amended the review findings: the `"` token id for `b"` strings, no spurious warning from `ini_parse_quantity()` on a lone sign, and the JSON error cleared before `json_validate()` rejects the depth.
