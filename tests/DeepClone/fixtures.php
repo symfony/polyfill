@@ -637,3 +637,16 @@ class DeepCloneHookedChild extends DeepCloneHookedParent
 }
 PHP);
 }
+
+if (\PHP_VERSION_ID >= 80200) {
+    final class DeepCloneCountingEngine implements \Random\Engine
+    {
+        public $owner;
+        public $count = 0;
+
+        public function generate(): string
+        {
+            return pack('P', ++$this->count);
+        }
+    }
+}

@@ -2504,6 +2504,79 @@ class DeepCloneTest extends TestCase
         $this->assertInstanceOf(\Random\Randomizer::class, $deep->list[0]->r);
     }
 
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizerWithEnginePointingBack()
+    {
+        $engine = new DeepCloneCountingEngine();
+        $engine->count = 3;
+        $engine->owner = new \Random\Randomizer($engine);
+
+        $c = deepclone_from_array(deepclone_to_array($engine->owner));
+
+        $this->assertSame($c, $c->engine->owner);
+        $this->assertSame(3, $c->engine->count);
+        $c->nextInt();
+        $this->assertSame(4, $c->engine->count);
+    }
+
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizersSharingTheirEngine()
+    {
+        $engine = new DeepCloneCountingEngine();
+        $engine->count = 3;
+
+        $c = deepclone_from_array(deepclone_to_array([new \Random\Randomizer($engine), $engine, new \Random\Randomizer($engine)]));
+
+        $this->assertSame($c[1], $c[0]->engine);
+        $this->assertSame($c[1], $c[2]->engine);
+        $this->assertSame(3, $c[1]->count);
+    }
+
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizerBehindReference()
+    {
+        $engine = new DeepCloneCountingEngine();
+        $r = new \Random\Randomizer($engine);
+        $engine->owner = &$r;
+
+        $c = deepclone_from_array(deepclone_to_array([&$r]));
+
+        $this->assertInstanceOf(\Random\Randomizer::class, $c[0]);
+        $this->assertSame($c[0], $c[0]->engine->owner);
+        $engine = $c[0]->engine;
+        $c[0] = 1;
+        $this->assertSame(1, $engine->owner);
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testRoundTripHashContextWithDynamicPropertiesPointingBack()
+    {
+        $h = hash_init('md5');
+        hash_update($h, 'abc');
+        $o = new \stdClass();
+        $o->h = $h;
+        $list = [$o];
+        $h->o = $o;
+        $h->a = &$list;
+        $h->b = &$list;
+
+        $c = deepclone_from_array(deepclone_to_array($h));
+
+        $this->assertSame($c, $c->o->h);
+        $this->assertSame([$c->o], $c->a);
+        $c->a = 2;
+        $this->assertSame(2, $c->b);
+        $this->assertSame(md5('abc'), hash_final($c));
+    }
+
     public function testFromArrayRejectsUnserializeClassWithoutReplayFlag()
     {
         // A class with __unserialize() is always emitted as a negative-wakeup
