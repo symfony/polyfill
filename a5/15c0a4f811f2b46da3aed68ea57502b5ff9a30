@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-09-25T15:47:14Z
+
+I squashed the PR and amended the review findings: both copies of `grapheme_levenshtein()` now use a `Collator` when intl is loaded and return false for a locale it cannot open, `{n,number,integer}` truncates like intl, and `Collator` sorts objects with `__toString()` as strings.
