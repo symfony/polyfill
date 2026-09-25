@@ -137,6 +137,11 @@ class DeepCloneSleepPrivate
 class DeepCloneParentSleep
 {
     private string $secret = '';
+
+    public function setSecret(string $secret): void
+    {
+        $this->secret = $secret;
+    }
 }
 
 class DeepCloneChildSleep extends DeepCloneParentSleep
@@ -147,6 +152,53 @@ class DeepCloneChildSleep extends DeepCloneParentSleep
     public function __sleep(): array
     {
         return ['pub', 'secret'];
+    }
+}
+
+class DeepCloneSleepBase
+{
+    private $secret = 'default';
+
+    public function setBaseSecret($secret): void
+    {
+        $this->secret = $secret;
+    }
+}
+
+class DeepCloneSleepSamePrivate extends DeepCloneSleepBase
+{
+    private $secret = 'default';
+
+    public function setSecret($secret): void
+    {
+        $this->secret = $secret;
+    }
+
+    public function __sleep(): array
+    {
+        return ['secret', "\0".DeepCloneSleepBase::class."\0secret"];
+    }
+}
+
+class DeepCloneSleepMiddle extends DeepCloneSleepBase
+{
+}
+
+class DeepCloneSleepGrandparentPrivate extends DeepCloneSleepMiddle
+{
+    public function __sleep(): array
+    {
+        return ['secret', "\0".DeepCloneSleepBase::class."\0secret"];
+    }
+}
+
+class DeepCloneSleepMissingMangled
+{
+    public $pub = 'default';
+
+    public function __sleep(): array
+    {
+        return ['pub', "\0*\0nope"];
     }
 }
 
