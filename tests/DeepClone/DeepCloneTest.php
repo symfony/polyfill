@@ -528,6 +528,13 @@ class DeepCloneTest extends TestCase
         $this->assertSame(30, $clone->getSecret());
     }
 
+    private function skipIfExtensionMisresolvesSleepNames(): void
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.6', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.6 resolves some names returned by __sleep() differently than serialize().');
+        }
+    }
+
     private function skipIfExtensionDropsPropertyReferences(): void
     {
         if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.4', '<')) {
@@ -1112,8 +1119,12 @@ class DeepCloneTest extends TestCase
 
     public function testSleepInheritedPrivateExclusion()
     {
+        $this->skipIfExtensionMisresolvesSleepNames();
+
         $o = new DeepCloneChildSleep();
         $o->pub = 'visible';
+        // A non-default value, as default ones are not exported anyway
+        $o->setSecret('changed');
         // `__sleep` returning the unmangled name "secret" triggers the same
         // E_NOTICE that serialize() itself would ("returned as member variable
         // … but does not exist"), because unmangled names are not allowed to
@@ -1125,6 +1136,67 @@ class DeepCloneTest extends TestCase
         // 'secret' is a private property of ParentSleep. Unmangled "secret"
         // in __sleep must NOT match it (inherited-private exclusion).
         $this->assertArrayNotHasKey('Symfony\\Polyfill\\Tests\\DeepClone\\DeepCloneParentSleep', $d['properties'] ?? []);
+    }
+
+    public function testSleepBareAndMangledNamesOfSameNamedPrivates()
+    {
+        $this->skipIfExtensionMisresolvesSleepNames();
+
+        $o = new DeepCloneSleepSamePrivate();
+        $o->setBaseSecret('parent');
+        $o->setSecret('child');
+        $d = deepclone_to_array($o);
+
+        // Like serialize(), the bare name selects the private property of the
+        // object's class and the mangled one the private property of the parent
+        $this->assertSame(['parent'], $d['properties'][DeepCloneSleepBase::class]['secret']);
+        $this->assertSame(['child'], $d['properties'][DeepCloneSleepSamePrivate::class]['secret']);
+        $this->assertEquals(unserialize(serialize($o)), deepclone_from_array($d));
+    }
+
+    public function testSleepBareNameOfGrandparentPrivateDoesNotExist()
+    {
+        $this->skipIfExtensionMisresolvesSleepNames();
+
+        $o = new DeepCloneSleepGrandparentPrivate();
+        $o->setBaseSecret('changed');
+        $errors = [];
+        set_error_handler(static function ($type, $msg) use (&$errors) {
+            $errors[] = $msg;
+
+            return true;
+        });
+
+        try {
+            $d = deepclone_to_array($o);
+        } finally {
+            restore_error_handler();
+        }
+
+        // The mangled name selects the property, the bare one doesn't, like with serialize()
+        $this->assertSame(['changed'], $d['properties'][DeepCloneSleepBase::class]['secret']);
+        $this->assertCount(1, $errors);
+        $this->assertStringEndsWith('serialize(): "secret" returned as member variable from __sleep() but does not exist', $errors[0]);
+    }
+
+    public function testSleepNoticeCutsMangledNames()
+    {
+        $errors = [];
+        set_error_handler(static function ($type, $msg) use (&$errors) {
+            $errors[] = $msg;
+
+            return true;
+        });
+
+        try {
+            deepclone_to_array(new DeepCloneSleepMissingMangled());
+        } finally {
+            restore_error_handler();
+        }
+
+        // serialize() cuts the name at its first NUL byte
+        $this->assertCount(1, $errors);
+        $this->assertStringEndsWith('serialize(): "" returned as member variable from __sleep() but does not exist', $errors[0]);
     }
 
     public function testTypedObjectParentClass()
