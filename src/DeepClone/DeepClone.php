@@ -819,11 +819,16 @@ final class DeepClone
                     }
                 }
                 if (null !== $sleep) {
-                    if (!isset($sleep[$name]) && (!isset($sleep[$n]) || ($i && $c !== $class))) {
+                    // Like serialize(), a bare name doesn't select private properties of parent classes
+                    $bare = !$i || $c === $class;
+                    if (!isset($sleep[$name]) && (!$bare || !isset($sleep[$n]))) {
                         unset($arrayValue[$name]);
                         continue;
                     }
-                    unset($sleep[$name], $sleep[$n]);
+                    unset($sleep[$name]);
+                    if ($bare) {
+                        unset($sleep[$n]);
+                    }
                 }
                 // Carry the hard references between properties over
                 if (\ReflectionReference::fromArrayElement($arrayValue, $name)) {
@@ -839,7 +844,8 @@ final class DeepClone
                     if (\is_string($n) && $reflector->hasProperty($n)) {
                         continue;
                     }
-                    trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', $n), \E_USER_NOTICE);
+                    // Mangled names are cut at their first NUL byte, as by serialize()
+                    trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', explode("\0", $n, 2)[0]), \E_USER_NOTICE);
                 }
             }
             if ($hasUnserialize = self::$classInfo[$class][0] ??= $reflector->hasMethod('__unserialize')) {
