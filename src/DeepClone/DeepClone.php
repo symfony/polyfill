@@ -1971,16 +1971,12 @@ final class DeepClone
                     }
                 }
             }
-            // Only anonymous classes and internal ones other than stdClass can refuse serialization, which their subclasses inherit.
-            // Serializing the prototype of other classes would fail when a property default holds a closure.
+            // Anonymous classes and some internal ones refuse serialization, which subclasses inherit, whatever methods they declare.
+            // Anonymous classes that restore their state with __wakeup() or __unserialize(), like throwables, round-trip in-process all the same.
             for ($r = $reflector; $r && !$r->isInternal(); $r = $r->getParentClass()) {
             }
-            if (($reflector->isAnonymous() || $r && 'stdClass' !== $r->name) && null !== $proto && !$proto instanceof \Throwable && !$proto instanceof \Serializable && !method_exists($class, '__sleep') && !method_exists($class, '__serialize')) {
-                try {
-                    serialize($proto);
-                } catch (\Exception $e) {
-                    throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.', 0, $e);
-                }
+            if ($r && 'stdClass' !== $r->name && self::refusesSerialization($r->name) || $reflector->isAnonymous() && !method_exists($class, '__wakeup') && !method_exists($class, '__unserialize')) {
+                throw new \DeepClone\NotInstantiableException('Type "'.(strstr($class, "\0", true) ?: $class).'" is not instantiable.');
             }
         }
 
@@ -2012,6 +2008,21 @@ final class DeepClone
         }
 
         return $reflector;
+    }
+
+    private static function refusesSerialization(string $class): bool
+    {
+        // unserialize() checks this before parsing anything past the class name: the truncated payload creates no object
+        set_error_handler(static fn () => true);
+        try {
+            unserialize('O:'.\strlen($class).':"'.$class.'":');
+        } catch (\Exception) {
+            return true;
+        } finally {
+            restore_error_handler();
+        }
+
+        return false;
     }
 
     private static function getHydrator($class)
