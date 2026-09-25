@@ -112,6 +112,8 @@ class Php82Test extends TestCase
     public static function provideMoreConnectionStringValues(): \Generator
     {
         yield 'double curly at the end' => ['foo}}', false, true, '{foo}}}}}'];
+        yield 'unescaped curly before the last character' => ['{foo}x', false, true, '{{foo}}x}'];
+        yield 'unescaped curly before a trailing semicolon' => ['{a};', false, true, '{{a}};}'];
     }
 
     public function testIniParseQuantity()
@@ -286,6 +288,24 @@ class Php82Test extends TestCase
         $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
     }
 
+    public function testIniParseQuantitySignOnly()
+    {
+        $errors = [];
+        set_error_handler(function ($type, $message) use (&$errors) {
+            $errors[] = $message;
+
+            return true;
+        });
+
+        try {
+            $this->assertSame(0, ini_parse_quantity(' -'));
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame(['Invalid quantity " -": no valid leading digits, interpreting as "0" for backwards compatibility'], $errors);
+    }
+
     public function testIniParseQuantityUnknownMultiplier()
     {
         error_clear_last();
@@ -349,6 +369,72 @@ class Php82Test extends TestCase
         $this->assertSame(-7709325833709551616, @ini_parse_quantity(' 10000000000G '));
         $this->assertSame('Invalid quantity " 10000000000G ": value is out of range, using overflow result for backwards compatibility', error_get_last()['message']);
         $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
+    }
+
+    public function testIniParseQuantityHexDigitsAfterZero()
+    {
+        if (self::nativeIniParseQuantityLacksHexZeroFix()) {
+            $this->markTestSkipped('Native ini_parse_quantity() reads 0b after 0x as a prefix before PHP 8.3.17 and 8.4.4.');
+        }
+
+        $this->assertSame(11, ini_parse_quantity('0x0b'));
+        $this->assertSame(11, ini_parse_quantity('0X0B'));
+        $this->assertSame(0, ini_parse_quantity('0x0'));
+    }
+
+    public function testIniParseQuantityWhitespaceBeforeZeroAfterBasePrefix()
+    {
+        if (self::nativeIniParseQuantityLacksHexZeroFix()) {
+            $this->markTestSkipped('Native ini_parse_quantity() does not warn about whitespace after a base prefix before PHP 8.3.17 and 8.4.4.');
+        }
+
+        error_clear_last();
+        $this->assertSame(0, @ini_parse_quantity('0x 0'));
+        $this->assertSame('Invalid quantity "0x 0": no digits after base prefix, interpreting as "0" for backwards compatibility', error_get_last()['message']);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
+    }
+
+    private static function nativeIniParseQuantityLacksHexZeroFix(): bool
+    {
+        return 80200 <= \PHP_VERSION_ID && (\PHP_VERSION_ID < 80317 || (80400 <= \PHP_VERSION_ID && \PHP_VERSION_ID < 80404)) && !TestListenerTrait::$enabledPolyfills;
+    }
+
+    public function testIniParseQuantityIntegerLimits()
+    {
+        error_clear_last();
+        $this->assertSame(\PHP_INT_MAX, ini_parse_quantity((string) \PHP_INT_MAX));
+        $this->assertSame(\PHP_INT_MIN, ini_parse_quantity((string) \PHP_INT_MIN));
+        $this->assertNull(error_get_last());
+    }
+
+    /**
+     * @dataProvider provideIniParseQuantityWrappedOverflow
+     */
+    public function testIniParseQuantityWrappedOverflow(int $expected, string $value)
+    {
+        error_clear_last();
+        $this->assertSame($expected, @ini_parse_quantity($value));
+        $this->assertSame('Invalid quantity "'.$value.'": value is out of range, using overflow result for backwards compatibility', error_get_last()['message']);
+        $this->assertContains(error_get_last()['type'], [\E_WARNING, \E_USER_WARNING]);
+    }
+
+    public static function provideIniParseQuantityWrappedOverflow(): iterable
+    {
+        if (\PHP_INT_SIZE < 8) {
+            yield [\PHP_INT_MIN, '2147483648'];
+            yield [-\PHP_INT_MAX, '-2147483649'];
+            yield [-1, '4294967295'];
+            yield [-1, '4294967296'];
+
+            return;
+        }
+
+        yield [\PHP_INT_MIN, '9223372036854775808'];
+        yield [-\PHP_INT_MAX, '-9223372036854775809'];
+        yield [-1, '18446744073709551615'];
+        yield [-1, '18446744073709551616'];
+        yield [\PHP_INT_MIN, '0x8000000000000000'];
+        yield [-1024, '99999999999999999999k'];
     }
 
     public function testIniParseQuantitySignAfterPrefixButNoDigits()

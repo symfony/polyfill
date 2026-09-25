@@ -195,6 +195,7 @@ class Php83Test extends TestCase
     public static function jsonDataProvider(): iterable
     {
         yield [false, '', 'Syntax error'];
+        yield [false, '', 'Syntax error', 0];
         yield [false, '.', 'Syntax error'];
         yield [false, '<?>', 'Syntax error'];
         yield [false, ';', 'Syntax error'];
@@ -248,6 +249,32 @@ class Php83Test extends TestCase
                 \JSON_BIGINT_AS_STRING,
                 'json_validate(): Argument #3 ($flags) must be a valid flag (allowed flags: JSON_INVALID_UTF8_IGNORE)',
             ];
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Php83\Php83::json_validate
+     *
+     * @dataProvider provideJsonInvalidDepth
+     */
+    public function testJsonValidateInvalidDepthClearsTheLastError(int $depth)
+    {
+        json_decode('{');
+
+        try {
+            json_validate('{}', $depth);
+            $this->fail('A ValueError should have been thrown.');
+        } catch (\ValueError $e) {
+        }
+
+        $this->assertSame(\JSON_ERROR_NONE, json_last_error());
+    }
+
+    public static function provideJsonInvalidDepth(): iterable
+    {
+        yield [0];
+        if (\PHP_INT_MAX > 2147483647) {
+            yield [2147483648];
         }
     }
 
