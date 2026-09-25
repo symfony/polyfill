@@ -768,10 +768,10 @@ final class DeepClone
                 // Before PHP 8.3, Random\Randomizer::__serialize() returns its raw
                 // property table, whose IS_INDIRECT "engine" slot dangles once the
                 // object is released; it is the only affected class, as the others
-                // sharing the pattern declare no properties. Let the serializer
-                // materialize real values while the object is still alive.
+                // sharing the pattern declare no properties. Read the properties
+                // from the object instead, which keeps the engine instance.
                 if (\PHP_VERSION_ID < 80300 && $value instanceof \Random\Randomizer) {
-                    $arrayValue = unserialize(serialize($arrayValue));
+                    $arrayValue = [(array) $value];
                 }
 
                 if ($hasUnserialize = self::$classInfo[$class][0] ??= $reflector->hasMethod('__unserialize')) {
@@ -945,8 +945,13 @@ final class DeepClone
 
         // Eagerly finalize deferred objects whose state has no object-ref masks,
         // so they are real instances when the properties loop resolves references to them.
+        $deferred = [];
         foreach ($states as $state) {
-            if (!\is_array($state) || null !== $objects[$state[0]] || isset($state[2])) {
+            if (!\is_array($state) || null !== $objects[$state[0]]) {
+                continue;
+            }
+            if (isset($state[2])) {
+                $deferred[] = $state;
                 continue;
             }
             $class = $objectMeta[$state[0]][0];
@@ -957,42 +962,12 @@ final class DeepClone
             $objects[$state[0]] = $obj;
         }
 
-        foreach ($refMasks as $k => $m) {
-            $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
-        }
-
-        // Finalize the remaining deferred objects: needsFullUnserialize objects
-        // whose __serialize() state nests another object (e.g. Random\Randomizer
-        // wrapping a Random\Engine\*), so their state carries an object-ref mask.
-        // The loop above skipped them because resolving the mask needs the
-        // referenced objects to exist first. Iterate to a fixpoint: each pass
-        // finalizes those whose referenced objects are now available. A leftover
-        // null (a cycle of such classes, which pure PHP cannot reconstruct) is
-        // reported by the properties/states loop below.
-        if ($states) {
-            do {
-                $progress = false;
-                foreach ($states as $state) {
-                    if (!\is_array($state) || !isset($state[2])) {
-                        continue;
-                    }
-                    $zid = $state[0] ?? null;
-                    if (!\is_int($zid) || !\array_key_exists($zid, $objects) || null !== $objects[$zid]) {
-                        continue;
-                    }
-                    if (!self::maskRefsReady($state[1] ?? null, $state[2], $objects)) {
-                        continue;
-                    }
-                    $class = $objectMeta[$zid][0];
-                    $resolvedProps = self::resolveWithMask($state[1] ?? null, $state[2], $objects, $refs, $allowedClasses);
-                    $ser = serialize($resolvedProps);
-                    if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
-                        throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
-                    }
-                    $objects[$zid] = $obj;
-                    $progress = true;
-                }
-            } while ($progress);
+        if ($deferred) {
+            self::finalizeDeferred($deferred, $objects, $objectMeta, $refs, $refMasks, $allowedClasses);
+        } else {
+            foreach ($refMasks as $k => $m) {
+                $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
+            }
         }
 
         foreach ($properties as $scope => $scopeProps) {
@@ -1180,6 +1155,81 @@ final class DeepClone
         }
 
         return $prepared;
+    }
+
+    /**
+     * Finalizes the objects that only __unserialize() can create and whose state
+     * nests other objects, resolving the references of the payload on the way.
+     */
+    private static function finalizeDeferred(array $deferred, array &$objects, array $objectMeta, array &$refs, array $refMasks, ?array $allowedClasses): void
+    {
+        // Creating them with unserialize() would copy the objects their state
+        // nests, before these are hydrated and without the references they hold
+        // back: build them around the objects themselves instead
+        $members = [];
+        foreach ($deferred as $k => $state) {
+            $zid = $state[0];
+            $sprops = $state[1] ?? null;
+            $class = $objectMeta[$zid][0] ?? null;
+            if ('Random\Randomizer' === $class) {
+                // Like __unserialize(), the constructor keeps the engine and draws from it
+                $eid = $sprops[0]['engine'] ?? null;
+                if ([['engine' => true]] === $state[2] && [['engine' => $eid]] === $sprops && \is_int($eid) && ($engine = $objects[$eid] ?? null) instanceof \Random\Engine) {
+                    $objects[$zid] = new \Random\Randomizer($engine);
+                    unset($deferred[$k]);
+                }
+            } elseif ('HashContext' === $class && \is_array($sprops) && \is_array($sprops[4] ?? null) && \is_array($state[2]) && [4] === array_keys($state[2]) && \is_array($state[2][4])) {
+                // Its dynamic properties are set once the objects they reference exist
+                $members[$zid] = [$sprops[4], $state[2][4]];
+                $sprops[4] = [];
+                $ser = serialize($sprops);
+                if (false === $objects[$zid] = unserialize('O:11:"HashContext"'.substr($ser, strpos($ser, ':', 1)))) {
+                    throw new \ValueError('deepclone_from_array(): could not reconstruct "HashContext" via __unserialize()');
+                }
+                unset($deferred[$k]);
+            }
+        }
+
+        foreach ($refMasks as $k => $m) {
+            $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
+        }
+
+        // The remaining ones come from payloads that deepclone_to_array() doesn't
+        // produce. Iterate to a fixpoint: each pass finalizes those whose referenced
+        // objects are now available. A leftover null is reported by the caller.
+        do {
+            $progress = false;
+            foreach ($deferred as $state) {
+                $zid = $state[0] ?? null;
+                if (!\is_int($zid) || !\array_key_exists($zid, $objects) || null !== $objects[$zid]) {
+                    continue;
+                }
+                if (!self::maskRefsReady($state[1] ?? null, $state[2], $objects)) {
+                    continue;
+                }
+                $class = $objectMeta[$zid][0];
+                $resolvedProps = self::resolveWithMask($state[1] ?? null, $state[2], $objects, $refs, $allowedClasses);
+                $ser = serialize($resolvedProps);
+                if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
+                    throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
+                }
+                $objects[$zid] = $obj;
+                $progress = true;
+            }
+        } while ($progress);
+
+        foreach ($members as $zid => [$values, $mask]) {
+            $object = $objects[$zid];
+            foreach (self::resolveWithMask($values, $mask, $objects, $refs, $allowedClasses) as $name => &$v) {
+                // Raises the deprecation of __unserialize() since PHP 8.2
+                if (false === ($mask[$name] ?? null)) {
+                    $object->$name = &$v;
+                } else {
+                    $object->$name = $v;
+                }
+            }
+            unset($v);
+        }
     }
 
     /**
