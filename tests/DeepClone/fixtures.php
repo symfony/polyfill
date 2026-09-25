@@ -50,6 +50,12 @@ class DeepCloneFinalError extends \Error
 {
 }
 
+class DeepCloneDatePeriod extends \DatePeriod
+{
+    public $label;
+    public $self;
+}
+
 class DeepCloneSerializeFixture
 {
     public function __construct(public string $name = '', public int $val = 0)
