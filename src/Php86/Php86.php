@@ -65,10 +65,6 @@ final class Php86
 
     public static function grapheme_strrev(string $string)
     {
-        if (!preg_match('//u', $string)) {
-            return false;
-        }
-
         $iterator = \IntlBreakIterator::createCharacterInstance();
         $iterator->setText($string);
         $reversed = '';

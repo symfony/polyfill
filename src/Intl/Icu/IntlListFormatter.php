@@ -28,6 +28,7 @@ class IntlListFormatter
 
     private $type;
     private $width;
+    private $region;
 
     private const TYPE_MAP = [
         self::TYPE_AND => 'standard',
@@ -98,6 +99,29 @@ class IntlListFormatter
         ],
     ];
 
+    // CLDR's en_001 drops the serial comma, and en_IN inherits from it
+    private const EN_001_LIST_PATTERNS = [
+        'listPattern-type-standard' => ['end' => '{0} and {1}'],
+        'listPattern-type-standard-short' => ['end' => '{0} and {1}', 2 => '{0} and {1}'],
+        'listPattern-type-or' => ['end' => '{0} or {1}'],
+        'listPattern-type-or-narrow' => ['end' => '{0} or {1}'],
+        'listPattern-type-or-short' => ['end' => '{0} or {1}'],
+    ];
+
+    private const EN_IN_LIST_PATTERNS = [
+        'listPattern-type-standard-narrow' => ['end' => '{0}, and {1}'],
+    ];
+
+    // Regions of en_001 and of its descendants in CLDR 48, plus en_CA, which overrides the same patterns
+    private const EN_001_REGIONS = [
+        '001', '150', 'AG', 'AI', 'AT', 'AU', 'BB', 'BE', 'BM', 'BS', 'BW', 'BZ', 'CA', 'CC', 'CH', 'CK', 'CM', 'CX', 'CY', 'CZ',
+        'DE', 'DG', 'DK', 'DM', 'EE', 'ER', 'ES', 'FI', 'FJ', 'FK', 'FM', 'FR', 'GB', 'GD', 'GE', 'GG', 'GH', 'GI', 'GM', 'GS',
+        'GY', 'HK', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IT', 'JE', 'JM', 'KE', 'KI', 'KN', 'KY', 'LC', 'LR', 'LS', 'LT',
+        'LV', 'MG', 'MO', 'MS', 'MT', 'MU', 'MV', 'MW', 'MY', 'NA', 'NF', 'NG', 'NL', 'NO', 'NR', 'NU', 'NZ', 'PG', 'PK', 'PL',
+        'PN', 'PT', 'PW', 'RO', 'RW', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SK', 'SL', 'SS', 'SX', 'SZ', 'TC', 'TK', 'TO',
+        'TT', 'TV', 'TZ', 'UA', 'UG', 'VC', 'VG', 'VU', 'WS', 'ZA', 'ZM', 'ZW',
+    ];
+
     public function __construct(string $locale, int $type = self::TYPE_AND, int $width = self::WIDTH_WIDE)
     {
         if ('en' !== $locale && 0 !== strpos($locale, 'en')) {
@@ -126,6 +150,10 @@ class IntlListFormatter
 
         $this->type = $type;
         $this->width = $width;
+
+        if (preg_match('/^en(?:[-_][a-z]{4})?[-_]([a-z]{2}|\d{3})(?=$|[-_@])/i', $locale, $m) && \in_array($region = strtoupper($m[1]), self::EN_001_REGIONS, true)) {
+            $this->region = $region;
+        }
     }
 
     public function format(array $strings): string
@@ -142,7 +170,16 @@ class IntlListFormatter
             return (string) $strings[0];
         }
 
-        $pattern = self::EN_LIST_PATTERNS['listPattern-type-'.self::TYPE_MAP[$this->type].self::WIDTH_MAP[$this->width]];
+        $key = 'listPattern-type-'.self::TYPE_MAP[$this->type].self::WIDTH_MAP[$this->width];
+        $pattern = self::EN_LIST_PATTERNS[$key];
+
+        if (null !== $this->region) {
+            $pattern = (self::EN_001_LIST_PATTERNS[$key] ?? []) + $pattern;
+
+            if ('IN' === $this->region) {
+                $pattern = (self::EN_IN_LIST_PATTERNS[$key] ?? []) + $pattern;
+            }
+        }
 
         if (2 === $count) {
             return strtr($pattern[2], ['{0}' => (string) $strings[0], '{1}' => (string) $strings[1]]);

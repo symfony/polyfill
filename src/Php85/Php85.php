@@ -112,7 +112,7 @@ final class Php85
         return isset(self::LANG_TO_SCRIPT[$language]) && isset(self::RTL_SCRIPTS[self::LANG_TO_SCRIPT[$language]]);
     }
 
-    public static function grapheme_levenshtein(string $s1, string $s2, int $insertion_cost = 1, int $replacement_cost = 1, int $deletion_cost = 1)
+    public static function grapheme_levenshtein(string $s1, string $s2, int $insertion_cost = 1, int $replacement_cost = 1, int $deletion_cost = 1, string $locale = '')
     {
         if ($insertion_cost <= 0 || $insertion_cost > 1073741823) {
             throw new \ValueError('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
@@ -151,6 +151,15 @@ final class Php85
         if (0 === $l2) {
             return $l1 * $deletion_cost;
         }
+
+        // Graphemes are equal when the collator says so, as with ucol_strcoll() in intl
+        try {
+            $collator = new \Collator('' === $locale ? 'root' : $locale);
+        } catch (\IntlException $e) {
+            return false;
+        }
+        $s1 = array_map([$collator, 'getSortKey'], $s1);
+        $s2 = array_map([$collator, 'getSortKey'], $s2);
 
         $previousRow = $currentRow = array_fill(0, $l2 + 1, 0);
         for ($j = 1; $j <= $l2; ++$j) {

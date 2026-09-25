@@ -246,7 +246,7 @@ final class Grapheme
         return $chunks;
     }
 
-    public static function grapheme_levenshtein($s1, $s2, $insertion_cost = 1, $replacement_cost = 1, $deletion_cost = 1)
+    public static function grapheme_levenshtein($s1, $s2, $insertion_cost = 1, $replacement_cost = 1, $deletion_cost = 1, $locale = '')
     {
         if ($insertion_cost <= 0 || $insertion_cost > 1073741823) {
             throw new \ValueError('grapheme_levenshtein(): Argument #3 ($insertion_cost) must be greater than 0 and less than or equal to 1073741823');
@@ -267,6 +267,7 @@ final class Grapheme
 
         $s1 = $s1[0];
         $s2 = $s2[0];
+
         $l1 = \count($s1);
         $l2 = \count($s2);
 
@@ -280,6 +281,25 @@ final class Grapheme
 
         if (0 === $l2) {
             return $l1 * $deletion_cost;
+        }
+
+        if (\extension_loaded('intl')) {
+            // Graphemes are equal when the collator says so, as with ucol_strcoll() in intl
+            try {
+                $collator = new \Collator('' === $locale ? 'root' : $locale);
+            } catch (\IntlException $e) {
+                return false;
+            }
+            $s1 = array_map([$collator, 'getSortKey'], $s1);
+            $s2 = array_map([$collator, 'getSortKey'], $s2);
+        } elseif (class_exists(\Normalizer::class)) {
+            // Without a collator, at least treat canonically equivalent graphemes as equal
+            foreach ($s1 as $i => $g) {
+                $s1[$i] = \Normalizer::normalize($g, \Normalizer::FORM_D);
+            }
+            foreach ($s2 as $i => $g) {
+                $s2[$i] = \Normalizer::normalize($g, \Normalizer::FORM_D);
+            }
         }
 
         $previousRow = $currentRow = array_fill(0, $l2 + 1, 0);
@@ -368,10 +388,6 @@ final class Grapheme
 
     public static function grapheme_strrev(string $string)
     {
-        if (!preg_match('//u', $string)) {
-            return false;
-        }
-
         if (\extension_loaded('intl')) {
             $iterator = \IntlBreakIterator::createCharacterInstance();
             $iterator->setText($string);
@@ -386,13 +402,7 @@ final class Grapheme
             return $reversed;
         }
 
-        $units = grapheme_str_split($string);
-
-        if (false === $units) {
-            return false;
-        }
-
-        return implode('', array_reverse($units));
+        return implode('', array_reverse(self::grapheme_str_split($string)));
     }
 
     private static function isUtf8(?string $s)

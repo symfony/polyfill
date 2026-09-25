@@ -202,6 +202,26 @@ class Php85Test extends TestCase
     /**
      * @requires extension intl
      */
+    public function testGraphemeLevenshteinCanonicalEquivalence()
+    {
+        $this->assertSame(0, grapheme_levenshtein('é', "e\u{0301}"));
+        $this->assertSame(0, grapheme_levenshtein("\u{212B}", "\u{00C5}"));
+        $this->assertSame(1, grapheme_levenshtein('café', "cafe\u{0301}s", 1, 1, 1, 'en'));
+        $this->assertSame(1, grapheme_levenshtein('a', 'A'));
+    }
+
+    /**
+     * @requires extension intl
+     */
+    public function testGraphemeLevenshteinInvalidLocale()
+    {
+        $this->assertFalse(grapheme_levenshtein('a', 'b', 1, 1, 1, 'defaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
+        $this->assertSame(3, grapheme_levenshtein('', 'abc', 1, 1, 1, 'defaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
+    }
+
+    /**
+     * @requires extension intl
+     */
     public function testGraphemeLevenshteinNegativeCost()
     {
         $this->expectException(\ValueError::class);
