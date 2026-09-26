@@ -882,6 +882,50 @@ class DeepCloneTest extends TestCase
         deepclone_to_array(\Closure::fromCallable('strlen'));
     }
 
+    public function testMalformedPayloadsThrowTheSameValueErrors()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.6', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.6 reports some malformed payloads differently.');
+        }
+
+        $payloads = [
+            'deepclone_from_array(): Argument #1 ($data) "objectMeta" entry index k out of range' => ['classes' => 'stdClass', 'objectMeta' => ['k' => 0], 'prepared' => 0],
+            'deepclone_from_array(): Argument #1 ($data) "properties" entry for "stdClass::a" references unknown object id 5' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1, 5 => 2]]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" entry for "stdClass::a" references unknown object id k' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => ['k' => 1]]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" value for "stdClass::x" targets a non-public declared property on object id 0' => ['classes' => PrivShadowA::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['y']]]],
+            'deepclone_from_array(): malformed payload, object reference value must be of type int, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => [0], 'mask' => [1 => true]],
+            'deepclone_from_array(): malformed payload, hard-ref slot must be of type int, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => [0], 'mask' => [1 => false]],
+            'deepclone_from_array(): malformed payload, array-mask value must be of type array, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'refMasks' => [1 => [true]]],
+            // Unknown masks that match nothing create no reference
+            'deepclone_from_array(): malformed payload, unknown ref id 7' => ['classes' => '', 'objectMeta' => 0, 'prepared' => [-7], 'mask' => [false], 'refMasks' => [7 => 2]],
+            'deepclone_from_array(): Argument #1 ($data) "prepared" references unknown ref id 1' => ['classes' => '', 'objectMeta' => 0, 'prepared' => -1, 'refMasks' => [1 => 'zz']],
+            // Resolve markers that match no value too
+            'deepclone_from_array(): malformed payload, enum value must be of type string, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1]]], 'resolve' => ['stdClass' => ['a' => [3 => 'e']]]],
+        ];
+        if (\PHP_VERSION_ID >= 80200) {
+            // A Random\Randomizer is created from its state before the properties are hydrated
+            $payloads['deepclone_from_array(): Argument #1 ($data) malformed "states" entry: expected [int, mixed, mixed?]'] = ['classes' => \Random\Randomizer::class, 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[[0], []]]];
+        }
+
+        foreach ($payloads as $message => $payload) {
+            try {
+                deepclone_from_array($payload);
+                $this->fail(\sprintf('deepclone_from_array() accepted a payload expected to throw "%s".', $message));
+            } catch (\ValueError $e) {
+                $this->assertSame($message, $e->getMessage());
+            }
+        }
+
+        // Nor do they add values
+        $this->assertEquals([new \stdClass()], deepclone_from_array(['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => [0], 'mask' => [0 => true, 'x' => 'zz']]));
+        $this->assertEquals((object) ['a' => 1], deepclone_from_array(['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1]]], 'resolve' => ['stdClass' => ['a' => [3 => 'zz', 'k' => 'zz']]]]));
+
+        // What PHP throws when writing a property comes first, as the extension stops there
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Cannot assign string to property '.TypedInt::class.'::$x of type int');
+        deepclone_from_array(['classes' => TypedInt::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['abc', 5 => 1]]]]);
+    }
+
     public function testFromArrayNamedClosureRequiresOptIn()
     {
         $d = deepclone_to_array(\Closure::fromCallable('strlen'), null, true);
