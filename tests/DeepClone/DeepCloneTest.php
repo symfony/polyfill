@@ -868,6 +868,39 @@ class DeepCloneTest extends TestCase
         deepclone_to_array(\Closure::fromCallable('strlen'));
     }
 
+    public function testMalformedPayloadsThrowTheSameValueErrors()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.6', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.6 reports some malformed payloads differently.');
+        }
+
+        $payloads = [
+            'deepclone_from_array(): Argument #1 ($data) "objectMeta" entry index k out of range' => ['classes' => 'stdClass', 'objectMeta' => ['k' => 0], 'prepared' => 0],
+            'deepclone_from_array(): Argument #1 ($data) "properties" entry for "stdClass::a" references unknown object id 5' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1, 5 => 2]]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" entry for "stdClass::a" references unknown object id k' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => ['k' => 1]]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" value for "stdClass::x" targets a non-public declared property on object id 0' => ['classes' => PrivShadowA::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['y']]]],
+            'deepclone_from_array(): malformed payload, object reference value must be of type int, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => [0], 'mask' => [1 => true]],
+        ];
+        if (\PHP_VERSION_ID >= 80200) {
+            // A Random\Randomizer is created from its state before the properties are hydrated
+            $payloads['deepclone_from_array(): Argument #1 ($data) malformed "states" entry: expected [int, mixed, mixed?]'] = ['classes' => \Random\Randomizer::class, 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[[0], []]]];
+        }
+
+        foreach ($payloads as $message => $payload) {
+            try {
+                deepclone_from_array($payload);
+                $this->fail(\sprintf('deepclone_from_array() accepted a payload expected to throw "%s".', $message));
+            } catch (\ValueError $e) {
+                $this->assertSame($message, $e->getMessage());
+            }
+        }
+
+        // What PHP throws when writing a property comes first, as the extension stops there
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Cannot assign string to property '.TypedInt::class.'::$x of type int');
+        deepclone_from_array(['classes' => TypedInt::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['abc', 5 => 1]]]]);
+    }
+
     public function testFromArrayNamedClosureRequiresOptIn()
     {
         $d = deepclone_to_array(\Closure::fromCallable('strlen'), null, true);
