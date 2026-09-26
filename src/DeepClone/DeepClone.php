@@ -36,6 +36,7 @@ final class DeepClone
     private static array $hydrators = [];
     private static array $simpleHydrators = [];
     private static array $shapes = [];
+    private static array $typedPropertyKeys = [];
     private static array $propertyScopes = []; // [class][key] = [declaring class, real name]; key is bare name, "\0*\0name", or "\0class\0name"
     private static array $classInfo = [];
     private static array $constExprIndex = [];
@@ -53,24 +54,16 @@ final class DeepClone
      */
     public static function deepclone_to_array(mixed $value, ?array $allowed_classes = null, bool $allow_named_closures = false): array
     {
-        if (\is_resource($value)) {
+        if (!\is_object($value) && !(\is_array($value) && $value) || $value instanceof \UnitEnum) {
+            if (null === $value || \is_scalar($value) || \is_array($value) || \is_object($value)) {
+                return ['value' => $value];
+            }
+
+            // A resource, closed ones included
             throw new \DeepClone\NotInstantiableException('Type "'.get_resource_type($value).' resource" is not instantiable.');
         }
 
-        if (!\is_object($value) && !(\is_array($value) && $value) || $value instanceof \UnitEnum) {
-            return ['value' => $value];
-        }
-
-        $allowedSet = null;
-        if (null !== $allowed_classes) {
-            $allowedSet = [];
-            foreach ($allowed_classes as $cls) {
-                if (!\is_string($cls)) {
-                    throw new \ValueError('deepclone_to_array(): Argument $allowed_classes must be an array of class names, '.self::valueName($cls).' given');
-                }
-                $allowedSet[strtolower($cls)] = true;
-            }
-        }
+        $allowedSet = null === $allowed_classes ? null : self::getAllowedSet($allowed_classes, 'deepclone_to_array');
 
         $objectsPool = [];
         $refsPool = [];
@@ -279,7 +272,7 @@ final class DeepClone
         $numClasses = \count($classes);
 
         if (null !== $allowed_classes) {
-            $allowed = array_change_key_case(array_flip($allowed_classes));
+            $allowed = self::getAllowedSet($allowed_classes, 'deepclone_from_array');
             foreach ($classes as $cls) {
                 if (!isset($allowed[strtolower($cls)])) {
                     throw new \ValueError('deepclone_from_array(): class "'.$cls.'" is not allowed');
@@ -570,6 +563,25 @@ final class DeepClone
     }
 
     /**
+     * Validates class names like unserialize() does, and maps them lowercased.
+     */
+    private static function getAllowedSet(array $allowedClasses, string $function): array
+    {
+        $allowedSet = [];
+        foreach ($allowedClasses as $class) {
+            if (!\is_string($class)) {
+                throw new \ValueError($function.'(): Argument $allowed_classes must be an array of class names, '.self::valueName($class).' given');
+            }
+            if (preg_match('/[^a-zA-Z0-9_\x80-\xff\\\\]/', $class)) {
+                throw new \ValueError($function.'(): Argument $allowed_classes must be an array of class names, "'.$class.'" given');
+            }
+            $allowedSet[strtolower($class)] = true;
+        }
+
+        return $allowedSet;
+    }
+
+    /**
      * Returns a type name matching zend_zval_value_name() output for
      * error messages compatible with the C extension.
      */
@@ -602,9 +614,6 @@ final class DeepClone
     {
         $refs = $values;
         foreach ($values as $k => $value) {
-            if (\is_resource($value)) {
-                throw new \DeepClone\NotInstantiableException('Type "'.get_resource_type($value).' resource" is not instantiable.');
-            }
             if ($refFreeDepth) {
                 // Known to hold no hard reference
                 $isRef = false;
@@ -652,7 +661,13 @@ final class DeepClone
                     }
                 }
                 goto handle_value;
-            } elseif (!\is_object($value) || $value instanceof \UnitEnum) {
+            } elseif (!\is_object($value)) {
+                if (!\is_scalar($value) && null !== $value) {
+                    // A resource, closed ones included
+                    throw new \DeepClone\NotInstantiableException('Type "'.get_resource_type($value).' resource" is not instantiable.');
+                }
+                goto handle_value;
+            } elseif ($value instanceof \UnitEnum) {
                 goto handle_value;
             }
 
@@ -778,6 +793,11 @@ final class DeepClone
                     $properties = $arrayValue;
                     goto prepare_value;
                 }
+
+                // unserialize() writes the keys in turn, so that the last one naming a property wins, even with its default
+                // value: keep them all
+                $keys = (self::$shapes[$class] ??= self::getShape($reflector, self::$prototypes[$class]))[0];
+                $defaults = [];
             } elseif ($value instanceof \Serializable || $value instanceof \__PHP_Incomplete_Class) {
                 ++$objectsCount;
                 $objectsPool[$oid] = [$id = \count($objectsPool), serialize($value), [], 0, $value, null];
@@ -787,43 +807,35 @@ final class DeepClone
             } else {
                 if (self::$classInfo[$class][3] ??= $reflector->hasMethod('__sleep')) {
                     if (!\is_array($sleep = $value->__sleep())) {
-                        trigger_error('serialize(): __sleep should return an array only containing the names of instance-variables to serialize', \E_USER_NOTICE);
+                        trigger_error('serialize(): '.$class.'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
                         $value = null;
                         goto handle_value;
                     }
-                    $sleep = array_flip($sleep);
+                    $sleep = self::getSleepProperties($value, $reflector, $sleep);
                 }
 
-                $arrayValue = (array) $value;
+                $arrayValue = $sleep ?? (array) $value;
+                [$keys, $defaults] = self::$shapes[$class] ??= self::getShape($reflector, self::$prototypes[$class]);
             }
-
-            [$keys, $defaults] = self::$shapes[$class] ??= self::getShape($reflector, self::$prototypes[$class]);
 
             $refFree = true;
             $propertiesAreStatic = true;
             foreach ($arrayValue as $name => $v) {
                 if ($key = $keys[$name] ?? null) {
-                    [$c, $n, $i] = $key;
+                    [$c, $n] = $key;
                 } else {
-                    $i = 0;
                     $n = (string) $name;
                     if ('' === $n || "\0" !== $n[0]) {
                         $c = 'stdClass';
                     } elseif ('*' === $n[1]) {
+                        // An undeclared protected name, eg returned by __serialize(), can only be restored as a dynamic property
                         $n = substr($n, 3);
-                        $c = $reflector->getProperty($n)->class;
+                        $c = 'stdClass';
                     } else {
                         $i = strpos($n, "\0", 2);
                         $c = substr($n, 1, $i - 1);
                         $n = substr($n, 1 + $i);
                     }
-                }
-                if (null !== $sleep) {
-                    if (!isset($sleep[$name]) && (!isset($sleep[$n]) || ($i && $c !== $class))) {
-                        unset($arrayValue[$name]);
-                        continue;
-                    }
-                    unset($sleep[$name], $sleep[$n]);
                 }
                 // Carry the hard references between properties over
                 if (\ReflectionReference::fromArrayElement($arrayValue, $name)) {
@@ -832,14 +844,6 @@ final class DeepClone
                 } elseif (!\array_key_exists($name, $defaults) || $defaults[$name] !== $v) {
                     $properties[$c][$n] = $v;
                     $propertiesAreStatic = $propertiesAreStatic && (null === $v || \is_scalar($v) || $v instanceof \UnitEnum);
-                }
-            }
-            if ($sleep) {
-                foreach ($sleep as $n => $v) {
-                    if (\is_string($n) && $reflector->hasProperty($n)) {
-                        continue;
-                    }
-                    trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', $n), \E_USER_NOTICE);
                 }
             }
             if ($hasUnserialize = self::$classInfo[$class][0] ??= $reflector->hasMethod('__unserialize')) {
@@ -1889,9 +1893,69 @@ final class DeepClone
     }
 
     /**
+     * Selects the properties named by __sleep() like serialize() does, in the same order and with the same warnings.
+     *
+     * A name selects the property whose (array) cast key it is, else the private property of the object's class or the
+     * protected property by that name.
+     */
+    private static function getSleepProperties(object $object, \ReflectionClass $reflector, array $names): array
+    {
+        $class = $object::class;
+        $properties = (array) $object;
+        $selected = [];
+
+        foreach ($names as $name) {
+            if (!\is_string($name)) {
+                trigger_error('serialize(): '.$class.'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
+                $name = (string) $name;
+            }
+            // Numeric names are integer keys, which ReflectionReference::fromArrayElement() needs
+            foreach ([$name === (string) (int) $name ? (int) $name : $name, "\0".$class."\0".$name, "\0*\0".$name] as $key) {
+                if (\array_key_exists($key, $properties)) {
+                    if (\array_key_exists($key, $selected)) {
+                        // Names are cut at their first NUL byte, as by serialize()
+                        trigger_error(\sprintf('serialize(): "%s" is returned from __sleep() multiple times', explode("\0", $name, 2)[0]), \PHP_VERSION_ID >= 80300 ? \E_USER_WARNING : \E_USER_NOTICE);
+                    } elseif (\ReflectionReference::fromArrayElement($properties, $key)) {
+                        $selected[$key] = &$properties[$key];
+                    } else {
+                        $selected[$key] = $properties[$key];
+                    }
+
+                    continue 2;
+                }
+            }
+
+            // Uninitialized typed properties are skipped silently, unset untyped ones don't exist
+            $typed = self::$typedPropertyKeys[$class] ??= self::getTypedPropertyKeys($reflector);
+            if (!isset($typed[$name]) && !isset($typed["\0".$class."\0".$name]) && !isset($typed["\0*\0".$name])) {
+                trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', explode("\0", $name, 2)[0]), \E_USER_WARNING);
+            }
+        }
+
+        return $selected;
+    }
+
+    /**
+     * Lists the (array) cast keys of the typed properties of a class.
+     */
+    private static function getTypedPropertyKeys(\ReflectionClass $reflector): array
+    {
+        $keys = [];
+        do {
+            foreach ($reflector->getProperties() as $p) {
+                if (!$p->isStatic() && $p->hasType()) {
+                    $keys[$p->isPrivate() ? "\0".$p->class."\0".$p->name : ($p->isProtected() ? "\0*\0".$p->name : $p->name)] = true;
+                }
+            }
+        } while ($reflector = $reflector->getParentClass());
+
+        return $keys;
+    }
+
+    /**
      * Describes how deepclone_to_array() exports the properties of a class.
      *
-     * Maps the keys that (array) casts give to declared properties to their scope, name and scope separator position,
+     * Maps the keys that (array) casts give to declared properties to their scope and name,
      * and lists the default values that payloads leave out.
      */
     private static function getShape(\ReflectionClass $reflector, $proto): array
@@ -1905,10 +1969,10 @@ final class DeepClone
                 }
                 $name = $p->name;
                 if ($p->isPrivate()) {
-                    $keys["\0".$p->class."\0".$name] = [$p->class, $name, 1 + \strlen($p->class)];
+                    $keys["\0".$p->class."\0".$name] = [$p->class, $name];
                 }
                 if (!isset($keys[$name])) {
-                    $keys[$name] = $keys["\0*\0".$name] = [!$p->isPublic() || (\PHP_VERSION_ID >= 80400 ? $p->isProtectedSet() || $p->isPrivateSet() : $p->isReadOnly()) ? $p->class : 'stdClass', $name, 0];
+                    $keys[$name] = $keys["\0*\0".$name] = [!$p->isPublic() || (\PHP_VERSION_ID >= 80400 ? $p->isProtectedSet() || $p->isPrivateSet() : $p->isReadOnly()) ? $p->class : 'stdClass', $name];
                 }
             }
         } while ($parent = $parent->getParentClass());

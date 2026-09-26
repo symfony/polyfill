@@ -137,6 +137,11 @@ class DeepCloneSleepPrivate
 class DeepCloneParentSleep
 {
     private string $secret = '';
+
+    public function setSecret(string $secret): void
+    {
+        $this->secret = $secret;
+    }
 }
 
 class DeepCloneChildSleep extends DeepCloneParentSleep
@@ -148,6 +153,122 @@ class DeepCloneChildSleep extends DeepCloneParentSleep
     {
         return ['pub', 'secret'];
     }
+}
+
+class DeepCloneSleepBase
+{
+    private $secret = 'default';
+
+    public function setBaseSecret($secret): void
+    {
+        $this->secret = $secret;
+    }
+}
+
+class DeepCloneSleepSamePrivate extends DeepCloneSleepBase
+{
+    private $secret = 'default';
+
+    public function setSecret($secret): void
+    {
+        $this->secret = $secret;
+    }
+
+    public function __sleep(): array
+    {
+        return ['secret', "\0".DeepCloneSleepBase::class."\0secret"];
+    }
+}
+
+class DeepCloneSleepMiddle extends DeepCloneSleepBase
+{
+}
+
+class DeepCloneSleepGrandparentPrivate extends DeepCloneSleepMiddle
+{
+    public function __sleep(): array
+    {
+        return ['secret', "\0".DeepCloneSleepBase::class."\0secret"];
+    }
+}
+
+class DeepCloneSleepMissingMangled
+{
+    public $pub = 'default';
+
+    public function __sleep(): array
+    {
+        return ['pub', "\0*\0nope"];
+    }
+}
+
+class DeepCloneSleepNames
+{
+    public $a = 'default';
+    protected $b = 'default';
+    private $c = 'default';
+    public int $typed;
+    public $names = [];
+
+    public function set($value): void
+    {
+        $this->a = $this->b = $this->c = $value;
+    }
+
+    public function __sleep(): array
+    {
+        return $this->names;
+    }
+}
+
+#[\AllowDynamicProperties]
+class DeepCloneSleepDynamic
+{
+    public $a = 'default';
+    public $names = [];
+
+    public function __sleep(): array
+    {
+        return $this->names;
+    }
+}
+
+class DeepCloneSleepUnserialize extends DeepCloneSleepNames
+{
+    public $keys;
+
+    public function __unserialize(array $data): void
+    {
+        $this->keys = strtr(implode(',', array_keys($data)), ["\0" => '~']);
+    }
+}
+
+class DeepCloneSleepNotArray
+{
+    public function __sleep()
+    {
+        return 'nope';
+    }
+}
+
+#[\AllowDynamicProperties]
+class DeepCloneSerializeKeys
+{
+    private $b = 'default';
+    protected $p = 'default';
+    public $pub = 'default';
+    public $data = [];
+
+    public function __serialize(): array
+    {
+        return $this->data;
+    }
+}
+
+class DeepCloneOrderNode
+{
+    public $next;
+    public $data;
 }
 
 class DeepCloneParentClass

@@ -528,6 +528,20 @@ class DeepCloneTest extends TestCase
         $this->assertSame(30, $clone->getSecret());
     }
 
+    private function skipIfExtensionMisresolvesSleepNames(): void
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.6', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.6 resolves some names returned by __sleep() differently than serialize().');
+        }
+    }
+
+    private function skipIfExtensionDiffersFromSerialize(): void
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.6', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.6 exports some values differently than the polyfill.');
+        }
+    }
+
     private function skipIfExtensionDropsPropertyReferences(): void
     {
         if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.4', '<')) {
@@ -1103,7 +1117,8 @@ class DeepCloneTest extends TestCase
     {
         $o = new DeepCloneSleepPrivate();
         $o->setAll('night', 'afternoon', 'morning');
-        $d = deepclone_to_array($o);
+        // Like serialize(), warns that "\0*\0foo" is returned from __sleep() after "foo"
+        $d = @deepclone_to_array($o);
 
         $this->assertArrayHasKey('good', $d['properties']['stdClass']);
         $this->assertArrayHasKey('foo', $d['properties']['Symfony\\Polyfill\\Tests\\DeepClone\\DeepCloneSleepPrivate']);
@@ -1112,8 +1127,12 @@ class DeepCloneTest extends TestCase
 
     public function testSleepInheritedPrivateExclusion()
     {
+        $this->skipIfExtensionMisresolvesSleepNames();
+
         $o = new DeepCloneChildSleep();
         $o->pub = 'visible';
+        // A non-default value, as default ones are not exported anyway
+        $o->setSecret('changed');
         // `__sleep` returning the unmangled name "secret" triggers the same
         // E_NOTICE that serialize() itself would ("returned as member variable
         // … but does not exist"), because unmangled names are not allowed to
@@ -1125,6 +1144,279 @@ class DeepCloneTest extends TestCase
         // 'secret' is a private property of ParentSleep. Unmangled "secret"
         // in __sleep must NOT match it (inherited-private exclusion).
         $this->assertArrayNotHasKey('Symfony\\Polyfill\\Tests\\DeepClone\\DeepCloneParentSleep', $d['properties'] ?? []);
+    }
+
+    public function testSleepBareAndMangledNamesOfSameNamedPrivates()
+    {
+        $this->skipIfExtensionMisresolvesSleepNames();
+
+        $o = new DeepCloneSleepSamePrivate();
+        $o->setBaseSecret('parent');
+        $o->setSecret('child');
+        $d = deepclone_to_array($o);
+
+        // Like serialize(), the bare name selects the private property of the
+        // object's class and the mangled one the private property of the parent
+        $this->assertSame(['parent'], $d['properties'][DeepCloneSleepBase::class]['secret']);
+        $this->assertSame(['child'], $d['properties'][DeepCloneSleepSamePrivate::class]['secret']);
+        $this->assertEquals(unserialize(serialize($o)), deepclone_from_array($d));
+    }
+
+    public function testSleepBareNameOfGrandparentPrivateDoesNotExist()
+    {
+        $this->skipIfExtensionMisresolvesSleepNames();
+
+        $o = new DeepCloneSleepGrandparentPrivate();
+        $o->setBaseSecret('changed');
+        $errors = [];
+        set_error_handler(static function ($type, $msg) use (&$errors) {
+            $errors[] = $msg;
+
+            return true;
+        });
+
+        try {
+            $d = deepclone_to_array($o);
+        } finally {
+            restore_error_handler();
+        }
+
+        // The mangled name selects the property, the bare one doesn't, like with serialize()
+        $this->assertSame(['changed'], $d['properties'][DeepCloneSleepBase::class]['secret']);
+        $this->assertCount(1, $errors);
+        $this->assertStringEndsWith('serialize(): "secret" returned as member variable from __sleep() but does not exist', $errors[0]);
+    }
+
+    public function testSleepNoticeCutsMangledNames()
+    {
+        $errors = [];
+        set_error_handler(static function ($type, $msg) use (&$errors) {
+            $errors[] = $msg;
+
+            return true;
+        });
+
+        try {
+            deepclone_to_array(new DeepCloneSleepMissingMangled());
+        } finally {
+            restore_error_handler();
+        }
+
+        // serialize() cuts the name at its first NUL byte
+        $this->assertCount(1, $errors);
+        $this->assertStringEndsWith('serialize(): "" returned as member variable from __sleep() but does not exist', $errors[0]);
+    }
+
+    /**
+     * @dataProvider provideSleepNames
+     */
+    public function testSleepSelectsPropertiesLikeSerialize(object|array $value)
+    {
+        $this->skipIfExtensionDiffersFromSerialize();
+
+        $expected = self::captureErrors(static fn () => unserialize(serialize($value)), $expectedErrors);
+        $actual = self::captureErrors(static fn () => deepclone_from_array(deepclone_to_array($value)), $actualErrors);
+
+        // Same properties, in the same order, with the same warnings
+        $this->assertSame(self::state($expected), self::state($actual));
+        $this->assertSame(self::userErrors($expectedErrors), $actualErrors);
+    }
+
+    public static function provideSleepNames(): iterable
+    {
+        $sleeper = static function (array $names, string $value = 'changed', string $class = DeepCloneSleepNames::class) {
+            $o = new $class();
+            $o->set($value);
+            $o->names = $names;
+
+            return $o;
+        };
+
+        yield 'same name twice' => [$sleeper(['a', 'a'])];
+        yield 'same name twice, default value' => [$sleeper(['a', 'a'], 'default')];
+        yield 'bare then mangled protected name' => [$sleeper(['b', "\0*\0b"])];
+        yield 'mangled then bare protected name' => [$sleeper(["\0*\0b", 'b'])];
+        yield 'bare then mangled private name' => [$sleeper(['c', "\0".DeepCloneSleepNames::class."\0c"])];
+        yield 'missing and repeated names' => [$sleeper(['a', 'x', 'a', 'y'])];
+        yield 'names in reverse order' => [$sleeper(['c', 'b', 'a'])];
+
+        $o = $sleeper(['a', 'b']);
+        unset($o->a);
+        yield 'unset untyped property' => [$o];
+        yield 'uninitialized typed property' => [$sleeper(['typed', 'typed', 'a'])];
+        yield 'names that are not strings' => [$sleeper([0, 'a', null])];
+
+        $o = new DeepCloneSleepDynamic();
+        $o->y = 1;
+        $o->x = 2;
+        $o->a = 'changed';
+        $o->names = ['x', 'y', 'x', 'a'];
+        yield 'dynamic properties' => [$o];
+
+        yield '__unserialize()' => [$sleeper(['b', 'a', "\0*\0b", 'x', "\0".DeepCloneSleepNames::class."\0c"], 'changed', DeepCloneSleepUnserialize::class)];
+
+        yield '__sleep() not returning an array' => [[new DeepCloneSleepNotArray()]];
+    }
+
+    public function testSleepNotReturningAnArray()
+    {
+        $this->skipIfExtensionDiffersFromSerialize();
+
+        $d = self::captureErrors(static fn () => deepclone_to_array([new DeepCloneSleepNotArray()]), $errors);
+
+        $this->assertSame(['value' => [null]], $d);
+        $this->assertSame(self::userErrors([[\E_WARNING, 'serialize(): '.DeepCloneSleepNotArray::class.'::__sleep() should return an array only containing the names of instance-variables to serialize']]), $errors);
+    }
+
+    public function testSerializeLastKeyWins()
+    {
+        $this->skipIfExtensionDiffersFromSerialize();
+
+        foreach ([
+            ['b' => 'bare', "\0".DeepCloneSerializeKeys::class."\0b" => 'default'],
+            ['p' => 'bare', "\0*\0p" => 'default'],
+            ["\0".DeepCloneSerializeKeys::class."\0b" => 'mangled', 'b' => 'default'],
+        ] as $data) {
+            $o = new DeepCloneSerializeKeys();
+            $o->data = $data;
+
+            // Like unserialize(), the last key naming a property wins, even with its default value
+            $this->assertEquals(unserialize(serialize($o)), deepclone_from_array(deepclone_to_array($o)));
+        }
+    }
+
+    public function testSerializeUndeclaredKeys()
+    {
+        $this->skipIfExtensionDiffersFromSerialize();
+
+        $o = new DeepCloneSerializeKeys();
+        $o->data = [7 => 'seven', "\0*\0undeclared" => 1];
+        $d = deepclone_to_array($o);
+
+        // Both are restored as dynamic properties
+        $this->assertSame(['stdClass' => [7 => ['seven'], 'undeclared' => [1]]], $d['properties']);
+        $clone = deepclone_from_array($d);
+        $this->assertSame('seven', $clone->{'7'});
+        $this->assertSame(1, $clone->undeclared);
+    }
+
+    public function testToArrayRejectsClosedResources()
+    {
+        $this->skipIfExtensionDiffersFromSerialize();
+
+        $closed = fopen('php://memory', 'r');
+        fclose($closed);
+
+        foreach ([$closed, [1, [$closed]], (object) ['a' => $closed]] as $value) {
+            try {
+                deepclone_to_array($value);
+                $this->fail('NotInstantiableException expected');
+            } catch (\DeepClone\NotInstantiableException $e) {
+                $this->assertSame('Type "Unknown resource" is not instantiable.', $e->getMessage());
+            }
+        }
+    }
+
+    public function testAllowedClassesMustBeClassNames()
+    {
+        $this->skipIfExtensionDiffersFromSerialize();
+
+        $payload = ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0];
+        $this->assertSame($payload, deepclone_to_array(new \stdClass(), ['Foo\\Bar_1', 'stdClass']));
+        $this->assertInstanceOf(\stdClass::class, deepclone_from_array($payload, ['Foo\\Bar_1', 'stdClass']));
+
+        // Like unserialize(), which rejects them as well
+        foreach ([
+            'deepclone_to_array' => static fn ($allowed) => deepclone_to_array(new \stdClass(), $allowed),
+            'deepclone_from_array' => static fn ($allowed) => deepclone_from_array($payload, $allowed),
+        ] as $function => $call) {
+            foreach (['not a class', 'O:8:"stdClass":0:{}'] as $name) {
+                try {
+                    $call([$name]);
+                    $this->fail('ValueError expected');
+                } catch (\ValueError $e) {
+                    $this->assertSame($function.'(): Argument $allowed_classes must be an array of class names, "'.$name.'" given', $e->getMessage());
+                }
+            }
+        }
+    }
+
+    public function testToArrayOrdersPropertiesByObjectId()
+    {
+        $this->skipIfExtensionDiffersFromSerialize();
+
+        // The names of an object's properties come before the ones of the objects it references
+        $b = new \stdClass();
+        $b->c = 3;
+        $b->b = 2;
+        $a = new \stdClass();
+        $a->a = $b;
+        $a->b = 1;
+        $this->assertSame(['stdClass' => ['a' => [1], 'b' => [1, 2], 'c' => [1 => 3]]], deepclone_to_array($a)['properties']);
+
+        // The same goes for their markers
+        $n1 = new DeepCloneOrderNode();
+        $n2 = new DeepCloneOrderNode();
+        $n3 = new DeepCloneOrderNode();
+        $n1->next = $n2;
+        $n1->data = [$n3];
+        $n2->next = $n3;
+        $n3->next = $n1;
+        $n3->data = [$n2];
+        $d = deepclone_to_array($n1);
+        $this->assertSame(['stdClass' => ['next' => [1, 2, 0], 'data' => [0 => [2], 2 => [1]]]], $d['properties']);
+        $this->assertSame(['stdClass' => ['next' => [true, true, true], 'data' => [0 => [true], 2 => [true]]]], $d['resolve']);
+
+        // A reference found once needs no marker, but still places the name it's the value of
+        $v = 1;
+        $n1 = new DeepCloneOrderNode();
+        $n1->next = &$v;
+        $n2 = new DeepCloneOrderNode();
+        $n2->data = new \stdClass();
+        $n3 = new DeepCloneOrderNode();
+        $n3->next = new \stdClass();
+        $d = deepclone_to_array([$n1, $n2, $n3]);
+        $this->assertSame(['stdClass' => ['next' => [0 => 1, 3 => 4], 'data' => [1 => 2]]], $d['properties']);
+        $this->assertSame(['stdClass' => ['next' => [3 => true], 'data' => [1 => true]]], $d['resolve']);
+    }
+
+    private static function state($value)
+    {
+        if (\is_array($value)) {
+            return array_map([self::class, 'state'], $value);
+        }
+
+        return \is_object($value) ? [$value::class => array_map([self::class, 'state'], (array) $value)] : $value;
+    }
+
+    private static function captureErrors(callable $f, ?array &$errors)
+    {
+        $errors = [];
+        set_error_handler(static function ($type, $message) use (&$errors) {
+            $errors[] = [$type, $message];
+
+            return true;
+        });
+
+        try {
+            return $f();
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    /**
+     * The polyfill raises the user-level counterparts of the warnings and notices of serialize().
+     */
+    private static function userErrors(array $errors): array
+    {
+        if (!\extension_loaded('deepclone') || TestListenerTrait::$enabledPolyfills) {
+            foreach ($errors as $i => [$type]) {
+                $errors[$i][0] = [\E_WARNING => \E_USER_WARNING, \E_NOTICE => \E_USER_NOTICE][$type] ?? $type;
+            }
+        }
+
+        return $errors;
     }
 
     public function testTypedObjectParentClass()
