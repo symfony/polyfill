@@ -555,6 +555,35 @@ class DeepCloneSleepRefs
     }
 }
 
+class DeepCloneSleepReadingRefs
+{
+    public $x;
+    public $y;
+    public $z;
+
+    public function __sleep(): array
+    {
+        $this->y = $this->x;
+
+        return ['x', 'z'];
+    }
+}
+
+class DeepCloneSerializeReadingRefs
+{
+    public $x;
+
+    public function __serialize(): array
+    {
+        return ['x' => $this->x];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->x = $data['x'];
+    }
+}
+
 if (\PHP_VERSION_ID >= 80200) {
     eval(<<<'PHP'
 namespace Symfony\Polyfill\Tests\DeepClone;

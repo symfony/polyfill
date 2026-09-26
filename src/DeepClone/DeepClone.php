@@ -43,7 +43,7 @@ final class DeepClone
     private static array $refHydrators = [];
     private static array $hookedProperties = [];
     private static array $refBindings = [];
-    private static array $typedRefs = []; // [ReflectionReference id] = Reference, for references that reject markers
+    private static array $refMarkers = []; // [ReflectionReference id] = Reference, for references that don't hold their marker
 
     /**
      * @param list<string>|null $allowed_classes      Classes that may be serialized
@@ -80,13 +80,13 @@ final class DeepClone
         $refMasks = [];
         $topMask = null;
 
-        $typedRefs = self::$typedRefs;
-        self::$typedRefs = [];
+        $refMarkers = self::$refMarkers;
+        self::$refMarkers = [];
 
         try {
             $prepared = self::prepare([$value], $objectsPool, $refsPool, $objectsCount, $isStatic, $topMask, $allowedSet, $allow_named_closures)[0];
         } finally {
-            self::$typedRefs = $typedRefs;
+            self::$refMarkers = $refMarkers;
 
             // Snapshot ref state while references still break cycles.
             foreach ($refsPool as $i => $v) {
@@ -623,7 +623,7 @@ final class DeepClone
                     $mask[$k] = false;
                     continue;
                 }
-                if (self::$typedRefs && $marker = self::$typedRefs[\ReflectionReference::fromArrayElement($refs, $k)->getId()] ?? null) {
+                if (self::$refMarkers && $marker = self::$refMarkers[\ReflectionReference::fromArrayElement($refs, $k)->getId()] ?? null) {
                     $values[$k] = $marker;
                     $valuesAreStatic = false;
                     ++$marker->count;
@@ -636,10 +636,10 @@ final class DeepClone
                     $refs[$k] = $marker;
                     $refsPool[] = [&$refs[$k], $value];
                 } catch (\TypeError) {
-                    // Unless a typed property rejects it: keep the marker aside
-                    self::$typedRefs[\ReflectionReference::fromArrayElement($refs, $k)->getId()] = $marker;
-                    $refsPool[] = [&$marker, $value];
-                    unset($marker);
+                    // Unless a typed property rejects it: keep the marker aside, as are the ones of the references met before
+                    self::hideMarkers($refsPool);
+                    self::$refMarkers[\ReflectionReference::fromArrayElement($refs, $k)->getId()] = $marker;
+                    $refsPool[] = [$marker, $value, &$refs[$k]];
                 }
             }
 
@@ -742,6 +742,13 @@ final class DeepClone
             }
 
             $reflector = self::$reflectors[$class] ??= self::getClassReflector($class);
+
+            // Code run for the object, eg __serialize(), must read the values of the references met so far, not their markers
+            if ($refsPool) {
+                if ((self::$classInfo[$class][4] ??= self::runsCode($reflector)) || \PHP_VERSION_ID >= 80400 && $reflector->isUninitializedLazyObject($value)) {
+                    self::hideMarkers($refsPool);
+                }
+            }
 
             // A payload cannot carry a lazy-object initializer: initialize lazy
             // objects first, like clone does. On a lazy proxy, this returns its
@@ -883,6 +890,31 @@ final class DeepClone
         }
 
         return $values;
+    }
+
+    /**
+     * Tells whether exporting the objects of a class runs code that can read their properties.
+     */
+    private static function runsCode(\ReflectionClass $reflector): bool
+    {
+        return $reflector->hasMethod('__serialize') || $reflector->hasMethod('__sleep') || $reflector->implementsInterface(\Serializable::class) || '__PHP_Incomplete_Class' === $reflector->name;
+    }
+
+    /**
+     * Moves the markers stored in the references met so far aside, restoring their values.
+     */
+    private static function hideMarkers(array &$refsPool): void
+    {
+        // The references that hold their marker are the last ones met
+        for ($i = \count($refsPool) - 1; 0 <= $i && 2 === \count($refsPool[$i]); --$i) {
+            $ref = &$refsPool[$i][0];
+            $marker = $ref;
+            $ref = $refsPool[$i][1];
+            self::$refMarkers[\ReflectionReference::fromArrayElement($refsPool[$i], 0)->getId()] = $marker;
+            // Keep the reference alive so that its id isn't reused
+            $refsPool[$i] = [$marker, $ref, &$ref];
+            unset($ref);
+        }
     }
 
     private static function reconstruct($prepared, $objectMeta, $numObjects, $properties, $resolve, $states, $refs, $preparedMask = null, $refMasks = [], ?array $allowedClasses = null, array $expectedStates = [], array $classes = [])
