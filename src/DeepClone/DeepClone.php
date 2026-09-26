@@ -768,10 +768,10 @@ final class DeepClone
                 // Before PHP 8.3, Random\Randomizer::__serialize() returns its raw
                 // property table, whose IS_INDIRECT "engine" slot dangles once the
                 // object is released; it is the only affected class, as the others
-                // sharing the pattern declare no properties. Let the serializer
-                // materialize real values while the object is still alive.
+                // sharing the pattern declare no properties. Read the properties
+                // from the object instead, which keeps the engine instance.
                 if (\PHP_VERSION_ID < 80300 && $value instanceof \Random\Randomizer) {
-                    $arrayValue = unserialize(serialize($arrayValue));
+                    $arrayValue = [(array) $value];
                 }
 
                 if ($hasUnserialize = self::$classInfo[$class][0] ??= $reflector->hasMethod('__unserialize')) {
@@ -888,6 +888,7 @@ final class DeepClone
     private static function reconstruct($prepared, $objectMeta, $numObjects, $properties, $resolve, $states, $refs, $preparedMask = null, $refMasks = [], ?array $allowedClasses = null, array $expectedStates = [], array $classes = [])
     {
         $objects = [];
+        $placeholders = false;
 
         foreach ($objectMeta as $id => [$class, $wakeup]) {
             if (':' === ($class[1] ?? null)) {
@@ -916,6 +917,7 @@ final class DeepClone
 
             if (self::$needsFullUnserialize[$class] ?? false) {
                 $objects[$id] = null; // placeholder — finalized below or in states loop
+                $placeholders = true;
             } elseif (self::$cloneable[$class]) {
                 $objects[$id] = clone self::$prototypes[$class];
             } elseif (self::$instantiableWithoutConstructor[$class]) {
@@ -945,54 +947,37 @@ final class DeepClone
 
         // Eagerly finalize deferred objects whose state has no object-ref masks,
         // so they are real instances when the properties loop resolves references to them.
-        foreach ($states as $state) {
-            if (!\is_array($state) || null !== $objects[$state[0]] || isset($state[2])) {
-                continue;
-            }
-            $class = $objectMeta[$state[0]][0];
-            $ser = serialize($state[1] ?? []);
-            if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
-                throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
-            }
-            $objects[$state[0]] = $obj;
-        }
-
-        foreach ($refMasks as $k => $m) {
-            $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
-        }
-
-        // Finalize the remaining deferred objects: needsFullUnserialize objects
-        // whose __serialize() state nests another object (e.g. Random\Randomizer
-        // wrapping a Random\Engine\*), so their state carries an object-ref mask.
-        // The loop above skipped them because resolving the mask needs the
-        // referenced objects to exist first. Iterate to a fixpoint: each pass
-        // finalizes those whose referenced objects are now available. A leftover
-        // null (a cycle of such classes, which pure PHP cannot reconstruct) is
-        // reported by the properties/states loop below.
-        if ($states) {
-            do {
-                $progress = false;
+        $deferred = [];
+        if ($placeholders) {
+            try {
                 foreach ($states as $state) {
-                    if (!\is_array($state) || !isset($state[2])) {
+                    if (!\is_array($state) || null !== $objects[$state[0]]) {
                         continue;
                     }
-                    $zid = $state[0] ?? null;
-                    if (!\is_int($zid) || !\array_key_exists($zid, $objects) || null !== $objects[$zid]) {
+                    if (isset($state[2])) {
+                        $deferred[] = $state;
                         continue;
                     }
-                    if (!self::maskRefsReady($state[1] ?? null, $state[2], $objects)) {
-                        continue;
-                    }
-                    $class = $objectMeta[$zid][0];
-                    $resolvedProps = self::resolveWithMask($state[1] ?? null, $state[2], $objects, $refs, $allowedClasses);
-                    $ser = serialize($resolvedProps);
+                    $class = $objectMeta[$state[0]][0];
+                    $ser = serialize($state[1] ?? []);
                     if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
                         throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
                     }
-                    $objects[$zid] = $obj;
-                    $progress = true;
+                    $objects[$state[0]] = $obj;
                 }
-            } while ($progress);
+            } catch (\TypeError|\ValueError $e) {
+                self::checkStates($states, $objects, $objectMeta, $numObjects, $expectedStates);
+
+                throw $e;
+            }
+        }
+
+        if ($deferred) {
+            self::finalizeDeferred($deferred, $objects, $objectMeta, $refs, $refMasks, $allowedClasses);
+        } else {
+            foreach ($refMasks as $k => $m) {
+                $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
+            }
         }
 
         foreach ($properties as $scope => $scopeProps) {
@@ -1033,19 +1018,19 @@ final class DeepClone
                 foreach ($resolveIds as $id => $marker) {
                     if (true === $marker) {
                         if (null === ($v = $scopeProps[$name][$id] ?? null) || !\is_int($v)) {
-                            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, object reference value must be of type int, '.self::valueName($v).' given');
+                            throw new \ValueError('deepclone_from_array(): malformed payload, object reference value must be of type int, '.self::valueName($v).' given');
                         }
                         if ($v >= 0) {
                             if (!isset($objects[$v])) {
-                                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown object id '.$v);
+                                throw new \ValueError('deepclone_from_array(): malformed payload, unknown object id '.$v);
                             }
                             $scopeProps[$name][$id] = $objects[$v];
                         } else {
                             if (\PHP_INT_MIN === $v) {
-                                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
+                                throw new \ValueError('deepclone_from_array(): malformed payload, ref id out of range');
                             }
                             if (!(isset($refs[-$v]) || \array_key_exists(-$v, $refs))) {
-                                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.(-$v));
+                                throw new \ValueError('deepclone_from_array(): malformed payload, unknown ref id '.(-$v));
                             }
                             $scopeProps[$name][$id] = $refs[-$v];
                         }
@@ -1089,10 +1074,19 @@ final class DeepClone
                     }
                 }
             }
-            if ($refSlots) {
-                (self::$refHydrators[$scope] ??= self::getRefHydrator($scope))($scopeProps, $objects, $refSlots, $refs);
-            } else {
-                (self::$hydrators[$scope] ??= self::getHydrator($scope))($scopeProps, $objects);
+            try {
+                if ($refSlots) {
+                    (self::$refHydrators[$scope] ??= self::getRefHydrator($scope))($scopeProps, $objects, $refSlots, $refs);
+                } else {
+                    (self::$hydrators[$scope] ??= self::getHydrator($scope))($scopeProps, $objects);
+                }
+            } catch (\Error $e) {
+                // Writing to what isn't an object or to a property it can't have, which the extension checks before writing
+                if (!$e instanceof \ValueError && (!$e instanceof \TypeError || !str_starts_with($e->getMessage(), 'Cannot assign '))) {
+                    self::checkProperties($properties, $scope, $objects, $numObjects);
+                }
+
+                throw $e;
             }
         }
 
@@ -1183,6 +1177,81 @@ final class DeepClone
     }
 
     /**
+     * Finalizes the objects that only __unserialize() can create and whose state
+     * nests other objects, resolving the references of the payload on the way.
+     */
+    private static function finalizeDeferred(array $deferred, array &$objects, array $objectMeta, array &$refs, array $refMasks, ?array $allowedClasses): void
+    {
+        // Creating them with unserialize() would copy the objects their state
+        // nests, before these are hydrated and without the references they hold
+        // back: build them around the objects themselves instead
+        $members = [];
+        foreach ($deferred as $k => $state) {
+            $zid = $state[0];
+            $sprops = $state[1] ?? null;
+            $class = $objectMeta[$zid][0] ?? null;
+            if ('Random\Randomizer' === $class) {
+                // Like __unserialize(), the constructor keeps the engine and draws from it
+                $eid = $sprops[0]['engine'] ?? null;
+                if ([['engine' => true]] === $state[2] && [['engine' => $eid]] === $sprops && \is_int($eid) && ($engine = $objects[$eid] ?? null) instanceof \Random\Engine) {
+                    $objects[$zid] = new \Random\Randomizer($engine);
+                    unset($deferred[$k]);
+                }
+            } elseif ('HashContext' === $class && \is_array($sprops) && \is_array($sprops[4] ?? null) && \is_array($state[2]) && [4] === array_keys($state[2]) && \is_array($state[2][4])) {
+                // Its dynamic properties are set once the objects they reference exist
+                $members[$zid] = [$sprops[4], $state[2][4]];
+                $sprops[4] = [];
+                $ser = serialize($sprops);
+                if (false === $objects[$zid] = unserialize('O:11:"HashContext"'.substr($ser, strpos($ser, ':', 1)))) {
+                    throw new \ValueError('deepclone_from_array(): could not reconstruct "HashContext" via __unserialize()');
+                }
+                unset($deferred[$k]);
+            }
+        }
+
+        foreach ($refMasks as $k => $m) {
+            $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
+        }
+
+        // The remaining ones come from payloads that deepclone_to_array() doesn't
+        // produce. Iterate to a fixpoint: each pass finalizes those whose referenced
+        // objects are now available. A leftover null is reported by the caller.
+        do {
+            $progress = false;
+            foreach ($deferred as $state) {
+                $zid = $state[0] ?? null;
+                if (!\is_int($zid) || !\array_key_exists($zid, $objects) || null !== $objects[$zid]) {
+                    continue;
+                }
+                if (!self::maskRefsReady($state[1] ?? null, $state[2], $objects)) {
+                    continue;
+                }
+                $class = $objectMeta[$zid][0];
+                $resolvedProps = self::resolveWithMask($state[1] ?? null, $state[2], $objects, $refs, $allowedClasses);
+                $ser = serialize($resolvedProps);
+                if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
+                    throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
+                }
+                $objects[$zid] = $obj;
+                $progress = true;
+            }
+        } while ($progress);
+
+        foreach ($members as $zid => [$values, $mask]) {
+            $object = $objects[$zid];
+            foreach (self::resolveWithMask($values, $mask, $objects, $refs, $allowedClasses) as $name => &$v) {
+                // Raises the deprecation of __unserialize() since PHP 8.2
+                if (false === ($mask[$name] ?? null)) {
+                    $object->$name = &$v;
+                } else {
+                    $object->$name = $v;
+                }
+            }
+            unset($v);
+        }
+    }
+
+    /**
      * Whether every object referenced by $mask (positive object ids) has already
      * been finalized in $objects, so resolveWithMask() can run without hitting an
      * unbuilt placeholder. Hard/soft refs (negative ids, resolved against $refs in
@@ -1209,20 +1278,20 @@ final class DeepClone
     {
         if (true === $mask) {
             if (!\is_int($value)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, object reference value must be of type int, '.self::valueName($value).' given');
+                throw new \ValueError('deepclone_from_array(): malformed payload, object reference value must be of type int, '.self::valueName($value).' given');
             }
             if ($value >= 0) {
                 if (!isset($objects[$value])) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown object id '.$value);
+                    throw new \ValueError('deepclone_from_array(): malformed payload, unknown object id '.$value);
                 }
 
                 return $objects[$value];
             }
             if (\PHP_INT_MIN === $value) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
+                throw new \ValueError('deepclone_from_array(): malformed payload, ref id out of range');
             }
             if (!(isset($refs[-$value]) || \array_key_exists(-$value, $refs))) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.(-$value));
+                throw new \ValueError('deepclone_from_array(): malformed payload, unknown ref id '.(-$value));
             }
 
             return $refs[-$value];
@@ -1230,14 +1299,14 @@ final class DeepClone
 
         if (false === $mask) {
             if (!\is_int($value)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, hard-ref value must be of type int, '.self::valueName($value).' given');
+                throw new \ValueError('deepclone_from_array(): malformed payload, hard-ref value must be of type int, '.self::valueName($value).' given');
             }
             if ($value >= 0 || \PHP_INT_MIN === $value) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
+                throw new \ValueError('deepclone_from_array(): malformed payload, ref id out of range');
             }
             $rid = -$value;
             if (!(isset($refs[$rid]) || \array_key_exists($rid, $refs))) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.$rid);
+                throw new \ValueError('deepclone_from_array(): malformed payload, unknown ref id '.$rid);
             }
 
             return $refs[$rid];
@@ -1253,20 +1322,20 @@ final class DeepClone
 
         if ('e' === $mask) {
             if (!\is_string($value)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, enum value must be of type string, '.self::valueName($value).' given');
+                throw new \ValueError('deepclone_from_array(): malformed payload, enum value must be of type string, '.self::valueName($value).' given');
             }
             if (false === $sepPos = strpos($value, '::')) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, enum value must match "Class::Case"');
+                throw new \ValueError('deepclone_from_array(): malformed payload, enum value must match "Class::Case"');
             }
             $className = substr($value, 0, $sepPos);
             if (!enum_exists($className)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, enum class "'.$value.'" not found');
+                throw new \ValueError('deepclone_from_array(): malformed payload, enum class "'.$value.'" not found');
             }
             $caseName = substr($value, $sepPos + 2);
             try {
                 return \constant($value);
             } catch (\Error) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, enum case "'.$value.'" not found');
+                throw new \ValueError('deepclone_from_array(): malformed payload, enum case "'.$value.'" not found');
             }
         }
 
@@ -1275,21 +1344,21 @@ final class DeepClone
         }
 
         if (!\is_array($value)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, array-mask value must be of type array, '.self::valueName($value).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, array-mask value must be of type array, '.self::valueName($value).' given');
         }
 
         foreach ($mask as $k => $m) {
             if (false === $m) {
                 $slot = $value[$k] ?? null;
                 if (!\is_int($slot)) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, hard-ref slot must be of type int, '.self::valueName($slot).' given');
+                    throw new \ValueError('deepclone_from_array(): malformed payload, hard-ref slot must be of type int, '.self::valueName($slot).' given');
                 }
                 if ($slot >= 0 || \PHP_INT_MIN === $slot) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, ref id out of range');
+                    throw new \ValueError('deepclone_from_array(): malformed payload, ref id out of range');
                 }
                 $rid = -$slot;
                 if (!(isset($refs[$rid]) || \array_key_exists($rid, $refs))) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, unknown ref id '.$rid);
+                    throw new \ValueError('deepclone_from_array(): malformed payload, unknown ref id '.$rid);
                 }
                 $value[$k] = &$refs[$rid];
             } else {
@@ -1303,10 +1372,10 @@ final class DeepClone
     private static function resolveNamedClosureScalar($value, $objects, $refs)
     {
         if (!\is_array($value)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure value must be of type array, '.self::valueName($value).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure value must be of type array, '.self::valueName($value).' given');
         }
         if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure value must have at least 2 elements');
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure value must have at least 2 elements');
         }
 
         $method = null;
@@ -1314,10 +1383,10 @@ final class DeepClone
         if (\is_array($value[0])) {
             $callable = $value[0];
             if (!\is_string($value[1])) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure private class name must be of type string, '.self::valueName($value[1]).' given');
+                throw new \ValueError('deepclone_from_array(): malformed payload, named-closure private class name must be of type string, '.self::valueName($value[1]).' given');
             }
             if (!\array_key_exists(2, $value) || !\is_string($value[2])) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure private method name must be of type string');
+                throw new \ValueError('deepclone_from_array(): malformed payload, named-closure private method name must be of type string');
             }
             $method = new \ReflectionMethod($value[1], $value[2]);
         } else {
@@ -1325,19 +1394,19 @@ final class DeepClone
         }
 
         if (!\array_key_exists(0, $callable) || !\array_key_exists(1, $callable) || !\is_string($callable[1])) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure callable must be [obj_or_class_or_null, string]');
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure callable must be [obj_or_class_or_null, string]');
         }
 
         $obj = $callable[0];
         if (\is_int($obj)) {
             if ($obj >= 0) {
                 if (!isset($objects[$obj])) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure references unknown id '.$obj);
+                    throw new \ValueError('deepclone_from_array(): malformed payload, named-closure references unknown id '.$obj);
                 }
                 $obj = $objects[$obj];
             } else {
                 if (\PHP_INT_MIN === $obj || !(isset($refs[-$obj]) || \array_key_exists(-$obj, $refs))) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, named-closure references unknown id '.$obj);
+                    throw new \ValueError('deepclone_from_array(): malformed payload, named-closure references unknown id '.$obj);
                 }
                 $obj = $refs[-$obj];
             }
@@ -1599,27 +1668,27 @@ final class DeepClone
     private static function resolveConstExprClosureScalar($value, ?array $allowedClasses = null): \Closure
     {
         if (!\is_array($value)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must be of type array, '.self::valueName($value).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure value must be of type array, '.self::valueName($value).' given');
         }
         if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value) || !\array_key_exists(2, $value) || !\array_key_exists(3, $value) || !\array_key_exists(4, $value) || 5 !== \count($value)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure value must have 5 elements');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure value must have 5 elements');
         }
         [$class, $site, $attrIndex, $closureIndex, $line] = $value;
 
         if (!\is_string($class)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure class name must be of type string, '.self::valueName($class).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure class name must be of type string, '.self::valueName($class).' given');
         }
         if (!\is_string($site)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure site must be of type string, '.self::valueName($site).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure site must be of type string, '.self::valueName($site).' given');
         }
         if (null !== $attrIndex && !\is_int($attrIndex)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure attribute index must be of type int or null, '.self::valueName($attrIndex).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure attribute index must be of type int or null, '.self::valueName($attrIndex).' given');
         }
         if (!\is_int($closureIndex)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure closure index must be of type int, '.self::valueName($closureIndex).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure closure index must be of type int, '.self::valueName($closureIndex).' given');
         }
         if (!\is_int($line)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure line must be of type int, '.self::valueName($line).' given');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure line must be of type int, '.self::valueName($line).' given');
         }
 
         if (null !== $allowedClasses && !isset(array_change_key_case(array_flip($allowedClasses))[strtolower($class)])) {
@@ -1629,7 +1698,7 @@ final class DeepClone
         try {
             $rc = new \ReflectionClass($class);
         } catch (\ReflectionException) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown class "'.$class.'"');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown class "'.$class.'"');
         }
 
         if ('' === $site) {
@@ -1653,13 +1722,13 @@ final class DeepClone
                     }
                 }
                 if (!$target) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown hook "'.$site.'"');
+                    throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown hook "'.$site.'"');
                 }
             } else {
                 try {
                     $target = $rc->getProperty(substr($site, 1));
                 } catch (\ReflectionException) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown property "'.$site.'"');
+                    throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown property "'.$site.'"');
                 }
             }
         } elseif (false !== $pos = strpos($site, ')#')) {
@@ -1672,30 +1741,30 @@ final class DeepClone
                 }
             }
             if (null === $target) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown parameter "'.$site.'"');
+                throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown parameter "'.$site.'"');
             }
         } elseif (str_ends_with($site, '()')) {
             try {
                 $target = $rc->getMethod(substr($site, 0, -2));
             } catch (\ReflectionException) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown method "'.$site.'"');
+                throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown method "'.$site.'"');
             }
         } elseif (!$target = $rc->getReflectionConstant($site)) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown constant "'.$site.'"');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown constant "'.$site.'"');
         }
 
         if (null !== $attrIndex) {
             $attrs = $target->getAttributes();
             if (!isset($attrs[$attrIndex])) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown attribute index '.$attrIndex);
+                throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown attribute index '.$attrIndex);
             }
             try {
                 $values = $attrs[$attrIndex]->getArguments();
             } catch (\Throwable $e) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
+                throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
             }
         } elseif ($target instanceof \ReflectionClass || $target instanceof \ReflectionMethod) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure attribute index is required for site "'.$site.'"');
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure attribute index is required for site "'.$site.'"');
         } else {
             try {
                 if ($target instanceof \ReflectionClassConstant) {
@@ -1706,7 +1775,7 @@ final class DeepClone
                     $values = $target->hasDefaultValue() ? [$target->getDefaultValue()] : [];
                 }
             } catch (\Throwable $e) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
+                throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure evaluation failed for site "'.$site.'"', 0, $e);
             }
         }
 
@@ -1740,7 +1809,7 @@ final class DeepClone
         $walk = null;
 
         if (null === $found) {
-            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed payload, const-expr-closure references unknown closure index '.$closureIndex);
+            throw new \ValueError('deepclone_from_array(): malformed payload, const-expr-closure references unknown closure index '.$closureIndex);
         }
         // Internal functions (e.g. a global strlen(...) reference) have no
         // start line; getStartLine() returns false, which the extension encodes
@@ -2114,6 +2183,88 @@ final class DeepClone
         };
 
         return 'stdClass' === $class ? $hydrator : \Closure::bind($hydrator, null, $class);
+    }
+
+    /**
+     * Throws the ValueError of the extension for the properties of a payload that failed to hydrate,
+     * when it finds why in the scopes processed so far: the extension checks them before writing.
+     */
+    private static function checkProperties(array $properties, string $lastScope, array $objects, int $numObjects): void
+    {
+        foreach ($properties as $scope => $scopeProps) {
+            foreach ($scopeProps as $name => $idValues) {
+                foreach ($idValues as $id => $_) {
+                    if (!\is_int($id) || $id < 0 || $id >= $numObjects) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" entry for "'.$scope.'::'.$name.'" references unknown object id '.$id);
+                    }
+                    if (!\is_object($object = $objects[$id])) {
+                        continue;
+                    }
+                    if ('stdClass' === $scope) {
+                        if ('stdClass' !== $object::class && ($p = self::findDeclaredProperty($object::class, $name)) && ($p->isStatic() || !$p->isPublic() || \PHP_VERSION_ID >= 80400 && ($p->isProtectedSet() || $p->isPrivateSet()))) {
+                            throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" targets a non-public declared property on object id '.$id);
+                        }
+                    } elseif (!$object instanceof $scope) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" scope "'.$scope.'" is not a parent of object id '.$id.' ('.$object::class.')');
+                    } elseif (!($p = self::findDeclaredProperty($scope, $name)) || $p->isStatic()) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" does not match a declared property on object id '.$id);
+                    }
+                }
+            }
+            if ($scope === $lastScope) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Finds the property that the extension resolves a name to, private properties of parent classes included.
+     */
+    private static function findDeclaredProperty(string $class, int|string $name): ?\ReflectionProperty
+    {
+        for ($r = new \ReflectionClass($class); $r; $r = $r->getParentClass()) {
+            if ($r->hasProperty($name)) {
+                return $r->getProperty($name);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Throws the ValueError of the extension for the states of a payload that failed to reconstruct, when it finds why.
+     */
+    private static function checkStates(array $states, array $objects, array $objectMeta, int $numObjects, array $expectedStates): void
+    {
+        foreach ($states as $state) {
+            if (\is_array($state)) {
+                $zid = $state[0] ?? null;
+                if (!\is_int($zid) || !\array_key_exists(1, $state)) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed "states" entry: expected [int, mixed, mixed?]');
+                }
+                if ($zid < 0 || $zid >= $numObjects) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references unknown object id '.$zid);
+                }
+                if (!isset($expectedStates[$zid]) || $expectedStates[$zid] >= 0) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" has an __unserialize entry for object id '.$zid.' but "objectMeta" does not flag it for __unserialize');
+                }
+                unset($expectedStates[$zid]);
+                $class = \is_object($objects[$zid] ?? null) ? $objects[$zid]::class : (new \ReflectionClass($objectMeta[$zid][0]))->name;
+                if (!method_exists($class, '__unserialize')) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references object id '.$zid.' whose class '.$class.' has no __unserialize() method');
+                }
+            } elseif (\is_int($state)) {
+                if ($state < 0 || $state >= $numObjects) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references unknown object id '.$state);
+                }
+                if (!isset($expectedStates[$state]) || $expectedStates[$state] <= 0) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" has a __wakeup entry for object id '.$state.' but "objectMeta" does not flag it for __wakeup');
+                }
+                unset($expectedStates[$state]);
+            } else {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry must be of type int|array, '.self::valueName($state).' given');
+            }
+        }
     }
 
     /**

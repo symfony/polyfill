@@ -868,6 +868,39 @@ class DeepCloneTest extends TestCase
         deepclone_to_array(\Closure::fromCallable('strlen'));
     }
 
+    public function testMalformedPayloadsThrowTheSameValueErrors()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.6', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.6 reports some malformed payloads differently.');
+        }
+
+        $payloads = [
+            'deepclone_from_array(): Argument #1 ($data) "objectMeta" entry index k out of range' => ['classes' => 'stdClass', 'objectMeta' => ['k' => 0], 'prepared' => 0],
+            'deepclone_from_array(): Argument #1 ($data) "properties" entry for "stdClass::a" references unknown object id 5' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1, 5 => 2]]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" entry for "stdClass::a" references unknown object id k' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => ['k' => 1]]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" value for "stdClass::x" targets a non-public declared property on object id 0' => ['classes' => PrivShadowA::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['y']]]],
+            'deepclone_from_array(): malformed payload, object reference value must be of type int, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => [0], 'mask' => [1 => true]],
+        ];
+        if (\PHP_VERSION_ID >= 80200) {
+            // A Random\Randomizer is created from its state before the properties are hydrated
+            $payloads['deepclone_from_array(): Argument #1 ($data) malformed "states" entry: expected [int, mixed, mixed?]'] = ['classes' => \Random\Randomizer::class, 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[[0], []]]];
+        }
+
+        foreach ($payloads as $message => $payload) {
+            try {
+                deepclone_from_array($payload);
+                $this->fail(\sprintf('deepclone_from_array() accepted a payload expected to throw "%s".', $message));
+            } catch (\ValueError $e) {
+                $this->assertSame($message, $e->getMessage());
+            }
+        }
+
+        // What PHP throws when writing a property comes first, as the extension stops there
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Cannot assign string to property '.TypedInt::class.'::$x of type int');
+        deepclone_from_array(['classes' => TypedInt::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['abc', 5 => 1]]]]);
+    }
+
     public function testFromArrayNamedClosureRequiresOptIn()
     {
         $d = deepclone_to_array(\Closure::fromCallable('strlen'), null, true);
@@ -2502,6 +2535,79 @@ class DeepCloneTest extends TestCase
 
         $deep = deepclone_from_array(deepclone_to_array((object) ['list' => [(object) ['r' => new \Random\Randomizer(new \Random\Engine\Mt19937(9))]]]));
         $this->assertInstanceOf(\Random\Randomizer::class, $deep->list[0]->r);
+    }
+
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizerWithEnginePointingBack()
+    {
+        $engine = new DeepCloneCountingEngine();
+        $engine->count = 3;
+        $engine->owner = new \Random\Randomizer($engine);
+
+        $c = deepclone_from_array(deepclone_to_array($engine->owner));
+
+        $this->assertSame($c, $c->engine->owner);
+        $this->assertSame(3, $c->engine->count);
+        $c->nextInt();
+        $this->assertSame(4, $c->engine->count);
+    }
+
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizersSharingTheirEngine()
+    {
+        $engine = new DeepCloneCountingEngine();
+        $engine->count = 3;
+
+        $c = deepclone_from_array(deepclone_to_array([new \Random\Randomizer($engine), $engine, new \Random\Randomizer($engine)]));
+
+        $this->assertSame($c[1], $c[0]->engine);
+        $this->assertSame($c[1], $c[2]->engine);
+        $this->assertSame(3, $c[1]->count);
+    }
+
+    /**
+     * @requires PHP 8.2
+     */
+    public function testRoundTripRandomizerBehindReference()
+    {
+        $engine = new DeepCloneCountingEngine();
+        $r = new \Random\Randomizer($engine);
+        $engine->owner = &$r;
+
+        $c = deepclone_from_array(deepclone_to_array([&$r]));
+
+        $this->assertInstanceOf(\Random\Randomizer::class, $c[0]);
+        $this->assertSame($c[0], $c[0]->engine->owner);
+        $engine = $c[0]->engine;
+        $c[0] = 1;
+        $this->assertSame(1, $engine->owner);
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testRoundTripHashContextWithDynamicPropertiesPointingBack()
+    {
+        $h = hash_init('md5');
+        hash_update($h, 'abc');
+        $o = new \stdClass();
+        $o->h = $h;
+        $list = [$o];
+        $h->o = $o;
+        $h->a = &$list;
+        $h->b = &$list;
+
+        $c = deepclone_from_array(deepclone_to_array($h));
+
+        $this->assertSame($c, $c->o->h);
+        $this->assertSame([$c->o], $c->a);
+        $c->a = 2;
+        $this->assertSame(2, $c->b);
+        $this->assertSame(md5('abc'), hash_final($c));
     }
 
     public function testFromArrayRejectsUnserializeClassWithoutReplayFlag()
