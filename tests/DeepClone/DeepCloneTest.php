@@ -451,6 +451,93 @@ class DeepCloneTest extends TestCase
         $this->assertSame(3, ($clone->cb)('abc'));
     }
 
+    public function testCodeRunByToArrayReadsTheValuesOfHardReferences()
+    {
+        $x = 1;
+        $o = new DeepCloneSerializeReadingRefs();
+        $o->x = &$x;
+        [, $clone] = deepclone_from_array(deepclone_to_array([[&$x], $o]));
+        $this->assertSame(1, $clone->x);
+
+        // Also after meeting the reference of a typed property, which rejects markers
+        $x = 1;
+        $t = new DeepCloneTypedRefs();
+        $o = new DeepCloneSerializeReadingRefs();
+        $o->x = &$x;
+        [, , $clone] = deepclone_from_array(deepclone_to_array([[&$x], [&$t->a], $o]));
+        $this->assertSame(1, $clone->x);
+
+        $x = 1;
+        $o = new DeepCloneSleepReadingRefs();
+        $o->x = &$x;
+        deepclone_to_array([[&$x], $o]);
+        $this->assertSame(1, $o->y);
+
+        // Values written by that code stay, like with serialize()
+        $x = 1;
+        $o = new DeepCloneSleepReadingRefs();
+        $o->y = &$x;
+        $o->x = 2;
+        deepclone_to_array([[&$x], $o]);
+        $this->assertSame(2, $x);
+
+        // References met before keep the value they had then in the payload, like with serialize()
+        $x = 1;
+        $o = new DeepCloneSleepReadingRefs();
+        $o->y = &$x;
+        $o->z = &$x;
+        $o->x = 2;
+        [$arr, $clone] = deepclone_from_array(deepclone_to_array([[&$x], $o]));
+        $this->assertSame(2, $x);
+        $this->assertSame([1], $arr);
+        $this->assertSame(1, $clone->z);
+        $arr[0] = 3;
+        $this->assertSame(3, $clone->z);
+
+        if (\PHP_VERSION_ID >= 80400) {
+            $x = 1;
+            $ghost = (new \ReflectionClass(DeepCloneRefHolder::class))->newLazyGhost(static function (DeepCloneRefHolder $o) use (&$x) {
+                $o->a = $x;
+            });
+            [, $clone] = deepclone_from_array(deepclone_to_array([[&$x], $ghost]));
+            $this->assertSame(1, $clone->a);
+            $this->assertSame(1, $ghost->a);
+        }
+    }
+
+    /**
+     * @group legacy
+     */
+    public function testSerializableReadsTheValuesOfHardReferences()
+    {
+        if (!class_exists(DeepCloneSerializableReadingRefs::class, false)) {
+            eval(<<<'PHP'
+                namespace Symfony\Polyfill\Tests\DeepClone;
+
+                class DeepCloneSerializableReadingRefs implements \Serializable
+                {
+                    public $x;
+
+                    public function serialize(): string
+                    {
+                        return serialize($this->x);
+                    }
+
+                    public function unserialize($data): void
+                    {
+                        $this->x = unserialize($data);
+                    }
+                }
+                PHP);
+        }
+
+        $x = 1;
+        $o = new DeepCloneSerializableReadingRefs();
+        $o->x = [&$x];
+        [, $clone] = deepclone_from_array(deepclone_to_array([[&$x], $o]));
+        $this->assertSame([1], $clone->x);
+    }
+
     public function testFromArrayBindsHardReferencesToDynamicProperties()
     {
         $this->skipIfExtensionDropsPropertyReferences();
