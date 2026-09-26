@@ -33,6 +33,7 @@ final class DeepClone
     private static array $cloneable = [];
     private static array $instantiableWithoutConstructor = [];
     private static array $needsFullUnserialize = [];
+    private static array $unexportable = [];
     private static array $hydrators = [];
     private static array $simpleHydrators = [];
     private static array $shapes = [];
@@ -282,7 +283,7 @@ final class DeepClone
             $allowed = array_change_key_case(array_flip($allowed_classes));
             foreach ($classes as $cls) {
                 if (!isset($allowed[strtolower($cls)])) {
-                    throw new \ValueError('deepclone_from_array(): class "'.$cls.'" is not allowed');
+                    throw new \ValueError('deepclone_from_array(): class "'.explode("\0", $cls, 2)[0].'" is not allowed');
                 }
             }
             if (!isset($allowed['closure'])) {
@@ -397,13 +398,23 @@ final class DeepClone
         }
 
         if (\is_string($class = $object_or_class)) {
-            $r = self::$reflectors[$class] ??= self::getClassReflector($class);
+            try {
+                $r = self::$reflectors[$class] ??= self::getClassReflector($class);
+            } catch (\DeepClone\NotInstantiableException $e) {
+                // Like the extension, which checks internal classes only for the ones whose state serialize() loses, like IteratorIterator
+                if (!isset(self::$unexportable[($r = new \ReflectionClass($class))->name]) || $r->isInternal()) {
+                    throw $e;
+                }
+                $object = $r->newInstanceWithoutConstructor();
+
+                goto hydrate;
+            }
             if (null === self::$prototypes[$class] && !self::$instantiableWithoutConstructor[$class]) {
                 // No empty-shell prototype exists (e.g. an internal final class
                 // whose __unserialize() rejects an empty payload, like
                 // BcMath\Number). Such a class can only be reconstructed via a
                 // full serialization round-trip, never by property injection.
-                throw new \DeepClone\NotInstantiableException('Class "'.$class.'" is not instantiable.');
+                throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
             } elseif (self::$cloneable[$class]) {
                 $object = clone self::$prototypes[$class];
             } elseif (self::$instantiableWithoutConstructor[$class]) {
@@ -419,6 +430,7 @@ final class DeepClone
             $class = $object::class;
         }
 
+        hydrate:
         if (!$vars) {
             return $object;
         }
@@ -578,11 +590,9 @@ final class DeepClone
         if (null === $value) {
             return 'null';
         }
-        if (true === $value) {
-            return 'true';
-        }
-        if (false === $value) {
-            return 'false';
+        if (\is_bool($value)) {
+            // Like zend_zval_value_name(), or zend_zval_type_name() before PHP 8.3
+            return \PHP_VERSION_ID < 80300 ? 'bool' : ($value ? 'true' : 'false');
         }
         if (\is_object($value)) {
             return $value::class;
@@ -891,18 +901,33 @@ final class DeepClone
 
         foreach ($objectMeta as $id => [$class, $wakeup]) {
             if (':' === ($class[1] ?? null)) {
+                try {
+                    $objects[$id] = unserialize($class, null !== $allowedClasses ? ['allowed_classes' => $allowedClasses] : []);
+                } catch (\Throwable $e) {
+                    throw self::unserializeError($e, $id);
+                }
                 // The result is used as an object below; a malformed payload can
                 // carry any serialize form (i:…, s:…, a:…), so reject anything
                 // that did not decode to an object rather than mistreating it.
-                if (!\is_object($objects[$id] = unserialize($class, null !== $allowedClasses ? ['allowed_classes' => $allowedClasses] : []))) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) object '.$id.' did not unserialize to an object, '.get_debug_type($objects[$id]).' given');
+                if (!\is_object($objects[$id])) {
+                    if (false === $objects[$id] && !str_starts_with($class, 'b:0;')) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) failed to unserialize object '.$id);
+                    }
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) object '.$id.' did not unserialize to an object, '.self::valueName($objects[$id]).' given');
                 }
                 continue;
             }
             try {
                 self::$reflectors[$class] ??= self::getClassReflector($class);
             } catch (\DeepClone\ClassNotFoundException) {
-                throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
+                throw new \DeepClone\ClassNotFoundException('Class "'.explode("\0", $class, 2)[0].'" not found.');
+            } catch (\DeepClone\NotInstantiableException $e) {
+                // deepclone_to_array() rejects the classes whose state serialize() loses, like IteratorIterator, but unserialize() creates them
+                if (!isset(self::$unexportable[(new \ReflectionClass($class))->name])) {
+                    throw $e;
+                }
+                $objects[$id] = unserialize('O:'.\strlen($class).':"'.$class.'":0:{}');
+                continue;
             }
 
             // A class with __unserialize() is only ever emitted (by
@@ -1923,17 +1948,14 @@ final class DeepClone
     private static function getClassReflector($class, $instantiableWithoutConstructor = false, $cloneable = null)
     {
         if (!($isClass = class_exists($class)) && !interface_exists($class, false) && !trait_exists($class, false)) {
-            throw new \DeepClone\ClassNotFoundException('Class "'.$class.'" not found.');
-        }
-        if (isset(self::NOT_ROUND_TRIPPABLE[$class])) {
-            throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
+            throw new \DeepClone\ClassNotFoundException('Class "'.explode("\0", $class, 2)[0].'" not found.');
         }
         $reflector = new \ReflectionClass($class);
 
         if ($instantiableWithoutConstructor) {
             $proto = $reflector->newInstanceWithoutConstructor();
         } elseif (!$isClass || $reflector->isAbstract() || $reflector->isEnum()) {
-            throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
+            throw new \DeepClone\NotInstantiableException('Type "'.$reflector->name.'" is not instantiable.');
         } elseif ($reflector->name !== $class) {
             $reflector = self::$reflectors[$name = $reflector->name] ??= self::getClassReflector($name, false, $cloneable);
             self::$cloneable[$class] = self::$cloneable[$name];
@@ -1957,7 +1979,7 @@ final class DeepClone
                             throw $e;
                         }
                         if (!method_exists($class, '__unserialize')) {
-                            throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.', 0, $e);
+                            throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
                         }
                         self::$needsFullUnserialize[$class] = true;
                         $proto = null;
@@ -1971,21 +1993,20 @@ final class DeepClone
                     }
                 }
             }
-            // Only anonymous classes and internal ones other than stdClass can refuse serialization, which their subclasses inherit.
-            // Serializing the prototype of other classes would fail when a property default holds a closure.
-            for ($r = $reflector; $r && !$r->isInternal(); $r = $r->getParentClass()) {
+            // Anonymous classes and some internal ones refuse serialization, which subclasses inherit, whatever methods they declare.
+            // Anonymous classes that restore their state with __wakeup() or __unserialize(), like throwables, round-trip in-process all the same.
+            for ($r = $reflector; !$r->isInternal() && ($r = $r->getParentClass()) && !$r->isAnonymous();) {
             }
-            if (($reflector->isAnonymous() || $r && 'stdClass' !== $r->name) && null !== $proto && !$proto instanceof \Throwable && !$proto instanceof \Serializable && !method_exists($class, '__sleep') && !method_exists($class, '__serialize')) {
-                try {
-                    serialize($proto);
-                } catch (\Exception $e) {
-                    throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.', 0, $e);
-                }
+            if ($r && ($r->isAnonymous() || 'stdClass' !== $r->name && self::refusesSerialization($r->name)) || $reflector->isAnonymous() && !method_exists($class, '__wakeup') && !method_exists($class, '__unserialize')) {
+                throw new \DeepClone\NotInstantiableException('Type "'.(strstr($class, "\0", true) ?: $class).'" is not instantiable.');
             }
         }
 
         if (null === $cloneable) {
-            if (($proto instanceof \Reflector || $proto instanceof \ReflectionGenerator || $proto instanceof \ReflectionType || $proto instanceof \IteratorIterator || $proto instanceof \RecursiveIteratorIterator) && (!$proto instanceof \Serializable && !method_exists($class, '__wakeup') && !method_exists($class, '__unserialize'))) {
+            // Classes whose state serialize() loses, which deepclone_from_array() creates all the same, like unserialize() does
+            if (isset(self::NOT_ROUND_TRIPPABLE[$class]) || ($proto instanceof \Reflector || $proto instanceof \ReflectionGenerator || $proto instanceof \ReflectionType || $proto instanceof \IteratorIterator || $proto instanceof \RecursiveIteratorIterator) && (!$proto instanceof \Serializable && !method_exists($class, '__wakeup') && !method_exists($class, '__unserialize'))) {
+                self::$unexportable[$class] = true;
+
                 throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
             }
 
@@ -2012,6 +2033,39 @@ final class DeepClone
         }
 
         return $reflector;
+    }
+
+    /**
+     * Reports what unserialize() throws while decoding an object of the payload as malformed input,
+     * like the extension does, and lets through what __wakeup() or __unserialize() throw after that.
+     */
+    private static function unserializeError(\Throwable $e, int $id): \Throwable
+    {
+        foreach ($trace = $e->getTrace() as $i => $frame) {
+            if (__FILE__ === ($frame['file'] ?? null) && 'unserialize' === $frame['function'] && !isset($frame['class'])) {
+                if (\in_array($trace[$i - 1]['function'] ?? null, ['__wakeup', '__unserialize'], true) && isset($trace[$i - 1]['class'])) {
+                    return $e;
+                }
+                break;
+            }
+        }
+
+        return new \ValueError('deepclone_from_array(): Argument #1 ($data) failed to unserialize object '.$id, 0, $e);
+    }
+
+    private static function refusesSerialization(string $class): bool
+    {
+        // unserialize() checks this before parsing anything past the class name: the truncated payload creates no object
+        set_error_handler(static fn () => true);
+        try {
+            unserialize('O:'.\strlen($class).':"'.$class.'":');
+        } catch (\Exception) {
+            return true;
+        } finally {
+            restore_error_handler();
+        }
+
+        return false;
     }
 
     private static function getHydrator($class)

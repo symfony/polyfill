@@ -459,6 +459,57 @@ class DeepCloneLazyNode
     }
 }
 
+class DeepCloneFileInfoSleep extends \SplFileInfo
+{
+    public function __sleep(): array
+    {
+        return [];
+    }
+}
+
+class DeepCloneFileInfoWakeup extends \SplFileInfo
+{
+    public function __wakeup(): void
+    {
+    }
+}
+
+class DeepCloneFileInfoSerialize extends \SplFileInfo
+{
+    public function __serialize(): array
+    {
+        return ['path' => $this->getPathname()];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        parent::__construct($data['path']);
+    }
+}
+
+interface DeepCloneInterface
+{
+}
+
+class DeepCloneIteratorIterator extends \IteratorIterator
+{
+    public $a;
+    private $b;
+
+    public function getB()
+    {
+        return $this->b;
+    }
+}
+
+class DeepCloneWakeupThrows
+{
+    public function __wakeup(): void
+    {
+        throw new \LogicException('Cannot wake up.');
+    }
+}
+
 if (\PHP_VERSION_ID >= 80400) {
     eval(<<<'PHP'
 namespace Symfony\Polyfill\Tests\DeepClone;
