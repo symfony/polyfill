@@ -1020,6 +1020,15 @@ class DeepCloneTest extends TestCase
         $this->assertSame('round-trip', $clone->getMessage());
     }
 
+    public function testErrorExceptionKeepsItsSeverity()
+    {
+        $e = new \ErrorException('round-trip', 0, \E_WARNING);
+
+        $this->assertSame(\E_WARNING, deepclone_from_array(deepclone_to_array($e))->getSeverity());
+        $this->assertSame(\E_NOTICE, deepclone_hydrate(\ErrorException::class, ['severity' => \E_NOTICE])->getSeverity());
+        $this->assertSame(\E_NOTICE, deepclone_hydrate(\ErrorException::class, ["\0*\0severity" => \E_NOTICE])->getSeverity());
+    }
+
     public function testSerializeMethodWireFormatAndRoundTrip()
     {
         $o = new DeepCloneSerializeFixture('test', 42);
