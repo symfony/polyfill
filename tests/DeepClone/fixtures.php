@@ -202,6 +202,75 @@ class DeepCloneSleepMissingMangled
     }
 }
 
+class DeepCloneSleepNames
+{
+    public $a = 'default';
+    protected $b = 'default';
+    private $c = 'default';
+    public int $typed;
+    public $names = [];
+
+    public function set($value): void
+    {
+        $this->a = $this->b = $this->c = $value;
+    }
+
+    public function __sleep(): array
+    {
+        return $this->names;
+    }
+}
+
+#[\AllowDynamicProperties]
+class DeepCloneSleepDynamic
+{
+    public $a = 'default';
+    public $names = [];
+
+    public function __sleep(): array
+    {
+        return $this->names;
+    }
+}
+
+class DeepCloneSleepUnserialize extends DeepCloneSleepNames
+{
+    public $keys;
+
+    public function __unserialize(array $data): void
+    {
+        $this->keys = strtr(implode(',', array_keys($data)), ["\0" => '~']);
+    }
+}
+
+class DeepCloneSleepNotArray
+{
+    public function __sleep()
+    {
+        return 'nope';
+    }
+}
+
+#[\AllowDynamicProperties]
+class DeepCloneSerializeKeys
+{
+    private $b = 'default';
+    protected $p = 'default';
+    public $pub = 'default';
+    public $data = [];
+
+    public function __serialize(): array
+    {
+        return $this->data;
+    }
+}
+
+class DeepCloneOrderNode
+{
+    public $next;
+    public $data;
+}
+
 class DeepCloneParentClass
 {
     public string $pub = 'pub_default';
