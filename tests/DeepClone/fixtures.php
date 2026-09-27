@@ -623,6 +623,15 @@ class DeepCloneIteratorIterator extends \IteratorIterator
     }
 }
 
+class DeepCloneIteratorIteratorWithWakeup extends \IteratorIterator
+{
+    public $a;
+
+    public function __wakeup(): void
+    {
+    }
+}
+
 class DeepCloneWakeupThrows
 {
     public function __wakeup(): void
