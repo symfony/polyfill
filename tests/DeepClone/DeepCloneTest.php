@@ -2606,6 +2606,81 @@ class DeepCloneTest extends TestCase
         deepclone_hydrate('SplFileInfo');
     }
 
+    /**
+     * @requires extension dom
+     */
+    public function testDomNameSpaceNodeIsCreatedWithoutItsState()
+    {
+        if (!class_exists(DeepCloneDomNameSpaceNode::class, false)) {
+            eval('namespace '.__NAMESPACE__.'; class DeepCloneDomNameSpaceNode extends \DOMNameSpaceNode { public $a; }');
+        }
+
+        // Cloning a bare DOMNameSpaceNode crashes before PHP 8.3
+        foreach ([\DOMNameSpaceNode::class, DeepCloneDomNameSpaceNode::class] as $class) {
+            $this->assertInstanceOf($class, deepclone_hydrate($class));
+            $this->assertInstanceOf($class, deepclone_from_array(['classes' => $class, 'objectMeta' => 1, 'prepared' => 0]));
+        }
+        $this->assertSame(1, deepclone_hydrate(DeepCloneDomNameSpaceNode::class, ['a' => 1])->a);
+    }
+
+    /**
+     * @requires extension imagick
+     */
+    public function testImagickPixelSubclassIsCreatedWithoutItsState()
+    {
+        // ImagickPixel keeps its state internally: its subclasses are created only when they restore it
+        if (!class_exists(DeepCloneImagickPixel::class, false)) {
+            eval('namespace '.__NAMESPACE__.'; class DeepCloneImagickPixel extends \ImagickPixel { public $a; public function __serialize(): array { return ["a" => $this->a]; } public function __unserialize(array $data): void { $this->a = $data["a"]; } }');
+        }
+
+        // Cloning a bare ImagickPixel aborts
+        $this->assertSame(1, deepclone_hydrate(DeepCloneImagickPixel::class, ['a' => 1])->a);
+
+        $pixel = new DeepCloneImagickPixel();
+        $pixel->a = 1;
+        $this->assertSame(1, deepclone_from_array(deepclone_to_array($pixel))->a);
+    }
+
+    /**
+     * @requires extension intl
+     */
+    public function testIntlObjectsAreCreatedLikeUnserializeDoes()
+    {
+        $values = [
+            new \MessageFormatter('en', '{0}'),
+            new \IntlDateFormatter('en', \IntlDateFormatter::SHORT, \IntlDateFormatter::NONE),
+            new \IntlDatePatternGenerator('en'),
+            \Transliterator::create('Latin-ASCII'),
+            \IntlTimeZone::createTimeZone('UTC'),
+            new \IntlGregorianCalendar(),
+            \IntlBreakIterator::createWordInstance('en'),
+            \IntlBreakIterator::createCodePointInstance(),
+            new \UConverter('utf-8', 'latin1'),
+            // Last, as cloning a bare one is a fatal error before PHP 8.4
+            new \Spoofchecker(),
+        ];
+
+        foreach ($values as $value) {
+            $class = \get_class($value);
+            try {
+                // PHP 8.1 creates them without their state
+                $expected = unserialize(serialize($value));
+            } catch (\Exception $e) {
+                // PHP 8.2+ refuses to serialize them
+                try {
+                    deepclone_to_array($value);
+                    $this->fail(\sprintf('deepclone_to_array() accepted "%s".', $class));
+                } catch (\DeepClone\NotInstantiableException $e) {
+                    $this->assertSame('Type "'.$class.'" is not instantiable.', $e->getMessage());
+                }
+                continue;
+            }
+
+            $this->assertEquals($expected, deepclone_from_array(deepclone_to_array($value)));
+            $this->assertEquals(unserialize('O:'.\strlen($class).':"'.$class.'":0:{}'), deepclone_hydrate($class));
+        }
+    }
+
     public function testRoundtripWithAbstractParentScope()
     {
         $o = new AbstractScopeChild('entity');
