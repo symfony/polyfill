@@ -2169,6 +2169,11 @@ final class DeepClone
             }
         } while ($parent = $parent->getParentClass());
 
+        if (\PHP_VERSION_ID < 80200 && $proto instanceof \Transliterator) {
+            // Before PHP 8.2, which refuses serializing it, Transliterator::$id is read-only but to reflection
+            $keys['id'][0] = $keys["\0*\0id"][0] = 'Transliterator';
+        }
+
         // Traces, files and lines of throwables are always exported
         $defaults = (array) $proto;
         unset($defaults["\0Error\0trace"], $defaults["\0Exception\0trace"], $defaults["\0*\0file"], $defaults["\0*\0line"]);
@@ -2246,6 +2251,11 @@ final class DeepClone
             }
 
             $cloneable = $reflector->isCloneable() && !$reflector->hasMethod('__clone');
+
+            // Cloning a bare ImagickPixel aborts, a bare DOMNameSpaceNode crashes before PHP 8.3, and most bare intl objects fail before PHP 8.2, where they're serializable
+            if ($cloneable && ($proto instanceof \ImagickPixel || \PHP_VERSION_ID < 80300 && ($proto instanceof \DOMNameSpaceNode || \PHP_VERSION_ID < 80200 && ($proto instanceof \MessageFormatter || $proto instanceof \IntlDateFormatter || $proto instanceof \IntlDatePatternGenerator || $proto instanceof \Transliterator || $proto instanceof \IntlTimeZone || $proto instanceof \IntlCalendar || $proto instanceof \Spoofchecker || $proto instanceof \IntlBreakIterator || $proto instanceof \UConverter)))) {
+                $cloneable = false;
+            }
         }
 
         self::$cloneable[$class] = $cloneable;
