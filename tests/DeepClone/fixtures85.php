@@ -66,6 +66,13 @@ class ConstExprSameLineFixture
 {
 }
 
+class ConstExprSameLineSitesFixture
+{
+    public function attributeAndDefault(#[ConstExprAttr(static function (): string { return 'attr'; })] $a = null, $b = static function (): string { return 'default'; }): \Closure { return $b; }
+
+    public function twoDefaults($a = static function (): string { return 'a'; }, $b = static function (): string { return 'b'; }): \Closure { return $b; }
+}
+
 enum ConstExprEnumFixture: string
 {
     #[ConstExprAttr(static function (): string { return 'enum-case-attr'; })]

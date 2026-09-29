@@ -986,7 +986,20 @@ class DeepCloneTest extends TestCase
             'deepclone_from_array(): Argument #1 ($data) "prepared" references unknown ref id 1' => ['classes' => '', 'objectMeta' => 0, 'prepared' => -1, 'refMasks' => [1 => 'zz']],
             // Resolve markers that match no value too
             'deepclone_from_array(): malformed payload, enum value must be of type string, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1]]], 'resolve' => ['stdClass' => ['a' => [3 => 'e']]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" scope "'.PrivShadowA::class.'" is not a parent of object id 0 (stdClass)' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => [PrivShadowA::class => ['x' => [1]]]],
+            'deepclone_from_array(): Argument #1 ($data) "properties" value for "'.PrivShadowA::class.'::nope" does not match a declared property on object id 0' => ['classes' => PrivShadowA::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => [PrivShadowA::class => ['nope' => [1]]]],
+            'deepclone_from_array(): Argument #1 ($data) "resolve" entry for scope "stdClass" must be of type array, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1]]], 'resolve' => ['stdClass' => null]],
+            'deepclone_from_array(): Argument #1 ($data) "resolve" value for "stdClass::a" must be of type array, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1]]], 'resolve' => ['stdClass' => ['a' => null]]],
+            'deepclone_from_array(): malformed payload, ref id 1 cannot reference itself' => ['classes' => '', 'objectMeta' => 0, 'prepared' => [-1], 'mask' => [false], 'refs' => [1 => -1], 'refMasks' => [1 => false]],
         ];
+        if (!\extension_loaded('deepclone') || TestListenerTrait::$enabledPolyfills || version_compare(phpversion('deepclone'), '0.8.7', '>=')) {
+            // An array cast can give such names to a stdClass
+            $payloads['deepclone_from_array(): Argument #1 ($data) "properties" names of scope "stdClass" cannot start with "\0"'] = deepclone_to_array((object) ["\0*\0p" => 1]);
+        }
+        // Without warnings about the unknown id
+        $payload = deepclone_to_array(hash_init('md5'));
+        $payload['states'][] = [5, []];
+        $payloads['deepclone_from_array(): Argument #1 ($data) "states" entry references unknown object id 5'] = $payload;
         if (\PHP_VERSION_ID >= 80200) {
             // A Random\Randomizer is created from its state before the properties are hydrated
             $payloads['deepclone_from_array(): Argument #1 ($data) malformed "states" entry: expected [int, mixed, mixed?]'] = ['classes' => \Random\Randomizer::class, 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[[0], []]]];
@@ -1009,6 +1022,76 @@ class DeepCloneTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Cannot assign string to property '.TypedInt::class.'::$x of type int');
         deepclone_from_array(['classes' => TypedInt::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['abc', 5 => 1]]]]);
+    }
+
+    private function skipIfExtensionCreatesNamedClosuresDifferently(): void
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.7', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.7 creates some named closures differently.');
+        }
+    }
+
+    public function testNamedClosuresAreCreatedLikeFromCallable()
+    {
+        $this->skipIfExtensionCreatesNamedClosuresDifferently();
+
+        $roundtrip = static function (\Closure $closure) {
+            return deepclone_from_array(deepclone_to_array($closure, null, true), null, true);
+        };
+
+        // Called on the child class, with the scope of the declaring one
+        $this->assertSame(NamedClosureChild::class, $roundtrip(\Closure::fromCallable([NamedClosureChild::class, 'create']))());
+        $this->assertSame('base', $roundtrip(\Closure::fromCallable([new NamedClosureChild(), 'reveal']))());
+        $this->assertSame(NamedClosureChild::class, $roundtrip((new NamedClosureChild())->getProt())());
+
+        // Methods that __call() and __callStatic() handle
+        $this->assertSame('call foo', $roundtrip(\Closure::fromCallable([new NamedClosureMagic(), 'foo']))());
+        $this->assertSame('static bar '.NamedClosureMagic::class, $roundtrip(\Closure::fromCallable([NamedClosureMagic::class, 'bar']))());
+
+        $payloads = [
+            'deepclone_from_array(): malformed payload, named-closure function or method not found' => ['classes' => '', 'objectMeta' => 0, 'prepared' => [null, 'no_such_function'], 'mask' => 0],
+            'deepclone_from_array(): malformed payload, named-closure method '.NamedClosureBase::class.'::reveal() is not static' => ['classes' => '', 'objectMeta' => 0, 'prepared' => [NamedClosureBase::class, 'reveal'], 'mask' => 0],
+            'deepclone_from_array(): malformed payload, named-closure method '.NamedClosureBase::class.'::prot() cannot be called on stdClass' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => [[[0, 'prot'], NamedClosureBase::class, 'prot']], 'mask' => [0]],
+        ];
+        foreach ($payloads as $message => $payload) {
+            try {
+                deepclone_from_array($payload, null, true);
+                $this->fail(\sprintf('deepclone_from_array() accepted a payload expected to throw "%s".', $message));
+            } catch (\ValueError $e) {
+                $this->assertSame($message, $e->getMessage());
+            }
+        }
+    }
+
+    public function testMagicMethodsAreCalledWhateverTheirVisibility()
+    {
+        $this->skipIfExtensionCreatesNamedClosuresDifferently();
+
+        // Declaring them raises a warning
+        if (!class_exists(DeepCloneNonPublicMagic::class, false)) {
+            @eval('namespace '.__NAMESPACE__.'; class DeepCloneNonPublicMagic { public $calls = []; private function __serialize(): array { return ["calls" => ["__serialize"]]; } private function __unserialize(array $data): void { $this->calls = array_merge($data["calls"], ["__unserialize"]); } }');
+            @eval('namespace '.__NAMESPACE__.'; class DeepCloneNonPublicSleep { public $calls = []; public $skipped = 1; protected function __sleep(): array { $this->calls[] = "__sleep"; return ["calls"]; } private function __wakeup(): void { $this->calls[] = "__wakeup"; } }');
+        }
+
+        $this->assertSame(['__serialize', '__unserialize'], deepclone_from_array(deepclone_to_array(new DeepCloneNonPublicMagic()))->calls);
+
+        $o = new DeepCloneNonPublicSleep();
+        $o->skipped = 2;
+        $clone = deepclone_from_array(deepclone_to_array($o));
+        $this->assertSame(['__sleep', '__wakeup'], $clone->calls);
+        $this->assertSame(1, $clone->skipped);
+    }
+
+    public function testClassNamesAreCutAtTheirFirstNulInMessages()
+    {
+        foreach ([[new class() {}, ['stdClass'], 'deepclone_to_array(): class "class@anonymous" is not allowed'], [new \stdClass(), ["A\0B"], 'deepclone_to_array(): Argument $allowed_classes must be an array of class names, "A" given']] as [$value, $allowedClasses, $message]) {
+            try {
+                deepclone_to_array($value, $allowedClasses);
+                $this->fail('ValueError expected.');
+            } catch (\ValueError $e) {
+                $this->assertSame($message, $e->getMessage());
+            }
+        }
     }
 
     public function testFromArrayNamedClosureRequiresOptIn()
@@ -3721,6 +3804,30 @@ class DeepCloneTest extends TestCase
 
         $this->assertSame('noargs', deepclone_from_array(deepclone_to_array($args[0]))());
         $this->assertSame('witharg', deepclone_from_array(deepclone_to_array($args[1]))(1));
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testToArrayConstExprClosureAmbiguousSameLineSites()
+    {
+        foreach (['attributeAndDefault' => 'default', 'twoDefaults' => 'b'] as $method => $expected) {
+            $closure = (new ConstExprSameLineSitesFixture())->$method();
+
+            if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
+                // The extension tells same-line closures apart by op_array identity.
+                $this->assertSame($expected, deepclone_from_array(deepclone_to_array($closure))());
+                continue;
+            }
+
+            // The polyfill could otherwise resolve them to the first closure of the line
+            try {
+                deepclone_to_array($closure);
+                $this->fail('ValueError expected.');
+            } catch (\ValueError $e) {
+                $this->assertStringContainsString('multiple closures share this declaration site', $e->getMessage());
+            }
+        }
     }
 
     /**

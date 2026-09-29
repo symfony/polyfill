@@ -55,6 +55,8 @@ final class DeepClone
 
     private static array $serializedDatePeriods = []; // [object id] = serialized state, before PHP 8.2
 
+    private static array $closureFactories = [];
+    private static array $declaredProperties = [];
     private static array $reflectors = [];
     private static array $prototypes = [];
     private static array $cloneable = [];
@@ -603,6 +605,21 @@ final class DeepClone
     }
 
     /**
+     * Lists the non-static properties that a class declares or inherits, but for the private ones of its parents.
+     */
+    private static function getDeclaredProperties(string $class): array
+    {
+        $declared = [];
+        foreach ((self::$reflectors[$class] ?? new \ReflectionClass($class))->getProperties() as $p) {
+            if (!$p->isStatic()) {
+                $declared[$p->name] = true;
+            }
+        }
+
+        return $declared;
+    }
+
+    /**
      * Validates class names like unserialize() does, and maps them lowercased.
      */
     private static function getAllowedSet(array $allowedClasses, string $function): array
@@ -613,7 +630,7 @@ final class DeepClone
                 throw new \ValueError($function.'(): Argument $allowed_classes must be an array of class names, '.self::valueName($class).' given');
             }
             if (preg_match('/[^a-zA-Z0-9_\x80-\xff\\\\]/', $class)) {
-                throw new \ValueError($function.'(): Argument $allowed_classes must be an array of class names, "'.$class.'" given');
+                throw new \ValueError($function.'(): Argument $allowed_classes must be an array of class names, "'.explode("\0", $class, 2)[0].'" given');
             }
             $allowedSet[strtolower($class)] = true;
         }
@@ -755,7 +772,8 @@ final class DeepClone
                         throw new \ValueError('deepclone_to_array(): class "Closure" is not allowed');
                     }
                     $callable = [$r->getClosureThis() ?? (\PHP_VERSION_ID >= 80111 ? $r->getClosureCalledClass() : $r->getClosureScopeClass())?->name, $r->name];
-                    $rm = $callable[0] ? new \ReflectionMethod(...$callable) : null;
+                    // The method can be one that __call() or __callStatic() handles
+                    $rm = $callable[0] && method_exists(...$callable) ? new \ReflectionMethod(...$callable) : null;
                     $unused = null;
                     $callable = self::prepare($callable, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $unused, $allowedSet, $allowNamedClosures);
                     $value = !($rm?->isPublic() ?? true) ? [$callable, $rm->class, $rm->name] : $callable;
@@ -779,7 +797,7 @@ final class DeepClone
             $class = $value::class;
 
             if (null !== $allowedSet && !isset($allowedSet[strtolower($class)])) {
-                throw new \ValueError('deepclone_to_array(): class "'.$class.'" is not allowed');
+                throw new \ValueError('deepclone_to_array(): class "'.explode("\0", $class, 2)[0].'" is not allowed');
             }
 
             if ('stdClass' === $class) {
@@ -819,14 +837,11 @@ final class DeepClone
             $refFree = false;
 
             if (self::$classInfo[$class][2] ??= $reflector->hasMethod('__serialize') ? ($reflector->getMethod('__serialize')->isPublic() ?: $reflector->getMethod('__serialize')) : false) {
-                if (self::$classInfo[$class][2] instanceof \ReflectionMethod) {
-                    throw new \Error('Call to '.(self::$classInfo[$class][2]->isProtected() ? 'protected' : 'private').' method "'.$class.'::__serialize()".');
-                }
-
                 if ($refsPool) {
                     self::hideMarkers($refsPool);
                 }
-                if (!\is_array($arrayValue = $value->__serialize())) {
+                // Like serialize(), call it whatever its visibility
+                if (!\is_array($arrayValue = true === self::$classInfo[$class][2] ? $value->__serialize() : self::$classInfo[$class][2]->invoke($value))) {
                     throw new \TypeError($class.'::__serialize() must return an array');
                 }
 
@@ -863,7 +878,7 @@ final class DeepClone
                         if ($refsPool) {
                             self::hideMarkers($refsPool);
                         }
-                        if (!\is_array($sleep = $value->__sleep())) {
+                        if (!\is_array($sleep = true === (self::$classInfo[$class][4] ??= $reflector->getMethod('__sleep')->isPublic() ?: $reflector->getMethod('__sleep')) ? $value->__sleep() : self::$classInfo[$class][4]->invoke($value))) {
                             trigger_error('serialize(): '.$class.'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
                             $value = null;
                             goto handle_value;
@@ -1042,19 +1057,20 @@ final class DeepClone
         if ($placeholders) {
             try {
                 foreach ($states as $state) {
-                    if (!\is_array($state) || null !== $objects[$state[0]]) {
+                    // Unknown ids and malformed states are reported below
+                    if (!\is_array($state) || !\is_int($zid = $state[0] ?? null) || !\array_key_exists($zid, $objects) || null !== $objects[$zid] || !\is_array($state[1] ?? [])) {
                         continue;
                     }
                     if (isset($state[2])) {
                         $deferred[] = $state;
                         continue;
                     }
-                    $class = $objectMeta[$state[0]][0];
+                    $class = $objectMeta[$zid][0];
                     $ser = serialize($state[1] ?? []);
                     if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
                         throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
                     }
-                    $objects[$state[0]] = $obj;
+                    $objects[$zid] = $obj;
                 }
             } catch (\TypeError|\ValueError $e) {
                 self::checkStates($states, $objects, $objectMeta, $numObjects, $expectedStates);
@@ -1068,6 +1084,9 @@ final class DeepClone
         } else {
             foreach ($refMasks as $k => $m) {
                 if (isset($refs[$k]) || \array_key_exists($k, $refs)) {
+                    if (false === $m && -$k === $refs[$k]) {
+                        throw new \ValueError('deepclone_from_array(): malformed payload, ref id '.$k.' cannot reference itself');
+                    }
                     $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
                 } else {
                     self::resolveWithMask(null, $m, $objects, $refs, $allowedClasses);
@@ -1085,8 +1104,9 @@ final class DeepClone
             if ('stdClass' !== $scope && !class_exists($scope, false)) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" scope "'.$scope.'" is not a loaded class name');
             }
+            $declared = 'stdClass' === $scope ? null : self::$declaredProperties[$scope] ??= self::getDeclaredProperties($scope);
             $resolveScope = null;
-            if (isset($resolve[$scope])) {
+            if (isset($resolve[$scope]) || \array_key_exists($scope, $resolve)) {
                 if (!\is_array($resolve[$scope])) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "resolve" entry for scope "'.$scope.'" must be of type array, '.self::valueName($resolve[$scope]).' given');
                 }
@@ -1100,8 +1120,21 @@ final class DeepClone
                 if (!\is_array($idValues)) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" must be of type array, '.self::valueName($idValues).' given');
                 }
+                if ("\0" === ($name[0] ?? '')) {
+                    // Not a legal name, which the engine refuses to access, even if an array cast can give it to a stdClass
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" names of scope "'.$scope.'" cannot start with "\0"');
+                }
+                // Checked for the first object of each property only, like the extension does for all
+                if (null !== $declared && \is_int($id = array_key_first($idValues)) && \is_object($o = $objects[$id] ?? null)) {
+                    if (!$o instanceof $scope) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" scope "'.$scope.'" is not a parent of object id '.$id.' ('.explode("\0", $o::class, 2)[0].')');
+                    }
+                    if (!isset($declared[$name])) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" does not match a declared property on object id '.$id);
+                    }
+                }
                 $resolveIds = null;
-                if ($resolveScope && isset($resolveScope[$name])) {
+                if ($resolveScope && (isset($resolveScope[$name]) || \array_key_exists($name, $resolveScope))) {
                     if (!\is_array($resolveScope[$name])) {
                         throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "resolve" value for "'.$scope.'::'.$name.'" must be of type array, '.self::valueName($resolveScope[$name]).' given');
                     }
@@ -1228,7 +1261,12 @@ final class DeepClone
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references object id '.$zid.' whose class '.$objClass.' has no __unserialize() method');
                 }
                 $resolvedProps = isset($state[2]) ? self::resolveWithMask($sprops, $state[2], $objects, $refs, $allowedClasses) : $sprops;
-                $obj->__unserialize($resolvedProps);
+                // Like unserialize(), call it whatever its visibility
+                if (true === $m = self::$classInfo[$objClass][5] ??= (new \ReflectionMethod($objClass, '__unserialize'))->isPublic() ?: new \ReflectionMethod($objClass, '__unserialize')) {
+                    $obj->__unserialize($resolvedProps);
+                } else {
+                    $m->invoke($obj, $resolvedProps);
+                }
             } elseif (\is_int($state)) {
                 if ($state < 0 || $state >= $numObjects) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references unknown object id '.$state);
@@ -1238,7 +1276,12 @@ final class DeepClone
                 }
                 unset($expectedStates[$state]);
                 if (method_exists($objects[$state], '__wakeup')) {
-                    $objects[$state]->__wakeup();
+                    // Like unserialize(), call it whatever its visibility
+                    if (true === $m = self::$classInfo[$objects[$state]::class][6] ??= (new \ReflectionMethod($objects[$state], '__wakeup'))->isPublic() ?: new \ReflectionMethod($objects[$state], '__wakeup')) {
+                        $objects[$state]->__wakeup();
+                    } else {
+                        $m->invoke($objects[$state]);
+                    }
                 }
             } else {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry must be of type int|array, '.self::valueName($state).' given');
@@ -1310,6 +1353,9 @@ final class DeepClone
 
         foreach ($refMasks as $k => $m) {
             if (isset($refs[$k]) || \array_key_exists($k, $refs)) {
+                if (false === $m && -$k === $refs[$k]) {
+                    throw new \ValueError('deepclone_from_array(): malformed payload, ref id '.$k.' cannot reference itself');
+                }
                 $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
             } else {
                 // Like the extension, check a mask that matches no reference against null, which markers reject, and add nothing
@@ -1505,7 +1551,7 @@ final class DeepClone
             throw new \ValueError('deepclone_from_array(): malformed payload, named-closure value must have at least 2 elements');
         }
 
-        $method = null;
+        $declaringClass = null;
 
         if (\is_array($value[0])) {
             $callable = $value[0];
@@ -1515,7 +1561,7 @@ final class DeepClone
             if (!\array_key_exists(2, $value) || !\is_string($value[2])) {
                 throw new \ValueError('deepclone_from_array(): malformed payload, named-closure private method name must be of type string');
             }
-            $method = new \ReflectionMethod($value[1], $value[2]);
+            $declaringClass = $value[1];
         } else {
             $callable = $value;
         }
@@ -1538,17 +1584,48 @@ final class DeepClone
                 $obj = $refs[-$obj];
             }
         }
-        $name = $callable[1];
+        $name = null !== $declaringClass ? $value[2] : $callable[1];
 
-        if (!($method?->isPublic() ?? true)) {
-            return $method->getClosure(\is_object($obj) ? $obj : null);
+        // Like Closure::fromCallable(), the method is looked up on the class of the object, or on the named class, or
+        // on the class that declares it for the non-public ones; the closure gets the scope of that declaring class
+        if (\is_object($obj)) {
+            $calledClass = $obj::class;
+        } elseif (\is_string($obj)) {
+            $calledClass = class_exists($obj) || interface_exists($obj) ? (new \ReflectionClass($obj))->name : null;
+        } elseif (null !== $obj) {
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure callable must be [obj_or_class_or_null, string]');
+        } else {
+            $calledClass = null;
         }
 
-        if (!$obj) {
+        if (null === $declaringClass && null === $obj) {
+            if (!\function_exists($name)) {
+                throw new \ValueError('deepclone_from_array(): malformed payload, named-closure function or method not found');
+            }
+
             return $name(...);
         }
 
-        return \is_object($obj) ? $obj->$name(...) : $obj::$name(...);
+        if (!($lookup = $declaringClass ?? $calledClass) || !(class_exists($lookup) || interface_exists($lookup) || trait_exists($lookup)) || !method_exists($lookup, $name)) {
+            if (null === $declaringClass && null !== $calledClass && method_exists($calledClass, \is_object($obj) ? '__call' : '__callStatic')) {
+                // A method that __call() or __callStatic() handles
+                return \is_object($obj) ? $obj->$name(...) : $calledClass::$name(...);
+            }
+
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure function or method not found');
+        }
+        $method = new \ReflectionMethod($lookup, $name);
+        $calledClass ??= $method->class;
+        if (!is_a($calledClass, $method->class, true)) {
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure method '.$method->class.'::'.$method->name.'() cannot be called on '.$calledClass);
+        }
+        if (!$method->isStatic() && !\is_object($obj)) {
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure method '.$method->class.'::'.$method->name.'() is not static');
+        }
+
+        return (self::$closureFactories[$method->class] ??= \Closure::bind(static function ($target, $name) {
+            return \is_object($target) ? $target->$name(...) : $target::$name(...);
+        }, null, $method->class))(\is_object($obj) ? $obj : $calledClass, $method->name);
     }
 
     /**
@@ -1588,6 +1665,12 @@ final class DeepClone
             $sites[$siteKey] = true;
         }
 
+        // Candidates in distinct sites are the same literal exposed twice, eg an attribute argument referencing a
+        // class constant, unless the source line declares several closures, eg an attribute and a default value
+        if (1 < \count($sites) && 1 < self::countClosureLiterals($file, $line)) {
+            throw new \ValueError('deepclone_to_array(): cannot reference anonymous closure declared at '.$file.':'.$line.', multiple closures share this declaration site');
+        }
+
         // Closures declared in method or hook attributes are named after that
         // function, exactly like closures created at runtime in its body. When
         // the source line holds more closure literals than the index knows
@@ -1603,6 +1686,9 @@ final class DeepClone
     private static function countClosureLiterals(string $file, int $line): int
     {
         if (null === $counts = self::$closureLiteralLines[$file] ?? null) {
+            if (!\function_exists('token_get_all')) {
+                throw new \ValueError('deepclone_to_array(): cannot reference anonymous closure declared at '.$file.':'.$line.', the "tokenizer" extension is needed to tell same-line closures apart; install it, or the "deepclone" extension, which resolves closures without reading source files');
+            }
             if (!is_file($file) || false === $code = @file_get_contents($file)) {
                 $counts = false;
             } else {
@@ -1819,7 +1905,7 @@ final class DeepClone
         }
 
         if (null !== $allowedClasses && !isset(array_change_key_case(array_flip($allowedClasses))[strtolower($class)])) {
-            throw new \ValueError('deepclone_from_array(): class "'.$class.'" is not allowed');
+            throw new \ValueError('deepclone_from_array(): class "'.explode("\0", $class, 2)[0].'" is not allowed');
         }
 
         try {
