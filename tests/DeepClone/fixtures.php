@@ -23,6 +23,48 @@ enum DeepCloneSuit: string
     case Spades = 'S';
 }
 
+class NamedClosureBase
+{
+    private $secret = 'base';
+
+    public static function create()
+    {
+        return static::class;
+    }
+
+    public function reveal()
+    {
+        return $this->secret;
+    }
+
+    protected function prot()
+    {
+        return static::class;
+    }
+
+    public function getProt(): \Closure
+    {
+        return $this->prot(...);
+    }
+}
+
+class NamedClosureChild extends NamedClosureBase
+{
+}
+
+class NamedClosureMagic
+{
+    public function __call($name, $args)
+    {
+        return 'call '.$name;
+    }
+
+    public static function __callStatic($name, $args)
+    {
+        return 'static '.$name.' '.static::class;
+    }
+}
+
 class ClosureFixture
 {
     public function instanceMethod(): string
