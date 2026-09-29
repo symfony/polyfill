@@ -1720,40 +1720,86 @@ class DeepCloneTest extends TestCase
         }
     }
 
-    public function testClassesWhoseStateSerializeLosesAreCreatedLikeUnserializeDoes()
+    public function testClassesWhoseStateSerializeLosesAreRejected()
     {
         $this->skipIfExtensionRejectsClassesDifferently();
 
+        // unserialize() creates them, but the three functions reject them, and their user subclasses
         foreach ([\IteratorIterator::class, \LimitIterator::class, \RecursiveIteratorIterator::class, DeepCloneIteratorIterator::class] as $class) {
             $this->assertInstanceOf($class, unserialize('O:'.\strlen($class).':"'.$class.'":0:{}'));
-            $this->assertInstanceOf($class, deepclone_from_array(['classes' => $class, 'objectMeta' => 1, 'prepared' => 0]));
+
+            $calls = [
+                'deepclone_from_array' => static function () use ($class) { return deepclone_from_array(['classes' => $class, 'objectMeta' => 1, 'prepared' => 0]); },
+                'deepclone_hydrate' => static function () use ($class) { return deepclone_hydrate($class); },
+            ];
+            foreach ($calls as $function => $call) {
+                try {
+                    $call();
+                    $this->fail(\sprintf('%s() accepted "%s".', $function, $class));
+                } catch (\DeepClone\NotInstantiableException $e) {
+                    $this->assertSame('Type "'.$class.'" is not instantiable.', $e->getMessage());
+                }
+            }
         }
 
+        foreach ([new \IteratorIterator(new \ArrayIterator([1])), new DeepCloneIteratorIterator(new \ArrayIterator([1]))] as $object) {
+            try {
+                deepclone_to_array($object);
+                $this->fail(\sprintf('deepclone_to_array() accepted a "%s".', \get_class($object)));
+            } catch (\DeepClone\NotInstantiableException $e) {
+                $this->assertSame('Type "'.\get_class($object).'" is not instantiable.', $e->getMessage());
+            }
+        }
+
+        // Unless they declare a serialization API
         $object = deepclone_from_array([
-            'classes' => DeepCloneIteratorIterator::class,
+            'classes' => DeepCloneIteratorIteratorWithWakeup::class,
             'objectMeta' => 1,
             'prepared' => 0,
-            'properties' => ['stdClass' => ['a' => [1]], DeepCloneIteratorIterator::class => ['b' => [2]]],
+            'properties' => ['stdClass' => ['a' => [1]]],
         ]);
         $this->assertSame(1, $object->a);
-        $this->assertSame(2, $object->getB());
+        $this->assertSame(1, deepclone_hydrate(DeepCloneIteratorIteratorWithWakeup::class, ['a' => 1])->a);
+    }
 
-        // deepclone_to_array() and deepclone_hydrate() still reject them, the latter for internal classes only
-        try {
-            deepclone_to_array(new \IteratorIterator(new \ArrayIterator([1])));
-            $this->fail('deepclone_to_array() accepted an IteratorIterator.');
-        } catch (\DeepClone\NotInstantiableException $e) {
-            $this->assertSame('Type "IteratorIterator" is not instantiable.', $e->getMessage());
+    public function testInternalClassesKeepingTheirStateOutOfTheirPropertiesAreRejected()
+    {
+        $this->skipIfExtensionRejectsClassesDifferently();
+
+        // The ones loaded among the classes the polyfill knows, but Relay\Table, which crashes when destroyed without its constructor,
+        // and the ones that got a serialization API, like ZipArchive on PHP 8.6
+        $classes = array_filter(['XMLWriter', 'XMLReader', 'ZipArchive', 'Redis', 'RedisCluster', 'Imagick', 'ImagickPixel', 'Relay\Relay', 'AMQPConnection', 'APCUIterator', 'MessagePack'], static function ($class) { return class_exists($class) && !method_exists($class, '__unserialize'); });
+        if (!$classes) {
+            $this->markTestSkipped('No extension providing such classes is loaded.');
         }
-        try {
-            deepclone_hydrate(\IteratorIterator::class);
-            $this->fail('deepclone_hydrate() accepted "IteratorIterator".');
-        } catch (\DeepClone\NotInstantiableException $e) {
-            $this->assertSame('Type "IteratorIterator" is not instantiable.', $e->getMessage());
+
+        // And their user subclasses
+        foreach ($classes as $class) {
+            if (!(new \ReflectionClass($class))->isFinal()) {
+                $subclass = 'DeepCloneUser'.strtr($class, '\\', '_');
+                if (!class_exists($subclass, false)) {
+                    eval('class '.$subclass.' extends \\'.$class.' {}');
+                }
+                $classes[] = $subclass;
+            }
         }
-        $object = deepclone_hydrate(DeepCloneIteratorIterator::class, ['a' => 1, "\0".DeepCloneIteratorIterator::class."\0b" => 2]);
-        $this->assertSame(1, $object->a);
-        $this->assertSame(2, $object->getB());
+
+        foreach ($classes as $class) {
+            // Named in lower case: messages use the declared name
+            $calls = [
+                'deepclone_to_array' => static function () use ($class) { return deepclone_to_array((new \ReflectionClass($class))->newInstanceWithoutConstructor()); },
+                'deepclone_from_array' => static function () use ($class) { return deepclone_from_array(['classes' => strtolower($class), 'objectMeta' => 1, 'prepared' => 0]); },
+                'deepclone_hydrate' => static function () use ($class) { return deepclone_hydrate(strtolower($class)); },
+            ];
+            foreach ($calls as $function => $call) {
+                try {
+                    $call();
+                    $this->fail(\sprintf('%s() accepted "%s".', $function, $class));
+                } catch (\DeepClone\NotInstantiableException $e) {
+                    $this->assertSame('Type "'.$class.'" is not instantiable.', $e->getMessage());
+                }
+            }
+        }
     }
 
     public function testSerializedObjectsThatFailToDecodeAreMalformed()

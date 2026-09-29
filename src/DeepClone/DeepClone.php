@@ -18,7 +18,10 @@ namespace Symfony\Polyfill\DeepClone;
  */
 final class DeepClone
 {
-    /** Internal classes that silently lose state through property restoration. */
+    /**
+     * Internal classes that keep their state out of their properties, which the extension rejects:
+     * unserialize() creates them without it, and some crash when used, or even destroyed, that way.
+     */
     private const NOT_ROUND_TRIPPABLE = [
         'ZipArchive' => true,
         'XMLWriter' => true,
@@ -26,6 +29,25 @@ final class DeepClone
         'SNMP' => true,
         'tidy' => true,
         'tidyNode' => true,
+        'AMQPChannel' => true,
+        'AMQPConnection' => true,
+        'APCUIterator' => true,
+        'Imagick' => true,
+        'ImagickDraw' => true,
+        'ImagickKernel' => true,
+        'ImagickPixel' => true,
+        'ImagickPixelIterator' => true,
+        'MessagePack' => true,
+        'MessagePackUnpacker' => true,
+        'Redis' => true,
+        'RedisArray' => true,
+        'RedisCluster' => true,
+        'RedisSentinel' => true,
+        'Relay\AdaptiveCache' => true,
+        'Relay\Cluster' => true,
+        'Relay\Relay' => true,
+        'Relay\Sentinel' => true,
+        'Relay\Table' => true,
     ];
 
     private static array $reflectors = [];
@@ -33,7 +55,6 @@ final class DeepClone
     private static array $cloneable = [];
     private static array $instantiableWithoutConstructor = [];
     private static array $needsFullUnserialize = [];
-    private static array $unexportable = [];
     private static array $hydrators = [];
     private static array $simpleHydrators = [];
     private static array $shapes = [];
@@ -391,17 +412,7 @@ final class DeepClone
         }
 
         if (\is_string($class = $object_or_class)) {
-            try {
-                $r = self::$reflectors[$class] ??= self::getClassReflector($class);
-            } catch (\DeepClone\NotInstantiableException $e) {
-                // Like the extension, which checks internal classes only for the ones whose state serialize() loses, like IteratorIterator
-                if (!isset(self::$unexportable[($r = new \ReflectionClass($class))->name]) || $r->isInternal()) {
-                    throw $e;
-                }
-                $object = $r->newInstanceWithoutConstructor();
-
-                goto hydrate;
-            }
+            $r = self::$reflectors[$class] ??= self::getClassReflector($class);
             if (null === self::$prototypes[$class] && !self::$instantiableWithoutConstructor[$class]) {
                 // No empty-shell prototype exists (e.g. an internal final class
                 // whose __unserialize() rejects an empty payload, like
@@ -423,7 +434,6 @@ final class DeepClone
             $class = $object::class;
         }
 
-        hydrate:
         if (!$vars) {
             return $object;
         }
@@ -925,13 +935,6 @@ final class DeepClone
                 self::$reflectors[$class] ??= self::getClassReflector($class);
             } catch (\DeepClone\ClassNotFoundException) {
                 throw new \DeepClone\ClassNotFoundException('Class "'.explode("\0", $class, 2)[0].'" not found.');
-            } catch (\DeepClone\NotInstantiableException $e) {
-                // deepclone_to_array() rejects the classes whose state serialize() loses, like IteratorIterator, but unserialize() creates them
-                if (!isset(self::$unexportable[(new \ReflectionClass($class))->name])) {
-                    throw $e;
-                }
-                $objects[$id] = unserialize('O:'.\strlen($class).':"'.$class.'":0:{}');
-                continue;
             }
 
             // A class with __unserialize() is only ever emitted (by
@@ -2014,6 +2017,12 @@ final class DeepClone
         if (!($isClass = class_exists($class)) && !interface_exists($class, false) && !trait_exists($class, false)) {
             throw new \DeepClone\ClassNotFoundException('Class "'.explode("\0", $class, 2)[0].'" not found.');
         }
+        if ((isset(self::NOT_ROUND_TRIPPABLE[$class]) || array_intersect_key(class_parents($class), self::NOT_ROUND_TRIPPABLE))
+            && !method_exists($class, '__serialize') && !method_exists($class, '__unserialize') && !method_exists($class, '__sleep') && !method_exists($class, '__wakeup') && !is_subclass_of($class, \Serializable::class)
+        ) {
+            // Before creating a prototype: Relay\Table crashes when destroyed without its constructor, and so do its subclasses
+            throw new \DeepClone\NotInstantiableException('Type "'.(new \ReflectionClass($class))->name.'" is not instantiable.');
+        }
         $reflector = new \ReflectionClass($class);
 
         if ($instantiableWithoutConstructor) {
@@ -2067,10 +2076,8 @@ final class DeepClone
         }
 
         if (null === $cloneable) {
-            // Classes whose state serialize() loses, which deepclone_from_array() creates all the same, like unserialize() does
-            if (isset(self::NOT_ROUND_TRIPPABLE[$class]) || ($proto instanceof \Reflector || $proto instanceof \ReflectionGenerator || $proto instanceof \ReflectionType || $proto instanceof \IteratorIterator || $proto instanceof \RecursiveIteratorIterator) && (!$proto instanceof \Serializable && !method_exists($class, '__wakeup') && !method_exists($class, '__unserialize'))) {
-                self::$unexportable[$class] = true;
-
+            // Classes whose state serialize() loses
+            if (($proto instanceof \Reflector || $proto instanceof \ReflectionGenerator || $proto instanceof \ReflectionType || $proto instanceof \IteratorIterator || $proto instanceof \RecursiveIteratorIterator) && (!$proto instanceof \Serializable && !method_exists($class, '__wakeup') && !method_exists($class, '__unserialize'))) {
                 throw new \DeepClone\NotInstantiableException('Type "'.$class.'" is not instantiable.');
             }
 
