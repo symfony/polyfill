@@ -50,6 +50,11 @@ final class DeepClone
         'Relay\Table' => true,
     ];
 
+    /** The properties of DatePeriod that its __wakeup() restores it from before PHP 8.2. */
+    private const DATE_PERIOD_STATE = ['start' => true, 'current' => true, 'end' => true, 'interval' => true, 'recurrences' => true, 'include_start_date' => true];
+
+    private static array $serializedDatePeriods = []; // [object id] = serialized state, before PHP 8.2
+
     private static array $reflectors = [];
     private static array $prototypes = [];
     private static array $cloneable = [];
@@ -97,6 +102,10 @@ final class DeepClone
 
         $refMarkers = self::$refMarkers;
         self::$refMarkers = [];
+        if (\PHP_VERSION_ID < 80200) {
+            $serializedDatePeriods = self::$serializedDatePeriods;
+            self::$serializedDatePeriods = [];
+        }
 
         try {
             $prepared = self::prepare([$value], $objectsPool, $refsPool, $objectsCount, $isStatic, $topMask, $allowedSet, $allow_named_closures)[0];
@@ -118,6 +127,15 @@ final class DeepClone
                     }
                 }
                 $v[0] = $v[1];
+            }
+
+            if (\PHP_VERSION_ID < 80200) {
+                foreach (self::$serializedDatePeriods as $oid => $class) {
+                    // unserialize() calls its __wakeup()
+                    $objectsPool[$oid][1] = $class;
+                    $objectsPool[$oid][3] = 0;
+                }
+                self::$serializedDatePeriods = $serializedDatePeriods;
             }
         }
 
@@ -840,16 +858,22 @@ final class DeepClone
                 $mask[$k] = true;
                 goto handle_value;
             } else {
-                if (self::$classInfo[$class][3] ??= $reflector->hasMethod('__sleep')) {
-                    if ($refsPool) {
-                        self::hideMarkers($refsPool);
+                if (self::$classInfo[$class][3] ??= $reflector->hasMethod('__sleep') || \PHP_VERSION_ID < 80200 && $value instanceof \DatePeriod) {
+                    if (\PHP_VERSION_ID >= 80200 || !$value instanceof \DatePeriod || $reflector->hasMethod('__sleep')) {
+                        if ($refsPool) {
+                            self::hideMarkers($refsPool);
+                        }
+                        if (!\is_array($sleep = $value->__sleep())) {
+                            trigger_error('serialize(): '.$class.'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
+                            $value = null;
+                            goto handle_value;
+                        }
+                        $sleep = self::getSleepProperties($value, $reflector, $sleep);
                     }
-                    if (!\is_array($sleep = $value->__sleep())) {
-                        trigger_error('serialize(): '.$class.'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
-                        $value = null;
-                        goto handle_value;
+                    if (\PHP_VERSION_ID < 80200 && $value instanceof \DatePeriod) {
+                        $sleep ??= (array) $value;
+                        self::serializeDatePeriod($oid, $class, $sleep, $allowedSet);
                     }
-                    $sleep = self::getSleepProperties($value, $reflector, $sleep);
                 }
 
                 $arrayValue = $sleep ?? (array) $value;
@@ -1329,6 +1353,26 @@ final class DeepClone
             }
             unset($v);
         }
+    }
+
+    /**
+     * Before PHP 8.2, DatePeriod rejects writes to the properties that its __wakeup() restores it from, which only
+     * unserialize() sets: they're exported serialized as its class, which it's created from, and its other properties
+     * as usual.
+     */
+    private static function serializeDatePeriod(int $oid, string $class, array &$arrayValue, ?array $allowedSet): void
+    {
+        $state = array_intersect_key($arrayValue, self::DATE_PERIOD_STATE);
+        $arrayValue = array_diff_key($arrayValue, self::DATE_PERIOD_STATE);
+
+        foreach ($state as $v) {
+            if (null !== $allowedSet && \is_object($v) && !isset($allowedSet[strtolower(\get_class($v))])) {
+                throw new \ValueError('deepclone_to_array(): class "'.\get_class($v).'" is not allowed');
+            }
+        }
+        $state = serialize($state);
+
+        self::$serializedDatePeriods[$oid] = 'O:'.\strlen($class).':"'.$class.'"'.substr($state, strpos($state, ':', 1));
     }
 
     /**
