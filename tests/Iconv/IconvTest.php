@@ -225,4 +225,47 @@ HEADERS;
 
         $this->assertFalse(@iconv_set_encoding('foo', 'UTF-8'));
     }
+
+    /**
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv_mime_decode_headers
+     */
+    public function testCharsetCannotLeaveTheMapDirectory()
+    {
+        // Lets the traversal resolve on a regular filesystem, as it does in a PHAR
+        $dir = __DIR__.'/../../src/Iconv/Resources/charset/from.test';
+
+        if (!is_dir($dir) && !@mkdir($dir)) {
+            $this->markTestSkipped('Cannot create a directory next to the charset maps.');
+        }
+
+        try {
+            foreach (['test/../from.windows-1252', 'test\..\from.windows-1252'] as $charset) {
+                $this->assertFalse(@p::iconv($charset, 'UTF-8', "\x80"));
+                $this->assertFalse(@p::iconv('UTF-8', $charset, '€'));
+                $this->assertSame('', @p::iconv_mime_decode("=?{$charset}?Q?=80?="));
+                $this->assertSame(['Subject' => "=?{$charset}?Q?=80?="], p::iconv_mime_decode_headers("Subject: =?{$charset}?Q?=80?=", \ICONV_MIME_DECODE_CONTINUE_ON_ERROR));
+            }
+        } finally {
+            rmdir($dir);
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Iconv\Iconv::iconv
+     */
+    public function testShippedCharsetMapsLoad()
+    {
+        $this->assertNotEmpty($files = glob(__DIR__.'/../../src/Iconv/Resources/charset/from.*.php'));
+
+        foreach ($files as $file) {
+            $map = require $file;
+            $charset = substr(basename($file, '.php'), 5);
+
+            $this->assertSame(current($map), p::iconv($charset, 'UTF-8', (string) key($map)), $charset);
+        }
+
+        $this->assertSame('K', p::iconv('UTF-8', 'US-ASCII//TRANSLIT', "\u{212A}"));
+    }
 }
