@@ -700,7 +700,7 @@ final class Iconv
 
     private static function getData($file)
     {
-        if (file_exists($file = __DIR__.'/Resources/charset/'.$file.'.php')) {
+        if (preg_match('/^[a-z0-9._-]++$/D', $file) && file_exists($file = __DIR__.'/Resources/charset/'.$file.'.php')) {
             return require $file;
         }
 
