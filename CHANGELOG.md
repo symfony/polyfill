@@ -1,3 +1,33 @@
+# 1.43.0
+
+  * Add the `UUID_TYPE_TIME_V6`, `UUID_TYPE_TIME_V7`, `UUID_TYPE_VENDOR` and `UUID_TYPE_SECURITY` constants, and create v6 and v7 UUIDs with `uuid_create()`
+  * Add `selectordinal` support to the `MessageFormatter` polyfill
+  * Update the IDN data to Unicode 15.1
+  * Validate charset names before loading their map in the Iconv polyfill
+  * Fix `IDNA_CHECK_CONTEXTJ` on labels with several join controls, and reject `xn--` labels that decode to surrogates or code points above U+10FFFF
+  * Match the intl extension on ill-formed UTF-8 in the grapheme functions, including `grapheme_strrev()`
+  * Fix argument validation, grapheme comparison and memory usage of `grapheme_levenshtein()`
+  * Fix `grapheme_strrev()` in standalone installs of symfony/polyfill-php86
+  * Fix script and language detection in `locale_is_right_to_left()` and `Locale::isRightToLeft()`
+  * Fix `Collator` sorting, English list patterns in `IntlListFormatter`, and number formatting in `MessageFormatter`
+  * Fix bcmath number validation in `bcceil()`, `bcfloor()` and `bcround()`
+  * Fix edge cases of `str_increment()`, `str_decrement()`, `ini_parse_quantity()`, `json_validate()` and `PhpToken`
+  * Fix quoting in `odbc_connection_string_is_quoted()` and `odbc_connection_string_should_quote()`
+  * Fix the Mbstring polyfill on ill-formed UTF-8, including endless loops in `mb_convert_case()` and `mb_encode_numericentity()`
+  * Fix the Mbstring search functions ignoring their needle, offset or encoding
+  * Fix argument validation in `mb_ord()`, `mb_chr()`, `mb_str_split()`, `mb_convert_encoding()` and `mb_check_encoding()`
+  * Keep keys and scalar values when `mb_convert_encoding()` converts an array
+  * Avoid excessive allocations in `mb_str_pad()`
+  * Fix `iconv_substr()`, `iconv_strrpos()` and `//TRANSLIT` without the Normalizer class
+  * Name the first parameter of the `Normalizer` methods `$string`, and reject invalid forms in `Normalizer::isNormalized()`
+  * Align `uuid_compare()`, `uuid_create()`, `uuid_time()` and `uuid_mac()` with the extension
+  * Fix duplicate v1 UUIDs generated in the same microsecond, also across processes sharing APCu
+  * Accept extension-provided handles in `Io\Poll`, report `EINTR` like the native backends, and stop busy-waiting
+  * Speed up `Io\Poll\Context::wait()`, watcher updates, and `deepclone_to_array()` on large object graphs
+  * Align `deepclone_*()` payloads, errors and supported classes with `serialize()` and the extension
+  * Preserve PHP references and initialize lazy objects in `deepclone_to_array()`
+  * Fix deepcloning objects whose property defaults hold closures, `DatePeriod` on PHP 8.1, and objects held by `Random\Randomizer` or `HashContext`
+
 # 1.42.0
 
   * Add polyfill for the `Time\Duration` class
