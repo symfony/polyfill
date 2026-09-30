@@ -2505,6 +2505,37 @@ class DeepCloneTest extends TestCase
         $this->assertSame($expected, $actual);
     }
 
+    public function testHydrateMangledKeysNameThePropertiesTheirScopeDeclaresOrInherits()
+    {
+        // Like unserialize() does for the "*" scope and the one of the object's class, whatever their visibility
+        $vars = [
+            "\0".HydrateBar::class."\0prot" => 1,
+            "\0*\0priv" => 2,
+            "\0".HydrateFoo::class."\0ro" => 3,
+        ];
+        $expected = [
+            "\0*\0prot" => 1,
+            "\0".HydrateBar::class."\0priv" => 2,
+            "\0".HydrateFoo::class."\0priv" => null,
+            'ro' => 3,
+        ];
+
+        $actual = (array) deepclone_hydrate(HydrateBar::class, $vars);
+        ksort($actual);
+        ksort($expected);
+
+        $this->assertSame($expected, $actual);
+
+        foreach (["\0*\0nope" => 'key scope "'.HydrateBar::class.'" does not declare a "nope" property', "\0stdClass\0prot" => 'key scope "stdClass" is not a parent of "'.HydrateBar::class.'"'] as $key => $message) {
+            try {
+                deepclone_hydrate(HydrateBar::class, [$key => 1]);
+                $this->fail('ValueError expected.');
+            } catch (\ValueError $e) {
+                $this->assertSame('deepclone_hydrate(): Argument #2 ($vars) '.$message, $e->getMessage());
+            }
+        }
+    }
+
     public function testHydrateFlatOwnScopeMangledKeys()
     {
         $src = new HydrateFoo();

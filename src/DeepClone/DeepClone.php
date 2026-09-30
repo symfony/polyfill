@@ -531,16 +531,27 @@ final class DeepClone
             }
             $scopeName = substr($name, 1, $sep - 1);
             $realName = substr($name, $sep + 1);
-            if ('*' !== $scopeName && 'stdClass' !== $scopeName
+            if ('*' !== $scopeName
                 && $scopeName !== $class
                 && (!is_a($class, $scopeName, true) || interface_exists($scopeName, false))
             ) {
                 throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) key scope "%s" is not a parent of "%s"', $scopeName, $class));
             }
-            // Valid scope, but the targeted slot isn't declared — reject
-            // instead of silently creating a dynamic property, since the
-            // mangled form specifically targets a declared protected/private slot.
-            throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) key scope "%s" does not declare a "%s" property', '*' === $scopeName ? $class : $scopeName, $realName));
+            // Like the extension, and unserialize() for the "*" scope and the one of the object's class, the key names the
+            // property that its scope declares or inherits, whatever their visibility
+            $scope = '*' === $scopeName ? $class : $scopeName;
+            for ($r = self::$reflectors[$scope] ?? new \ReflectionClass($scope); $r; $r = $r->getParentClass()) {
+                if ($r->hasProperty($realName) && ($p = $r->getProperty($realName))->class === $r->name) {
+                    if ($p->isStatic() || \PHP_VERSION_ID >= 80400 && $p->isVirtual()) {
+                        break;
+                    }
+                    $scoped[$r->name][$realName] = &$value;
+                    continue 2;
+                }
+            }
+            // The targeted slot isn't declared: reject instead of silently creating a dynamic property,
+            // since the mangled form specifically targets a declared protected/private slot
+            throw new \ValueError(\sprintf('deepclone_hydrate(): Argument #2 ($vars) key scope "%s" does not declare a "%s" property', $scope, $realName));
         }
         unset($value);
 
