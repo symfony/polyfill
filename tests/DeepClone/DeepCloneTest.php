@@ -1862,6 +1862,29 @@ class DeepCloneTest extends TestCase
         $this->assertSame($clone->outside, $clone->ai['inside']);
     }
 
+    public function testArrayObjectChangedAfterToArray()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.8', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.8 lets ArrayObject and ArrayIterator write to the payload.');
+        }
+
+        $ao = new \ArrayObject([1, 'list' => [1]]);
+        $ai = new \RecursiveArrayIterator([1]);
+        $empty = new \ArrayObject([1]);
+        unset($empty[0]);
+        $data = deepclone_to_array([$ao, $ai, $empty]);
+
+        $ao[] = 2;
+        $ao['list'][] = 2;
+        $ai[] = 2;
+        $empty[] = 2;
+
+        $clone = deepclone_from_array($data);
+        $this->assertSame([1, 'list' => [1]], $clone[0]->getArrayCopy());
+        $this->assertSame([1], $clone[1]->getArrayCopy());
+        $this->assertSame([], $clone[2]->getArrayCopy());
+    }
+
     public function testDocBehaviorsReflectionClassIsRejected()
     {
         $this->expectException(\DeepClone\NotInstantiableException::class);

@@ -865,6 +865,17 @@ final class DeepClone
                     $arrayValue = [(array) $value];
                 }
 
+                // ArrayObject and ArrayIterator return their storage without separating it, so that writing to the object later would change the payload
+                if (($value instanceof \ArrayObject || $value instanceof \ArrayIterator) && \is_array($storage = $arrayValue[1] ?? null)) {
+                    if (null === $firstKey = array_key_first($storage)) {
+                        $storage = [];
+                    } else {
+                        $storage[$firstKey] = $storage[$firstKey];
+                    }
+                    $arrayValue[1] = $storage;
+                    unset($storage);
+                }
+
                 if ($hasUnserialize = self::$classInfo[$class][0] ??= $reflector->hasMethod('__unserialize')) {
                     $properties = $arrayValue;
                     goto prepare_value;
