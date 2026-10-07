@@ -1,3 +1,7 @@
+# 1.43.1
+
+  * Fix writes to an `ArrayObject` or `ArrayIterator` changing their `deepclone_to_array()` payload
+
 # 1.43.0
 
   * Add the `UUID_TYPE_TIME_V6`, `UUID_TYPE_TIME_V7`, `UUID_TYPE_VENDOR` and `UUID_TYPE_SECURITY` constants, and create v6 and v7 UUIDs with `uuid_create()`
