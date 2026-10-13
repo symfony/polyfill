@@ -59,6 +59,8 @@ final class DeepClone
     private static array $declaredProperties = [];
     private static array $reflectors = [];
     private static array $prototypes = [];
+    private static array $clonePrototypes = []; // [class] = prototype that deepclone_from_array() clones, for objects not flagged for __unserialize()
+    private static array $unserializeClonePrototypes = []; // [class] = prototype that deepclone_from_array() clones, for objects flagged for __unserialize()
     private static array $cloneable = [];
     private static array $instantiableWithoutConstructor = [];
     private static array $needsFullUnserialize = [];
@@ -295,9 +297,17 @@ final class DeepClone
         if (!\is_int($meta) && !\is_array($meta)) {
             throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" must be of type int|array, '.self::valueName($meta).' given');
         }
-        foreach (['properties', 'resolve', 'states', 'refs', 'refMasks'] as $key) {
-            if (\array_key_exists($key, $data) && !\is_array($data[$key])) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "'.$key.'" must be of type array, '.self::valueName($data[$key]).' given');
+        $properties = $data['properties'] ?? [];
+        $resolve = $data['resolve'] ?? [];
+        $states = $data['states'] ?? [];
+        $refs = $data['refs'] ?? [];
+        $refMasks = $data['refMasks'] ?? [];
+        // Null values, which the coalescing operator hides, are reported by the loop
+        if (!\is_array($properties) || !\is_array($resolve) || !\is_array($states) || !\is_array($refs) || !\is_array($refMasks) || \in_array(null, $data, true)) {
+            foreach (['properties', 'resolve', 'states', 'refs', 'refMasks'] as $key) {
+                if (\array_key_exists($key, $data) && !\is_array($data[$key])) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "'.$key.'" must be of type array, '.self::valueName($data[$key]).' given');
+                }
             }
         }
 
@@ -375,50 +385,49 @@ final class DeepClone
             if ($meta > 0 && $numClasses < 1) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" references class index 0 but "classes" is empty');
             }
-            $objectMeta = $meta ? array_fill(0, $meta, [$classes[0], 0]) : [];
             $numObjects = $meta;
+            $meta = $meta ? array_fill(0, $meta, 0) : [];
         } else {
             $numObjects = \count($meta);
-            $objectMeta = [];
+            // The keys of a list are valid ids
+            $isList = array_is_list($meta);
             foreach ($meta as $id => $v) {
-                if (!\is_int($id) || $id < 0 || $id >= $numObjects) {
+                if (!$isList && (!\is_int($id) || $id < 0 || $id >= $numObjects)) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" entry index '.$id.' out of range');
                 }
-                if (\is_array($v)) {
+                if (\is_int($v)) {
+                    $cidx = $v;
+                } elseif (\is_array($v)) {
                     $cidx = $v[0] ?? null;
                     $wakeup = $v[1] ?? null;
                     if (!\is_int($cidx) || !\is_int($wakeup)) {
                         throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" entry '.$id.' must be [int, int]');
                     }
-                } elseif (\is_int($v)) {
-                    $cidx = $v;
-                    $wakeup = 0;
+                    if (0 !== $wakeup) {
+                        $expectedStates[$id] = $wakeup;
+                    }
                 } else {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" entry '.$id.' must be of type int|array, '.self::valueName($v).' given');
                 }
                 if ($cidx < 0 || $cidx >= $numClasses) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "objectMeta" entry '.$id.' has out-of-range class index '.$cidx);
                 }
-                $objectMeta[$id] = [$classes[$cidx], $wakeup];
-                if (0 !== $wakeup) {
-                    $expectedStates[$id] = $wakeup;
-                }
             }
         }
 
         return self::reconstruct(
             $data['prepared'],
-            $objectMeta,
+            $meta,
+            $classes,
             $numObjects,
-            $data['properties'] ?? [],
-            $data['resolve'] ?? [],
-            $data['states'] ?? [],
-            $data['refs'] ?? [],
+            $properties,
+            $resolve,
+            $states,
+            $refs,
             $data['mask'] ?? null,
-            $data['refMasks'] ?? [],
+            $refMasks,
             $allowed_classes,
             $expectedStates,
-            $classes,
         );
     }
 
@@ -1005,12 +1014,26 @@ final class DeepClone
         }
     }
 
-    private static function reconstruct($prepared, $objectMeta, $numObjects, $properties, $resolve, $states, $refs, $preparedMask = null, $refMasks = [], ?array $allowedClasses = null, array $expectedStates = [], array $classes = [])
+    private static function reconstruct($prepared, array $objectMeta, array $classes, int $numObjects, $properties, $resolve, $states, $refs, $preparedMask, $refMasks, ?array $allowedClasses, array $expectedStates)
     {
         $objects = [];
-        $placeholders = false;
+        $placeholders = []; // [id] = class, for the objects that only __unserialize() can create
 
-        foreach ($objectMeta as $id => [$class, $wakeup]) {
+        foreach ($objectMeta as $id => $m) {
+            if (\is_int($m)) {
+                $class = $classes[$m];
+                $wakeup = 0;
+                $prototype = self::$clonePrototypes[$class] ?? null;
+            } else {
+                $class = $classes[$m[0]];
+                $wakeup = $m[1];
+                $prototype = $wakeup < 0 ? self::$unserializeClonePrototypes[$class] ?? null : self::$clonePrototypes[$class] ?? null;
+            }
+            // Objects of a class that passed the checks below are clones of its prototype
+            if ($prototype) {
+                $objects[$id] = clone $prototype;
+                continue;
+            }
             if (':' === ($class[1] ?? null)) {
                 try {
                     $objects[$id] = unserialize($class, null !== $allowedClasses ? ['allowed_classes' => $allowedClasses] : []);
@@ -1045,9 +1068,14 @@ final class DeepClone
 
             if (self::$needsFullUnserialize[$class] ?? false) {
                 $objects[$id] = null; // placeholder — finalized below or in states loop
-                $placeholders = true;
+                $placeholders[$id] = $class;
             } elseif (self::$cloneable[$class]) {
                 $objects[$id] = clone self::$prototypes[$class];
+                if ($wakeup < 0) {
+                    self::$unserializeClonePrototypes[$class] = self::$prototypes[$class];
+                } else {
+                    self::$clonePrototypes[$class] = self::$prototypes[$class];
+                }
             } elseif (self::$instantiableWithoutConstructor[$class]) {
                 $objects[$id] = self::$reflectors[$class]->newInstanceWithoutConstructor();
             } elseif (null === self::$prototypes[$class]) {
@@ -1063,7 +1091,8 @@ final class DeepClone
         $hooked = [];
         if (\PHP_VERSION_ID >= 80400) {
             foreach ($classes as $class) {
-                if (isset(self::$reflectors[$class]) && $classHooked = self::$hookedProperties[$class] ??= self::getHookedProperties(self::$reflectors[$class])) {
+                // A class whose hooked properties are known has a reflector
+                if ($classHooked = self::$hookedProperties[$class] ?? (isset(self::$reflectors[$class]) ? self::$hookedProperties[$class] = self::getHookedProperties(self::$reflectors[$class]) : null)) {
                     foreach ($classHooked as $scope => $props) {
                         foreach ($props as $name => $propertyReflector) {
                             $hooked[$scope][$name][self::$reflectors[$class]->name] = $propertyReflector;
@@ -1087,7 +1116,7 @@ final class DeepClone
                         $deferred[] = $state;
                         continue;
                     }
-                    $class = $objectMeta[$zid][0];
+                    $class = $placeholders[$zid];
                     $ser = serialize($state[1] ?? []);
                     if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
                         throw new \ValueError('deepclone_from_array(): could not reconstruct "'.$class.'" via __unserialize()');
@@ -1095,14 +1124,14 @@ final class DeepClone
                     $objects[$zid] = $obj;
                 }
             } catch (\TypeError|\ValueError $e) {
-                self::checkStates($states, $objects, $objectMeta, $numObjects, $expectedStates);
+                self::checkStates($states, $objects, $placeholders, $numObjects, $expectedStates);
 
                 throw $e;
             }
         }
 
         if ($deferred) {
-            self::finalizeDeferred($deferred, $objects, $objectMeta, $refs, $refMasks, $allowedClasses);
+            self::finalizeDeferred($deferred, $objects, $placeholders, $refs, $refMasks, $allowedClasses);
         } else {
             foreach ($refMasks as $k => $m) {
                 if (isset($refs[$k]) || \array_key_exists($k, $refs)) {
@@ -1123,31 +1152,38 @@ final class DeepClone
             if (!\is_array($scopeProps)) {
                 throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" entry for scope "'.$scope.'" must be of type array, '.self::valueName($scopeProps).' given');
             }
-            if ('stdClass' !== $scope && !class_exists($scope, false)) {
-                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" scope "'.$scope.'" is not a loaded class name');
-            }
-            $declared = 'stdClass' === $scope ? null : self::$declaredProperties[$scope] ??= self::getDeclaredProperties($scope);
-            $resolveScope = null;
-            if (isset($resolve[$scope]) || \array_key_exists($scope, $resolve)) {
-                if (!\is_array($resolve[$scope])) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "resolve" entry for scope "'.$scope.'" must be of type array, '.self::valueName($resolve[$scope]).' given');
+            if ('stdClass' === $scope) {
+                $declared = null;
+            } elseif (null === $declared = self::$declaredProperties[$scope] ?? null) {
+                if (!class_exists($scope, false)) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" scope "'.$scope.'" is not a loaded class name');
                 }
-                $resolveScope = $resolve[$scope];
+                $declared = self::$declaredProperties[$scope] = self::getDeclaredProperties($scope);
             }
+            if (null === $resolveScope = $resolve[$scope] ?? null) {
+                if (\array_key_exists($scope, $resolve)) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "resolve" entry for scope "'.$scope.'" must be of type array, null given');
+                }
+                $resolveScope = [];
+            } elseif (!\is_array($resolveScope)) {
+                throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "resolve" entry for scope "'.$scope.'" must be of type array, '.self::valueName($resolveScope).' given');
+            }
+            // A name that maps to null is looked up the slow way, to be reported below
+            $resolvesNull = $resolveScope && \in_array(null, $resolveScope, true);
             $refSlots = [];
-            foreach ($scopeProps as $name => $idValues) {
+            foreach ($scopeProps as $name => $values) {
                 // Numeric property names (e.g. $o->{'999'}) surface as integer
                 // array keys because PHP normalizes numeric string keys; accept
                 // them as-is, the same way unserialize() round-trips them.
-                if (!\is_array($idValues)) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" must be of type array, '.self::valueName($idValues).' given');
+                if (!\is_array($values)) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" must be of type array, '.self::valueName($values).' given');
                 }
-                if ("\0" === ($name[0] ?? '')) {
+                if (str_starts_with($name, "\0")) {
                     // Not a legal name, which the engine refuses to access, even if an array cast can give it to a stdClass
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" names of scope "'.$scope.'" cannot start with "\0"');
                 }
                 // Checked for the first object of each property only, like the extension does for all
-                if (null !== $declared && \is_int($id = array_key_first($idValues)) && \is_object($o = $objects[$id] ?? null)) {
+                if (null !== $declared && \is_int($id = array_key_first($values)) && \is_object($o = $objects[$id] ?? null)) {
                     if (!$o instanceof $scope) {
                         throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" scope "'.$scope.'" is not a parent of object id '.$id.' ('.explode("\0", $o::class, 2)[0].')');
                     }
@@ -1155,50 +1191,30 @@ final class DeepClone
                         throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "properties" value for "'.$scope.'::'.$name.'" does not match a declared property on object id '.$id);
                     }
                 }
-                $resolveIds = null;
-                if ($resolveScope && (isset($resolveScope[$name]) || \array_key_exists($name, $resolveScope))) {
-                    if (!\is_array($resolveScope[$name])) {
-                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "resolve" value for "'.$scope.'::'.$name.'" must be of type array, '.self::valueName($resolveScope[$name]).' given');
-                    }
-                    $resolveIds = $resolveScope[$name];
-                }
-                if (null === $resolveIds) {
+                if (!isset($resolveScope[$name]) && !($resolvesNull && \array_key_exists($name, $resolveScope))) {
                     continue;
                 }
+                if (!\is_array($resolveIds = $resolveScope[$name])) {
+                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "resolve" value for "'.$scope.'::'.$name.'" must be of type array, '.self::valueName($resolveIds).' given');
+                }
                 foreach ($resolveIds as $id => $marker) {
-                    if (true === $marker) {
-                        if (null === ($v = $scopeProps[$name][$id] ?? null) || !\is_int($v)) {
-                            throw new \ValueError('deepclone_from_array(): malformed payload, object reference value must be of type int, '.self::valueName($v).' given');
-                        }
-                        if ($v >= 0) {
-                            if (!isset($objects[$v])) {
-                                throw new \ValueError('deepclone_from_array(): malformed payload, unknown object id '.$v);
-                            }
-                            $scopeProps[$name][$id] = $objects[$v];
-                        } else {
-                            if (\PHP_INT_MIN === $v) {
-                                throw new \ValueError('deepclone_from_array(): malformed payload, ref id out of range');
-                            }
-                            if (!(isset($refs[-$v]) || \array_key_exists(-$v, $refs))) {
-                                throw new \ValueError('deepclone_from_array(): malformed payload, unknown ref id '.(-$v));
-                            }
-                            $scopeProps[$name][$id] = $refs[-$v];
-                        }
+                    if (true === $marker && \is_int($v = $values[$id] ?? null) && isset($objects[$v])) {
+                        $values[$id] = $objects[$v];
                     } elseif (0 === $marker) {
-                        $scopeProps[$name][$id] = self::resolveNamedClosureScalar($scopeProps[$name][$id] ?? null, $objects, $refs);
+                        $values[$id] = self::resolveNamedClosureScalar($values[$id] ?? null, $objects, $refs);
                     } elseif (false === $marker) {
                         // Validated and resolved by value, bound below where PHP allows it
-                        $v = $scopeProps[$name][$id] ?? null;
-                        $scopeProps[$name][$id] = self::resolveWithMask($v, false, $objects, $refs, $allowedClasses);
+                        $v = $values[$id] ?? null;
+                        $values[$id] = self::resolveWithMask($v, false, $objects, $refs, $allowedClasses);
                         $refSlots[$name][$id] = -$v;
+                    } elseif (isset($values[$id]) || \array_key_exists($id, $values)) {
+                        $values[$id] = self::resolveWithMask($values[$id], $marker, $objects, $refs, $allowedClasses);
                     } else {
-                        $scopeProps[$name][$id] = self::resolveWithMask($scopeProps[$name][$id] ?? null, $marker, $objects, $refs, $allowedClasses);
+                        // Like the extension, check a marker that matches no value against null, which markers reject, and add nothing
+                        self::resolveWithMask(null, $marker, $objects, $refs, $allowedClasses);
                     }
                 }
-                if (\count($scopeProps[$name]) !== \count($idValues)) {
-                    // Like the extension, markers that match no value add none: the known ones rejected null, the others resolved it
-                    $scopeProps[$name] = array_intersect_key($scopeProps[$name], $idValues);
-                }
+                $scopeProps[$name] = $values;
             }
             if ($refSlots) {
                 // Hooked, readonly and internal properties can't take a reference: they get the value
@@ -1248,20 +1264,21 @@ final class DeepClone
             if (\is_array($state)) {
                 $zid = $state[0] ?? null;
                 $sprops = $state[1] ?? null;
-                if (!\is_int($zid) || !\array_key_exists(1, $state)) {
+                if (!\is_int($zid) || null === $sprops && !\array_key_exists(1, $state)) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) malformed "states" entry: expected [int, mixed, mixed?]');
                 }
-                if ($zid < 0 || $zid >= $numObjects) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references unknown object id '.$zid);
-                }
-                if (!isset($expectedStates[$zid]) || $expectedStates[$zid] >= 0) {
+                // Flagged ids are in range
+                if (($expectedStates[$zid] ?? 0) >= 0) {
+                    if ($zid < 0 || $zid >= $numObjects) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references unknown object id '.$zid);
+                    }
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" has an __unserialize entry for object id '.$zid.' but "objectMeta" does not flag it for __unserialize');
                 }
                 unset($expectedStates[$zid]);
                 if (null === $obj = $objects[$zid]) {
                     // Internal final class with __unserialize that rejects empty unserialize
                     // reconstruct via the full O: serialization form (same as PHP's unserialize).
-                    $class = $objectMeta[$zid][0];
+                    $class = $placeholders[$zid];
                     $resolvedProps = isset($state[2]) ? self::resolveWithMask($sprops, $state[2], $objects, $refs, $allowedClasses) : $sprops;
                     $ser = serialize($resolvedProps);
                     if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
@@ -1271,7 +1288,7 @@ final class DeepClone
                     continue;
                 }
                 $objClass = $obj::class;
-                if (self::$needsFullUnserialize[$objectMeta[$zid][0]] ?? false) {
+                if (isset($placeholders[$zid])) {
                     // Already fully reconstructed via the full O: serialization
                     // form (eager-finalize loop above), which invokes
                     // __unserialize() internally. Calling it again would re-init
@@ -1279,12 +1296,15 @@ final class DeepClone
                     // BcMath\Number throws "Cannot modify readonly property".
                     continue;
                 }
-                if (!method_exists($obj, '__unserialize')) {
-                    throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references object id '.$zid.' whose class '.$objClass.' has no __unserialize() method');
+                // Like unserialize(), call it whatever its visibility
+                if (null === $m = self::$classInfo[$objClass][5] ?? null) {
+                    if (!method_exists($obj, '__unserialize')) {
+                        throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references object id '.$zid.' whose class '.$objClass.' has no __unserialize() method');
+                    }
+                    $m = self::$classInfo[$objClass][5] = (new \ReflectionMethod($objClass, '__unserialize'))->isPublic() ?: new \ReflectionMethod($objClass, '__unserialize');
                 }
                 $resolvedProps = isset($state[2]) ? self::resolveWithMask($sprops, $state[2], $objects, $refs, $allowedClasses) : $sprops;
-                // Like unserialize(), call it whatever its visibility
-                if (true === $m = self::$classInfo[$objClass][5] ??= (new \ReflectionMethod($objClass, '__unserialize'))->isPublic() ?: new \ReflectionMethod($objClass, '__unserialize')) {
+                if (true === $m) {
                     $obj->__unserialize($resolvedProps);
                 } else {
                     $m->invoke($obj, $resolvedProps);
@@ -1344,7 +1364,7 @@ final class DeepClone
      * Finalizes the objects that only __unserialize() can create and whose state
      * nests other objects, resolving the references of the payload on the way.
      */
-    private static function finalizeDeferred(array $deferred, array &$objects, array $objectMeta, array &$refs, array $refMasks, ?array $allowedClasses): void
+    private static function finalizeDeferred(array $deferred, array &$objects, array $placeholders, array &$refs, array $refMasks, ?array $allowedClasses): void
     {
         // Creating them with unserialize() would copy the objects their state
         // nests, before these are hydrated and without the references they hold
@@ -1353,7 +1373,7 @@ final class DeepClone
         foreach ($deferred as $k => $state) {
             $zid = $state[0];
             $sprops = $state[1] ?? null;
-            $class = $objectMeta[$zid][0] ?? null;
+            $class = $placeholders[$zid];
             if ('Random\Randomizer' === $class) {
                 // Like __unserialize(), the constructor keeps the engine and draws from it
                 $eid = $sprops[0]['engine'] ?? null;
@@ -1398,7 +1418,7 @@ final class DeepClone
                 if (!self::maskRefsReady($state[1] ?? null, $state[2], $objects)) {
                     continue;
                 }
-                $class = $objectMeta[$zid][0];
+                $class = $placeholders[$zid];
                 $resolvedProps = self::resolveWithMask($state[1] ?? null, $state[2], $objects, $refs, $allowedClasses);
                 $ser = serialize($resolvedProps);
                 if (false === $obj = unserialize('O:'.\strlen($class).':"'.$class.'"'.substr($ser, strpos($ser, ':', 1)))) {
@@ -1540,7 +1560,10 @@ final class DeepClone
         }
 
         foreach ($mask as $k => $m) {
-            if (false === $m) {
+            if (true === $m && \is_int($v = $value[$k] ?? null) && isset($objects[$v])) {
+                // Inlines the most common case of the recursion below
+                $value[$k] = $objects[$v];
+            } elseif (false === $m) {
                 $slot = $value[$k] ?? null;
                 if (!\is_int($slot)) {
                     throw new \ValueError('deepclone_from_array(): malformed payload, hard-ref slot must be of type int, '.self::valueName($slot).' given');
@@ -2423,7 +2446,8 @@ final class DeepClone
 
     private static function getHydrator($class)
     {
-        $baseHydrator = self::$hydrators['stdClass'] ??= static function ($properties, $objects) {
+        // $objects by reference, which spares copying it to fetch its objects for writing
+        $baseHydrator = self::$hydrators['stdClass'] ??= static function ($properties, &$objects) {
             foreach ($properties as $name => $values) {
                 foreach ($values as $i => $v) {
                     $objects[$i]->$name = $v;
@@ -2570,7 +2594,7 @@ final class DeepClone
     /**
      * Throws the ValueError of the extension for the states of a payload that failed to reconstruct, when it finds why.
      */
-    private static function checkStates(array $states, array $objects, array $objectMeta, int $numObjects, array $expectedStates): void
+    private static function checkStates(array $states, array $objects, array $placeholders, int $numObjects, array $expectedStates): void
     {
         foreach ($states as $state) {
             if (\is_array($state)) {
@@ -2585,7 +2609,7 @@ final class DeepClone
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" has an __unserialize entry for object id '.$zid.' but "objectMeta" does not flag it for __unserialize');
                 }
                 unset($expectedStates[$zid]);
-                $class = \is_object($objects[$zid] ?? null) ? $objects[$zid]::class : (new \ReflectionClass($objectMeta[$zid][0]))->name;
+                $class = \is_object($objects[$zid] ?? null) ? $objects[$zid]::class : (new \ReflectionClass($placeholders[$zid]))->name;
                 if (!method_exists($class, '__unserialize')) {
                     throw new \ValueError('deepclone_from_array(): Argument #1 ($data) "states" entry references object id '.$zid.' whose class '.$class.' has no __unserialize() method');
                 }
