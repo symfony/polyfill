@@ -1,3 +1,8 @@
+# 1.43.2
+
+  * Speed up `deepclone_from_array()`
+  * Report malformed `deepclone_from_array()` payloads like the extension
+
 # 1.43.1
 
   * Fix writes to an `ArrayObject` or `ArrayIterator` changing their `deepclone_to_array()` payload
