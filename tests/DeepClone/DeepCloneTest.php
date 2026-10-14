@@ -991,6 +991,16 @@ class DeepCloneTest extends TestCase
             'deepclone_from_array(): Argument #1 ($data) "resolve" entry for scope "stdClass" must be of type array, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1]]], 'resolve' => ['stdClass' => null]],
             'deepclone_from_array(): Argument #1 ($data) "resolve" value for "stdClass::a" must be of type array, null given' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [1]]], 'resolve' => ['stdClass' => ['a' => null]]],
             'deepclone_from_array(): malformed payload, ref id 1 cannot reference itself' => ['classes' => '', 'objectMeta' => 0, 'prepared' => [-1], 'mask' => [false], 'refs' => [1 => -1], 'refMasks' => [1 => false]],
+            // Cut at their first NUL byte
+            'deepclone_from_array(): Argument #1 ($data) "objectMeta" entry index  out of range' => ['classes' => 'stdClass', 'objectMeta' => ["\0k" => 0], 'prepared' => 0],
+            'deepclone_from_array(): Argument #1 ($data) "properties" scope "Foo" is not a loaded class name' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ["Foo\0Bar" => ['a' => [1]]]],
+            // Without warnings about the unknown id
+            'deepclone_from_array(): Argument #1 ($data) "properties" entry for "Exception::line" references unknown object id 3' => ['classes' => 'Exception', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['Exception' => ['line' => [3 => 1]]]],
+            // The closure index is checked before the site
+            'deepclone_from_array(): malformed payload, const-expr-closure references unknown closure index -1' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['c' => [['stdClass', 'NOPE', null, -1, 1]]]], 'resolve' => ['stdClass' => ['c' => [1]]]],
+            // An object that only __unserialize() can create is referenced before its state is replayed
+            'deepclone_from_array(): Argument #1 ($data) "objectMeta" entry 0 flags object for state replay but no matching "states" entry was found' => ['classes' => ['HashContext', 'stdClass'], 'objectMeta' => [[0, -1], 1], 'prepared' => 1, 'properties' => ['stdClass' => ['h' => [1 => 0]]], 'resolve' => ['stdClass' => ['h' => [1 => true]]]],
+            'deepclone_from_array(): Argument #1 ($data) "states" entry must be of type int|array, string given' => ['classes' => ['HashContext', 'stdClass'], 'objectMeta' => [[0, -1], 1], 'prepared' => 1, 'properties' => ['stdClass' => ['h' => [1 => 0]]], 'resolve' => ['stdClass' => ['h' => [1 => true]]], 'states' => ['x']],
         ];
         if (!\extension_loaded('deepclone') || TestListenerTrait::$enabledPolyfills || version_compare(phpversion('deepclone'), '0.8.7', '>=')) {
             // An array cast can give such names to a stdClass
@@ -1022,6 +1032,77 @@ class DeepCloneTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Cannot assign string to property '.TypedInt::class.'::$x of type int');
         deepclone_from_array(['classes' => TypedInt::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['x' => ['abc', 5 => 1]]]]);
+    }
+
+    public function testHashContextWithoutStateIsMalformed()
+    {
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('deepclone_from_array(): Argument #1 ($data) malformed "states" entry: expected [int, mixed, mixed?]');
+        deepclone_from_array(['classes' => 'HashContext', 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[0]]]);
+    }
+
+    public function testNonArrayStatesThrowTheTypeErrorOfUnserialize()
+    {
+        $payloads = [
+            DeepCloneUnserOnly::class.'::__unserialize(): Argument #1 ($data) must be of type array, int given' => ['classes' => DeepCloneUnserOnly::class, 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[0, 1]]],
+            'HashContext::__unserialize(): Argument #1 ($data) must be of type array, null given' => ['classes' => 'HashContext', 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[0, null]]],
+        ];
+        if (\PHP_VERSION_ID >= 80200) {
+            $payloads['Random\Randomizer::__unserialize(): Argument #1 ($data) must be of type array, string given'] = ['classes' => \Random\Randomizer::class, 'objectMeta' => [[0, -1]], 'prepared' => 0, 'states' => [[0, 'x']]];
+        }
+
+        foreach ($payloads as $message => $payload) {
+            try {
+                deepclone_from_array($payload);
+                $this->fail(\sprintf('deepclone_from_array() accepted a payload expected to throw "%s".', $message));
+            } catch (\TypeError $e) {
+                $this->assertSame($message, $e->getMessage());
+            }
+        }
+    }
+
+    public function testDynamicPropertiesBoundToReferencesRaiseNoDeprecation()
+    {
+        $errors = [];
+        set_error_handler(static function ($type, $message) use (&$errors) {
+            $errors[] = $message;
+
+            return true;
+        });
+        try {
+            $object = deepclone_from_array(['classes' => TypedInt::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['a' => [-1]]], 'resolve' => ['stdClass' => ['a' => [false]]], 'refs' => [1 => 3]]);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $errors);
+        $this->assertSame(3, $object->a);
+    }
+
+    public function testWakeupFlagsAreReadByTheirSign()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.10', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.10 reads the wakeup flags as 32-bit integers.');
+        }
+
+        foreach ([\PHP_INT_MIN, -4294967296] as $flag) {
+            $this->assertInstanceOf(DeepCloneUnserOnly::class, deepclone_from_array(['classes' => DeepCloneUnserOnly::class, 'objectMeta' => [[0, $flag]], 'prepared' => 0, 'states' => [[0, []]]]));
+        }
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('deepclone_from_array(): Argument #1 ($data) object 0 of class '.DeepCloneUnserOnly::class.' has an __unserialize() method but "objectMeta" does not flag it for an __unserialize state');
+        deepclone_from_array(['classes' => DeepCloneUnserOnly::class, 'objectMeta' => [[0, 4294967295]], 'prepared' => 0, 'states' => [[0, []]]]);
+    }
+
+    public function testMalformedMarkersOfObjectsHoldingClosuresAreReportedRightAway()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.10', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.10 reports some malformed markers of lazy objects on first access.');
+        }
+
+        $this->expectException(\ValueError::class);
+        $this->expectExceptionMessage('deepclone_from_array(): malformed payload, unknown object id 5');
+        deepclone_from_array(['classes' => DeepCloneLazyNode::class, 'objectMeta' => 1, 'prepared' => 0, 'properties' => ['stdClass' => ['cb' => [[null, 'strlen']], 'next' => [5]]], 'resolve' => ['stdClass' => ['cb' => [0], 'next' => [true]]]], null, true);
     }
 
     private function skipIfExtensionCreatesNamedClosuresDifferently(): void
