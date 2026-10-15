@@ -250,6 +250,35 @@ class GraphemeTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strrpos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strripos
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_position
+     */
+    public function testGraphemeStrposDoesNotSplitGraphemes()
+    {
+        $this->assertFalse(grapheme_strpos(" q\u{0303}", 'q'));
+        $this->assertSame(1, grapheme_strpos("q\u{0303}q", 'q'));
+        $this->assertSame(2, grapheme_strpos("q\u{0303} q", 'q', 1));
+        $this->assertSame(1, grapheme_strpos("q\u{0303}q", 'q', -2));
+        $this->assertFalse(grapheme_strpos("q\u{0303}", "\u{0303}"));
+        $this->assertFalse(grapheme_strpos("é\r\n", "\r"));
+        $this->assertFalse(grapheme_strpos("\u{1F44D}\u{1F3FB}", "\u{1F44D}"));
+        $this->assertFalse(grapheme_strpos("\u{1F1EB}\u{1F1F7}", "\u{1F1F7}"));
+        $this->assertFalse(grapheme_stripos(" Q\u{0303}", 'q'));
+        $this->assertSame(0, grapheme_strrpos("q q\u{0303}", 'q'));
+        $this->assertFalse(grapheme_strrpos("q\u{0303}", 'q'));
+        $this->assertSame(0, grapheme_strripos("q Q\u{0303}", 'q'));
+
+        // the intl extension ignores some characters when it compares strings
+        $this->assertSame(1, grapheme_strpos("می\u{200C}خواهم", 'ی'));
+        $this->assertSame(1, grapheme_strpos("x\u{200C}y", "\u{200C}y"));
+        $this->assertSame(0, grapheme_strpos("q\u{FE0F}", 'q'));
+        $this->assertSame(1, grapheme_strpos("éa\u{0591}", 'a'));
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strstr
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_stristr
      */
