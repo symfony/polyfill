@@ -31,6 +31,11 @@ rename(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/lowerCase.php', __DIR_
 rename(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/upperCase.php', __DIR__.'/../src/Mbstring/Resources/unidata/upperCase.php');
 unlink(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/caseFolding_full.php');
 
+$data = file_get_contents('https://unicode.org/Public/UNIDATA/EastAsianWidth.txt');
+file_put_contents(__DIR__.'/unicode/data/EastAsianWidth.txt', $data);
+
+Compiler::eastAsianWidthRegexp(__DIR__.'/../src/Mbstring/Resources/unidata/');
+
 $data = file_get_contents('http://www.unicode.org/Public/UNIDATA/NormalizationTest.txt');
 file_put_contents(__DIR__.'/Intl/Normalizer/NormalizationTest.txt', $data);
 

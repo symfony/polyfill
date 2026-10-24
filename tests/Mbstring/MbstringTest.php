@@ -1220,6 +1220,7 @@ class MbstringTest extends TestCase
         $this->assertSame(3, mb_strwidth("\000実", 'UTF-8'));
         $this->assertSame(4, mb_strwidth('déjà', 'UTF-8'));
         $this->assertSame(4, mb_strwidth(mb_convert_encoding('déjà', 'ISO-8859-1', 'UTF-8'), 'CP1252'));
+        $this->assertSame(7, p::mb_strwidth('😀⌚日㉈', 'UTF-8'));
     }
 
     /**
