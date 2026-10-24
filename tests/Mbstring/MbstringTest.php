@@ -73,6 +73,8 @@ class MbstringTest extends TestCase
         $this->assertSame('déjà', mb_convert_encoding(mb_convert_encoding('déjà', 'ISO-8859-1', 'UTF-8'), 'Utf-8', 'ASCII,ISO-2022-JP,UTF-8,ISO-8859-1'));
         $this->assertSame('déjà', mb_convert_encoding(mb_convert_encoding('déjà', 'ISO-8859-1', 'UTF-8'), 'Utf-8', ['ASCII', 'ISO-2022-JP', 'UTF-8', 'ISO-8859-1']));
         $this->assertSame("d\xE9j\xE0", mb_convert_encoding('déjà', 'ISO-8859-1', '"UTF-8, ISO-8859-1"'));
+        $this->assertSame("\x00A\x00\xE9", p::mb_convert_encoding('Aé', 'UCS-2', 'UTF-8'));
+        $this->assertSame('Aé', p::mb_convert_encoding("\x00A\x00\xE9", 'UTF-8', 'UCS-2'));
 
         $var = ['déjà'];
         mb_convert_variables('ISO-8859-1', '"UTF-8"', $var);
