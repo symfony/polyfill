@@ -106,6 +106,7 @@ class Compiler
     {
         $upperCase = [];
         $lowerCase = [];
+        $titleCase = [];
         $caseFolding = [];
         $combiningClass = [];
         $canonicalComposition = [];
@@ -134,6 +135,8 @@ class Compiler
 
             $m[12] && $m[12] != $m[0] && $upperCase[$k] = self::chr(hexdec($m[12]));
             $m[13] && $m[13] != $m[0] && $lowerCase[$k] = self::chr(hexdec($m[13]));
+            $m[14] = trim($m[14]);
+            $m[14] && $m[14] != ($m[12] ?: $m[0]) && $titleCase[$k] = self::chr(hexdec($m[14]));
 
             $combClass && $combiningClass[$k] = $combClass;
 
@@ -170,6 +173,7 @@ class Compiler
 
             $k = self::chr(hexdec($m[0]));
             $lower = implode('', array_map([__CLASS__, 'chr'], array_map('hexdec', explode(' ', $m[1]))));
+            $title = implode('', array_map([__CLASS__, 'chr'], array_map('hexdec', explode(' ', $m[2]))));
             $upper = implode('', array_map([__CLASS__, 'chr'], array_map('hexdec', explode(' ', $m[3]))));
 
             if ($lower !== $k) {
@@ -177,6 +181,9 @@ class Compiler
             }
             if ($upper !== $k) {
                 $upperCase[$k] = $upper;
+            }
+            if ($title !== $upper) {
+                $titleCase[$k] = $title;
             }
         }
         fclose($h);
@@ -234,6 +241,7 @@ class Compiler
 
         $upperCase = "<?php\n\nreturn ".var_export($upperCase, true).";\n";
         $lowerCase = "<?php\n\nreturn ".var_export($lowerCase, true).";\n";
+        $titleCase = "<?php\n\nreturn ".var_export($titleCase, true).";\n";
         $caseFolding = "<?php\n\nreturn ".var_export($caseFolding, true).";\n";
         $combiningClass = "<?php\n\nreturn ".var_export($combiningClass, true).";\n";
         $canonicalComposition = "<?php\n\nreturn ".var_export($canonicalComposition, true).";\n";
@@ -244,6 +252,7 @@ class Compiler
 
         file_put_contents($out_dir.'upperCase.php', $upperCase);
         file_put_contents($out_dir.'lowerCase.php', $lowerCase);
+        file_put_contents($out_dir.'titleCase.php', $titleCase);
         file_put_contents($out_dir.'caseFolding_full.php', $caseFolding);
         file_put_contents($out_dir.'combiningClass.php', $combiningClass);
         file_put_contents($out_dir.'canonicalComposition.php', $canonicalComposition);

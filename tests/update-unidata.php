@@ -29,6 +29,7 @@ Compiler::unicodeMaps(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/');
 
 rename(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/lowerCase.php', __DIR__.'/../src/Mbstring/Resources/unidata/lowerCase.php');
 rename(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/upperCase.php', __DIR__.'/../src/Mbstring/Resources/unidata/upperCase.php');
+rename(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/titleCase.php', __DIR__.'/../src/Mbstring/Resources/unidata/titleCase.php');
 unlink(__DIR__.'/../src/Intl/Normalizer/Resources/unidata/caseFolding_full.php');
 
 $data = file_get_contents('http://www.unicode.org/Public/UNIDATA/NormalizationTest.txt');
