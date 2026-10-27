@@ -289,10 +289,6 @@ return array (
   array (
     0 => 'CNH',
   ),
-  'CNX' => 
-  array (
-    0 => 'CNX',
-  ),
   'CNY' => 
   array (
     0 => 'CN¥',
@@ -770,6 +766,8 @@ return array (
   'MRU' => 
   array (
     0 => 'MRU',
+    1 => 2,
+    2 => 0,
   ),
   'MTL' => 
   array (
@@ -892,7 +890,7 @@ return array (
   'PKR' => 
   array (
     0 => 'PKR',
-    1 => 0,
+    1 => 2,
     2 => 0,
   ),
   'PLN' => 
