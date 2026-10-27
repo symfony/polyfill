@@ -347,6 +347,33 @@ _MSG_
                     'grass' => 'plants',
                 ],
             ],
+
+            // apostrophes, in the "double optional" mode of intl
+            [
+                "It''s {name}'s turn, not '{name}''s.",
+                "It's Alex's turn, not {name}'s.",
+                ['name' => 'Alex'],
+            ],
+            [
+                "{n, plural, one{'#' # item} other{'#' # items}} {s, select, other{'{'#'}'}}",
+                '# 2 items {#}',
+                ['n' => 2, 's' => 'x'],
+            ],
+            [
+                "l'été, a'}b {name}",
+                "l'été, a}b {name}",
+                ['name' => 'Alex'],
+            ],
+            [
+                "{name}} '}'",
+                'Alex} }',
+                ['name' => 'Alex'],
+            ],
+            [
+                "It''s '{name}' { name }",
+                "It's {name} {name}",
+                [],
+            ],
         ];
     }
 
@@ -442,6 +469,8 @@ _MSG_
             'unclosed outer brace' => ['{n, plural, other {a}'],
             'unknown nested type' => ['{n, plural, other {{x, foo}}}'],
             'nested select without other' => ['{n, plural, other {{x, select, brown {a}}}}'],
+            'unclosed nested braces' => ['#{{{{{}}}}{'],
+            'unclosed quoted brace' => ["{n, select, other {'#'}}"],
         ];
     }
 

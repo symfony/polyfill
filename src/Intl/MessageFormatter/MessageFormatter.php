@@ -47,8 +47,7 @@ namespace Symfony\Polyfill\Intl\MessageFormatter;
  *  * simple parameters
  *  * integer number parameters
  *
- * It does NOT support the ['apostrophe-friendly' syntax](https://php.net/MessageFormatter.formatMessage).
- * Also messages that are working with the fallback implementation are not necessarily compatible with the
+ * Messages that are working with the fallback implementation are not necessarily compatible with the
  * PHP intl MessageFormatter so do not rely on the fallback if you are able to install intl extension somehow.
  *
  * @author Alexander Makarov <sam@rmcreative.ru>
@@ -129,10 +128,6 @@ class MessageFormatter
         $this->errorCode = 0;
         $this->errorMessage = '';
 
-        if (!$values) {
-            return $this->pattern;
-        }
-
         try {
             return self::parseTokens($this->tokens, $values, $this->locale);
         } catch (\DomainException $e) {
@@ -156,15 +151,34 @@ class MessageFormatter
         return false;
     }
 
-    private static function parseTokens(array $tokens, array $values, $locale)
+    /**
+     * @param string|null $number The number that replaces # in the messages of plural and selectordinal arguments
+     */
+    private static function parseTokens(array $tokens, array $values, $locale, ?string $number = null)
     {
         foreach ($tokens as $i => $token) {
-            if (\is_array($token)) {
-                $tokens[$i] = self::parseToken($token, $values, $locale);
-            }
+            $tokens[$i] = \is_array($token) ? self::parseToken($token, $values, $locale) : self::unquote($token, $number);
         }
 
         return implode('', $tokens);
+    }
+
+    /**
+     * Unescapes literal text like intl does in its default "double optional" apostrophe mode.
+     */
+    private static function unquote(string $text, ?string $number): string
+    {
+        if (null === $number && false === strpos($text, "'")) {
+            return $text;
+        }
+
+        return preg_replace_callback(null === $number ? "/''|'(?=[{}])((?:[^']|'')*+)'?/" : "/''|'(?=[{}#])((?:[^']|'')*+)'?|#/", static function ($m) use ($number) {
+            if ('#' === $m[0]) {
+                return $number;
+            }
+
+            return "''" === $m[0] ? "'" : str_replace("''", "'", $m[1]);
+        }, $text);
     }
 
     private static function validateTokens(array $tokens): void
@@ -190,7 +204,7 @@ class MessageFormatter
                     if (!isset($token[2])) {
                         throw new \DomainException('Message pattern is invalid.');
                     }
-                    $sub = self::tokenizePattern($token[2]);
+                    $sub = self::tokenizePattern($token[2], 'select' !== $type, true);
                     $c = \count($sub);
                     if ($c < 2) {
                         throw new \DomainException('Message pattern is invalid.');
@@ -208,7 +222,7 @@ class MessageFormatter
                         if ('other' === $selector) {
                             $hasOther = true;
                         }
-                        self::validateTokens(self::tokenizePattern(implode(',', $sub[1 + $i])));
+                        self::validateTokens(self::tokenizePattern(implode(',', $sub[1 + $i]), 'select' !== $type));
                     }
                     if (!$hasOther) {
                         throw new \DomainException('Message pattern is invalid.');
@@ -220,51 +234,121 @@ class MessageFormatter
         }
     }
 
-    private static function tokenizePattern($pattern)
+    /**
+     * Splits a message into literal text and arguments, or the style of a plural or select argument into selectors and messages.
+     *
+     * @param bool $plural Whether the message, or the messages of the style, belong to a plural or selectordinal argument
+     */
+    private static function tokenizePattern(string $pattern, bool $plural = false, bool $style = false): array
     {
-        if (false === $start = $pos = strpos($pattern, '{')) {
+        if (false === strpos($pattern, '{')) {
             return [$pattern];
         }
 
-        $depth = 1;
-        $tokens = [substr($pattern, 0, $pos)];
+        $tokens = [];
+        $length = \strlen($pattern);
+        $start = $i = 0;
 
-        while (true) {
-            $open = strpos($pattern, '{', 1 + $pos);
-            $close = strpos($pattern, '}', 1 + $pos);
-
-            if (false === $open) {
-                if (false === $close) {
-                    break;
+        while ($length > $i += strcspn($pattern, $style ? '{}' : "'{}", $i)) {
+            if ("'" === $pattern[$i]) {
+                $i = self::skipQuote($pattern, $i, $plural);
+            } elseif ('}' === $pattern[$i]) {
+                if ($style) {
+                    throw new \DomainException('Message pattern is invalid.');
                 }
-                $open = \strlen($pattern);
-            }
-
-            if ($close > $open) {
-                ++$depth;
-                $pos = $open;
+                // Like intl, an unmatched closing brace is literal text
+                ++$i;
             } else {
-                --$depth;
-                $pos = $close;
-            }
-
-            if (0 === $depth) {
-                $tokens[] = explode(',', substr($pattern, 1 + $start, $pos - $start - 1), 3);
-                $start = 1 + $pos;
-                $tokens[] = substr($pattern, $start, $open - $start);
-                $start = $open;
-            }
-
-            if (0 !== $depth && (false === $open || false === $close)) {
-                break;
+                $end = $style ? self::skipMessage($pattern, 1 + $i, $plural) : self::skipArgument($pattern, $i);
+                $tokens[] = substr($pattern, $start, $i - $start);
+                $tokens[] = explode(',', substr($pattern, 1 + $i, $end - $i - 2), 3);
+                $start = $i = $end;
             }
         }
 
-        if ($depth) {
-            throw new \DomainException('Message pattern is invalid.');
-        }
+        $tokens[] = substr($pattern, $start);
 
         return $tokens;
+    }
+
+    /**
+     * Returns the position after the closing brace of the message that starts at $i.
+     */
+    private static function skipMessage(string $pattern, int $i, bool $plural): int
+    {
+        $length = \strlen($pattern);
+
+        while ($length > $i += strcspn($pattern, "'{}", $i)) {
+            if ("'" === $pattern[$i]) {
+                $i = self::skipQuote($pattern, $i, $plural);
+            } elseif ('{' === $pattern[$i]) {
+                $i = self::skipArgument($pattern, $i);
+            } else {
+                return 1 + $i;
+            }
+        }
+
+        throw new \DomainException('Message pattern is invalid.');
+    }
+
+    /**
+     * Returns the position after the closing brace of the argument that starts at $i.
+     */
+    private static function skipArgument(string $pattern, int $i): int
+    {
+        preg_match('/\{[^,{}]*+(?:,\s*+(\w++)\s*+(,?))?/A', $pattern, $m, 0, $i);
+        $i += \strlen($m[0]);
+        $length = \strlen($pattern);
+
+        if (isset($m[2][0]) && \in_array($m[1], ['plural', 'select', 'selectordinal'], true)) {
+            while ($length > $i += strcspn($pattern, '{}', $i)) {
+                if ('}' === $pattern[$i]) {
+                    return 1 + $i;
+                }
+                $i = self::skipMessage($pattern, 1 + $i, 'select' !== $m[1]);
+            }
+        } else {
+            // Like intl, any apostrophe quotes the style of other arguments, which can also contain balanced braces
+            for ($depth = 0; $length > $i += strcspn($pattern, "'{}", $i); ++$i) {
+                if ("'" === $pattern[$i]) {
+                    if (false === $i = strpos($pattern, "'", 1 + $i)) {
+                        break;
+                    }
+                } elseif ('{' === $pattern[$i]) {
+                    ++$depth;
+                } elseif (!$depth) {
+                    return 1 + $i;
+                } else {
+                    --$depth;
+                }
+            }
+        }
+
+        throw new \DomainException('Message pattern is invalid.');
+    }
+
+    /**
+     * Returns the position after the quoted literal text that starts at $i, or after the apostrophe when it starts none.
+     */
+    private static function skipQuote(string $pattern, int $i, bool $plural): int
+    {
+        $c = $pattern[1 + $i] ?? '';
+
+        if ("'" === $c) {
+            return 2 + $i;
+        }
+
+        if ('{' !== $c && '}' !== $c && ('#' !== $c || !$plural)) {
+            return 1 + $i;
+        }
+
+        do {
+            if (false === $i = strpos($pattern, "'", 2 + $i)) {
+                return \strlen($pattern);
+            }
+        } while ("'" === ($pattern[1 + $i] ?? ''));
+
+        return 1 + $i;
     }
 
     /**
@@ -315,7 +399,7 @@ class MessageFormatter
                 if (!isset($token[2])) {
                     throw new \DomainException('Message pattern is invalid.');
                 }
-                $select = self::tokenizePattern($token[2]);
+                $select = self::tokenizePattern($token[2], false, true);
                 $c = \count($select);
                 $message = false;
                 for ($i = 0; 1 + $i < $c; ++$i) {
@@ -345,7 +429,7 @@ class MessageFormatter
                 if (!isset($token[2])) {
                     throw new \DomainException('Message pattern is invalid.');
                 }
-                $plural = self::tokenizePattern($token[2]);
+                $plural = self::tokenizePattern($token[2], true, true);
                 $c = \count($plural);
                 $message = false;
                 $offset = 0;
@@ -377,15 +461,7 @@ class MessageFormatter
                     }
                 }
                 if (false !== $message) {
-                    $message = self::tokenizePattern(implode(',', $message));
-                    // Replace # outside of nested arguments only
-                    foreach ($message as $j => $part) {
-                        if (\is_string($part)) {
-                            $message[$j] = str_replace('#', $number, $part);
-                        }
-                    }
-
-                    return self::parseTokens($message, $values, $locale);
+                    return self::parseTokens(self::tokenizePattern(implode(',', $message), true), $values, $locale, $number);
                 }
                 break;
         }
