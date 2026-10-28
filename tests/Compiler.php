@@ -262,6 +262,33 @@ class Compiler
         file_put_contents($out_dir.'rawCompatibilityDecomposition.php', $rawCompatibilityDecompositionData);
     }
 
+    public static function eastAsianWidthRegexp($out_dir)
+    {
+        $ranges = [];
+
+        $h = fopen(self::getFile('EastAsianWidth.txt'), 'r');
+        while (false !== $m = fgets($h)) {
+            if (preg_match('/^([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s*;\s*[WF]\b/', $m, $m)) {
+                $start = hexdec($m[1]);
+                $end = hexdec($m[2] ?? $m[1]);
+
+                if ($ranges && $ranges[\count($ranges) - 1][1] + 1 === $start) {
+                    $ranges[\count($ranges) - 1][1] = $end;
+                } else {
+                    $ranges[] = [$start, $end];
+                }
+            }
+        }
+        fclose($h);
+
+        $regexp = '';
+        foreach ($ranges as [$start, $end]) {
+            $regexp .= $start === $end ? \sprintf('\x{%04X}', $start) : \sprintf('\x{%04X}-\x{%04X}', $start, $end);
+        }
+
+        file_put_contents($out_dir.'eastAsianWidthRegexp.php', "<?php\n\n// from W and F in https://unicode.org/Public/UNIDATA/EastAsianWidth.txt\n\nreturn '/[".$regexp."]/u';\n");
+    }
+
     public static function idnMaps($out_dir)
     {
         $handle = fopen(self::getFile('IdnaMappingTable.txt'), 'r');
