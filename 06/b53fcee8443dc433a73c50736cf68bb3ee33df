@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-24T15:27:41Z
+
+Would Unicode 18 give the same map?
+
+---------------------------------------------------------------------------
+
+by wleeaf at 2026-10-24T15:30:22Z
+
+Almost: Unicode 18.0.0 only adds to it. Its EastAsianWidth.txt has 990 more W/F code points than 17.0.0 and none fewer, and all 990 are characters first assigned in 18.0 (e.g. U+18CD6..U+18CDA, U+18E00..U+19191, U+191A0..U+191D2, U+1B123..U+1B128, U+1F6D9, U+1FA8B..U+1FA8D). Every code point that is W or F in 17.0.0 is still W or F in 18.0.0.
+
+I used 17.0.0 because that is what PHP 8.5's mbstring uses: with it, an all code point scan of `mb_strwidth()` gives 0 differences against native 8.5. With 18.0.0 the polyfill would count those 990 new characters as 2 where native 8.5 counts 1. If you'd rather track the latest Unicode, I can regenerate it from 18.0.0, it's the same script.
