@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by stof at 2026-10-27T16:56:58Z
+
+> The only remaining differences come from a selector used twice in the same argument. The polyfill picks the last one, intl picks the first one.
+
+Will you send another PR to fix this ?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-27T17:07:28Z
+
+I should be able to :)
