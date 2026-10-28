@@ -374,6 +374,28 @@ _MSG_
                 "It's {name} {name}",
                 [],
             ],
+
+            // selectors used twice, where intl picks the first matching one
+            [
+                '{a, select, x{first} x{second} other{none}} {b, select, other{first} x{x} other{second}} {c, select, other{first} other{second}}',
+                'first first first',
+                ['a' => 'x', 'b' => 'y', 'c' => 'other'],
+            ],
+            [
+                '{a, plural, one{first} one{second} other{# items}} {b, plural, other{# items} one{first} one{second}} {c, plural, other{first #} one{one} other{second #}}',
+                'first first first 2',
+                ['a' => 1, 'b' => 1, 'c' => 2],
+            ],
+            [
+                '{a, selectordinal, two{#nd} two{# second} other{#th}} {b, selectordinal, other{#th} few{#rd} few{# third}} {c, selectordinal, one{#st} other{#th} other{# other}}',
+                '2nd 3rd 4th',
+                ['a' => 2, 'b' => 3, 'c' => 4],
+            ],
+            [
+                '{a, plural, offset:1 =1{exactly one} one{# first} one{# second} other{# others}} {b, plural, =2{first pair} =2{second pair} other{# items}}',
+                '1 first first pair',
+                ['a' => 2, 'b' => 2],
+            ],
         ];
     }
 

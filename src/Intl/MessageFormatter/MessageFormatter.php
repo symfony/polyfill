@@ -407,7 +407,11 @@ class MessageFormatter
                         throw new \DomainException('Message pattern is invalid.');
                     }
                     $selector = trim($select[$i++]);
-                    if (false === $message && 'other' === $selector || $selector == $arg) {
+                    if ($selector == $arg) {
+                        $message = implode(',', $select[$i]);
+                        break;
+                    }
+                    if (false === $message && 'other' === $selector) {
                         $message = implode(',', $select[$i]);
                     }
                 }
@@ -431,7 +435,7 @@ class MessageFormatter
                 }
                 $plural = self::tokenizePattern($token[2], true, true);
                 $c = \count($plural);
-                $message = false;
+                $message = $other = false;
                 $offset = 0;
                 $arg = (float) $arg; // like intl, which reads the argument as a double
                 $number = self::formatNumber($arg);
@@ -453,14 +457,16 @@ class MessageFormatter
                         break;
                     }
                     // Like intl, keywords are selected from the number as printed
-                    if (false === $message && 'other' === $selector
-                        || 'plural' === $type && 'one' === $selector && '1' === ltrim($number, '-')
+                    if (false === $message && (
+                        'plural' === $type && 'one' === $selector && '1' === ltrim($number, '-')
                         || 'selectordinal' === $type && self::getEnglishOrdinalCategory((float) str_replace(',', '', $number)) === $selector
-                    ) {
+                    )) {
                         $message = $plural[$i];
+                    } elseif (false === $other && 'other' === $selector) {
+                        $other = $plural[$i];
                     }
                 }
-                if (false !== $message) {
+                if (false !== $message || false !== $message = $other) {
                     return self::parseTokens(self::tokenizePattern(implode(',', $message), true), $values, $locale, $number);
                 }
                 break;
