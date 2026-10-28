@@ -550,9 +550,8 @@ class MbstringTest extends TestCase
         $this->assertSame('i̇', mb_strtolower('İ'));
         $this->assertSame('déjà σσς i̇iıi', p::mb_strtolower('DÉJÀ Σσς İIıi'));
         $this->assertSame('DÉJÀ ΣΣΣ İIII', mb_strtoupper('Déjà Σσς İIıi'));
-        if (\PCRE_VERSION >= '8.10') {
-            $this->assertSame('Déjà Σσσ Iı Ii İi̇', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', \MB_CASE_TITLE));
-        }
+        $this->assertSame('Déjà Σσσ Iı Ii İi̇', p::mb_convert_case('DÉJÀ ΣΣΣ ıı iI İİ', \MB_CASE_TITLE));
+        $this->assertSame('ǅemal Ssa Fix ᾼ ᾈ Եւ საქართველო', p::mb_convert_case('ǆemal ßa ﬁx ᾳ ᾀ և საქართველო', \MB_CASE_TITLE));
         $this->assertSame('ab', str_replace('?', '', mb_strtolower(urldecode('a%A1%C0b'))));
         $this->assertSame('hi ssΐὤιմխ', p::mb_convert_case('HI ßΐᾬﬗ', p::MB_CASE_FOLD));
     }
