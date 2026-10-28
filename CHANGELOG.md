@@ -1,3 +1,13 @@
+# 1.43.3
+
+  * Fix `grapheme_strpos()` and friends matching inside a grapheme cluster
+  * Add support for quoting with apostrophes in the `MessageFormatter` polyfill
+  * Pick the first matching selector in `MessageFormatter`, like intl
+  * Use titlecase mappings for `MB_CASE_TITLE`
+  * Use big-endian UCS-2 like ext/mbstring
+  * Update the East Asian Width ranges of `mb_strwidth()`
+  * Sync currencies metadata with `symfony/intl` data
+
 # 1.43.2
 
   * Speed up `deepclone_from_array()`
