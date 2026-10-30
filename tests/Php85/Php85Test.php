@@ -86,8 +86,14 @@ class Php85Test extends TestCase
         $array = [1, 2, 3];
         unset($array[0], $array[1], $array[2]);
 
-        $this->assertNull(array_first([]));
-        $this->assertNull(array_last([]));
+        $this->assertNull(array_first($array));
+        $this->assertNull(array_last($array));
+
+        $array = [1, 2, 3, 4];
+        unset($array[0], $array[3]);
+
+        $this->assertSame(2, array_first($array));
+        $this->assertSame(3, array_last($array));
 
         $this->assertSame('single element', array_first(['single element']));
         $this->assertSame('single element', array_last(['single element']));
