@@ -289,6 +289,78 @@ class Compiler
         file_put_contents($out_dir.'eastAsianWidthRegexp.php', "<?php\n\n// from W and F in https://unicode.org/Public/UNIDATA/EastAsianWidth.txt\n\nreturn '/[".$regexp."]/u';\n");
     }
 
+    public static function wordBreakRegexp($out_dir)
+    {
+        $props = [];
+        $parse = static function ($file, $filter = null) use (&$props) {
+            $h = fopen(self::getFile($file), 'r');
+            while (false !== $m = fgets($h)) {
+                if (preg_match('/^([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s*;\s*(\w+)/', $m, $m) && (null === $filter || \in_array($m[3], $filter, true))) {
+                    $props[$m[3]][] = [hexdec($m[1]), hexdec($m[2] ?: $m[1])];
+                }
+            }
+            fclose($h);
+        };
+
+        $parse('WordBreakProperty.txt');
+        $parse('emoji-data.txt', ['Extended_Pictographic']);
+        $parse('PropList.txt', ['Ideographic']);
+        $parse('LineBreak.txt', ['SA']);
+
+        $class = static function (...$names) use (&$props) {
+            $ranges = [];
+            foreach ($names as $name) {
+                foreach ($props[$name] as $r) {
+                    $ranges[] = $r;
+                }
+            }
+            usort($ranges, static function ($a, $b) { return $a[0] <=> $b[0]; });
+
+            $merged = [];
+            foreach ($ranges as [$start, $end]) {
+                if ($merged && $merged[\count($merged) - 1][1] + 1 >= $start) {
+                    $merged[\count($merged) - 1][1] = max($end, $merged[\count($merged) - 1][1]);
+                } else {
+                    $merged[] = [$start, $end];
+                }
+            }
+
+            $class = '';
+            foreach ($merged as [$start, $end]) {
+                $class .= $start === $end ? \sprintf('\x{%X}', $start) : \sprintf('\x{%X}-\x{%X}', $start, $end);
+            }
+
+            return $class;
+        };
+
+        $classes = [
+            'A' => $class('ALetter', 'Hebrew_Letter'),
+            'L' => $class('ALetter'),
+            'H' => $class('Hebrew_Letter'),
+            'N' => $class('Numeric'),
+            'K' => $class('Katakana'),
+            'X' => $class('ExtendNumLet'),
+            'MidA' => $class('MidLetter', 'MidNumLet', 'Single_Quote'),
+            'MidN' => $class('MidNum', 'MidNumLet', 'Single_Quote'),
+            'SQ' => $class('Single_Quote'),
+            'DQ' => $class('Double_Quote'),
+            'WS' => $class('WSegSpace'),
+            'NL' => $class('Newline'),
+            'RI' => $class('Regional_Indicator'),
+            'E' => $class('Extend', 'Format', 'ZWJ'),
+            'EP' => $class('Extended_Pictographic'),
+            'Ideo' => $class('Ideographic'),
+            'SA' => $class('SA'),
+        ];
+
+        $out = "<?php\n\n// from https://unicode.org/Public/UNIDATA/auxiliary/WordBreakProperty.txt, emoji/emoji-data.txt, PropList.txt and LineBreak.txt\n\nreturn [\n";
+        foreach ($classes as $k => $v) {
+            $out .= "    '$k' => '$v',\n";
+        }
+
+        file_put_contents($out_dir.'wordBreak.php', $out."];\n");
+    }
+
     public static function idnMaps($out_dir)
     {
         $handle = fopen(self::getFile('IdnaMappingTable.txt'), 'r');
