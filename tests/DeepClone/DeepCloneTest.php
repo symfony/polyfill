@@ -627,6 +627,13 @@ class DeepCloneTest extends TestCase
         }
     }
 
+    private function skipIfExtensionCutsSleepNames(): void
+    {
+        if (\PHP_VERSION_ID >= 80600 && \extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
+            $this->markTestSkipped('ext-deepclone cuts the names in __sleep() warnings at their first NUL byte, unlike serialize() on PHP 8.6.');
+        }
+    }
+
     private function skipIfExtensionDropsPropertyReferences(): void
     {
         if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.4', '<')) {
@@ -1584,6 +1591,8 @@ class DeepCloneTest extends TestCase
 
     public function testSleepNoticeCutsMangledNames()
     {
+        $this->skipIfExtensionCutsSleepNames();
+
         $errors = [];
         set_error_handler(static function ($type, $msg) use (&$errors) {
             $errors[] = $msg;
@@ -1597,9 +1606,9 @@ class DeepCloneTest extends TestCase
             restore_error_handler();
         }
 
-        // serialize() cuts the name at its first NUL byte
+        // serialize() cuts the name at its first NUL byte before PHP 8.6
         $this->assertCount(1, $errors);
-        $this->assertStringEndsWith('serialize(): "" returned as member variable from __sleep() but does not exist', $errors[0]);
+        $this->assertStringEndsWith(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', \PHP_VERSION_ID >= 80600 ? "\0*\0nope" : ''), $errors[0]);
     }
 
     /**
@@ -1608,6 +1617,7 @@ class DeepCloneTest extends TestCase
     public function testSleepSelectsPropertiesLikeSerialize($value)
     {
         $this->skipIfExtensionDiffersFromSerialize();
+        $this->skipIfExtensionCutsSleepNames();
 
         $expected = self::captureErrors(static function () use ($value) { return unserialize(serialize($value)); }, $expectedErrors);
         $actual = self::captureErrors(static function () use ($value) { return deepclone_from_array(deepclone_to_array($value)); }, $actualErrors);
