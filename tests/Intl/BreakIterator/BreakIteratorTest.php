@@ -282,17 +282,21 @@ class BreakIteratorTest extends TestCase
     public function testMatchesIntl()
     {
         mt_srand(714);
-        $pieces = ['hello', 'world', "can't", '3.14', '1,000', '_id', ' ', '  ', "\n", "\r\n", ',', '.', '!', '"', 'é', 'Ελλάδα', 'мир', 'שָׁלוֹם', 'א"ב', 'مرحبا', '😀', '👍🏽', '👨‍👩‍👧', '🇫🇷', "e\u{301}", "a\u{200D}😀", '—', 'ⓜ', "\u{3000}"];
+        $pieces = ['hello', 'world', "can't", '3.14', '1,000', '_id', ' ', '  ', "\n", "\r\n", ',', '.', '!', '"', 'é', 'Ελλάδα', 'мир', 'שָׁלוֹם', 'א"ב', 'مرحبا', '😀', '👍🏽', '👨‍👩‍👧', '🇫🇷', "e\u{301}", '—', 'ⓜ', "\u{3000}"];
 
         foreach (['createWordInstance', 'createCharacterInstance', 'createCodePointInstance'] as $factory) {
+            // Before PCRE 10.44, the grapheme cluster pattern also joins any char that follows a ZWJ
+            $factoryPieces = 'createCharacterInstance' !== $factory || (float) \PCRE_VERSION >= 10.44 ? array_merge($pieces, ["a\u{200D}😀"]) : $pieces;
+
             for ($t = 0; $t < 4; ++$t) {
                 $text = '';
                 while (\strlen($text) < 3000 * ($t + 1)) {
-                    $text .= $pieces[mt_rand(0, \count($pieces) - 1)];
+                    $text .= $factoryPieces[mt_rand(0, \count($factoryPieces) - 1)];
                 }
 
                 $p = p::$factory();
-                $i = \IntlBreakIterator::$factory();
+                // The default locale can be en_US_POSIX, whose word rules don't join letters around "." or ":"
+                $i = 'createCodePointInstance' === $factory ? \IntlBreakIterator::$factory() : \IntlBreakIterator::$factory('en');
                 $p->setText($text);
                 $i->setText($text);
 
