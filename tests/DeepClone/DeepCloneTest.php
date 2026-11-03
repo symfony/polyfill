@@ -1597,9 +1597,9 @@ class DeepCloneTest extends TestCase
             restore_error_handler();
         }
 
-        // serialize() cuts the name at its first NUL byte
+        // serialize() cuts the name at its first NUL byte before PHP 8.6
         $this->assertCount(1, $errors);
-        $this->assertStringEndsWith('serialize(): "" returned as member variable from __sleep() but does not exist', $errors[0]);
+        $this->assertStringEndsWith(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', \PHP_VERSION_ID >= 80600 ? "\0*\0nope" : ''), $errors[0]);
     }
 
     /**

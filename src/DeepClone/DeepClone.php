@@ -2256,8 +2256,7 @@ final class DeepClone
             foreach ([$name === (string) (int) $name ? (int) $name : $name, "\0".$class."\0".$name, "\0*\0".$name] as $key) {
                 if (\array_key_exists($key, $properties)) {
                     if (\array_key_exists($key, $selected)) {
-                        // Names are cut at their first NUL byte, as by serialize()
-                        trigger_error(\sprintf('serialize(): "%s" is returned from __sleep() multiple times', explode("\0", $name, 2)[0]), \PHP_VERSION_ID >= 80300 ? \E_USER_WARNING : \E_USER_NOTICE);
+                        trigger_error(\sprintf('serialize(): "%s" is returned from __sleep() multiple times', self::sleepErrorName($name)), \PHP_VERSION_ID >= 80300 ? \E_USER_WARNING : \E_USER_NOTICE);
                     } elseif (\ReflectionReference::fromArrayElement($properties, $key)) {
                         $selected[$key] = &$properties[$key];
                     } else {
@@ -2271,11 +2270,19 @@ final class DeepClone
             // Uninitialized typed properties are skipped silently, unset untyped ones don't exist
             $typed = self::$typedPropertyKeys[$class] ??= self::getTypedPropertyKeys($reflector);
             if (!isset($typed[$name]) && !isset($typed["\0".$class."\0".$name]) && !isset($typed["\0*\0".$name])) {
-                trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', explode("\0", $name, 2)[0]), \E_USER_WARNING);
+                trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', self::sleepErrorName($name)), \E_USER_WARNING);
             }
         }
 
         return $selected;
+    }
+
+    /**
+     * serialize() cuts names at their first NUL byte before PHP 8.6.
+     */
+    private static function sleepErrorName(string $name): string
+    {
+        return \PHP_VERSION_ID >= 80600 ? $name : explode("\0", $name, 2)[0];
     }
 
     /**
