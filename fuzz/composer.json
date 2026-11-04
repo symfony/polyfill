@@ -1,0 +1,20 @@
+{
+    "name": "symfony/polyfill-fuzzing",
+    "description": "Differential fuzzing targets for Symfony polyfills",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": ">=8.3",
+        "ext-ctype": "*",
+        "ext-iconv": "*",
+        "ext-intl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-pcntl": "*",
+        "ext-uuid": "*",
+        "nikic/php-fuzzer": "^0.0.9"
+    },
+    "scripts": {
+        "fuzz": "./run.sh"
+    }
+}
