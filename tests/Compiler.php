@@ -681,6 +681,242 @@ RegexClass;
         file_put_contents($out_dir.'Regex.php', $s);
     }
 
+    public static function intlCharMaps($out_dir)
+    {
+        require_once __DIR__.'/../src/Intl/Char/Char.php';
+
+        $range = static function ($codePoints) {
+            $range = explode('..', trim($codePoints));
+
+            return [\intval($range[0], 16), \intval(isset($range[1]) ? $range[1] : $range[0], 16)];
+        };
+        // The values of an enumerated property for every code point: the defaults of @missing, then the values given
+        $enumerated = static function ($file, array $values) use ($range) {
+            $table = array_fill(0, 0x110000, 0);
+            foreach (file(self::getFile($file)) as $line) {
+                if (preg_match('/^# @missing: ([0-9A-F.]+); (\w+)/', $line, $m) || preg_match('/^([0-9A-F.]+)\s*;\s*(\w+)/', $line, $m)) {
+                    list($start, $end) = $range($m[1]);
+                    $value = isset($values[$m[2]]) ? $values[$m[2]] : (int) $m[2];
+                    for ($i = $start; $i <= $end; ++$i) {
+                        $table[$i] = $value;
+                    }
+                }
+            }
+
+            return $table;
+        };
+
+        $bidi = ['L' => 0, 'R' => 1, 'EN' => 2, 'ES' => 3, 'ET' => 4, 'AN' => 5, 'CS' => 6, 'B' => 7, 'S' => 8, 'WS' => 9, 'ON' => 10, 'LRE' => 11, 'LRO' => 12, 'AL' => 13, 'RLE' => 14, 'RLO' => 15, 'PDF' => 16, 'NSM' => 17, 'BN' => 18, 'FSI' => 19, 'LRI' => 20, 'RLI' => 21, 'PDI' => 22];
+        $bidi += ['Left_To_Right' => 0, 'Right_To_Left' => 1, 'European_Number' => 2, 'European_Separator' => 3, 'European_Terminator' => 4, 'Arabic_Number' => 5, 'Common_Separator' => 6, 'Paragraph_Separator' => 7, 'Segment_Separator' => 8, 'White_Space' => 9, 'Other_Neutral' => 10, 'Left_To_Right_Embedding' => 11, 'Left_To_Right_Override' => 12, 'Arabic_Letter' => 13, 'Right_To_Left_Embedding' => 14, 'Right_To_Left_Override' => 15, 'Pop_Directional_Format' => 16, 'Nonspacing_Mark' => 17, 'Boundary_Neutral' => 18, 'First_Strong_Isolate' => 19, 'Left_To_Right_Isolate' => 20, 'Right_To_Left_Isolate' => 21, 'Pop_Directional_Isolate' => 22];
+        // The general categories, in the order of IntlChar::CHAR_CATEGORY_*
+        $categories = array_flip(['Cn', 'Lu', 'Ll', 'Lt', 'Lm', 'Lo', 'Mn', 'Me', 'Mc', 'Nd', 'Nl', 'No', 'Zs', 'Zl', 'Zp', 'Cc', 'Cf', 'Co', 'Cs', 'Pd', 'Ps', 'Pe', 'Pc', 'Po', 'Sm', 'Sc', 'Sk', 'So', 'Pi', 'Pf']);
+        $categories += ['Unassigned' => 0];
+
+        $tables = [
+            'bidi' => $enumerated('DerivedBidiClass.txt', $bidi),
+            'category' => $enumerated('DerivedGeneralCategory.txt', $categories),
+            'combining' => $enumerated('DerivedCombiningClass.txt', []),
+        ];
+        // The ages: the starts of their runs, and the index of the version of each run
+        $versions = [''];
+        $ages = array_fill(0, 0x110000, 0);
+        foreach (file(self::getFile('DerivedAge.txt')) as $line) {
+            if (preg_match('/^([0-9A-F.]+)\s*;\s*([0-9.]+)/', $line, $m)) {
+                list($start, $end) = $range($m[1]);
+                if (false === $version = array_search($m[2], $versions, true)) {
+                    $version = \count($versions);
+                    $versions[] = $m[2];
+                }
+                for ($i = $start; $i <= $end; ++$i) {
+                    $ages[$i] = $version;
+                }
+            }
+        }
+        $ageStarts = [];
+        $ageVersions = '';
+        $last = null;
+        foreach ($ages as $codePoint => $age) {
+            if ($age !== $last) {
+                $ageStarts[] = $codePoint;
+                $ageVersions .= \chr($age);
+                $last = $age;
+            }
+        }
+
+        $export = "<?php\n\n// from https://unicode.org/Public/UNIDATA/extracted/DerivedBidiClass.txt, DerivedGeneralCategory.txt, DerivedCombiningClass.txt and DerivedAge.txt:\n// the value of each code point, a byte, in three-stage tables (see Char::value()), and the runs of the ages and their versions\n\nreturn [\n";
+        foreach ($tables as $name => $table) {
+            $export .= "    '$name' => ['".self::threeStageTable($table)."],\n";
+        }
+        file_put_contents($out_dir.'properties.php', $export."    'age' => ['".self::deltas($ageStarts)."', '".base64_encode($ageVersions)."', ['".implode("', '", $versions)."']],\n];\n");
+
+        // The simple case mappings, and the simple case foldings (with the Turkic ones)
+        $maps = ['lower' => [], 'upper' => [], 'title' => [], 'fold' => [], 'turkic' => []];
+        foreach (file(self::getFile('UnicodeData.txt')) as $line) {
+            $fields = explode(';', $line);
+            $codePoint = \intval($fields[0], 16);
+            $upper = '' !== trim($fields[12]) ? \intval($fields[12], 16) : $codePoint;
+            $lower = '' !== trim($fields[13]) ? \intval($fields[13], 16) : $codePoint;
+            $title = '' !== trim($fields[14]) ? \intval($fields[14], 16) : $upper;
+            if ($upper !== $codePoint) {
+                $maps['upper'][$codePoint] = $upper;
+            }
+            if ($lower !== $codePoint) {
+                $maps['lower'][$codePoint] = $lower;
+            }
+            // Kept where it is not the uppercase mapping, like ǅ to itself
+            if ($title !== $upper) {
+                $maps['title'][$codePoint] = $title;
+            }
+        }
+        foreach (file(self::getFile('CaseFolding.txt')) as $line) {
+            if (preg_match('/^([0-9A-F]+); ([CST]); ([0-9A-F]+);/', $line, $m)) {
+                $maps['T' === $m[2] ? 'turkic' : 'fold'][\intval($m[1], 16)] = \intval($m[3], 16);
+            }
+        }
+
+        $numeric = [];
+        foreach (file(self::getFile('DerivedNumericValues.txt')) as $line) {
+            if (preg_match('/^([0-9A-F.]+)\s*;\s*([-0-9.]+)\s*;\s*;\s*([-0-9\/]+)/', $line, $m)) {
+                list($start, $end) = $range($m[1]);
+                $parts = explode('/', $m[3]);
+                $value = 2 === \count($parts) ? $parts[0] / $parts[1] : (float) $parts[0];
+                for ($i = $start; $i <= $end; ++$i) {
+                    $numeric[$i] = $value;
+                }
+            }
+        }
+        ksort($numeric);
+
+        // The binary properties IntlChar has a constant of, as ranges
+        $aliases = ['Sentence_Terminal' => 'S_TERM', 'Prepended_Concatenation_Mark' => 'PREPENDED_CONCATENATION_MARK', 'Regional_Indicator' => 'REGIONAL_INDICATOR', 'Emoji_Component' => 'EMOJI_COMPONENT', 'Extended_Pictographic' => 'EXTENDED_PICTOGRAPHIC'];
+        $binary = [];
+        foreach (['PropList.txt', 'DerivedCoreProperties.txt', 'emoji-data.txt', 'DerivedBinaryProperties.txt'] as $file) {
+            foreach (file(self::getFile($file)) as $line) {
+                if (!preg_match('/^([0-9A-F.]+)\s*;\s*(\w+)\s*(?:#|$)/', $line, $m)) {
+                    continue;
+                }
+                $constant = 'PROPERTY_'.(isset($aliases[$m[2]]) ? $aliases[$m[2]] : strtoupper($m[2]));
+                if (!\defined('Symfony\\Polyfill\\Intl\\Char\\Char::'.$constant)) {
+                    continue;
+                }
+                list($start, $end) = $range($m[1]);
+                $binary[\constant('Symfony\\Polyfill\\Intl\\Char\\Char::'.$constant)][] = [$start, $end];
+            }
+        }
+        ksort($binary);
+        foreach ($binary as $property => $ranges) {
+            sort($ranges);
+            $merged = [];
+            foreach ($ranges as list($start, $end)) {
+                if ($merged && $merged[\count($merged) - 1] + 1 >= $start) {
+                    $merged[\count($merged) - 1] = max($end, $merged[\count($merged) - 1]);
+                } else {
+                    $merged[] = $start;
+                    $merged[] = $end;
+                }
+            }
+            $binary[$property] = $merged;
+        }
+
+        // The titlecase mappings where they are not the uppercase ones, and the foldings where they are not the lowercase ones
+        $fold = [];
+        foreach ($maps['fold'] + $maps['lower'] as $codePoint => $_) {
+            $folded = isset($maps['fold'][$codePoint]) ? $maps['fold'][$codePoint] : $codePoint;
+            if ($folded !== (isset($maps['lower'][$codePoint]) ? $maps['lower'][$codePoint] : $codePoint)) {
+                $fold[$codePoint] = $folded;
+            }
+        }
+        ksort($fold);
+        $maps['fold'] = $fold;
+
+        $map = static function (array $map) {
+            $entries = [];
+            foreach ($map as $key => $value) {
+                $entries[] = $key.'=>'.(\is_array($value) ? '['.implode(',', $value).']' : (\is_float($value) ? var_export($value, true) : $value));
+            }
+
+            return '['.implode(',', $entries).']';
+        };
+        $out = "<?php\n\n// from https://unicode.org/Public/UNIDATA/UnicodeData.txt and CaseFolding.txt: the simple case mappings that change a code point, the titlecase ones\n// that are not the uppercase ones, and the foldings that are not the lowercase ones (the Turkic ones apart)\n\nreturn [\n";
+        foreach ($maps as $name => $entries) {
+            $out .= "    '$name' => ".$map($entries).",\n";
+        }
+        file_put_contents($out_dir.'caseMapping.php', $out."];\n");
+        file_put_contents($out_dir.'numericValue.php', "<?php\n\n// from https://unicode.org/Public/UNIDATA/extracted/DerivedNumericValues.txt\n\nreturn ".$map($numeric).";\n");
+        $out = "<?php\n\n// from https://unicode.org/Public/UNIDATA/PropList.txt, DerivedCoreProperties.txt, emoji/emoji-data.txt and extracted/DerivedBinaryProperties.txt:\n// the ranges of code points of each binary property, by its IntlChar::PROPERTY_* constant (see Char::ranges())\n\nreturn [\n";
+        foreach ($binary as $property => $bounds) {
+            $out .= "    $property => '".self::deltas($bounds)."',\n";
+        }
+        file_put_contents($out_dir.'binaryProperties.php', $out."];\n");
+
+        // The mirrors and the paired brackets
+        $mirrors = [];
+        foreach (file(self::getFile('BidiMirroring.txt')) as $line) {
+            if (preg_match('/^([0-9A-F]+); ([0-9A-F]+)/', $line, $m)) {
+                $mirrors[\intval($m[1], 16)] = \intval($m[2], 16);
+            }
+        }
+        $brackets = [];
+        foreach (file(self::getFile('BidiBrackets.txt')) as $line) {
+            if (preg_match('/^([0-9A-F]+); ([0-9A-F]+); ([oc])/', $line, $m)) {
+                $brackets[\intval($m[1], 16)] = [\intval($m[2], 16), 'o' === $m[3] ? 1 : 2];
+            }
+        }
+        file_put_contents($out_dir.'bidiMirroring.php', "<?php\n\n// from https://unicode.org/Public/UNIDATA/BidiMirroring.txt and BidiBrackets.txt\n\nreturn [\n    'mirrors' => ".$map($mirrors).",\n    'brackets' => ".$map($brackets).",\n];\n");
+    }
+
+    /**
+     * Splits the values of the code points in a three-stage table, a byte per value: the code points by 1024, each to
+     * a block of 64 indexes of blocks of 16 values, the same blocks stored once; the indexes are 16-bit.
+     */
+    private static function threeStageTable(array $values)
+    {
+        $data = '';
+        $dataBlocks = [];
+        $indexes = '';
+        $indexBlocks = [];
+        $top = '';
+        foreach (array_chunk($values, 1024) as $chunk) {
+            $index = '';
+            foreach (array_chunk($chunk, 16) as $block) {
+                $bytes = implode('', array_map('chr', $block));
+                if (!isset($dataBlocks[$bytes])) {
+                    $dataBlocks[$bytes] = \strlen($data) >> 4;
+                    $data .= $bytes;
+                }
+                $index .= pack('n', $dataBlocks[$bytes]);
+            }
+            if (!isset($indexBlocks[$index])) {
+                $indexBlocks[$index] = \strlen($indexes) >> 7;
+                $indexes .= $index;
+            }
+            $top .= pack('n', $indexBlocks[$index]);
+        }
+
+        return base64_encode($top.$indexes.$data).'\', '.(\strlen($top) + \strlen($indexes));
+    }
+
+    /**
+     * Ranges of code points, their starts and ends one after the other, as the base64 of the variable-length deltas
+     * between them, 7 bits a byte.
+     */
+    private static function deltas(array $bounds)
+    {
+        $bytes = '';
+        $previous = -1;
+        foreach ($bounds as $bound) {
+            $delta = $bound - $previous;
+            $previous = $bound;
+            while ($delta >= 0x80) {
+                $bytes .= \chr(0x80 | $delta & 0x7F);
+                $delta >>= 7;
+            }
+            $bytes .= \chr($delta);
+        }
+
+        return base64_encode($bytes);
+    }
+
     protected static function chr($c)
     {
         $c %= 0x200000;

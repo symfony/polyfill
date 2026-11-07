@@ -54,3 +54,10 @@ Compiler::idnViramaMap(__DIR__.'/../src/Intl/Idn/Resources/unidata/');
 
 $data = file_get_contents('http://www.unicode.org/Public/idna/latest/IdnaTestV2.txt');
 file_put_contents(__DIR__.'/Intl/Idn/IdnaTestV2.txt', $data);
+
+foreach (['BidiMirroring.txt', 'BidiBrackets.txt', 'CaseFolding.txt', 'PropList.txt', 'emoji/emoji-data.txt', 'DerivedAge.txt', 'DerivedCoreProperties.txt', 'extracted/DerivedBinaryProperties.txt', 'extracted/DerivedNumericValues.txt'] as $file) {
+    $data = file_get_contents('https://unicode.org/Public/UNIDATA/'.$file);
+    file_put_contents(__DIR__.'/unicode/data/'.basename($file), $data);
+}
+
+Compiler::intlCharMaps(__DIR__.'/../src/Intl/Char/Resources/unidata/');

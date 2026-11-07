@@ -13,6 +13,7 @@ Polyfills are provided for:
 - the `uuid` extension;
 - the `MessageFormatter` class and the `msgfmt_format_message` functions;
 - the `Normalizer` class and the `grapheme_*` functions;
+- the `IntlChar` class, for the properties of code points (not their names nor their blocks);
 - the `utf8_encode` and `utf8_decode` functions from the `xml` extension or PHP-7.2 core;
 - the `Collator`, `NumberFormatter`, `Locale`, `IntlDateFormatter` and
   `IntlListFormatter` classes, limited to the "en" locale;
@@ -168,6 +169,7 @@ should **not** `require` the `symfony/polyfill` package, but the standalone ones
 - `symfony/polyfill-php85` for using the PHP 8.5 functions,
 - `symfony/polyfill-php86` for using the PHP 8.6 functions,
 - `symfony/polyfill-iconv` for using the iconv functions,
+- `symfony/polyfill-intl-char` for using the `IntlChar` class,
 - `symfony/polyfill-intl-grapheme` for using the `grapheme_*` functions,
 - `symfony/polyfill-intl-idn` for using the `idn_to_ascii` and `idn_to_utf8` functions,
 - `symfony/polyfill-intl-icu` for using the intl functions and classes,
