@@ -15,6 +15,7 @@
         "polyfill-iconv": "src/Iconv",
         "polyfill-io-poll": "src/Io/Poll",
         "polyfill-intl-breakiterator": "src/Intl/BreakIterator",
+        "polyfill-intl-char": "src/Intl/Char",
         "polyfill-intl-grapheme": "src/Intl/Grapheme",
         "polyfill-intl-icu": "src/Intl/Icu",
         "polyfill-intl-idn": "src/Intl/Idn",

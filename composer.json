@@ -38,6 +38,7 @@
         "symfony/polyfill-php86": "self.version",
         "symfony/polyfill-iconv": "self.version",
         "symfony/polyfill-intl-breakiterator": "self.version",
+        "symfony/polyfill-intl-char": "self.version",
         "symfony/polyfill-intl-grapheme": "self.version",
         "symfony/polyfill-intl-icu": "self.version",
         "symfony/polyfill-intl-messageformatter": "self.version",
@@ -68,6 +69,7 @@
         "classmap": [
             "src/DeepClone/Resources/stubs",
             "src/Intl/BreakIterator/Resources/stubs",
+            "src/Intl/Char/Resources/stubs",
             "src/Intl/Icu/Resources/stubs",
             "src/Intl/MessageFormatter/Resources/stubs",
             "src/Intl/Normalizer/Resources/stubs",

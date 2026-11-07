@@ -42,6 +42,7 @@ return (new PhpCsFixer\Config())
             ->exclude([
                 'src/Iconv/Resources',
                 'src/Intl/BreakIterator/Resources/unidata',
+                'src/Intl/Char/Resources/unidata',
                 'src/Intl/Icu/Resources',
                 'src/Intl/Idn/Resources',
                 'src/Mbstring/Resources',
