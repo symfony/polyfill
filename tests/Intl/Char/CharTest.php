@@ -110,6 +110,14 @@ class CharTest extends TestCase
 
     public function testScalarsAreIntegers(): void
     {
+        if (\PHP_VERSION_ID < 80000) {
+            $this->assertNull(Char::charType(65.0), 'Like intl on PHP 7, that takes only an int or a string.');
+            $this->assertNull(Char::ord(null));
+            $this->assertNull(Char::charType('65'));
+
+            return;
+        }
+
         $this->assertSame(Char::CHAR_CATEGORY_UPPERCASE_LETTER, Char::charType(65.0));
         $this->assertSame(97, Char::tolower(65.0));
         $this->assertSame(97, Char::tolower(97.0));

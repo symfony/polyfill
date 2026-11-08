@@ -1424,8 +1424,8 @@ class Char
     }
 
     /**
-     * The code point of an integer (or of a float, a bool or null, like intl), or of a string of one UTF-8 character,
-     * null otherwise.
+     * The code point of an integer (or on PHP 8 of a float, a bool or null, like intl), or of a string of one UTF-8
+     * character, null otherwise.
      */
     private static function codePoint($codepoint)
     {
@@ -1436,8 +1436,11 @@ class Char
             if (isset(self::$decoded[$codepoint])) {
                 return self::$decoded[$codepoint];
             }
+        } elseif (\PHP_VERSION_ID < 80000) {
+            // Like intl on PHP 7, that takes only an int or a string
+            return null;
         } elseif (null === $codepoint || \is_scalar($codepoint)) {
-            // Like intl, that takes an int when it is not given a string
+            // Like intl on PHP 8, that takes an int when it is not given a string
             $codepoint = (int) $codepoint;
 
             return 0 <= $codepoint && $codepoint <= 0x10FFFF ? $codepoint : null;
