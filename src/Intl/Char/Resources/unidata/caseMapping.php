@@ -1,6 +1,6 @@
 <?php
 
-// from https://unicode.org/Public/UNIDATA/UnicodeData.txt and CaseFolding.txt: the simple case mappings that change a code point, the titlecase ones
+// from UnicodeData.txt and CaseFolding.txt: the simple case mappings that change a code point, the titlecase ones
 // that are not the uppercase ones, and the foldings that are not the lowercase ones (the Turkic ones apart)
 
 return [

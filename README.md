@@ -13,7 +13,7 @@ Polyfills are provided for:
 - the `uuid` extension;
 - the `MessageFormatter` class and the `msgfmt_format_message` functions;
 - the `Normalizer` class and the `grapheme_*` functions;
-- the `IntlChar` class, for the properties of code points (not their names nor their blocks);
+- the `IntlChar` class, for the properties of code points (not their names, blocks nor scripts);
 - the `utf8_encode` and `utf8_decode` functions from the `xml` extension or PHP-7.2 core;
 - the `Collator`, `NumberFormatter`, `Locale`, `IntlDateFormatter` and
   `IntlListFormatter` classes, limited to the "en" locale;

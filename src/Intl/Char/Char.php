@@ -13,7 +13,7 @@ namespace Symfony\Polyfill\Intl\Char;
 
 /**
  * Partial implementation of the IntlChar class provided by the intl extension: the properties of code points from
- * the Unicode Character Database, without their names, blocks and property aliases.
+ * the Unicode Character Database, without their names, blocks, scripts and property aliases.
  *
  * @internal
  */
@@ -695,9 +695,36 @@ class Char
     private const GC_P = 0x30F80000;
     private const GC_S = 0xF000000;
 
-    /** @var array<string, array{list<int>, list<int>, list<int>}> The stages of the tables of properties.php */
+    /** The enumerated properties given by a table of Resources/unidata/tables/, and their maximum values in ICU 78 */
+    private const ENUMERATED = [
+        self::PROPERTY_BIDI_CLASS => ['bidiClass', 22],
+        self::PROPERTY_CANONICAL_COMBINING_CLASS => ['combiningClass', 255],
+        self::PROPERTY_DECOMPOSITION_TYPE => ['decompositionType', 17],
+        self::PROPERTY_EAST_ASIAN_WIDTH => ['eastAsianWidth', 5],
+        self::PROPERTY_GENERAL_CATEGORY => ['generalCategory', 29],
+        self::PROPERTY_JOINING_GROUP => ['joiningGroup', 105],
+        self::PROPERTY_JOINING_TYPE => ['joiningType', 5],
+        self::PROPERTY_LINE_BREAK => ['lineBreak', 48],
+        self::PROPERTY_NUMERIC_TYPE => ['numericType', 3],
+        self::PROPERTY_HANGUL_SYLLABLE_TYPE => ['hangulSyllableType', 5],
+        self::PROPERTY_NFD_QUICK_CHECK => ['nfdQuickCheck', 1],
+        self::PROPERTY_NFKD_QUICK_CHECK => ['nfkdQuickCheck', 1],
+        self::PROPERTY_NFC_QUICK_CHECK => ['nfcQuickCheck', 2],
+        self::PROPERTY_NFKC_QUICK_CHECK => ['nfkcQuickCheck', 2],
+        self::PROPERTY_LEAD_CANONICAL_COMBINING_CLASS => ['leadCombiningClass', 255],
+        self::PROPERTY_TRAIL_CANONICAL_COMBINING_CLASS => ['trailCombiningClass', 255],
+        self::PROPERTY_GRAPHEME_CLUSTER_BREAK => ['graphemeClusterBreak', 17],
+        self::PROPERTY_SENTENCE_BREAK => ['sentenceBreak', 14],
+        self::PROPERTY_WORD_BREAK => ['wordBreak', 22],
+        4118 => ['indicPositionalCategory', 15], // UCHAR_INDIC_POSITIONAL_CATEGORY
+        4119 => ['indicSyllabicCategory', 36], // UCHAR_INDIC_SYLLABIC_CATEGORY
+        4120 => ['verticalOrientation', 3], // UCHAR_VERTICAL_ORIENTATION
+        4121 => ['identifierStatus', 1], // UCHAR_IDENTIFIER_STATUS
+        4122 => ['indicConjunctBreak', 0], // UCHAR_INDIC_CONJUNCT_BREAK, of which ICU gives 0 as the maximum value
+    ];
+
+    /** @var array<string, array{list<int>, list<int>, list<int>}> The stages of the tables of Resources/unidata/tables/ */
     private static $tables = [];
-    private static $properties;
     private static $bidi;
     private static $category;
     /** @var array<string, int> The code points of the characters given as strings, see codePoint() */
@@ -710,7 +737,6 @@ class Char
     private static $maps = [];
     private static $numeric;
     private static $binary;
-    private static $ages;
 
     public static function charDirection($codepoint)
     {
@@ -721,7 +747,7 @@ class Char
                 return null;
             }
         }
-        $table = self::$bidi ?: self::$bidi = self::table('bidi');
+        $table = self::$bidi ?: self::$bidi = self::table('bidiClass');
 
         return $table[2][$table[1][$table[0][$codepoint >> 10] << 6 | $codepoint >> 4 & 0x3F] << 4 | $codepoint & 0xF];
     }
@@ -735,25 +761,43 @@ class Char
                 return null;
             }
         }
-        $table = self::$category ?: self::$category = self::table('category');
+        $table = self::$category ?: self::$category = self::table('generalCategory');
 
         return $table[2][$table[1][$table[0][$codepoint >> 10] << 6 | $codepoint >> 4 & 0x3F] << 4 | $codepoint & 0xF];
     }
 
     public static function getCombiningClass($codepoint)
     {
-        return null === ($codepoint = self::codePoint($codepoint)) ? null : self::value('combining', $codepoint);
+        return null === ($codepoint = self::codePoint($codepoint)) ? null : self::value('combiningClass', $codepoint);
     }
 
     public static function enumCharTypes($callback): void
     {
+        [$top, $indexes, $data] = self::$category ?: self::$category = self::table('generalCategory');
+        // The value of each block of 16 code points, -1 when they are not all the same
+        $uniform = [];
         $start = 0;
-        $type = self::value('category', 0);
-        for ($codepoint = 1; $codepoint <= self::CODEPOINT_MAX; ++$codepoint) {
-            if ($type !== $next = self::value('category', $codepoint)) {
-                $callback($start, $codepoint, $type);
-                $start = $codepoint;
-                $type = $next;
+        $type = $data[0];
+        for ($block = 0; $block < 0x11000; ++$block) {
+            $offset = $indexes[$top[$block >> 6] << 6 | $block & 0x3F];
+            if (!isset($uniform[$offset])) {
+                $uniform[$offset] = $data[$offset << 4];
+                for ($i = 1; $i < 16; ++$i) {
+                    if ($data[$offset << 4 | $i] !== $uniform[$offset]) {
+                        $uniform[$offset] = -1;
+                        break;
+                    }
+                }
+            }
+            if ($type === $uniform[$offset]) {
+                continue;
+            }
+            for ($i = 0; $i < 16; ++$i) {
+                if ($type !== $next = $data[$offset << 4 | $i]) {
+                    $callback($start, $block << 4 | $i, $type);
+                    $start = $block << 4 | $i;
+                    $type = $next;
+                }
             }
         }
         $callback($start, self::CODEPOINT_MAX + 1, $type);
@@ -909,7 +953,7 @@ class Char
             return null;
         }
 
-        return $codepoint <= 0x9F ? self::isControl($codepoint) && !self::isAsciiSpace($codepoint) : self::CHAR_CATEGORY_FORMAT_CHAR === self::value('category', $codepoint);
+        return $codepoint <= 0x9F ? self::isControl($codepoint) && !self::isAsciiSpace($codepoint) : self::CHAR_CATEGORY_FORMAT_CHAR === self::value('generalCategory', $codepoint);
     }
 
     public static function isISOControl($codepoint)
@@ -923,7 +967,7 @@ class Char
             return null;
         }
 
-        return 0 !== (1 << self::value('category', $codepoint) & self::GC_Z) || ($codepoint <= 0x9F && ((0x09 <= $codepoint && $codepoint <= 0x0D) || (0x1C <= $codepoint && $codepoint <= 0x1F) || 0x85 === $codepoint));
+        return 0 !== (1 << self::value('generalCategory', $codepoint) & self::GC_Z) || ($codepoint <= 0x9F && ((0x09 <= $codepoint && $codepoint <= 0x0D) || (0x1C <= $codepoint && $codepoint <= 0x1F) || 0x85 === $codepoint));
     }
 
     public static function isWhitespace($codepoint)
@@ -932,7 +976,7 @@ class Char
             return null;
         }
 
-        return (0 !== (1 << self::value('category', $codepoint) & self::GC_Z) && 0xA0 !== $codepoint && 0x2007 !== $codepoint && 0x202F !== $codepoint) || self::isAsciiSpace($codepoint);
+        return (0 !== (1 << self::value('generalCategory', $codepoint) & self::GC_Z) && 0xA0 !== $codepoint && 0x2007 !== $codepoint && 0x202F !== $codepoint) || self::isAsciiSpace($codepoint);
     }
 
     public static function isblank($codepoint)
@@ -941,7 +985,7 @@ class Char
             return null;
         }
 
-        return $codepoint <= 0x9F ? 0x09 === $codepoint || 0x20 === $codepoint : self::CHAR_CATEGORY_SPACE_SEPARATOR === self::value('category', $codepoint);
+        return $codepoint <= 0x9F ? 0x09 === $codepoint || 0x20 === $codepoint : self::CHAR_CATEGORY_SPACE_SEPARATOR === self::value('generalCategory', $codepoint);
     }
 
     public static function isxdigit($codepoint)
@@ -952,7 +996,7 @@ class Char
 
         return (0x41 <= $codepoint && $codepoint <= 0x66 && ($codepoint <= 0x46 || 0x61 <= $codepoint))
             || (0xFF21 <= $codepoint && $codepoint <= 0xFF46 && ($codepoint <= 0xFF26 || 0xFF41 <= $codepoint))
-            || self::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER === self::value('category', $codepoint);
+            || self::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER === self::value('generalCategory', $codepoint);
     }
 
     public static function charDigitValue($codepoint)
@@ -961,7 +1005,7 @@ class Char
             return null;
         }
 
-        return self::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER === self::value('category', $codepoint) ? (int) self::numeric($codepoint) : -1;
+        return self::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER === self::value('generalCategory', $codepoint) ? (int) self::numeric($codepoint) : -1;
     }
 
     public static function digit($codepoint, $base = 10)
@@ -972,7 +1016,7 @@ class Char
         if ($base < 2 || $base > 36) {
             return false;
         }
-        $value = self::charDigitValue($codepoint);
+        $value = self::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER === self::value('generalCategory', $codepoint) ? (int) self::numeric($codepoint) : -1;
         if ($value < 0) {
             if (0x61 <= $codepoint && $codepoint <= 0x7A) {
                 $value = $codepoint - 0x57;
@@ -1012,41 +1056,47 @@ class Char
         if (null === $codepoint = self::codePoint($codepoint)) {
             return null;
         }
-        if (null === self::$ages) {
-            $data = self::$properties ?: self::$properties = require __DIR__.'/Resources/unidata/properties.php';
-            self::$ages = [self::bounds($data['age'][0]), base64_decode($data['age'][1]), $data['age'][2]];
-        }
-        [$starts, $versions, $names] = self::$ages;
-        $run = self::run($starts, $codepoint);
-        $version = '' !== $names[\ord($versions[$run])] ? explode('.', $names[\ord($versions[$run])]) : [0, 0];
+        $table = self::$tables['age'] ?? self::table('age');
 
-        return [(int) $version[0], (int) $version[1], 0, 0];
+        return $table[3][$table[2][$table[1][$table[0][$codepoint >> 10] << 6 | $codepoint >> 4 & 0x3F] << 4 | $codepoint & 0xF]];
     }
 
     public static function getIntPropertyValue($codepoint, $property)
     {
-        switch ($property) {
-            case self::PROPERTY_BIDI_CLASS:
-                return self::charDirection($codepoint);
-            case self::PROPERTY_GENERAL_CATEGORY:
-                return self::charType($codepoint);
-            case self::PROPERTY_GENERAL_CATEGORY_MASK:
-                return null === ($type = self::charType($codepoint)) ? null : 1 << $type;
-            case self::PROPERTY_CANONICAL_COMBINING_CLASS:
-                return self::getCombiningClass($codepoint);
-            case self::PROPERTY_BIDI_PAIRED_BRACKET_TYPE:
-                if ((!\is_int($codepoint) || $codepoint < 0 || $codepoint > 0x10FFFF) && null === $codepoint = self::codePoint($codepoint)) {
+        // The paired bracket type first, for the bidi algorithm
+        if (self::PROPERTY_BIDI_PAIRED_BRACKET_TYPE === $property) {
+            if ((!\is_int($codepoint) || $codepoint < 0 || $codepoint > 0x10FFFF) && null === $codepoint = self::codePoint($codepoint)) {
+                return null;
+            }
+            $mirroring = self::$mirroring ?: self::mirroring();
+
+            return isset($mirroring['brackets'][$codepoint]) ? $mirroring['brackets'][$codepoint][1] : self::BPT_NONE;
+        }
+        if (isset(self::ENUMERATED[$property])) {
+            if (!\is_int($codepoint) || $codepoint < 0 || $codepoint > 0x10FFFF) {
+                if (\is_string($codepoint) && isset(self::$decoded[$codepoint])) {
+                    $codepoint = self::$decoded[$codepoint];
+                } elseif (null === $codepoint = self::codePoint($codepoint)) {
                     return null;
                 }
-                $mirroring = self::$mirroring ?: self::mirroring();
+            }
+            $table = self::$tables[$name = self::ENUMERATED[$property][0]] ?? self::table($name);
 
-                return isset($mirroring['brackets'][$codepoint]) ? $mirroring['brackets'][$codepoint][1] : self::BPT_NONE;
+            return $table[2][$table[1][$table[0][$codepoint >> 10] << 6 | $codepoint >> 4 & 0x3F] << 4 | $codepoint & 0xF];
+        }
+        switch ($property) {
+            case self::PROPERTY_GENERAL_CATEGORY_MASK:
+                return null === ($type = self::charType($codepoint)) ? null : 1 << $type;
+            case self::PROPERTY_BLOCK:
+            case self::PROPERTY_SCRIPT:
+                throw new \LogicException(\sprintf('The property %d of IntlChar::getIntPropertyValue() is not provided by symfony/polyfill-intl-char.', $property));
         }
         if (0 <= $property && $property < self::PROPERTY_BINARY_LIMIT) {
             return null === ($has = self::hasBinaryProperty($codepoint, $property)) ? null : (int) $has;
         }
 
-        throw new \LogicException(\sprintf('The property %d of IntlChar::getIntPropertyValue() is not provided by symfony/polyfill-intl-char.', $property));
+        // The other properties have no integer values
+        return null === self::codePoint($codepoint) ? null : 0;
     }
 
     public static function getIntPropertyMinValue($property)
@@ -1056,26 +1106,28 @@ class Char
 
     public static function getIntPropertyMaxValue($property)
     {
+        if (isset(self::ENUMERATED[$property])) {
+            return self::ENUMERATED[$property][1];
+        }
         switch ($property) {
-            case self::PROPERTY_BIDI_CLASS:
-                return self::CHAR_DIRECTION_CHAR_DIRECTION_COUNT - 1;
-            case self::PROPERTY_GENERAL_CATEGORY:
-                return self::CHAR_CATEGORY_CHAR_CATEGORY_COUNT - 1;
-            case self::PROPERTY_CANONICAL_COMBINING_CLASS:
-                return 255;
+            case self::PROPERTY_GENERAL_CATEGORY_MASK:
+                return -1;
             case self::PROPERTY_BIDI_PAIRED_BRACKET_TYPE:
                 return self::BPT_COUNT - 1;
-        }
-        if (0 <= $property && $property < self::PROPERTY_BINARY_LIMIT) {
-            return 1;
+            case self::PROPERTY_BLOCK:
+            case self::PROPERTY_SCRIPT:
+                throw new \LogicException(\sprintf('The property %d of IntlChar::getIntPropertyMaxValue() is not provided by symfony/polyfill-intl-char.', $property));
         }
 
-        throw new \LogicException(\sprintf('The property %d of IntlChar::getIntPropertyMaxValue() is not provided by symfony/polyfill-intl-char.', $property));
+        return 0 <= $property && $property < self::PROPERTY_BINARY_LIMIT ? 1 : -1;
     }
 
     public static function hasBinaryProperty($codepoint, $property)
     {
         if (!isset(self::$pages[$property])) {
+            if (!\is_int($property) || $property < 0 || $property >= self::PROPERTY_BINARY_LIMIT) {
+                return null === self::codePoint($codepoint) ? null : false;
+            }
             self::pages($property);
         }
         if (!\is_int($codepoint) || $codepoint < 0 || $codepoint > 0x10FFFF) {
@@ -1187,13 +1239,20 @@ class Char
     private static function table($name)
     {
         if (!isset(self::$tables[$name])) {
-            $data = self::$properties ?: self::$properties = require __DIR__.'/Resources/unidata/properties.php';
-            $bytes = base64_decode($data[$name][0]);
+            $data = require __DIR__.'/Resources/unidata/tables/'.$name.'.php';
+            $bytes = base64_decode($data[0]);
             self::$tables[$name] = [
                 array_values(unpack('n*', substr($bytes, 0, 2176))),
-                array_values(unpack('n*', substr($bytes, 2176, $data[$name][1] - 2176))),
-                array_values(unpack('C*', substr($bytes, $data[$name][1]))),
+                array_values(unpack('n*', substr($bytes, 2176, $data[1] - 2176))),
+                array_values(unpack('C*', substr($bytes, $data[1]))),
             ];
+            // The ages, as IntlChar::charAge() returns them
+            if (isset($data[2])) {
+                foreach ($data[2] as $version) {
+                    $version = explode('.', $version.'.0');
+                    self::$tables[$name][3][] = [(int) $version[0], (int) $version[1], 0, 0];
+                }
+            }
         }
 
         return self::$tables[$name];
@@ -1211,7 +1270,7 @@ class Char
                 return null;
             }
         }
-        $table = self::$category ?: self::$category = self::table('category');
+        $table = self::$category ?: self::$category = self::table('generalCategory');
 
         return 0 !== (1 << $table[2][$table[1][$table[0][$codepoint >> 10] << 6 | $codepoint >> 4 & 0x3F] << 4 | $codepoint & 0xF] & $mask);
     }
@@ -1231,7 +1290,7 @@ class Char
         }
         $map = self::$maps[$name] ?? self::map($name);
         if (!isset($map[$codepoint])) {
-            return $given;
+            return \is_string($given) ? $given : $codepoint;
         }
 
         return \is_string($given) ? self::chr($map[$codepoint]) : $map[$codepoint];
@@ -1334,11 +1393,8 @@ class Char
         if (null === self::$binary) {
             self::$binary = require __DIR__.'/Resources/unidata/binaryProperties.php';
         }
-        if (!isset(self::$binary[$property])) {
-            throw new \LogicException(\sprintf('The property %d of IntlChar::hasBinaryProperty() is not provided by symfony/polyfill-intl-char.', $property));
-        }
         $pages = [];
-        $bounds = self::bounds(self::$binary[$property]);
+        $bounds = isset(self::$binary[$property]) ? self::bounds(self::$binary[$property]) : [];
         for ($i = 0, $count = \count($bounds); $i < $count; $i += 2) {
             for ($codepoint = $bounds[$i], $end = $bounds[$i + 1]; $codepoint <= $end; ++$codepoint) {
                 $page = $codepoint >> 8;
@@ -1357,25 +1413,6 @@ class Char
         self::$pages[$property] = $pages;
     }
 
-    /**
-     * The index of the last bound at or before a code point.
-     */
-    private static function run(array $bounds, $codepoint)
-    {
-        $low = -1;
-        $high = \count($bounds) - 1;
-        while ($low < $high) {
-            $middle = ($low + $high + 1) >> 1;
-            if ($bounds[$middle] <= $codepoint) {
-                $low = $middle;
-            } else {
-                $high = $middle - 1;
-            }
-        }
-
-        return $low;
-    }
-
     private static function isControl($codepoint)
     {
         return $codepoint <= 0x9F && ($codepoint <= 0x1F || 0x7F <= $codepoint);
@@ -1387,16 +1424,25 @@ class Char
     }
 
     /**
-     * The code point of an integer, or of a string of one UTF-8 character, null otherwise.
+     * The code point of an integer (or of a float, a bool or null, like intl), or of a string of one UTF-8 character,
+     * null otherwise.
      */
     private static function codePoint($codepoint)
     {
         if (\is_int($codepoint)) {
             return 0 <= $codepoint && $codepoint <= 0x10FFFF ? $codepoint : null;
         }
-        $codepoint = (string) $codepoint;
-        if (isset(self::$decoded[$codepoint])) {
-            return self::$decoded[$codepoint];
+        if (\is_string($codepoint)) {
+            if (isset(self::$decoded[$codepoint])) {
+                return self::$decoded[$codepoint];
+            }
+        } elseif (null === $codepoint || \is_scalar($codepoint)) {
+            // Like intl, that takes an int when it is not given a string
+            $codepoint = (int) $codepoint;
+
+            return 0 <= $codepoint && $codepoint <= 0x10FFFF ? $codepoint : null;
+        } else {
+            $codepoint = (string) $codepoint;
         }
         if (null === $decoded = self::decode($codepoint)) {
             return null;

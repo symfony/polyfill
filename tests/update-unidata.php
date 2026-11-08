@@ -55,9 +55,14 @@ Compiler::idnViramaMap(__DIR__.'/../src/Intl/Idn/Resources/unidata/');
 $data = file_get_contents('http://www.unicode.org/Public/idna/latest/IdnaTestV2.txt');
 file_put_contents(__DIR__.'/Intl/Idn/IdnaTestV2.txt', $data);
 
-foreach (['BidiMirroring.txt', 'BidiBrackets.txt', 'CaseFolding.txt', 'PropList.txt', 'emoji/emoji-data.txt', 'DerivedAge.txt', 'DerivedCoreProperties.txt', 'extracted/DerivedBinaryProperties.txt', 'extracted/DerivedNumericValues.txt'] as $file) {
-    $data = file_get_contents('https://unicode.org/Public/UNIDATA/'.$file);
-    file_put_contents(__DIR__.'/unicode/data/'.basename($file), $data);
+// IntlChar gives the data of the version of Unicode of the ICU it is tested with, not the latest one
+$ucd = __DIR__.'/unicode/data/ucd-17.0.0/';
+@mkdir($ucd, 0777, true);
+foreach (['UnicodeData.txt', 'CaseFolding.txt', 'SpecialCasing.txt', 'BidiMirroring.txt', 'BidiBrackets.txt', 'PropList.txt', 'PropertyValueAliases.txt', 'DerivedAge.txt', 'DerivedCoreProperties.txt', 'DerivedNormalizationProps.txt', 'EastAsianWidth.txt', 'LineBreak.txt', 'HangulSyllableType.txt', 'IndicPositionalCategory.txt', 'IndicSyllabicCategory.txt', 'VerticalOrientation.txt', 'emoji/emoji-data.txt', 'auxiliary/GraphemeBreakProperty.txt', 'auxiliary/SentenceBreakProperty.txt', 'auxiliary/WordBreakProperty.txt', 'extracted/DerivedBidiClass.txt', 'extracted/DerivedBinaryProperties.txt', 'extracted/DerivedCombiningClass.txt', 'extracted/DerivedDecompositionType.txt', 'extracted/DerivedGeneralCategory.txt', 'extracted/DerivedJoiningGroup.txt', 'extracted/DerivedJoiningType.txt', 'extracted/DerivedNumericType.txt', 'extracted/DerivedNumericValues.txt'] as $file) {
+    file_put_contents($ucd.basename($file), file_get_contents('https://unicode.org/Public/17.0.0/ucd/'.$file));
+}
+foreach (['emoji/emoji-sequences.txt', 'security/IdentifierStatus.txt'] as $file) {
+    file_put_contents($ucd.basename($file), file_get_contents('https://unicode.org/Public/17.0.0/'.$file));
 }
 
-Compiler::intlCharMaps(__DIR__.'/../src/Intl/Char/Resources/unidata/');
+Compiler::intlCharMaps(__DIR__.'/../src/Intl/Char/Resources/unidata/', $ucd);
