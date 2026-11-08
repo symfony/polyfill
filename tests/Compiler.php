@@ -681,6 +681,473 @@ RegexClass;
         file_put_contents($out_dir.'Regex.php', $s);
     }
 
+    /**
+     * Builds the data of IntlChar from the files of a version of the UCD, the one of the ICU that ext-intl is tested with.
+     */
+    public static function intlCharMaps($out_dir, $ucd_dir): void
+    {
+        $file = static function ($name) use ($ucd_dir) {
+            return file($ucd_dir.$name);
+        };
+        $range = static function ($codePoints) {
+            $range = explode('..', trim($codePoints));
+
+            return [\intval($range[0], 16), \intval($range[1] ?? $range[0], 16)];
+        };
+        // The fields of the data lines of a file, and of its @missing lines: code points first
+        $records = static function ($name) use ($file) {
+            $records = [];
+            foreach ($file($name) as $line) {
+                if (0 === strpos($line, '# @missing:')) {
+                    $line = substr($line, 11);
+                } elseif ('' === trim($line) || '#' === $line[0]) {
+                    continue;
+                }
+                $records[] = array_map('trim', explode(';', explode('#', $line, 2)[0]));
+            }
+
+            return $records;
+        };
+
+        // The short name of every name of the values of each property
+        $aliases = [];
+        foreach ($records('PropertyValueAliases.txt') as $fields) {
+            $short = $fields[1];
+            foreach (\array_slice($fields, 1) as $name) {
+                $aliases[$fields[0]][$name] = $short;
+            }
+        }
+        // The values of an enumerated property for every code point, numbered like ICU: the defaults of @missing,
+        // then the values given, from the field of the value or from the lines of the property in a shared file
+        $enumerated = static function ($name, $property, array $values, $default) use ($records, $range, $aliases) {
+            $table = array_fill(0, 0x110000, $default);
+            $values = array_flip($values);
+            foreach ($records($name) as $fields) {
+                if (preg_match('/_QC$|^InCB$/', $property)) {
+                    if (\count($fields) < 3 || $fields[1] !== $property) {
+                        continue;
+                    }
+                    $fields = [$fields[0], $fields[2]];
+                }
+                $value = $aliases[$property][$fields[1]] ?? $fields[1];
+                if (!isset($values[$value])) {
+                    throw new \RuntimeException(\sprintf('Unknown value "%s" of %s in %s.', $fields[1], $property, $name));
+                }
+                [$start, $end] = $range($fields[0]);
+                for ($i = $start; $i <= $end; ++$i) {
+                    $table[$i] = $values[$value];
+                }
+            }
+
+            return $table;
+        };
+
+        // The values of the enumerated properties, in the order of ICU's enums (of IntlChar's constants)
+        $bidi = ['L', 'R', 'EN', 'ES', 'ET', 'AN', 'CS', 'B', 'S', 'WS', 'ON', 'LRE', 'LRO', 'AL', 'RLE', 'RLO', 'PDF', 'NSM', 'BN', 'FSI', 'LRI', 'RLI', 'PDI'];
+        $categories = ['Cn', 'Lu', 'Ll', 'Lt', 'Lm', 'Lo', 'Mn', 'Me', 'Mc', 'Nd', 'Nl', 'No', 'Zs', 'Zl', 'Zp', 'Cc', 'Cf', 'Co', 'Cs', 'Pd', 'Ps', 'Pe', 'Pc', 'Po', 'Sm', 'Sc', 'Sk', 'So', 'Pi', 'Pf'];
+        $tables = [
+            'bidiClass' => $enumerated('DerivedBidiClass.txt', 'bc', $bidi, 0),
+            'generalCategory' => $enumerated('DerivedGeneralCategory.txt', 'gc', $categories, 0),
+            'combiningClass' => $enumerated('DerivedCombiningClass.txt', 'ccc', range(0, 255), 0),
+            'decompositionType' => $enumerated('DerivedDecompositionType.txt', 'dt', ['None', 'Can', 'Com', 'Enc', 'Fin', 'Font', 'Fra', 'Init', 'Iso', 'Med', 'Nar', 'Nb', 'Sml', 'Sqr', 'Sub', 'Sup', 'Vert', 'Wide'], 0),
+            'eastAsianWidth' => $enumerated('EastAsianWidth.txt', 'ea', ['N', 'A', 'H', 'F', 'Na', 'W'], 0),
+            'joiningGroup' => $enumerated('DerivedJoiningGroup.txt', 'jg', ['No_Joining_Group', 'Ain', 'Alaph', 'Alef', 'Beh', 'Beth', 'Dal', 'Dalath_Rish', 'E', 'Feh', 'Final_Semkath', 'Gaf', 'Gamal', 'Hah', 'Teh_Marbuta_Goal', 'He', 'Heh', 'Heh_Goal', 'Heth', 'Kaf', 'Kaph', 'Knotted_Heh', 'Lam', 'Lamadh', 'Meem', 'Mim', 'Noon', 'Nun', 'Pe', 'Qaf', 'Qaph', 'Reh', 'Reversed_Pe', 'Sad', 'Sadhe', 'Seen', 'Semkath', 'Shin', 'Swash_Kaf', 'Syriac_Waw', 'Tah', 'Taw', 'Teh_Marbuta', 'Teth', 'Waw', 'Yeh', 'Yeh_Barree', 'Yeh_With_Tail', 'Yudh', 'Yudh_He', 'Zain', 'Fe', 'Khaph', 'Zhain', 'Burushaski_Yeh_Barree', 'Farsi_Yeh', 'Nya', 'Rohingya_Yeh', 'Manichaean_Aleph', 'Manichaean_Ayin', 'Manichaean_Beth', 'Manichaean_Daleth', 'Manichaean_Dhamedh', 'Manichaean_Five', 'Manichaean_Gimel', 'Manichaean_Heth', 'Manichaean_Hundred', 'Manichaean_Kaph', 'Manichaean_Lamedh', 'Manichaean_Mem', 'Manichaean_Nun', 'Manichaean_One', 'Manichaean_Pe', 'Manichaean_Qoph', 'Manichaean_Resh', 'Manichaean_Sadhe', 'Manichaean_Samekh', 'Manichaean_Taw', 'Manichaean_Ten', 'Manichaean_Teth', 'Manichaean_Thamedh', 'Manichaean_Twenty', 'Manichaean_Waw', 'Manichaean_Yodh', 'Manichaean_Zayin', 'Straight_Waw', 'African_Feh', 'African_Noon', 'African_Qaf', 'Malayalam_Bha', 'Malayalam_Ja', 'Malayalam_Lla', 'Malayalam_Llla', 'Malayalam_Nga', 'Malayalam_Nna', 'Malayalam_Nnna', 'Malayalam_Nya', 'Malayalam_Ra', 'Malayalam_Ssa', 'Malayalam_Tta', 'Hanifi_Rohingya_Kinna_Ya', 'Hanifi_Rohingya_Pa', 'Thin_Yeh', 'Vertical_Tail', 'Kashmiri_Yeh', 'Thin_Noon'], 0),
+            'joiningType' => $enumerated('DerivedJoiningType.txt', 'jt', ['U', 'C', 'D', 'L', 'R', 'T'], 0),
+            'lineBreak' => $enumerated('LineBreak.txt', 'lb', ['XX', 'AI', 'AL', 'B2', 'BA', 'BB', 'BK', 'CB', 'CL', 'CM', 'CR', 'EX', 'GL', 'HY', 'ID', 'IN', 'IS', 'LF', 'NS', 'NU', 'OP', 'PO', 'PR', 'QU', 'SA', 'SG', 'SP', 'SY', 'ZW', 'NL', 'WJ', 'H2', 'H3', 'JL', 'JT', 'JV', 'CP', 'CJ', 'HL', 'RI', 'EB', 'EM', 'ZWJ', 'AK', 'AP', 'AS', 'VF', 'VI', 'HH'], 0),
+            'numericType' => $enumerated('DerivedNumericType.txt', 'nt', ['None', 'De', 'Di', 'Nu'], 0),
+            'hangulSyllableType' => $enumerated('HangulSyllableType.txt', 'hst', ['NA', 'L', 'V', 'T', 'LV', 'LVT'], 0),
+            'nfdQuickCheck' => $enumerated('DerivedNormalizationProps.txt', 'NFD_QC', ['N', 'Y'], 1),
+            'nfkdQuickCheck' => $enumerated('DerivedNormalizationProps.txt', 'NFKD_QC', ['N', 'Y'], 1),
+            'nfcQuickCheck' => $enumerated('DerivedNormalizationProps.txt', 'NFC_QC', ['N', 'Y', 'M'], 1),
+            'nfkcQuickCheck' => $enumerated('DerivedNormalizationProps.txt', 'NFKC_QC', ['N', 'Y', 'M'], 1),
+            'graphemeClusterBreak' => $enumerated('GraphemeBreakProperty.txt', 'GCB', ['XX', 'CN', 'CR', 'EX', 'L', 'LF', 'LV', 'LVT', 'T', 'V', 'SM', 'PP', 'RI', 'EB', 'EBG', 'EM', 'GAZ', 'ZWJ'], 0),
+            'sentenceBreak' => $enumerated('SentenceBreakProperty.txt', 'SB', ['XX', 'AT', 'CL', 'FO', 'LO', 'NU', 'LE', 'SE', 'SP', 'ST', 'UP', 'CR', 'EX', 'LF', 'SC'], 0),
+            'wordBreak' => $enumerated('WordBreakProperty.txt', 'WB', ['XX', 'LE', 'FO', 'KA', 'ML', 'MN', 'NU', 'EX', 'CR', 'Extend', 'LF', 'MB', 'NL', 'RI', 'HL', 'SQ', 'DQ', 'EB', 'EBG', 'EM', 'GAZ', 'ZWJ', 'WSegSpace'], 0),
+            'indicPositionalCategory' => $enumerated('IndicPositionalCategory.txt', 'InPC', ['NA', 'Bottom', 'Bottom_And_Left', 'Bottom_And_Right', 'Left', 'Left_And_Right', 'Overstruck', 'Right', 'Top', 'Top_And_Bottom', 'Top_And_Bottom_And_Right', 'Top_And_Left', 'Top_And_Left_And_Right', 'Top_And_Right', 'Visual_Order_Left', 'Top_And_Bottom_And_Left'], 0),
+            'indicSyllabicCategory' => $enumerated('IndicSyllabicCategory.txt', 'InSC', ['Other', 'Avagraha', 'Bindu', 'Brahmi_Joining_Number', 'Cantillation_Mark', 'Consonant', 'Consonant_Dead', 'Consonant_Final', 'Consonant_Head_Letter', 'Consonant_Initial_Postfixed', 'Consonant_Killer', 'Consonant_Medial', 'Consonant_Placeholder', 'Consonant_Preceding_Repha', 'Consonant_Prefixed', 'Consonant_Subjoined', 'Consonant_Succeeding_Repha', 'Consonant_With_Stacker', 'Gemination_Mark', 'Invisible_Stacker', 'Joiner', 'Modifying_Letter', 'Non_Joiner', 'Nukta', 'Number', 'Number_Joiner', 'Pure_Killer', 'Register_Shifter', 'Syllable_Modifier', 'Tone_Letter', 'Tone_Mark', 'Virama', 'Visarga', 'Vowel', 'Vowel_Dependent', 'Vowel_Independent', 'Reordering_Killer'], 0),
+            'verticalOrientation' => $enumerated('VerticalOrientation.txt', 'vo', ['R', 'Tr', 'Tu', 'U'], 0),
+            'identifierStatus' => $enumerated('IdentifierStatus.txt', 'Identifier_Status', ['Restricted', 'Allowed'], 0),
+            'indicConjunctBreak' => $enumerated('DerivedCoreProperties.txt', 'InCB', ['None', 'Consonant', 'Extend', 'Linker'], 0),
+        ];
+
+        // The canonical decompositions, the case mappings and the ages, from UnicodeData.txt and DerivedAge.txt
+        $decompositions = $compatibility = [];
+        $maps = ['lower' => [], 'upper' => [], 'title' => [], 'fold' => [], 'turkic' => []];
+        foreach ($file('UnicodeData.txt') as $line) {
+            $fields = explode(';', $line);
+            $codePoint = \intval($fields[0], 16);
+            if ('' !== $fields[5]) {
+                $compatibility[$codePoint] = array_map('hexdec', explode(' ', preg_replace('/^<\w+> /', '', $fields[5])));
+                if ('<' !== $fields[5][0]) {
+                    $decompositions[$codePoint] = $compatibility[$codePoint];
+                }
+            }
+            $upper = '' !== trim($fields[12]) ? \intval($fields[12], 16) : $codePoint;
+            $lower = '' !== trim($fields[13]) ? \intval($fields[13], 16) : $codePoint;
+            $title = '' !== trim($fields[14]) ? \intval($fields[14], 16) : $upper;
+            if ($upper !== $codePoint) {
+                $maps['upper'][$codePoint] = $upper;
+            }
+            if ($lower !== $codePoint) {
+                $maps['lower'][$codePoint] = $lower;
+            }
+            // Kept where it is not the uppercase mapping, like ǅ to itself
+            if ($title !== $upper) {
+                $maps['title'][$codePoint] = $title;
+            }
+        }
+        // The combining classes of the first and of the last code points of the full canonical decompositions
+        $decompose = static function ($codePoint) use (&$decompose, $decompositions) {
+            if (!isset($decompositions[$codePoint])) {
+                return [$codePoint];
+            }
+
+            return array_merge(...array_map($decompose, $decompositions[$codePoint]));
+        };
+        $tables['leadCombiningClass'] = $tables['trailCombiningClass'] = $tables['combiningClass'];
+        foreach ($decompositions as $codePoint => $_) {
+            $decomposition = $decompose($codePoint);
+            $tables['leadCombiningClass'][$codePoint] = $tables['combiningClass'][$decomposition[0]];
+            $tables['trailCombiningClass'][$codePoint] = $tables['combiningClass'][$decomposition[\count($decomposition) - 1]];
+        }
+
+        $versions = [''];
+        $tables['age'] = array_fill(0, 0x110000, 0);
+        foreach ($records('DerivedAge.txt') as $fields) {
+            if ('Unassigned' === $fields[1]) {
+                continue;
+            }
+            if (false === $version = array_search($fields[1], $versions, true)) {
+                $version = \count($versions);
+                $versions[] = $fields[1];
+            }
+            [$start, $end] = $range($fields[0]);
+            for ($i = $start; $i <= $end; ++$i) {
+                $tables['age'][$i] = $version;
+            }
+        }
+
+        @mkdir($out_dir.'tables', 0777, true);
+        foreach ($tables as $name => $table) {
+            file_put_contents($out_dir.'tables/'.$name.'.php', "<?php\n\n// the value of each code point, numbered like ICU, in a three-stage table (see Char::table())\n\nreturn ['".self::threeStageTable($table).('age' === $name ? ", ['".implode("', '", $versions)."']" : '')."];\n");
+        }
+
+        // The simple case foldings (with the Turkic ones), and the full case mappings for Case_Sensitive
+        foreach ($file('CaseFolding.txt') as $line) {
+            if (preg_match('/^([0-9A-F]+); ([CST]); ([0-9A-F]+);/', $line, $m)) {
+                $maps['T' === $m[2] ? 'turkic' : 'fold'][\intval($m[1], 16)] = \intval($m[3], 16);
+            }
+        }
+        $caseSensitive = [];
+        foreach ($maps as $map) {
+            foreach ($map as $from => $to) {
+                if ($from !== $to) {
+                    $caseSensitive[$from] = $caseSensitive[$to] = true;
+                }
+            }
+        }
+        // The full mappings of SpecialCasing.txt (the unconditional ones) and the full foldings of CaseFolding.txt
+        $full = [];
+        foreach ($records('SpecialCasing.txt') as $fields) {
+            if ('' === $fields[4]) {
+                $full[] = [$fields[0], $fields[1], $fields[2], $fields[3]];
+            }
+        }
+        foreach ($records('CaseFolding.txt') as $fields) {
+            if ('F' === $fields[1]) {
+                $full[] = [$fields[0], $fields[2]];
+            }
+        }
+        foreach ($full as $fields) {
+            $from = \intval($fields[0], 16);
+            foreach (\array_slice($fields, 1) as $target) {
+                $target = array_map('hexdec', preg_split('/\s+/', trim($target)));
+                if ([$from] !== $target) {
+                    $caseSensitive[$from] = true;
+                    foreach ($target as $codePoint) {
+                        $caseSensitive[$codePoint] = true;
+                    }
+                }
+            }
+        }
+
+        $numeric = [];
+        foreach ($records('DerivedNumericValues.txt') as $fields) {
+            if ('NaN' === $fields[1]) {
+                continue;
+            }
+            $parts = explode('/', $fields[3]);
+            $value = 2 === \count($parts) ? $parts[0] / $parts[1] : (float) $parts[0];
+            [$start, $end] = $range($fields[0]);
+            for ($i = $start; $i <= $end; ++$i) {
+                $numeric[$i] = $value;
+            }
+        }
+        ksort($numeric);
+
+        // The binary properties, by the numbers of ICU's UProperty
+        $properties = array_flip(['Alphabetic', 'ASCII_Hex_Digit', 'Bidi_Control', 'Bidi_Mirrored', 'Dash', 'Default_Ignorable_Code_Point', 'Deprecated', 'Diacritic', 'Extender', 'Full_Composition_Exclusion', 'Grapheme_Base', 'Grapheme_Extend', 'Grapheme_Link', 'Hex_Digit', 'Hyphen', 'ID_Continue', 'ID_Start', 'Ideographic', 'IDS_Binary_Operator', 'IDS_Trinary_Operator', 'Join_Control', 'Logical_Order_Exception', 'Lowercase', 'Math', 'Noncharacter_Code_Point', 'Quotation_Mark', 'Radical', 'Soft_Dotted', 'Terminal_Punctuation', 'Unified_Ideograph', 'Uppercase', 'White_Space', 'XID_Continue', 'XID_Start', 'Case_Sensitive', 'Sentence_Terminal', 'Variation_Selector', 'NFD_Inert', 'NFKD_Inert', 'NFC_Inert', 'NFKC_Inert', 'Segment_Starter', 'Pattern_Syntax', 'Pattern_White_Space', 'alnum', 'blank', 'graph', 'print', 'xdigit', 'Cased', 'Case_Ignorable', 'Changes_When_Lowercased', 'Changes_When_Uppercased', 'Changes_When_Titlecased', 'Changes_When_Casefolded', 'Changes_When_Casemapped', 'Changes_When_NFKC_Casefolded', 'Emoji', 'Emoji_Presentation', 'Emoji_Modifier', 'Emoji_Modifier_Base', 'Emoji_Component', 'Regional_Indicator', 'Prepended_Concatenation_Mark', 'Extended_Pictographic', 'Basic_Emoji', 'Emoji_Keycap_Sequence', 'RGI_Emoji_Modifier_Sequence', 'RGI_Emoji_Flag_Sequence', 'RGI_Emoji_Tag_Sequence', 'RGI_Emoji_ZWJ_Sequence', 'RGI_Emoji', 'IDS_Unary_Operator', 'ID_Compat_Math_Start', 'ID_Compat_Math_Continue', 'Modifier_Combining_Mark']);
+        $sets = array_fill(0, \count($properties), []);
+        foreach (['PropList.txt', 'DerivedCoreProperties.txt', 'emoji-data.txt', 'DerivedBinaryProperties.txt', 'DerivedNormalizationProps.txt', 'emoji-sequences.txt'] as $name) {
+            foreach ($records($name) as $fields) {
+                // The code points of Basic_Emoji are those of RGI_Emoji too, its sequences are not code points
+                if ('emoji-sequences.txt' === $name && ('Basic_Emoji' !== $fields[1] || false !== strpos($fields[0], ' '))) {
+                    continue;
+                }
+                if ((2 === \count($fields) || 'emoji-sequences.txt' === $name) && isset($properties[$fields[1]])) {
+                    [$start, $end] = $range($fields[0]);
+                    for ($i = $start; $i <= $end; ++$i) {
+                        $sets[$properties[$fields[1]]][$i] = true;
+                        if ('emoji-sequences.txt' === $name) {
+                            $sets[$properties['RGI_Emoji']][$i] = true;
+                        }
+                    }
+                }
+            }
+        }
+        $sets[$properties['Case_Sensitive']] = $caseSensitive;
+
+        // The properties ICU derives from its normalization data: NF*_Inert and Segment_Starter
+        $ccc = $tables['combiningClass'];
+        $pairs = [];
+        foreach ($decompositions as $codePoint => $decomposition) {
+            if (2 === \count($decomposition) && !isset($sets[$properties['Full_Composition_Exclusion']][$codePoint])) {
+                $pairs[$decomposition[0]][$decomposition[1]] = $codePoint;
+            }
+        }
+        $compose = static function ($starter, $codePoint) use ($pairs) {
+            if (0x1100 <= $starter && $starter <= 0x1112 && 0x1161 <= $codePoint && $codePoint <= 0x1175) {
+                return 0xAC00 + (($starter - 0x1100) * 21 + $codePoint - 0x1161) * 28;
+            }
+            if (0xAC00 <= $starter && $starter <= 0xD7A3 && 0 === ($starter - 0xAC00) % 28 && 0x11A8 <= $codePoint && $codePoint <= 0x11C2) {
+                return $starter + $codePoint - 0x11A7;
+            }
+
+            return $pairs[$starter][$codePoint] ?? null;
+        };
+        $fullDecomposition = static function ($codePoint, array $mappings) use (&$fullDecomposition) {
+            if (0xAC00 <= $codePoint && $codePoint <= 0xD7A3) {
+                $s = $codePoint - 0xAC00;
+
+                return $s % 28 ? [0x1100 + intdiv($s, 588), 0x1161 + intdiv($s % 588, 28), 0x11A7 + $s % 28] : [0x1100 + intdiv($s, 588), 0x1161 + intdiv($s % 588, 28)];
+            }
+            if (!isset($mappings[$codePoint])) {
+                return [$codePoint];
+            }
+            $decomposition = [];
+            foreach ($mappings[$codePoint] as $c) {
+                array_push($decomposition, ...$fullDecomposition($c, $mappings));
+            }
+
+            return $decomposition;
+        };
+        // The composition of a string, its decomposition reordered, then composed
+        $normalize = static function (array $codePoints, array $mappings) use ($fullDecomposition, $compose, $ccc) {
+            $decomposed = [];
+            foreach ($codePoints as $c) {
+                foreach ($fullDecomposition($c, $mappings) as $c) {
+                    for ($j = \count($decomposed); $j > 0 && 0 !== $ccc[$c] && $ccc[$decomposed[$j - 1]] > $ccc[$c]; --$j) {
+                    }
+                    array_splice($decomposed, $j, 0, [$c]);
+                }
+            }
+            $composed = [];
+            $starter = -1;
+            $last = 256;
+            foreach ($decomposed as $c) {
+                if (0 <= $starter && ($last < $ccc[$c] || (0 === $last && \count($composed) - 1 === $starter)) && null !== $r = $compose($composed[$starter], $c)) {
+                    $composed[$starter] = $r;
+                    continue;
+                }
+                if (0 === $last = $ccc[$c]) {
+                    $starter = \count($composed);
+                }
+                $composed[] = $c;
+            }
+
+            return $composed;
+        };
+        // The characters that can follow and change a composition: those that compose, and a mark of each combining class
+        $following = array_fill(0x1161, 0x1175 - 0x1161 + 1, true) + array_fill(0x11A8, 0x11C2 - 0x11A8 + 1, true);
+        foreach ($pairs as $second) {
+            $following += array_fill_keys(array_keys($second), true);
+        }
+        $classes = [];
+        foreach ($ccc as $codePoint => $class) {
+            if ($class && !isset($classes[$class])) {
+                $following[$codePoint] = $classes[$class] = true;
+            }
+        }
+        foreach ([['NFD_Inert', 'nfdQuickCheck', false, $decompositions], ['NFKD_Inert', 'nfkdQuickCheck', false, $compatibility], ['NFC_Inert', 'nfcQuickCheck', true, $decompositions], ['NFKC_Inert', 'nfkcQuickCheck', true, $compatibility]] as [$property, $quickCheck, $composing, $mappings]) {
+            $normalized = [];
+            foreach ($following as $c => $_) {
+                $normalized[$c] = $normalize([$c], $mappings);
+            }
+            for ($c = 0; $c <= 0x10FFFF; ++$c) {
+                if (1 !== $tables[$quickCheck][$c] || 0 !== $ccc[$c]) {
+                    continue;
+                }
+                // A character that does not decompose and does not compose with the following ones, or whose composition
+                // is not changed by any following character
+                if ($composing && (isset($mappings[$c]) || isset($pairs[$c]) || (0x1100 <= $c && $c <= 0x1112) || (0xAC00 <= $c && $c <= 0xD7A3 && 0 === ($c - 0xAC00) % 28))) {
+                    $self = $normalize([$c], $mappings);
+                    foreach ($normalized as $next => $nextNormalized) {
+                        if ($normalize([$c, $next], $mappings) !== array_merge($self, $nextNormalized)) {
+                            continue 2;
+                        }
+                    }
+                }
+                $sets[$properties[$property]][$c] = true;
+            }
+        }
+        // Not a segment starter: a non-starter, the non-first characters of the canonical decompositions, the characters
+        // that combine backward and do not decompose
+        $notStarters = [];
+        foreach ($decompositions as $codePoint => $_) {
+            foreach (\array_slice($fullDecomposition($codePoint, $decompositions), 1) as $c) {
+                $notStarters[$c] = true;
+            }
+        }
+        for ($c = 0; $c <= 0x10FFFF; ++$c) {
+            if (0 === $ccc[$c] && (2 !== $tables['nfcQuickCheck'][$c] || isset($decompositions[$c])) && !isset($notStarters[$c])) {
+                $sets[$properties['Segment_Starter']][$c] = true;
+            }
+        }
+        // The POSIX properties, from the general category like ICU's u_is*POSIX()
+        $category = $tables['generalCategory'];
+        for ($i = 0; $i <= 0x10FFFF; ++$i) {
+            $gc = $categories[$category[$i]];
+            if (isset($sets[$properties['Alphabetic']][$i]) || 'Nd' === $gc) {
+                $sets[$properties['alnum']][$i] = true;
+            }
+            if ($i <= 0x9F ? 0x09 === $i || 0x20 === $i : 'Zs' === $gc) {
+                $sets[$properties['blank']][$i] = true;
+            }
+            if (!\in_array($gc, ['Cc', 'Cs', 'Cn', 'Zs', 'Zl', 'Zp'], true)) {
+                $sets[$properties['graph']][$i] = $sets[$properties['print']][$i] = true;
+            } elseif ('Zs' === $gc) {
+                $sets[$properties['print']][$i] = true;
+            }
+            if ('Nd' === $gc || (0x41 <= $i && $i <= 0x46) || (0x61 <= $i && $i <= 0x66) || (0xFF21 <= $i && $i <= 0xFF26) || (0xFF41 <= $i && $i <= 0xFF46)) {
+                $sets[$properties['xdigit']][$i] = true;
+            }
+        }
+        $binary = [];
+        foreach ($sets as $property => $set) {
+            ksort($set);
+            $bounds = [];
+            foreach ($set as $codePoint => $_) {
+                if ($bounds && $bounds[\count($bounds) - 1] + 1 === $codePoint) {
+                    $bounds[\count($bounds) - 1] = $codePoint;
+                } else {
+                    $bounds[] = $codePoint;
+                    $bounds[] = $codePoint;
+                }
+            }
+            $binary[$property] = $bounds;
+        }
+
+        // The titlecase mappings where they are not the uppercase ones, and the foldings where they are not the lowercase ones
+        $fold = [];
+        foreach ($maps['fold'] + $maps['lower'] as $codePoint => $_) {
+            $folded = $maps['fold'][$codePoint] ?? $codePoint;
+            if ($folded !== ($maps['lower'][$codePoint] ?? $codePoint)) {
+                $fold[$codePoint] = $folded;
+            }
+        }
+        ksort($fold);
+        $maps['fold'] = $fold;
+
+        $map = static function (array $map) {
+            $entries = [];
+            foreach ($map as $key => $value) {
+                $entries[] = $key.'=>'.(\is_array($value) ? '['.implode(',', $value).']' : (\is_float($value) ? var_export($value, true) : $value));
+            }
+
+            return '['.implode(',', $entries).']';
+        };
+        $out = "<?php\n\n// from UnicodeData.txt and CaseFolding.txt: the simple case mappings that change a code point, the titlecase ones\n// that are not the uppercase ones, and the foldings that are not the lowercase ones (the Turkic ones apart)\n\nreturn [\n";
+        foreach ($maps as $name => $entries) {
+            $out .= "    '$name' => ".$map($entries).",\n";
+        }
+        file_put_contents($out_dir.'caseMapping.php', $out."];\n");
+        file_put_contents($out_dir.'numericValue.php', "<?php\n\n// from extracted/DerivedNumericValues.txt\n\nreturn ".$map($numeric).";\n");
+        $out = "<?php\n\n// from PropList.txt, DerivedCoreProperties.txt, emoji/emoji-data.txt, extracted/DerivedBinaryProperties.txt, DerivedNormalizationProps.txt,\n// emoji/emoji-sequences.txt, the case mappings and the general categories: the ranges of code points of each binary\n// property, by its number in ICU (see Char::pages())\n\nreturn [\n";
+        foreach ($binary as $property => $bounds) {
+            if ($bounds) {
+                $out .= "    $property => '".self::deltas($bounds)."',\n";
+            }
+        }
+        file_put_contents($out_dir.'binaryProperties.php', $out."];\n");
+
+        // The mirrors and the paired brackets
+        $mirrors = [];
+        foreach ($file('BidiMirroring.txt') as $line) {
+            if (preg_match('/^([0-9A-F]+); ([0-9A-F]+)/', $line, $m)) {
+                $mirrors[\intval($m[1], 16)] = \intval($m[2], 16);
+            }
+        }
+        $brackets = [];
+        foreach ($file('BidiBrackets.txt') as $line) {
+            if (preg_match('/^([0-9A-F]+); ([0-9A-F]+); ([oc])/', $line, $m)) {
+                $brackets[\intval($m[1], 16)] = [\intval($m[2], 16), 'o' === $m[3] ? 1 : 2];
+            }
+        }
+        file_put_contents($out_dir.'bidiMirroring.php', "<?php\n\n// from BidiMirroring.txt and BidiBrackets.txt\n\nreturn [\n    'mirrors' => ".$map($mirrors).",\n    'brackets' => ".$map($brackets).",\n];\n");
+    }
+
+    /**
+     * Splits the values of the code points in a three-stage table, a byte per value: the code points by 1024, each to
+     * a block of 64 indexes of blocks of 16 values, the same blocks stored once; the indexes are 16-bit.
+     */
+    private static function threeStageTable(array $values)
+    {
+        $data = '';
+        $dataBlocks = [];
+        $indexes = '';
+        $indexBlocks = [];
+        $top = '';
+        foreach (array_chunk($values, 1024) as $chunk) {
+            $index = '';
+            foreach (array_chunk($chunk, 16) as $block) {
+                $bytes = implode('', array_map('chr', $block));
+                if (!isset($dataBlocks[$bytes])) {
+                    $dataBlocks[$bytes] = \strlen($data) >> 4;
+                    $data .= $bytes;
+                }
+                $index .= pack('n', $dataBlocks[$bytes]);
+            }
+            if (!isset($indexBlocks[$index])) {
+                $indexBlocks[$index] = \strlen($indexes) >> 7;
+                $indexes .= $index;
+            }
+            $top .= pack('n', $indexBlocks[$index]);
+        }
+
+        return base64_encode($top.$indexes.$data).'\', '.(\strlen($top) + \strlen($indexes));
+    }
+
+    /**
+     * Ranges of code points, their starts and ends one after the other, as the base64 of the variable-length deltas
+     * between them, 7 bits a byte.
+     */
+    private static function deltas(array $bounds)
+    {
+        $bytes = '';
+        $previous = -1;
+        foreach ($bounds as $bound) {
+            $delta = $bound - $previous;
+            $previous = $bound;
+            while ($delta >= 0x80) {
+                $bytes .= \chr(0x80 | $delta & 0x7F);
+                $delta >>= 7;
+            }
+            $bytes .= \chr($delta);
+        }
+
+        return base64_encode($bytes);
+    }
+
     protected static function chr($c)
     {
         $c %= 0x200000;

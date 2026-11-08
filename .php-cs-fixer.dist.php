@@ -41,6 +41,7 @@ return (new PhpCsFixer\Config())
             ->append([__FILE__])
             ->exclude([
                 'src/Iconv/Resources',
+                'src/Intl/Char/Resources/unidata',
                 'src/Intl/Icu/Resources',
                 'src/Intl/Idn/Resources',
                 'src/Mbstring/Resources',

@@ -37,6 +37,7 @@
         "symfony/polyfill-php85": "self.version",
         "symfony/polyfill-php86": "self.version",
         "symfony/polyfill-iconv": "self.version",
+        "symfony/polyfill-intl-char": "self.version",
         "symfony/polyfill-intl-grapheme": "self.version",
         "symfony/polyfill-intl-icu": "self.version",
         "symfony/polyfill-intl-messageformatter": "self.version",
@@ -66,6 +67,7 @@
         ],
         "classmap": [
             "src/DeepClone/Resources/stubs",
+            "src/Intl/Char/Resources/stubs",
             "src/Intl/Icu/Resources/stubs",
             "src/Intl/MessageFormatter/Resources/stubs",
             "src/Intl/Normalizer/Resources/stubs",
