@@ -116,8 +116,8 @@ class BreakIterator implements \IteratorAggregate
 
     private const UTF8_CHAR_OR_SUBPART_RX = '/[\x00-\x7F]++|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|[\xEE-\xEF][\x80-\xBF]{2}|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2}|(\xF0[\x90-\xBF][\x80-\xBF]?|[\xF1-\xF3][\x80-\xBF]{1,2}|\xF4[\x80-\x8F][\x80-\xBF]?|\xE0[\xA0-\xBF]|[\xE1-\xEC][\x80-\xBF]|\xED[\x80-\x9F]|[\xEE-\xEF][\x80-\xBF]|[\x80-\xFF])/';
 
-    // Same-length replacements for ill-formed subsequences, all with Word_Break=Other
-    private const REPLACEMENT_CHARS = [1 => "\x1A", 2 => "\xC3\x97", 3 => "\xE2\x80\xA2"];
+    // Same-length replacements for ill-formed subsequences, all with Word_Break=Other and Grapheme_Cluster_Break=Other like U+FFFD
+    private const REPLACEMENT_CHARS = [1 => '#', 2 => "\xC3\x97", 3 => "\xE2\x80\xA2"];
 
     private static $patterns = [];
     private static $charClasses = [];
@@ -132,6 +132,10 @@ class BreakIterator implements \IteratorAggregate
     private $boundaries = [0];
     private $index = 0;
     private $lastCodePoint = -1;
+
+    private function __construct()
+    {
+    }
 
     public static function createCharacterInstance($locale = null)
     {
@@ -165,7 +169,7 @@ class BreakIterator implements \IteratorAggregate
 
     public function following($offset)
     {
-        if ($offset < 0) {
+        if (0 > $offset = (int) $offset) {
             if (self::TYPE_CODE_POINT !== $this->type) {
                 return $this->first();
             }
@@ -196,10 +200,10 @@ class BreakIterator implements \IteratorAggregate
 
     public function getLocale($type)
     {
-        return 1 === $type ? 'en' : '';
+        return 1 === (int) $type && self::TYPE_CODE_POINT !== $this->type ? 'en' : '';
     }
 
-    public function getIterator(): \Traversable
+    public function getIterator(): \Iterator
     {
         yield 0 => $this->first();
 
@@ -229,6 +233,8 @@ class BreakIterator implements \IteratorAggregate
 
     public function isBoundary($offset)
     {
+        $offset = (int) $offset;
+
         if (self::TYPE_CODE_POINT === $this->type) {
             // Unlike other moves, this one does not change the last code point
             $lastCodePoint = $this->lastCodePoint;
@@ -316,7 +322,7 @@ class BreakIterator implements \IteratorAggregate
 
     public function preceding($offset)
     {
-        if ($offset > $this->length) {
+        if ($this->length < $offset = (int) $offset) {
             if (self::TYPE_CODE_POINT !== $this->type) {
                 return $this->last();
             }

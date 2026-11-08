@@ -245,6 +245,26 @@ class BreakIteratorTest extends TestCase
         $this->assertSame(-1, $it->getLastCodePoint());
         $this->assertFalse($it->isBoundary(5));
         $this->assertSame(3, $it->current());
+        $this->assertSame('', $it->getLocale(1));
+    }
+
+    public function testArgumentsAreCastToInt()
+    {
+        $it = p::createWordInstance();
+        $it->setText('ab cd ef');
+
+        $this->assertSame(5, $it->following('3'));
+        $this->assertSame(3, $it->preceding('5'));
+        $this->assertTrue($it->isBoundary(null));
+        $this->assertSame(0, $it->current());
+        $this->assertSame(3, $it->next('2'));
+    }
+
+    public function testConstructorIsPrivate()
+    {
+        $this->expectException(\Error::class);
+
+        new \Symfony\Polyfill\Intl\BreakIterator\CodePointBreakIterator();
     }
 
     public function testIllFormedUtf8()
@@ -253,6 +273,11 @@ class BreakIteratorTest extends TestCase
         $it->setText("a\xFFb\xE2\x82c");
 
         $this->assertSame([0, 1, 2, 3, 5, 6], iterator_to_array($it));
+
+        // Like U+FFFD, ill-formed sequences take the following combining marks
+        $it = p::createCharacterInstance();
+        $it->setText("a\xFF\u{301}\xE2\x82\u{301}\xFF\n");
+        $this->assertSame([0, 1, 4, 8, 9, 10], iterator_to_array($it));
 
         $it = p::createCodePointInstance();
         $it->setText("a\xFF");
