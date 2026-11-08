@@ -410,7 +410,7 @@ class UuidTest extends TestCase
         if (\PHP_INT_SIZE < 8) {
             $this->markTestSkipped('Timestamps before the Unix epoch need 64-bit integers.');
         }
-        if (\extension_loaded('uuid') && 0 < \uuid_time('00000000-0000-1000-8000-000000000000')) {
+        if (\extension_loaded('uuid') && \function_exists('uuid_time') && 0 < \uuid_time('00000000-0000-1000-8000-000000000000')) {
             $this->markTestSkipped('libuuid < 2.42 wraps timestamps before the Unix epoch.');
         }
 
@@ -482,6 +482,9 @@ class UuidTest extends TestCase
      */
     public function testMacWithInvalidUuid(string $uuid)
     {
+        if (!TestListenerTrait::$enabledPolyfills && \extension_loaded('uuid') && !\function_exists('uuid_type')) {
+            $this->markTestSkipped('The uuid extension built without the uuid_type() of libuuid does not check the type of the UUID.');
+        }
         if (80000 <= \PHP_VERSION_ID) {
             $this->expectException(\ValueError::class);
             $this->expectExceptionMessage('uuid_mac(): Argument #1 ($uuid) UUID DCE TIME expected');
