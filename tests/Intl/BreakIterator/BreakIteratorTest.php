@@ -277,6 +277,60 @@ class BreakIteratorTest extends TestCase
     }
 
     /**
+     * @dataProvider provideTextsWithFewSafePoints
+     */
+    public function testNavigationMatchesIteration(string $factory, string $text)
+    {
+        $it = p::$factory();
+        $it->setText($text);
+        $boundaries = iterator_to_array($it);
+
+        $this->assertSame(\strlen($text), end($boundaries));
+
+        $reverse = [$it->last()];
+        while (p::DONE !== $boundary = $it->previous()) {
+            $reverse[] = $boundary;
+        }
+        $this->assertSame(array_reverse($boundaries), $reverse);
+
+        $isBoundary = array_fill_keys($boundaries, true);
+        mt_srand(727);
+        for ($k = 0; $k < 200; ++$k) {
+            $offset = mt_rand(0, \strlen($text) - 1);
+            $start = $offset;
+            while (0 < $start && 0x80 === (\ord($text[$start]) & 0xC0)) {
+                --$start;
+            }
+            $i = 0;
+            while ($boundaries[$i] <= $start) {
+                ++$i;
+            }
+
+            $this->assertSame($boundaries[$i], $it->following($offset), "following($offset)");
+            $this->assertSame($boundaries[$i], $it->current());
+            $this->assertSame(isset($isBoundary[$offset]), $it->isBoundary($offset), "isBoundary($offset)");
+            $this->assertSame(0 < $start ? $boundaries[isset($isBoundary[$start]) ? $i - 2 : $i - 1] : p::DONE, $it->preceding($offset), "preceding($offset)");
+        }
+    }
+
+    public static function provideTextsWithFewSafePoints(): iterable
+    {
+        $texts = [
+            'no space' => str_repeat('abc,def.ghi_', 2000),
+            'JSON' => json_encode(array_fill(0, 1000, ['id' => 123, 'name' => "l'été"])),
+            'Thai' => str_repeat('ภาษาไทย', 1500),
+            'CJK' => str_repeat('漢字テストかな', 1000),
+            'mixed' => str_repeat("Lorem ipsum, dolor sit amet. Ünïcödé 😀 text\n", 500),
+        ];
+
+        foreach (['createWordInstance', 'createCharacterInstance', 'createCodePointInstance'] as $factory) {
+            foreach ($texts as $name => $text) {
+                yield $factory.' '.$name => [$factory, $text];
+            }
+        }
+    }
+
+    /**
      * @requires extension intl
      */
     public function testMatchesIntl()
@@ -338,6 +392,41 @@ class BreakIteratorTest extends TestCase
                     '' !== $ascii[$name] && preg_match('/['.$ascii[$name].']/', \chr($c)),
                     \sprintf('Class "%s" for U+%04X', $name, $c)
                 );
+            }
+        }
+    }
+
+    public function testSafePointsAreBoundaries()
+    {
+        $text = '';
+        for ($c = 0; $c < 0x80; ++$c) {
+            $text .= \chr($c).'a'.\chr($c).\chr($c).'1 '.\chr($c)."\u{301}\u{200D}é".\chr($c)."\r\n";
+        }
+        $text .= "a 漢 \u{301}漢\u{200D}漢 あ\u{3099}あい ก\u{E31}กa\u{E40}ก \u{5D0}\"\u{5D0} 🇫🇷🇫 \u{600}a\u{600}\u{301}";
+        mt_srand(727);
+        $pieces = preg_split('//u', $text, -1, \PREG_SPLIT_NO_EMPTY);
+        for ($k = 0; $k < 2000; ++$k) {
+            $text .= $pieces[mt_rand(0, \count($pieces) - 1)];
+        }
+
+        $safeRx = (new \ReflectionClassConstant(p::class, 'SAFE_RX'))->getValue();
+
+        foreach (['createCodePointInstance', 'createCharacterInstance', 'createWordInstance'] as $type => $factory) {
+            // Segment the whole text in one pass, as chunked iteration itself relies on safe points
+            $it = p::$factory();
+            preg_match_all((function () { return $this->getPattern(true); })->bindTo($it, p::class)(), $text, $m);
+            $boundaries = [0 => true];
+            $offset = 0;
+            foreach ($m[0] as $segment) {
+                $boundaries[$offset += \strlen($segment)] = true;
+            }
+            $this->assertSame(\strlen($text), $offset);
+
+            preg_match_all($safeRx[$type], $text, $m, \PREG_OFFSET_CAPTURE);
+            $this->assertNotEmpty($m[0]);
+
+            foreach ($m[0] as [, $offset]) {
+                $this->assertArrayHasKey($offset, $boundaries, \sprintf('%s: safe point %d (%s)', $factory, $offset, bin2hex(substr($text, max(0, $offset - 4), 8))));
             }
         }
     }

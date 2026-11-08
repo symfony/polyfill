@@ -55,7 +55,7 @@ class BreakIterator implements \IteratorAggregate
 
     // Sequential iteration computes boundaries by large chunks, random access by small ones
     private const CHUNK_SIZE = 2048;
-    private const SEEK_CHUNK_SIZE = 256;
+    private const SEEK_CHUNK_SIZE = 64;
     private const MAX_CACHED_BOUNDARIES = 4096;
 
     // Word_Break classes of the ASCII range, see Resources/unidata/wordBreak.php
@@ -79,12 +79,16 @@ class BreakIterator implements \IteratorAggregate
         'SA' => '',
     ];
 
-    // Positions that are always a boundary: after a line feed, and between a space and
-    // a printable ASCII char; word boundaries also precede CJK ideographs (U+4E00-U+9FFF).
+    // Positions that are always a boundary, used to compute boundaries from the middle of the text:
+    // - code points start at any byte that is not a continuation byte;
+    // - characters break after a line feed, and between two ASCII chars except CR LF;
+    // - words break after a line feed, between a space and a printable ASCII char, and before the chars
+    //   whose Word_Break is Other and that are not Extended_Pictographic: ASCII ones, CJK ideographs
+    //   (U+4E00-U+9FFF), Hiragana letters (U+3041-U+3096) and Thai consonants (U+0E01-U+0E2E).
     private const SAFE_RX = [
         self::TYPE_CODE_POINT => '/(?=[\x00-\x7F\xC0-\xFF])/',
-        self::TYPE_CHARACTER => '/\n\K| \K(?=[!-~])/',
-        self::TYPE_WORD => '/\n\K| \K(?=[!-~])|(?=\xE4[\xB8-\xBF]|[\xE5-\xE9])/',
+        self::TYPE_CHARACTER => '/\n\K|(?<=[\x00-\x7F])(?=[\x00-\x7F])(?!(?<=\r)\n)/',
+        self::TYPE_WORD => '/\n\K| \K(?=[!-~])|(?=[\x00-\x09\x0E-\x1F!#-&(-+\-\/<-@\[-^`{-~\x7F]|\xE4[\xB8-\xBF]|[\xE5-\xE9]|\xE3\x81[\x81-\xBF]|\xE3\x82[\x80-\x96]|\xE0\xB8[\x81-\xAE])/',
     ];
 
     private const UTF8_CHAR_OR_SUBPART_RX = '/[\x00-\x7F]++|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|[\xEE-\xEF][\x80-\xBF]{2}|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2}|(\xF0[\x90-\xBF][\x80-\xBF]?|[\xF1-\xF3][\x80-\xBF]{1,2}|\xF4[\x80-\x8F][\x80-\xBF]?|\xE0[\xA0-\xBF]|[\xE1-\xEC][\x80-\xBF]|\xED[\x80-\x9F]|[\xEE-\xEF][\x80-\xBF]|[\x80-\xFF])/';
@@ -176,7 +180,10 @@ class BreakIterator implements \IteratorAggregate
         yield 0 => $this->first();
 
         for ($key = 1;; ++$key) {
-            if (isset($this->boundaries[$i = $this->index + 1]) && self::TYPE_CODE_POINT !== $this->type) {
+            if (isset($this->boundaries[$i = $this->index + 1])) {
+                if (self::TYPE_CODE_POINT === $this->type) {
+                    $this->lastCodePoint = $this->getCodePoint($this->boundaries[$this->index], $this->boundaries[$i]);
+                }
                 yield $key => $this->boundaries[$this->index = $i];
             } elseif (self::DONE !== $boundary = $this->next()) {
                 yield $key => $boundary;
@@ -239,8 +246,12 @@ class BreakIterator implements \IteratorAggregate
 
     public function next($offset = null)
     {
-        if (null === $offset && isset($this->boundaries[$this->index + 1]) && self::TYPE_CODE_POINT !== $this->type) {
-            return $this->boundaries[++$this->index];
+        if (null === $offset && isset($this->boundaries[$i = $this->index + 1])) {
+            if (self::TYPE_CODE_POINT === $this->type) {
+                $this->lastCodePoint = $this->getCodePoint($this->boundaries[$this->index], $this->boundaries[$i]);
+            }
+
+            return $this->boundaries[$this->index = $i];
         }
 
         if (null !== $offset && (1 !== ($offset = (int) $offset) || self::TYPE_CODE_POINT === $this->type)) {
@@ -270,7 +281,7 @@ class BreakIterator implements \IteratorAggregate
                 return self::DONE;
             }
 
-            $this->append($this->fill($end, $end + 1));
+            $this->append($this->fill($end, $end + 1, $this->getChunkSize()));
         }
 
         ++$this->index;
@@ -315,7 +326,7 @@ class BreakIterator implements \IteratorAggregate
                 return self::DONE;
             }
 
-            $this->prepend();
+            $this->prepend($this->getChunkSize());
         }
 
         --$this->index;
@@ -521,10 +532,10 @@ class BreakIterator implements \IteratorAggregate
 
     private function findSafeBefore(int $offset): int
     {
-        for ($window = 256;; $window <<= 2) {
+        for ($window = 16;; $window <<= 2) {
             $start = max(0, $offset - $window);
 
-            if (preg_match_all(self::SAFE_RX[$this->type], substr($this->scan, $start, $offset - $start + 2), $m, \PREG_OFFSET_CAPTURE)) {
+            if (preg_match_all(self::SAFE_RX[$this->type], substr($this->scan, $start, $offset - $start + 4), $m, \PREG_OFFSET_CAPTURE)) {
                 for ($i = \count($m[0]) - 1; 0 <= $i; --$i) {
                     $safe = $start + $m[0][$i][1];
 
@@ -578,26 +589,43 @@ class BreakIterator implements \IteratorAggregate
             $this->boundaries[] = $boundary;
         }
 
+        // Drop the oldest boundaries, but keep the current one and the one before it
         if (self::MAX_CACHED_BOUNDARIES < $n = \count($this->boundaries) - self::MAX_CACHED_BOUNDARIES) {
-            $this->boundaries = \array_slice($this->boundaries, $n);
-            $this->index -= $n;
+            if (0 < $n = min($n, $this->index - 1)) {
+                $this->boundaries = \array_slice($this->boundaries, $n);
+                $this->index -= $n;
+            }
         }
     }
 
-    private function prepend()
+    /**
+     * Grows chunks with the span of the cached boundaries, so that a single move stays cheap
+     * after a random access, while iterations use large chunks.
+     */
+    private function getChunkSize(): int
+    {
+        return min(self::CHUNK_SIZE, max(self::SEEK_CHUNK_SIZE, $this->boundaries[\count($this->boundaries) - 1] - $this->boundaries[0]));
+    }
+
+    /**
+     * Computes the boundaries that precede the first cached one, from about $chunkSize bytes before it.
+     */
+    private function prepend(int $chunkSize = self::SEEK_CHUNK_SIZE)
     {
         $first = $this->boundaries[0];
-        $boundaries = [];
+        $boundaries = $this->fill($this->findSafeBefore(max(0, $first - $chunkSize)), $first, $chunkSize);
 
-        foreach ($this->fill($this->findSafeBefore($first - 1), $first, self::SEEK_CHUNK_SIZE) as $boundary) {
-            if ($boundary >= $first) {
-                break;
-            }
-            $boundaries[] = $boundary;
+        while (end($boundaries) >= $first) {
+            array_pop($boundaries);
         }
 
-        $this->boundaries = array_merge($boundaries, $this->boundaries);
         $this->index += \count($boundaries);
+        $this->boundaries = array_merge($boundaries, $this->boundaries);
+
+        // Drop the newest boundaries, but keep the current one and the one after it
+        if (2 * self::MAX_CACHED_BOUNDARIES < \count($this->boundaries)) {
+            array_splice($this->boundaries, max(self::MAX_CACHED_BOUNDARIES, $this->index + 2));
+        }
     }
 
     private function setLastCodePoint(int $direction)
@@ -607,7 +635,8 @@ class BreakIterator implements \IteratorAggregate
         }
 
         if (-1 === $direction && 0 === $this->index) {
-            $this->prepend();
+            // The previous code point starts at most 4 bytes before
+            $this->prepend(4);
         }
 
         $start = $this->boundaries[$this->index];
@@ -616,21 +645,26 @@ class BreakIterator implements \IteratorAggregate
         $this->lastCodePoint = -1 === $direction ? $this->getCodePoint($end, $start) : $this->getCodePoint($start, $end);
     }
 
+    /**
+     * Decodes the code point between two boundaries, which delimit a well-formed sequence unless the text was sanitized.
+     */
     private function getCodePoint(int $start, int $end): int
     {
-        $c = substr($this->text, $start, $end - $start);
+        if (1 === $len = $end - $start) {
+            $code = \ord($this->text[$start]);
 
-        if (!preg_match('//u', $c)) {
+            return 0x80 > $code ? $code : 0xFFFD;
+        }
+
+        $c = substr($this->text, $start, $len);
+
+        if ($this->sanitized && $c !== substr($this->scan, $start, $len)) {
             return 0xFFFD;
         }
 
-        $code = \ord($c[0]);
-
-        if (1 < $len = \strlen($c)) {
-            $code &= 0x7F >> $len;
-            for ($i = 1; $i < $len; ++$i) {
-                $code = ($code << 6) | (\ord($c[$i]) & 0x3F);
-            }
+        $code = \ord($c[0]) & (0x7F >> $len);
+        for ($i = 1; $i < $len; ++$i) {
+            $code = ($code << 6) | (\ord($c[$i]) & 0x3F);
         }
 
         return $code;
