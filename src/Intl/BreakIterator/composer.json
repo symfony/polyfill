@@ -1,0 +1,36 @@
+{
+    "name": "symfony/polyfill-intl-breakiterator",
+    "type": "library",
+    "description": "Symfony polyfill for intl's IntlBreakIterator class",
+    "keywords": ["polyfill", "shim", "compatibility", "portable", "intl", "breakiterator", "segmentation"],
+    "homepage": "https://symfony.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nicolas Grekas",
+            "email": "p@tchwork.com"
+        },
+        {
+            "name": "Symfony Community",
+            "homepage": "https://symfony.com/contributors"
+        }
+    ],
+    "require": {
+        "php": ">=7.2"
+    },
+    "autoload": {
+        "psr-4": { "Symfony\\Polyfill\\Intl\\BreakIterator\\": "" },
+        "classmap": [ "Resources/stubs" ]
+    },
+    "suggest": {
+        "ext-intl": "For best performance",
+        "symfony/polyfill-intl-grapheme": "For accurate character boundaries with PCRE < 10.44"
+    },
+    "minimum-stability": "dev",
+    "extra": {
+        "thanks": {
+            "name": "symfony/polyfill",
+            "url": "https://github.com/symfony/polyfill"
+        }
+    }
+}
