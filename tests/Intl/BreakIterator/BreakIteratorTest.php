@@ -374,7 +374,7 @@ class BreakIteratorTest extends TestCase
     public function testMatchesIntl()
     {
         mt_srand(714);
-        $pieces = ['hello', 'world', "can't", '3.14', '1,000', '_id', ' ', '  ', "\n", "\r\n", ',', '.', '!', '"', 'é', 'Ελλάδα', 'мир', 'שָׁלוֹם', 'א"ב', 'مرحبا', '😀', '👍🏽', '👨‍👩‍👧', '🇫🇷', "e\u{301}", '—', 'ⓜ', "\u{3000}"];
+        $pieces = ['hello', 'world', "can't", '3.14', '1,000', '_id', ' ', '  ', "\n", "\r\n", ',', '.', '!', '"', 'é', 'Ελλάδα', 'мир', 'שָׁלוֹם', 'א"ב', 'مرحبا', '😀', '👍🏽', '👨‍👩‍👧', '🇫🇷', "e\u{301}", '—', 'ⓜ', "\u{3000}", '한국어', 'ア_', "a\u{3099}", '{"a":[1,2]}', "\xFF", "\xE2\x82"];
 
         foreach (['createWordInstance', 'createCharacterInstance', 'createCodePointInstance'] as $factory) {
             // Before PCRE 10.44, the grapheme cluster pattern also joins any char that follows a ZWJ
@@ -400,7 +400,7 @@ class BreakIteratorTest extends TestCase
                     $call = $calls[mt_rand(0, 6)];
 
                     if ('createCodePointInstance' === $factory && 'preceding' === $call[0]) {
-                        continue; // ICU is inconsistent for offsets inside a code point here
+                        continue; // After following(), ICU can return DONE for an offset inside a code point
                     }
 
                     $args = null === $call[1] ? [] : [$call[1]];
