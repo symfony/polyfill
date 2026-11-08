@@ -81,6 +81,10 @@ class BreakIteratorTest extends TestCase
         // ICU uses a dictionary and returns [0, 6, 7, 13, 19, 20, 21, 23]
         $this->assertSame([0, 6, 7, 10, 13, 16, 19, 20, 21, 23], iterator_to_array($it));
         $this->assertSame(['héllo', ' ', '你', '好', '世', '界', ',', ' ', 'ok'], iterator_to_array($it->getPartsIterator()));
+
+        // Like ICU, runs of Hangul syllables are words of their own
+        $it->setText("abc한국어def 한국어123_가\u{301}나");
+        $this->assertSame(['abc', '한국어', 'def', ' ', '한국어', '123_', "가\u{301}", '나'], iterator_to_array($it->getPartsIterator()));
     }
 
     public function testRuleStatus()
@@ -134,6 +138,15 @@ class BreakIteratorTest extends TestCase
         yield ["a\u{200D}😀", p::WORD_NONE];
         yield ['  ', p::WORD_NONE];
         yield [',', p::WORD_NONE];
+        yield ['ア__', p::WORD_LETTER];
+        yield ['1__', p::WORD_LETTER];
+        yield ['カタカナ_id', p::WORD_LETTER];
+        yield ["a_\u{301}", p::WORD_NONE];
+        yield ["ア_\u{301}", p::WORD_NONE];
+        yield ["a\u{3099}", p::WORD_LETTER]; // U+3099 has Script_Extensions=Hiragana but is not Hiragana
+        yield ["\u{1B001}", p::WORD_IDEO];
+        yield ['한국어', p::WORD_LETTER];
+        yield ["한\u{301}", p::WORD_NONE];
     }
 
     public function testNavigation()

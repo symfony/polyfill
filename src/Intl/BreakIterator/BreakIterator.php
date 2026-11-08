@@ -53,6 +53,27 @@ class BreakIterator implements \IteratorAggregate
     private const TYPE_CHARACTER = 1;
     private const TYPE_WORD = 2;
 
+    // Classes of chars that define the status of words
+    private const CLASS_OTHER = 0;
+    private const CLASS_EXTEND = 1;
+    private const CLASS_EXTEND_NUM_LET = 2;
+    private const CLASS_SINGLE_QUOTE = 3;
+    private const CLASS_HANGUL_SYLLABLE = 4;
+    private const CLASS_LETTER = 5;
+    private const CLASS_NUMBER = 6;
+    private const CLASS_KANA_IDEO = 7;
+    private const CLASS_STATUSES = [
+        -1 => self::WORD_NONE,
+        self::CLASS_OTHER => self::WORD_NONE,
+        self::CLASS_EXTEND => self::WORD_NONE,
+        self::CLASS_EXTEND_NUM_LET => self::WORD_NONE,
+        self::CLASS_SINGLE_QUOTE => self::WORD_NONE,
+        self::CLASS_HANGUL_SYLLABLE => self::WORD_LETTER,
+        self::CLASS_LETTER => self::WORD_LETTER,
+        self::CLASS_NUMBER => self::WORD_NUMBER,
+        self::CLASS_KANA_IDEO => self::WORD_IDEO,
+    ];
+
     // Sequential iteration computes boundaries by large chunks, random access by small ones
     private const CHUNK_SIZE = 2048;
     private const SEEK_CHUNK_SIZE = 64;
@@ -77,6 +98,8 @@ class BreakIterator implements \IteratorAggregate
         'EP' => '',
         'Ideo' => '',
         'SA' => '',
+        'Hira' => '',
+        'HS' => '',
     ];
 
     // Positions that are always a boundary, used to compute boundaries from the middle of the text:
@@ -97,7 +120,8 @@ class BreakIterator implements \IteratorAggregate
     private const REPLACEMENT_CHARS = [1 => "\x1A", 2 => "\xC3\x97", 3 => "\xE2\x80\xA2"];
 
     private static $patterns = [];
-    private static $statusPatterns = [];
+    private static $charClasses = [];
+    private static $charClassPattern;
     private static $unicodeClasses;
 
     private $type;
@@ -370,32 +394,66 @@ class BreakIterator implements \IteratorAggregate
             $this->prepend();
         }
 
+        // Like ICU, the status follows the last char before an optional ExtendNumLet or Single_Quote, two ExtendNumLet
+        // are a letter, and an ExtendNumLet or a Hangul syllable followed by Extend, Format or ZWJ is not a word
         $start = $this->boundaries[$this->index - 1];
-        $s = substr($this->scan, $start, $end - $start);
-        $utf8 = (bool) preg_match('/[\x80-\xFF]/', $s);
+        $class = $this->popCharClass($start, $end);
 
-        if (!isset(self::$statusPatterns[$utf8])) {
-            $c = $utf8 ? self::getUnicodeClasses() : self::ASCII_CLASSES;
-            $u = $utf8 ? 'u' : '';
-            self::$statusPatterns[$utf8] = [
-                $utf8 ? '/['.$c['K'].$c['Ideo'].'\p{Hiragana}]/u' : null,
-                // The status follows the last char that is not Extend, Format, ZWJ, ExtendNumLet or Single_Quote
-                '/.*(?:(['.$c['A'].$c['SA'].'])|(['.$c['N'].'])|[^'.$c['E'].$c['X'].$c['SQ'].'])/s'.$u,
-                '/^['.$c['X'].'].*['.$c['X'].']/s'.$u,
-            ];
-        }
-        [$ideo, $last, $extendNumLet] = self::$statusPatterns[$utf8];
+        if (self::CLASS_EXTEND === $class) {
+            do {
+                $class = $this->popCharClass($start, $end);
+            } while (self::CLASS_EXTEND === $class);
 
-        if (null !== $ideo && preg_match($ideo, $s)) {
-            return self::WORD_IDEO;
+            return self::CLASS_HANGUL_SYLLABLE === $class ? self::WORD_NONE : self::CLASS_STATUSES[$class];
         }
 
-        if (preg_match($last, $s, $m)) {
-            return isset($m[2]) ? self::WORD_NUMBER : (isset($m[1]) && '' !== $m[1] ? self::WORD_LETTER : self::WORD_NONE);
+        if (self::CLASS_EXTEND_NUM_LET === $class || self::CLASS_SINGLE_QUOTE === $class) {
+            $last = $class;
+            do {
+                $class = $this->popCharClass($start, $end);
+            } while (self::CLASS_EXTEND === $class);
+
+            if (self::CLASS_EXTEND_NUM_LET === $class && self::CLASS_EXTEND_NUM_LET === $last) {
+                return self::WORD_LETTER;
+            }
         }
 
-        // Runs of two or more ExtendNumLet chars are tagged as letters by ICU
-        return preg_match($extendNumLet, $s) ? self::WORD_LETTER : self::WORD_NONE;
+        return self::CLASS_STATUSES[$class];
+    }
+
+    /**
+     * Returns the class of the char that ends at $end, or -1 when $end is $start, and moves $end to the start of the char.
+     */
+    private function popCharClass(int $start, int &$end): int
+    {
+        if ($end <= $start) {
+            return -1;
+        }
+
+        $i = $end - 1;
+        while ($i > $start && 0x80 === (\ord($this->scan[$i]) & 0xC0)) {
+            --$i;
+        }
+        $char = substr($this->scan, $i, $end - $i);
+        $end = $i;
+
+        if (isset(self::$charClasses[$char])) {
+            return self::$charClasses[$char];
+        }
+
+        if (null === self::$charClassPattern) {
+            $c = self::getUnicodeClasses();
+            // The groups are numbered like the CLASS_* constants
+            self::$charClassPattern = '/^(?:(['.$c['E'].'])|(['.$c['X'].'])|(['.$c['SQ'].'])|(['.$c['HS'].'])|(['.$c['A'].$c['SA'].'])|(['.$c['N'].'])|(['.$c['K'].$c['Ideo'].$c['Hira'].']))/u';
+        }
+
+        // Classes are cached by char, as matching large Unicode classes is slow
+        if (4096 < \count(self::$charClasses)) {
+            self::$charClasses = [];
+        }
+        preg_match(self::$charClassPattern, $char, $m);
+
+        return self::$charClasses[$char] = max(self::CLASS_OTHER, \count($m) - 1);
     }
 
     private static function create($type, $class, $globalClass)
@@ -476,6 +534,7 @@ class BreakIterator implements \IteratorAggregate
                 .'|'.$run('K').'(?='.$k('X').')'                                                    // WB13, WB13a
             .')*+(?:'.$k('H').$e.'(?:'.$k('SQ').$e.')?|'.$run('L').'|'.$run('N').'|'.$run('K').'|'.$run('X').')' // WB7a
             .'|'.$k('RI').$e.'(?:'.$k('RI').$e.')?'                                                // WB15, WB16
+            .'|'.$k('HS').'++'.$e                                                                   // Hangul syllables, like ICU
             .'|.'.$e                                                                                // WB999
             .')';
 

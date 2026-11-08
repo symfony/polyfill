@@ -55,7 +55,7 @@ Compiler::idnViramaMap(__DIR__.'/../src/Intl/Idn/Resources/unidata/');
 $data = file_get_contents('http://www.unicode.org/Public/idna/latest/IdnaTestV2.txt');
 file_put_contents(__DIR__.'/Intl/Idn/IdnaTestV2.txt', $data);
 
-foreach (['auxiliary/WordBreakProperty.txt', 'emoji/emoji-data.txt', 'PropList.txt', 'LineBreak.txt'] as $file) {
+foreach (['auxiliary/WordBreakProperty.txt', 'emoji/emoji-data.txt', 'PropList.txt', 'LineBreak.txt', 'Scripts.txt'] as $file) {
     $data = file_get_contents('https://unicode.org/Public/UNIDATA/'.$file);
     file_put_contents(__DIR__.'/unicode/data/'.basename($file), $data);
 }

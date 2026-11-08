@@ -306,8 +306,12 @@ class Compiler
         $parse('emoji-data.txt', ['Extended_Pictographic']);
         $parse('PropList.txt', ['Ideographic']);
         $parse('LineBreak.txt', ['SA']);
+        $parse('Scripts.txt', ['Hiragana']);
 
-        $class = static function (...$names) use (&$props) {
+        // ICU segments runs of Hangul syllables apart from other letters, like the scripts it uses a dictionary for
+        $hangulSyllables = [0xAC00, 0xD7A3];
+
+        $class = static function (...$names) use (&$props, $hangulSyllables) {
             $ranges = [];
             foreach ($names as $name) {
                 foreach ($props[$name] as $r) {
@@ -322,6 +326,17 @@ class Compiler
                     $merged[\count($merged) - 1][1] = max($end, $merged[\count($merged) - 1][1]);
                 } else {
                     $merged[] = [$start, $end];
+                }
+            }
+
+            $ranges = $merged;
+            $merged = [];
+            foreach ($ranges as [$start, $end]) {
+                if ($start < $hangulSyllables[0]) {
+                    $merged[] = [$start, min($end, $hangulSyllables[0] - 1)];
+                }
+                if ($end > $hangulSyllables[1]) {
+                    $merged[] = [max($start, $hangulSyllables[1] + 1), $end];
                 }
             }
 
@@ -351,9 +366,11 @@ class Compiler
             'EP' => $class('Extended_Pictographic'),
             'Ideo' => $class('Ideographic'),
             'SA' => $class('SA'),
+            'Hira' => $class('Hiragana'),
+            'HS' => \sprintf('\\x{%X}-\\x{%X}', ...$hangulSyllables),
         ];
 
-        $out = "<?php\n\n// from https://unicode.org/Public/UNIDATA/auxiliary/WordBreakProperty.txt, emoji/emoji-data.txt, PropList.txt and LineBreak.txt\n\nreturn [\n";
+        $out = "<?php\n\n// from https://unicode.org/Public/UNIDATA/auxiliary/WordBreakProperty.txt, emoji/emoji-data.txt, PropList.txt, LineBreak.txt and Scripts.txt\n\nreturn [\n";
         foreach ($classes as $k => $v) {
             $out .= "    '$k' => '$v',\n";
         }
