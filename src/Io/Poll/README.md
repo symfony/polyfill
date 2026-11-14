@@ -11,7 +11,7 @@ added to PHP 8.6 core, for PHP >= 8.1:
 The polyfill is backed by `stream_select()`, so only the `Poll` backend is
 available and edge-triggering is not supported. Event detection follows the
 semantics of the native `poll` backend as closely as `select()` allows:
-`Event::Error` is only reported for connection resets, `Event::ReadHangUp` is
+`Event::Error` is only reported for connection resets and failed connects, `Event::ReadHangUp` is
 never reported, and a TCP half-close reports `Read|HangUp` where native
 reports plain `Read`. The phpt tests of the native implementation, borrowed
 from php-src, run against the polyfill as part of the test suite.

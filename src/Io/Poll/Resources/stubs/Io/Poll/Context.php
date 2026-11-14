@@ -210,7 +210,10 @@ if (\PHP_VERSION_ID < 80600) {
             while (true) {
                 $r = $read;
                 $w = $write;
-                $e = null;
+                // Winsock reports a failed non-blocking connect() only in exceptfds, never in
+                // writefds, while poll() reports it as writable: watch for it on the
+                // streams that asked for Event::Write, which are the only ones it can concern
+                $e = '\\' === \DIRECTORY_SEPARATOR ? $w : null;
 
                 error_clear_last();
 
@@ -257,7 +260,7 @@ if (\PHP_VERSION_ID < 80600) {
                     return [];
                 }
 
-                foreach ($r + $w as $id => $stream) {
+                foreach ($r + $w + ($e ?? []) as $id => $stream) {
                     if (null === $watcher = $this->watchers[$id] ?? null) {
                         continue;
                     }
@@ -269,6 +272,13 @@ if (\PHP_VERSION_ID < 80600) {
 
                     $hangUp = $error = false;
                     $readable = $isReadable;
+
+                    if (isset($e[$id]) && false === @stream_socket_get_name($stream, true)) {
+                        // a socket flagged in exceptfds without a peer is a failed connect(),
+                        // which poll() reports as POLLOUT|POLLERR|POLLHUP; any other exception
+                        // (out-of-band data) has no poll() counterpart among the watched events
+                        $isWritable = $error = $hangUp = true;
+                    }
 
                     if ($isReadable) {
                         $traits = $this->streamTraits[$id];

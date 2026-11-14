@@ -648,6 +648,26 @@ class PollTest extends TestCase
         fclose($server);
     }
 
+    public function testWaitReportsWriteAndErrorOnRefusedAsyncConnect()
+    {
+        $client = @stream_socket_client('tcp://127.0.0.1:1', $errno, $errstr, 0, \STREAM_CLIENT_CONNECT | \STREAM_CLIENT_ASYNC_CONNECT);
+        if (false === $client) {
+            $this->markTestSkipped(\sprintf('The connection was refused synchronously: %s', $errstr));
+        }
+
+        $context = new Context();
+        $watcher = $context->add(new \StreamPollHandle($client), [Event::Write]);
+
+        // Windows retries refused connects for about two seconds before reporting them
+        $result = $context->wait(Duration::fromSeconds(10));
+
+        $this->assertSame([$watcher], $result);
+        $this->assertTrue($watcher->hasTriggered(Event::Write));
+        $this->assertTrue($watcher->hasTriggered(Event::Error));
+
+        fclose($client);
+    }
+
     public function testWaitReportsReadOnReadableNonSocketStream()
     {
         $stream = tmpfile();
