@@ -1,3 +1,10 @@
+# 1.44.0
+
+  * Add the `IntlBreakIterator` polyfill, for word, character and code point boundaries
+  * Add the `IntlChar` polyfill, for the properties of code points
+  * Report failed async connects on Windows in `Io\Poll`
+  * Speed up `array_last()`
+
 # 1.43.3
 
   * Fix `grapheme_strpos()` and friends matching inside a grapheme cluster
