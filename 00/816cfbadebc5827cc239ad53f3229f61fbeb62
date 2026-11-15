@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-11-15T09:25:45Z
+
+Thanks @phcorp, I pushed the changes from my review, squashed and rebased. The grapheme pattern is now copied in the package. Without polyfill-intl-grapheme, `😀😀` was one character on PCRE < 10.44. The data are pinned to Unicode 17.0.0, like IntlChar. Long ZWJ sequences don't exhaust the PCRE stack anymore, and `following()` doesn't move backwards on stray continuation bytes. I also updated the description, with numbers for PCRE 10.42.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-11-15T11:23:37Z
+
+I pushed two optimizations. Chunks without chars above U+07FF now use a pattern with smaller, inlined classes. Iterating 80 KB of Russian goes from 20 to 5 ms, and French from 11 to 8 ms. The ZWJ + emoji rule is applied after matching instead of in the pattern, which also makes long ZWJ sequences pass with the JIT disabled. Behavior is unchanged on the conformance file and against intl.
