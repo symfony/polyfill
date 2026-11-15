@@ -54,3 +54,16 @@ Compiler::idnViramaMap(__DIR__.'/../src/Intl/Idn/Resources/unidata/');
 
 $data = file_get_contents('http://www.unicode.org/Public/idna/latest/IdnaTestV2.txt');
 file_put_contents(__DIR__.'/Intl/Idn/IdnaTestV2.txt', $data);
+
+// IntlBreakIterator follows the version of Unicode of ICU 78, not the latest one
+$ucd = __DIR__.'/unicode/data/ucd-17.0.0/';
+@mkdir($ucd, 0777, true);
+foreach (['auxiliary/WordBreakProperty.txt', 'emoji/emoji-data.txt', 'PropList.txt', 'LineBreak.txt', 'Scripts.txt'] as $file) {
+    file_put_contents($ucd.basename($file), file_get_contents('https://unicode.org/Public/17.0.0/ucd/'.$file));
+}
+
+Compiler::wordBreakRegexp(__DIR__.'/../src/Intl/BreakIterator/Resources/unidata/', $ucd);
+
+foreach (['WordBreakTest.txt', 'GraphemeBreakTest.txt'] as $file) {
+    file_put_contents(__DIR__.'/Intl/BreakIterator/'.$file, file_get_contents('https://unicode.org/Public/17.0.0/ucd/auxiliary/'.$file));
+}

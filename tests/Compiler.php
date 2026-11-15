@@ -289,6 +289,107 @@ class Compiler
         file_put_contents($out_dir.'eastAsianWidthRegexp.php', "<?php\n\n// from W and F in https://unicode.org/Public/UNIDATA/EastAsianWidth.txt\n\nreturn '/[".$regexp."]/u';\n");
     }
 
+    public static function wordBreakRegexp($out_dir, $ucd_dir)
+    {
+        $props = [];
+        $parse = static function ($file, $filter = null) use (&$props, $ucd_dir) {
+            $h = fopen($ucd_dir.$file, 'r');
+            while (false !== $m = fgets($h)) {
+                if (preg_match('/^([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s*;\s*(\w+)/', $m, $m) && (null === $filter || \in_array($m[3], $filter, true))) {
+                    $props[$m[3]][] = [hexdec($m[1]), hexdec($m[2] ?: $m[1])];
+                }
+            }
+            fclose($h);
+        };
+
+        $parse('WordBreakProperty.txt');
+        $parse('emoji-data.txt', ['Extended_Pictographic']);
+        $parse('PropList.txt', ['Ideographic']);
+        $parse('LineBreak.txt', ['SA']);
+        $parse('Scripts.txt', ['Hiragana']);
+
+        // ICU segments runs of Hangul syllables apart from other letters, like the scripts it uses a dictionary for
+        $hangulSyllables = [0xAC00, 0xD7A3];
+
+        $ranges = static function (...$names) use (&$props, $hangulSyllables) {
+            $ranges = [];
+            foreach ($names as $name) {
+                foreach ($props[$name] as $r) {
+                    $ranges[] = $r;
+                }
+            }
+            usort($ranges, static function ($a, $b) { return $a[0] <=> $b[0]; });
+
+            $merged = [];
+            foreach ($ranges as [$start, $end]) {
+                if ($merged && $merged[\count($merged) - 1][1] + 1 >= $start) {
+                    $merged[\count($merged) - 1][1] = max($end, $merged[\count($merged) - 1][1]);
+                } else {
+                    $merged[] = [$start, $end];
+                }
+            }
+
+            $ranges = $merged;
+            $merged = [];
+            foreach ($ranges as [$start, $end]) {
+                if ($start < $hangulSyllables[0]) {
+                    $merged[] = [$start, min($end, $hangulSyllables[0] - 1)];
+                }
+                if ($end > $hangulSyllables[1]) {
+                    $merged[] = [max($start, $hangulSyllables[1] + 1), $end];
+                }
+            }
+
+            return $merged;
+        };
+
+        $classes = [
+            'A' => $ranges('ALetter', 'Hebrew_Letter'),
+            'L' => $ranges('ALetter'),
+            'H' => $ranges('Hebrew_Letter'),
+            'N' => $ranges('Numeric'),
+            'K' => $ranges('Katakana'),
+            'X' => $ranges('ExtendNumLet'),
+            'MidA' => $ranges('MidLetter', 'MidNumLet', 'Single_Quote'),
+            'MidN' => $ranges('MidNum', 'MidNumLet', 'Single_Quote'),
+            'SQ' => $ranges('Single_Quote'),
+            'DQ' => $ranges('Double_Quote'),
+            'WS' => $ranges('WSegSpace'),
+            'NL' => $ranges('Newline'),
+            'RI' => $ranges('Regional_Indicator'),
+            'E' => $ranges('Extend', 'Format', 'ZWJ'),
+            'EP' => $ranges('Extended_Pictographic'),
+            'Ideo' => $ranges('Ideographic'),
+            'SA' => $ranges('SA'),
+            'Hira' => $ranges('Hiragana'),
+            'HS' => [$hangulSyllables],
+        ];
+
+        $class = static function (array $ranges, int $max): string {
+            $class = '';
+            foreach ($ranges as [$start, $end]) {
+                if ($start <= $max) {
+                    $end = min($end, $max);
+                    $class .= $start === $end ? \sprintf('\x{%X}', $start) : \sprintf('\x{%X}-\x{%X}', $start, $end);
+                }
+            }
+
+            return $class;
+        };
+
+        $out = "<?php\n\n// from auxiliary/WordBreakProperty.txt, emoji/emoji-data.txt, PropList.txt, LineBreak.txt and Scripts.txt\n\nreturn [\n";
+        foreach ($classes as $k => $v) {
+            $out .= "    '$k' => '".$class($v, 0x10FFFF)."',\n";
+        }
+        // The same classes cut at U+07FF, for the texts that have no char above it
+        $out .= "    'U+07FF' => [\n";
+        foreach ($classes as $k => $v) {
+            $out .= "        '$k' => '".$class($v, 0x7FF)."',\n";
+        }
+
+        file_put_contents($out_dir.'wordBreak.php', $out."    ],\n];\n");
+    }
+
     public static function idnMaps($out_dir)
     {
         $handle = fopen(self::getFile('IdnaMappingTable.txt'), 'r');
