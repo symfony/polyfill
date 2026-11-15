@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-11-15T09:25:46Z
+
+Thanks @phcorp, I pushed the changes from my review, squashed and rebased. Property numbers that aren't ints, NAN/INF code points and float bases now behave like intl, and `foldCase()` takes the same option bits as ICU. The comparison with intl can't run on CI, so I added a checksum of a sample of code points. `enumCharTypes()` is also checked against `charType()`. I also updated the cost numbers in the description.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-11-15T11:08:58Z
+
+I pushed a few optimizations. The tables are now PHP arrays, so that opcache keeps them in shared memory. With everything loaded, a request takes 2 MB instead of 7 MB. The memo of decoded characters is bounded to 4096 entries, and building the pages of binary properties sets 32 bits at once. Behavior is unchanged, checked against the previous version on every method and code point.
