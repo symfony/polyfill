@@ -55,14 +55,18 @@ Compiler::idnViramaMap(__DIR__.'/../src/Intl/Idn/Resources/unidata/');
 $data = file_get_contents('http://www.unicode.org/Public/idna/latest/IdnaTestV2.txt');
 file_put_contents(__DIR__.'/Intl/Idn/IdnaTestV2.txt', $data);
 
-// IntlBreakIterator follows the version of Unicode of ICU 78, not the latest one
+// IntlBreakIterator and IntlChar follow the version of Unicode of ICU 78, not the latest one
 $ucd = __DIR__.'/unicode/data/ucd-17.0.0/';
 @mkdir($ucd, 0777, true);
-foreach (['auxiliary/WordBreakProperty.txt', 'emoji/emoji-data.txt', 'PropList.txt', 'LineBreak.txt', 'Scripts.txt'] as $file) {
+foreach (['UnicodeData.txt', 'CaseFolding.txt', 'SpecialCasing.txt', 'BidiMirroring.txt', 'BidiBrackets.txt', 'PropList.txt', 'PropertyValueAliases.txt', 'DerivedAge.txt', 'DerivedCoreProperties.txt', 'DerivedNormalizationProps.txt', 'EastAsianWidth.txt', 'LineBreak.txt', 'HangulSyllableType.txt', 'IndicPositionalCategory.txt', 'IndicSyllabicCategory.txt', 'Scripts.txt', 'VerticalOrientation.txt', 'emoji/emoji-data.txt', 'auxiliary/GraphemeBreakProperty.txt', 'auxiliary/SentenceBreakProperty.txt', 'auxiliary/WordBreakProperty.txt', 'extracted/DerivedBidiClass.txt', 'extracted/DerivedBinaryProperties.txt', 'extracted/DerivedCombiningClass.txt', 'extracted/DerivedDecompositionType.txt', 'extracted/DerivedGeneralCategory.txt', 'extracted/DerivedJoiningGroup.txt', 'extracted/DerivedJoiningType.txt', 'extracted/DerivedNumericType.txt', 'extracted/DerivedNumericValues.txt'] as $file) {
     file_put_contents($ucd.basename($file), file_get_contents('https://unicode.org/Public/17.0.0/ucd/'.$file));
+}
+foreach (['emoji/emoji-sequences.txt', 'security/IdentifierStatus.txt'] as $file) {
+    file_put_contents($ucd.basename($file), file_get_contents('https://unicode.org/Public/17.0.0/'.$file));
 }
 
 Compiler::wordBreakRegexp(__DIR__.'/../src/Intl/BreakIterator/Resources/unidata/', $ucd);
+Compiler::intlCharMaps(__DIR__.'/../src/Intl/Char/Resources/unidata/', $ucd);
 
 foreach (['WordBreakTest.txt', 'GraphemeBreakTest.txt'] as $file) {
     file_put_contents(__DIR__.'/Intl/BreakIterator/'.$file, file_get_contents('https://unicode.org/Public/17.0.0/ucd/auxiliary/'.$file));
