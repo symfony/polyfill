@@ -629,8 +629,8 @@ class DeepCloneTest extends TestCase
 
     private function skipIfExtensionCutsSleepNames(): void
     {
-        if (\PHP_VERSION_ID >= 80600 && \extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
-            $this->markTestSkipped('ext-deepclone cuts the names in __sleep() warnings at their first NUL byte, unlike serialize() on PHP 8.6.');
+        if (\PHP_VERSION_ID >= 80600 && \extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.10', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.10 cuts the names in serialize() warnings at their first NUL byte, unlike serialize() on PHP 8.6.');
         }
     }
 
@@ -1589,7 +1589,7 @@ class DeepCloneTest extends TestCase
         $this->assertStringEndsWith('serialize(): "secret" returned as member variable from __sleep() but does not exist', $errors[0]);
     }
 
-    public function testSleepNoticeCutsMangledNames()
+    public function testSleepWarningsPrintMangledNamesLikeSerialize()
     {
         $this->skipIfExtensionCutsSleepNames();
 
@@ -1609,6 +1609,53 @@ class DeepCloneTest extends TestCase
         // serialize() cuts the name at its first NUL byte before PHP 8.6
         $this->assertCount(1, $errors);
         $this->assertStringEndsWith(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', \PHP_VERSION_ID >= 80600 ? "\0*\0nope" : ''), $errors[0]);
+    }
+
+    public function testSerializeWarningsPrintAnonymousClassNamesLikePhp()
+    {
+        $this->skipIfExtensionCutsSleepNames();
+
+        // serialize() refuses anonymous classes, deepclone_to_array() exports the ones that restore their state
+        $sleep = new class() {
+            public function __sleep()
+            {
+                return 'nope';
+            }
+
+            public function __wakeup()
+            {
+            }
+        };
+        $serialize = new class() {
+            public function __serialize()
+            {
+                return 'nope';
+            }
+
+            public function __unserialize(array $data)
+            {
+            }
+        };
+        // PHP cuts the names at their first NUL byte in its messages before PHP 8.6
+        $sleepClass = \PHP_VERSION_ID >= 80600 ? \get_class($sleep) : 'class@anonymous';
+        $serializeClass = \PHP_VERSION_ID >= 80600 ? \get_class($serialize) : 'class@anonymous';
+
+        $errors = [];
+        set_error_handler(static function ($type, $msg) use (&$errors) {
+            $errors[] = $msg;
+
+            return true;
+        });
+        try {
+            deepclone_to_array($sleep);
+        } finally {
+            restore_error_handler();
+        }
+        $this->assertSame(['serialize(): '.$sleepClass.'::__sleep() should return an array only containing the names of instance-variables to serialize'], $errors);
+
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage($serializeClass.'::__serialize() must return an array');
+        deepclone_to_array($serialize);
     }
 
     /**
