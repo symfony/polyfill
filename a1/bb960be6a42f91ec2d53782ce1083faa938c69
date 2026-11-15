@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-11-14T20:48:45Z
+
+I added a second commit covering the event masks, out-of-band test and 32-bit timeout fix. Io/Poll passes on PHP 8.1 and 8.4. The new tests and Revolt's IoPollDriver suite pass on Windows x86 and x64.
