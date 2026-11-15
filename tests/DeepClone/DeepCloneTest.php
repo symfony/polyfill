@@ -629,8 +629,8 @@ class DeepCloneTest extends TestCase
 
     private function skipIfExtensionCutsSleepNames(): void
     {
-        if (\PHP_VERSION_ID >= 80600 && \extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.10', '<')) {
-            $this->markTestSkipped('ext-deepclone < 0.8.10 cuts the names in serialize() warnings at their first NUL byte, unlike serialize() on PHP 8.6.');
+        if (\PHP_VERSION_ID >= 80600 && \extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 cuts the names in serialize() warnings at their first NUL byte, unlike serialize() on PHP 8.6.');
         }
     }
 
