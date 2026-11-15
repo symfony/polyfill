@@ -648,6 +648,102 @@ class PollTest extends TestCase
         fclose($server);
     }
 
+    /**
+     * @dataProvider provideRefusedAsyncConnectEvents
+     */
+    public function testWaitReportsFailureOnRefusedAsyncConnect(array $events)
+    {
+        $events = array_map(static function (string $event) {
+            return \constant(Event::class.'::'.$event);
+        }, $events);
+        $server = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr, \STREAM_SERVER_BIND);
+        $client = @stream_socket_client('tcp://'.stream_socket_get_name($server, false), $errno, $errstr, 0, \STREAM_CLIENT_CONNECT | \STREAM_CLIENT_ASYNC_CONNECT);
+        if (false === $client) {
+            fclose($server);
+            $this->markTestSkipped(\sprintf('The connection was refused synchronously: %s', $errstr));
+        }
+
+        try {
+            $context = new Context();
+            $watcher = $context->add(new \StreamPollHandle($client), $events);
+
+            $result = $context->wait(Duration::fromSeconds(10));
+
+            $this->assertSame([$watcher], $result);
+            $this->assertSame(\in_array(Event::Read, $events, true), $watcher->hasTriggered(Event::Read));
+            $this->assertSame(\in_array(Event::Write, $events, true), $watcher->hasTriggered(Event::Write));
+            $this->assertTrue($watcher->hasTriggered(Event::Error));
+            $this->assertTrue($watcher->hasTriggered(Event::HangUp));
+        } finally {
+            fclose($client);
+            fclose($server);
+        }
+    }
+
+    public static function provideRefusedAsyncConnectEvents(): array
+    {
+        return [
+            'read' => [['Read']],
+            'write' => [['Write']],
+            'error' => [['Error']],
+            'hang-up' => [['HangUp']],
+            'read and write' => [['Read', 'Write']],
+        ];
+    }
+
+    public function testWaitIgnoresOutOfBandData()
+    {
+        $listener = stream_socket_server('tcp://127.0.0.1:0');
+        $client = stream_socket_client('tcp://'.stream_socket_get_name($listener, false));
+        $server = stream_socket_accept($listener);
+
+        try {
+            $this->assertSame(1, stream_socket_sendto($server, '!', \STREAM_OOB));
+
+            $read = $write = [];
+            $except = [$client];
+            $this->assertSame(1, stream_select($read, $write, $except, 1));
+
+            $context = new Context();
+            $watcher = $context->add(new \StreamPollHandle($client), [Event::Write]);
+
+            $this->assertSame([$watcher], $context->wait(Duration::fromSeconds(0)));
+            $this->assertSame([Event::Write], $watcher->getTriggeredEvents());
+        } finally {
+            fclose($client);
+            fclose($server);
+            fclose($listener);
+        }
+    }
+
+    public function testWaitLongTimeoutDetectsWritable()
+    {
+        $listener = stream_socket_server('tcp://127.0.0.1:0');
+        $client = stream_socket_client('tcp://'.stream_socket_get_name($listener, false));
+        $server = stream_socket_accept($listener);
+
+        try {
+            $context = new Context();
+            $watcher = $context->add(new \StreamPollHandle($client), [Event::Write]);
+
+            $this->assertSame([$watcher], $context->wait(Duration::fromSeconds(10)));
+            $this->assertSame([Event::Write], $watcher->getTriggeredEvents());
+        } finally {
+            fclose($client);
+            fclose($server);
+            fclose($listener);
+        }
+    }
+
+    public function testWaitLongTimeoutWithNoWatchers()
+    {
+        $context = new Context();
+        $start = hrtime(true);
+
+        $this->assertSame([], $context->wait(Duration::fromMilliseconds(3200)));
+        $this->assertGreaterThanOrEqual(3.1, (hrtime(true) - $start) / 1000000000);
+    }
+
     public function testWaitReportsReadOnReadableNonSocketStream()
     {
         $stream = tmpfile();

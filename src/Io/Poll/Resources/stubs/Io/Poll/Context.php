@@ -195,8 +195,8 @@ if (\PHP_VERSION_ID < 80600) {
             $timeoutNanoseconds = null !== $timeout ? $timeout->seconds * 1_000_000_000 + $timeout->nanoseconds : null;
 
             if (!$this->watchers) {
-                if (null !== $timeoutNanoseconds && 0 < $micros = \intdiv($timeoutNanoseconds, 1000)) {
-                    usleep($micros);
+                if (null !== $timeoutNanoseconds && 0 < $timeoutNanoseconds) {
+                    time_nanosleep($timeout->seconds, $timeout->nanoseconds);
                 }
 
                 return [];
@@ -210,7 +210,8 @@ if (\PHP_VERSION_ID < 80600) {
             while (true) {
                 $r = $read;
                 $w = $write;
-                $e = null;
+                // Winsock reports failed non-blocking connects in exceptfds.
+                $e = '\\' === \DIRECTORY_SEPARATOR ? $this->selectRead : null;
 
                 error_clear_last();
 
@@ -219,7 +220,7 @@ if (\PHP_VERSION_ID < 80600) {
                         $result = @stream_select($r, $w, $e, null);
                     } else {
                         $remaining = max(0, $deadline - hrtime(true));
-                        $result = @stream_select($r, $w, $e, \intdiv($remaining, 1_000_000_000), \intdiv($remaining % 1_000_000_000, 1000));
+                        $result = @stream_select($r, $w, $e, (int) ($remaining / 1_000_000_000), (int) (fmod($remaining, 1_000_000_000) / 1000));
                     }
                 } catch (\TypeError|\ValueError $selectError) {
                     // Like poll() reporting POLLNVAL, drop the watchers whose stream has been closed
@@ -257,7 +258,7 @@ if (\PHP_VERSION_ID < 80600) {
                     return [];
                 }
 
-                foreach ($r + $w as $id => $stream) {
+                foreach ($r + $w + ($e ?? []) as $id => $stream) {
                     if (null === $watcher = $this->watchers[$id] ?? null) {
                         continue;
                     }
@@ -269,6 +270,12 @@ if (\PHP_VERSION_ID < 80600) {
 
                     $hangUp = $error = false;
                     $readable = $isReadable;
+
+                    if (isset($e[$id]) && false === @stream_socket_get_name($stream, true)) {
+                        // A failed connect reports POLLERR|POLLHUP and any requested read/write readiness.
+                        $readable = $error = $hangUp = true;
+                        $isWritable = isset($write[$id]);
+                    }
 
                     if ($isReadable) {
                         $traits = $this->streamTraits[$id];
