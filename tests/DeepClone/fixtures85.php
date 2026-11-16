@@ -161,6 +161,19 @@ class ConstExprFccFixture
     }
 }
 
+class ConstExprCalledClassFixture
+{
+    #[ConstExprAttr(self::calledClass(...))]
+    public static function calledClass(): string
+    {
+        return static::class;
+    }
+}
+
+class ConstExprCalledClassChild extends ConstExprCalledClassFixture
+{
+}
+
 class ConstExprGlobalFccFixture
 {
     #[ConstExprAttr(strlen(...))]
