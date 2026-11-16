@@ -1144,6 +1144,67 @@ class DeepCloneTest extends TestCase
         }
     }
 
+    public function testClosuresOverParentMethodsAreNotTheOnesThatOverrideThem()
+    {
+        if ($native = \extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills) {
+            if (version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+                $this->markTestSkipped('ext-deepclone < 0.8.11 restores some closures over parent methods as the ones that override them.');
+            }
+        }
+
+        [$reveal, $prot, $create] = (new NamedClosureOverriding())->getParentClosures();
+
+        $payload = deepclone_to_array($reveal, null, true);
+        $this->assertSame([[0, 'reveal'], NamedClosureBase::class, 'reveal'], $payload['prepared']);
+        $this->assertSame('base', deepclone_from_array($payload, null, true)());
+
+        $payload = deepclone_to_array($prot, null, true);
+        $this->assertSame([[0, 'prot'], NamedClosureBase::class, 'prot'], $payload['prepared']);
+        $this->assertSame(NamedClosureOverriding::class, deepclone_from_array($payload, null, true)());
+
+        $payload = deepclone_to_array($create, null, true);
+        $this->assertSame([[NamedClosureOverriding::class, 'create'], NamedClosureBase::class, 'create'], $payload['prepared']);
+        // The polyfill can't keep the class that such a static method is called on
+        $this->assertSame($native ? NamedClosureOverriding::class : NamedClosureBase::class, deepclone_from_array($payload, null, true)());
+
+        // The methods that override them are still looked up by name
+        $payload = deepclone_to_array(\Closure::fromCallable([new NamedClosureOverriding(), 'reveal']), null, true);
+        $this->assertSame([0, 'reveal'], $payload['prepared']);
+        $this->assertSame('overridden', deepclone_from_array($payload, null, true)());
+    }
+
+    public function testNamedClosuresOverAbstractMethodsAreRejected()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 creates closures over abstract methods.');
+        }
+
+        $payloads = [
+            'deepclone_from_array(): malformed payload, named-closure method Countable::count() is abstract' => ['classes' => 'stdClass', 'objectMeta' => 1, 'prepared' => [[0, 'count'], 'Countable', 'count'], 'mask' => 0],
+            'deepclone_from_array(): malformed payload, named-closure method '.NamedClosureAbstract::class.'::name() is abstract' => ['classes' => NamedClosureConcrete::class, 'objectMeta' => 1, 'prepared' => [[0, 'name'], NamedClosureAbstract::class, 'name'], 'mask' => 0],
+            'deepclone_from_array(): malformed payload, named-closure method '.NamedClosureAbstract::class.'::make() is abstract' => ['classes' => '', 'objectMeta' => 0, 'prepared' => [NamedClosureAbstract::class, 'make'], 'mask' => 0],
+        ];
+        foreach ($payloads as $message => $payload) {
+            try {
+                deepclone_from_array($payload, null, true);
+                $this->fail(\sprintf('deepclone_from_array() accepted a payload expected to throw "%s".', $message));
+            } catch (\ValueError $e) {
+                $this->assertSame($message, $e->getMessage());
+            }
+        }
+
+        $this->assertSame('concrete', deepclone_from_array(['classes' => NamedClosureConcrete::class, 'objectMeta' => 1, 'prepared' => [0, 'name'], 'mask' => 0], null, true)());
+    }
+
+    public function testStringKeysOfRefMasksAreNotReferenceIds()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 takes some string keys of "refs" for reference ids.');
+        }
+
+        $this->assertSame(['z', 'z'], deepclone_from_array(['classes' => '', 'objectMeta' => 0, 'prepared' => [-1, -1], 'mask' => [false, false], 'refs' => ['abc' => -1, 1 => 'z'], 'refMasks' => ['abc' => false]], []));
+    }
+
     public function testMagicMethodsAreCalledWhateverTheirVisibility()
     {
         $this->skipIfExtensionCreatesNamedClosuresDifferently();
@@ -4263,6 +4324,32 @@ class DeepCloneTest extends TestCase
         $this->assertSame(1, $d['mask']);
         $this->assertSame(ConstExprFccFixture::class, $d['prepared'][0]);
         $this->assertTrue(deepclone_from_array($d)());
+    }
+
+    /**
+     * @requires PHP 8.5
+     */
+    public function testConstExprClosureFirstClassCallableIsNotTheOneCalledOnAChildClass()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 ignores the class that first-class callables are called on.');
+        }
+
+        $declared = (new \ReflectionMethod(ConstExprCalledClassFixture::class, 'calledClass'))->getAttributes()[0]->getArguments()[0];
+        $this->assertSame(ConstExprCalledClassFixture::class, deepclone_from_array(deepclone_to_array($declared))());
+
+        // Called on a child class, static:: resolves to that class: this isn't the callable that the attribute declares
+        $closure = \Closure::fromCallable([ConstExprCalledClassChild::class, 'calledClass']);
+        try {
+            deepclone_to_array($closure);
+            $this->fail('ValueError expected.');
+        } catch (\ValueError $e) {
+            $this->assertStringContainsString('requires enabling the "allow_named_closures" option', $e->getMessage());
+        }
+
+        $payload = deepclone_to_array($closure, null, true);
+        $this->assertSame([ConstExprCalledClassChild::class, 'calledClass'], $payload['prepared']);
+        $this->assertSame(ConstExprCalledClassChild::class, deepclone_from_array($payload, null, true)());
     }
 
     /**

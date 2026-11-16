@@ -52,6 +52,49 @@ class NamedClosureChild extends NamedClosureBase
 {
 }
 
+class NamedClosureOverriding extends NamedClosureBase
+{
+    public static function create()
+    {
+        return 'overridden';
+    }
+
+    public function reveal()
+    {
+        return 'overridden';
+    }
+
+    protected function prot()
+    {
+        return 'overridden';
+    }
+
+    public function getParentClosures(): array
+    {
+        return [parent::reveal(...), parent::prot(...), parent::create(...)];
+    }
+}
+
+abstract class NamedClosureAbstract
+{
+    abstract public function name();
+
+    abstract public static function make();
+}
+
+class NamedClosureConcrete extends NamedClosureAbstract
+{
+    public function name()
+    {
+        return 'concrete';
+    }
+
+    public static function make()
+    {
+        return new static();
+    }
+}
+
 class NamedClosureMagic
 {
     public function __call($name, $args)

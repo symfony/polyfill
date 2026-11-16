@@ -796,7 +796,10 @@ final class DeepClone
                     $rm = $callable[0] && method_exists(...$callable) ? new \ReflectionMethod(...$callable) : null;
                     $unused = null;
                     $callable = self::prepare($callable, $objectsPool, $refsPool, $objectsCount, $valueIsStatic, $unused, $allowedSet, $allowNamedClosures);
-                    $value = !($rm?->isPublic() ?? true) ? [$callable, $rm->class, $rm->name] : $callable;
+                    // Non-public methods are exported with the class that declares them. So are the methods that the class of the
+                    // object, or the class they're called on, overrides, eg parent::m(...): their name alone would find the override
+                    $scope = $r->getClosureScopeClass()?->name ?? $rm?->class;
+                    $value = $rm && (!$rm->isPublic() || $rm->class !== $scope) ? [$callable, $scope, $rm->name] : $callable;
                     $mask[$k] = 0;
 
                     goto handle_value;
@@ -1136,7 +1139,7 @@ final class DeepClone
             try {
                 foreach ($refMasks as $k => $m) {
                     if (isset($refs[$k]) || \array_key_exists($k, $refs)) {
-                        if (false === $m && -$k === $refs[$k]) {
+                        if (false === $m && \is_int($k) && -$k === $refs[$k]) {
                             throw new \ValueError('deepclone_from_array(): malformed payload, ref id '.$k.' cannot reference itself');
                         }
                         $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
@@ -1412,7 +1415,7 @@ final class DeepClone
 
         foreach ($refMasks as $k => $m) {
             if (isset($refs[$k]) || \array_key_exists($k, $refs)) {
-                if (false === $m && -$k === $refs[$k]) {
+                if (false === $m && \is_int($k) && -$k === $refs[$k]) {
                     throw new \ValueError('deepclone_from_array(): malformed payload, ref id '.$k.' cannot reference itself');
                 }
                 $refs[$k] = self::resolveWithMask($refs[$k], $m, $objects, $refs, $allowedClasses);
@@ -1677,12 +1680,22 @@ final class DeepClone
             throw new \ValueError('deepclone_from_array(): malformed payload, named-closure function or method not found');
         }
         $method = new \ReflectionMethod($lookup, $name);
+        if ($method->isAbstract()) {
+            throw new \ValueError('deepclone_from_array(): malformed payload, named-closure method '.$method->class.'::'.$method->name.'() is abstract');
+        }
         $calledClass ??= $method->class;
         if (!is_a($calledClass, $method->class, true)) {
             throw new \ValueError('deepclone_from_array(): malformed payload, named-closure method '.$method->class.'::'.$method->name.'() cannot be called on '.$calledClass);
         }
         if (!$method->isStatic() && !\is_object($obj)) {
             throw new \ValueError('deepclone_from_array(): malformed payload, named-closure method '.$method->class.'::'.$method->name.'() is not static');
+        }
+
+        if (null !== $declaringClass && $calledClass !== $method->class && $method->class !== (new \ReflectionMethod($calledClass, $method->name))->class) {
+            // The class of the object, or the class that the method is called on, overrides the method of the named
+            // class: bind that one, like parent::m(...) does. PHP provides no way to create such a closure over a
+            // static method while keeping the class it's called on, so static:: resolves to the named class there.
+            return $method->getClosure($method->isStatic() ? null : $obj);
         }
 
         return (self::$closureFactories[$method->class] ??= \Closure::bind(static function ($target, $name) {
@@ -1705,7 +1718,7 @@ final class DeepClone
         $file = $r->getFileName();
         $line = $r->getStartLine();
 
-        if (!$candidates = $index[$r->name.':'.$file.':'.$line.':'.$r->getEndLine().':'.self::closureSignature($r)] ?? null) {
+        if (!$candidates = $index[$r->name.':'.$file.':'.$line.':'.$r->getEndLine().':'.self::closureSignature($r).($r->isAnonymous() ? '' : ':'.$r->getClosureCalledClass()?->name)] ?? null) {
             return null;
         }
 
@@ -1820,7 +1833,8 @@ final class DeepClone
                     if ($r->getClosureScopeClass()?->name !== $class) {
                         return;
                     }
-                    $index[$r->name.':'.$r->getFileName().':'.$r->getStartLine().':'.$r->getEndLine().':'.self::closureSignature($r)][] = [$site, $attrIndex, $n];
+                    // First-class callables over a static method also differ by the class they're called on, which static:: resolves to
+                    $index[$r->name.':'.$r->getFileName().':'.$r->getStartLine().':'.$r->getEndLine().':'.self::closureSignature($r).($r->isAnonymous() ? '' : ':'.$r->getClosureCalledClass()?->name)][] = [$site, $attrIndex, $n];
                     if ($r->isAnonymous()) {
                         // The runtime-aliasing refusal keys off source lines and
                         // only concerns anonymous closure literals.
