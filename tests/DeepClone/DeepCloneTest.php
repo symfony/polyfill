@@ -1224,6 +1224,62 @@ class DeepCloneTest extends TestCase
         $this->assertSame(1, $clone->skipped);
     }
 
+    public function testDestructorsOnlyRunOnObjectsThatWereHydrated()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 destructs the instances that it creates to read default values.');
+        }
+
+        DeepCloneDestructorBase::$destructed = [];
+        $object = new DeepCloneDestructor('original');
+        $object->dynamic = true;
+
+        // Default values are still left out
+        $payload = deepclone_to_array($object);
+        $this->assertSame(['stdClass' => ['name' => ['original'], 'dynamic' => [true]]], $payload['properties']);
+
+        $clone = deepclone_from_array($payload);
+        $this->assertEquals($object, $clone);
+        $hydrated = deepclone_hydrate(DeepCloneDestructor::class, ['name' => 'hydrated']);
+        $this->assertSame('new', $hydrated->state);
+        $this->assertSame([], DeepCloneDestructorBase::$destructed);
+
+        unset($object, $clone, $hydrated);
+        $this->assertSame(['original', 'original', 'hydrated'], DeepCloneDestructorBase::$destructed);
+    }
+
+    public function testNoInstanceIsLeftToDestructOnShutdown()
+    {
+        // The destructor fails on an object that was never hydrated
+        $code = 'require $argv[1];
+
+            class Connection
+            {
+                public string $dsn;
+
+                public function __destruct()
+                {
+                    echo "closing {$this->dsn}\\n";
+                }
+            }
+
+            $object = new Connection();
+            $object->dsn = "original";
+            $clone = deepclone_from_array(deepclone_to_array($object));
+            $hydrated = deepclone_hydrate(Connection::class, ["dsn" => "hydrated"]);
+            unset($object, $clone, $hydrated);
+            echo "done\\n";
+        ';
+
+        $proc = proc_open([\PHP_BINARY, '-n', '-d', 'error_reporting=-1', '-d', 'display_errors=1', '-r', $code, '--', \dirname(__DIR__, 2).'/vendor/autoload.php'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $output = stream_get_contents($pipes[1]).stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($proc);
+
+        $this->assertSame("closing original\nclosing original\nclosing hydrated\ndone\n", $output);
+    }
+
     public function testClassNamesAreCutAtTheirFirstNulInMessages()
     {
         foreach ([[new class() {}, ['stdClass'], 'deepclone_to_array(): class "class@anonymous" is not allowed'], [new \stdClass(), ["A\0B"], 'deepclone_to_array(): Argument $allowed_classes must be an array of class names, "A" given']] as [$value, $allowedClasses, $message]) {
