@@ -2339,6 +2339,34 @@ final class DeepClone
             $keys['id'][0] = $keys["\0*\0id"][0] = 'Transliterator';
         }
 
+        if (null === $proto && (self::$instantiableWithoutConstructor[$reflector->name] ?? false)) {
+            // No prototype exists for the classes that have a destructor: read their default values from reflection
+            $defaults = [];
+            $public = [];
+            $parent = $reflector;
+            do {
+                foreach ($parent->getProperties() as $p) {
+                    if ($p->isStatic() || $p->class !== $parent->name || \PHP_VERSION_ID >= 80400 && $p->isVirtual()) {
+                        continue;
+                    }
+                    if ($p->isPrivate()) {
+                        $key = "\0".$p->class."\0".$p->name;
+                    } elseif (isset($public[$p->name])) {
+                        // Redeclared by a child class
+                        continue;
+                    } else {
+                        $public[$p->name] = true;
+                        $key = $p->isProtected() ? "\0*\0".$p->name : $p->name;
+                    }
+                    if ($p->hasDefaultValue()) {
+                        $defaults[$key] = $p->getDefaultValue();
+                    }
+                }
+            } while ($parent = $parent->getParentClass());
+
+            return [$keys, $defaults];
+        }
+
         // Traces, files and lines of throwables are always exported
         $defaults = (array) $proto;
         unset($defaults["\0Error\0trace"], $defaults["\0Exception\0trace"], $defaults["\0*\0file"], $defaults["\0*\0line"]);
@@ -2372,7 +2400,8 @@ final class DeepClone
             return $reflector;
         } else {
             try {
-                $proto = $reflector->newInstanceWithoutConstructor();
+                // No prototype for the classes that have a destructor: it would run on an object that was never constructed
+                $proto = self::hasUserlandDestructor($reflector) ? null : $reflector->newInstanceWithoutConstructor();
                 $instantiableWithoutConstructor = true;
             } catch (\ReflectionException) {
                 $proto = $reflector->implementsInterface('Serializable') && !method_exists($class, '__unserialize') ? 'C:' : 'O:';
@@ -2423,7 +2452,7 @@ final class DeepClone
             }
         }
 
-        self::$cloneable[$class] = $cloneable;
+        self::$cloneable[$class] = $cloneable && (null !== $proto || !$instantiableWithoutConstructor);
         self::$instantiableWithoutConstructor[$class] = $instantiableWithoutConstructor;
         self::$prototypes[$class] = $proto;
 
@@ -2443,6 +2472,23 @@ final class DeepClone
         }
 
         return $reflector;
+    }
+
+    /**
+     * Tells whether a class and its parents are all userland classes, one of them declaring a destructor.
+     */
+    private static function hasUserlandDestructor(\ReflectionClass $reflector): bool
+    {
+        if (!$reflector->hasMethod('__destruct')) {
+            return false;
+        }
+        do {
+            if ($reflector->isInternal()) {
+                return false;
+            }
+        } while ($reflector = $reflector->getParentClass());
+
+        return true;
     }
 
     /**

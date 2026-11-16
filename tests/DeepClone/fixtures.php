@@ -108,6 +108,32 @@ class NamedClosureMagic
     }
 }
 
+class DeepCloneDestructorBase
+{
+    public static array $destructed = [];
+
+    public $state = 'new';
+    protected $kept = ['default'];
+    private $hidden = 1;
+
+    public function __destruct()
+    {
+        self::$destructed[] = $this->name;
+    }
+}
+
+#[\AllowDynamicProperties]
+class DeepCloneDestructor extends DeepCloneDestructorBase
+{
+    public string $name;
+    private $hidden = 2;
+
+    public function __construct(string $name)
+    {
+        $this->name = $name;
+    }
+}
+
 class ClosureFixture
 {
     public function instanceMethod(): string
