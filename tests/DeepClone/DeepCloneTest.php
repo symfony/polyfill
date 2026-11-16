@@ -3501,6 +3501,74 @@ class DeepCloneTest extends TestCase
         $this->assertSame($inner, $host->o);
     }
 
+    public function testHydrateNullLeavesReadonlyUninitialized()
+    {
+        $o = deepclone_hydrate(TypedReadonly::class, ['v' => null]);
+        $this->assertFalse((new \ReflectionProperty(TypedReadonly::class, 'v'))->isInitialized($o));
+    }
+
+    public function testHydrateNullIntoInitializedReadonlyThrows()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 lets null uninitialize readonly properties.');
+        }
+
+        $o = deepclone_hydrate(TypedReadonly::class, ['v' => 1]);
+        try {
+            deepclone_hydrate($o, ['v' => null]);
+            $this->fail('Expected Error on readonly overwrite');
+        } catch (\Error $e) {
+            $this->assertSame('Cannot modify readonly property '.TypedReadonly::class.'::$v', $e->getMessage());
+        }
+        $this->assertSame(1, $o->v);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateReadonlyIdempotentOnLazyObjects()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 writes to lazy proxies instead of their real instance.');
+        }
+
+        $rc = new \ReflectionClass(HydrateReadonlyObject::class);
+        $inner = new \stdClass();
+
+        $ghost = $rc->newLazyGhost(static function () {
+            throw new \LogicException('The initializer should not run.');
+        });
+        deepclone_hydrate($ghost, ['o' => $inner], \DEEPCLONE_HYDRATE_NO_LAZY_INIT);
+        deepclone_hydrate($ghost, ['o' => $inner], \DEEPCLONE_HYDRATE_NO_LAZY_INIT);
+        $this->assertSame($inner, $ghost->o);
+
+        $proxy = $rc->newLazyProxy(static function () use ($rc) {
+            return $rc->newInstanceWithoutConstructor();
+        });
+        deepclone_hydrate($proxy, ['o' => $inner]);
+        deepclone_hydrate($proxy, ['o' => $inner]);
+        $this->assertSame($inner, $proxy->o);
+    }
+
+    /**
+     * @requires PHP 8.4
+     */
+    public function testHydrateNoLazyInitCastsToBackedEnum()
+    {
+        if (\extension_loaded('deepclone') && !TestListenerTrait::$enabledPolyfills && version_compare(phpversion('deepclone'), '0.8.11', '<')) {
+            $this->markTestSkipped('ext-deepclone < 0.8.11 writes to lazy proxies instead of their real instance.');
+        }
+
+        $rc = new \ReflectionClass(WithBackedEnums::class);
+        $ghost = $rc->newLazyGhost(static function () {
+            throw new \LogicException('The initializer should not run.');
+        });
+        deepclone_hydrate($ghost, ['s' => 'S'], \DEEPCLONE_HYDRATE_NO_LAZY_INIT);
+
+        $this->assertTrue($rc->isUninitializedLazyObject($ghost));
+        $this->assertSame(DeepCloneHydrateSuit::Spades, $ghost->s);
+    }
+
     public function testHydrateNullIntoNonNullableTypedUnsetsSlot()
     {
         $o = new TypedInt();

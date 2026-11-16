@@ -2811,20 +2811,36 @@ final class DeepClone
             if ($propertyReflector->isStatic()) {
                 continue;
             }
-            if ($noLazyInit && !$propertyReflector->isVirtual()) {
-                $notByRef[$propertyReflector->name] = $propertyReflector->setRawValueWithoutLazyInitialization(...);
-                continue;
-            }
             $t = null;
-            if (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
+            if ($noLazyInit && !$propertyReflector->isVirtual()) {
+                if ($propertyReflector->isReadOnly()) {
+                    $notByRef[$propertyReflector->name] = static function ($object, $value) use ($propertyReflector) {
+                        if ($propertyReflector->isLazy($object) || !$propertyReflector->isInitialized($object) || $propertyReflector->getValue($object) !== $value) {
+                            $propertyReflector->setRawValueWithoutLazyInitialization($object, $value);
+                        }
+                    };
+                } else {
+                    $notByRef[$propertyReflector->name] = $propertyReflector->setRawValueWithoutLazyInitialization(...);
+                }
+            } elseif (\PHP_VERSION_ID >= 80400 && !$propertyReflector->isAbstract() && $propertyReflector->getHooks()) {
                 if ($propertyReflector->isVirtual()) {
                     $notByRef[$propertyReflector->name] = true;
                 } else {
                     $notByRef[$propertyReflector->name] = $callHooks ? $propertyReflector->setValue(...) : $propertyReflector->setRawValue(...);
                 }
             } elseif ($propertyReflector->isReadOnly()) {
-                $notByRef[$propertyReflector->name] = static function ($object, $value) use ($propertyReflector) {
-                    if (!$propertyReflector->isInitialized($object) || $propertyReflector->getValue($object) !== $value) {
+                $nullable = $propertyReflector->getType()->allowsNull();
+                $notByRef[$propertyReflector->name] = static function ($object, $value) use ($propertyReflector, $classReflector, $nullable) {
+                    if (\PHP_VERSION_ID >= 80400) {
+                        // PHP 8.5.0 to 8.5.12 don't look at the real instance of a lazy proxy in isInitialized(), see php/php-src#25238
+                        $object = $classReflector->initializeLazyObject($object);
+                    }
+                    if (!$propertyReflector->isInitialized($object)) {
+                        // Like for the other properties, null leaves a non-nullable property uninitialized
+                        if (null !== $value || $nullable) {
+                            $propertyReflector->setValue($object, $value);
+                        }
+                    } elseif ($propertyReflector->getValue($object) !== $value) {
                         $propertyReflector->setValue($object, $value);
                     }
                 };
