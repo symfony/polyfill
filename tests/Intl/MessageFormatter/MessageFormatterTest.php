@@ -122,7 +122,8 @@ class MessageFormatterTest extends TestCase
 
             [
                 '{a,number,integer} {b,number,integer} {c,number,integer} {d, number,integer}', // pattern
-                '1 3 0 9,007,199,254,740,993', // expected
+                // a 32-bit platform turns 9007199254740993 into a float, which rounds it
+                8 <= \PHP_INT_SIZE ? '1 3 0 9,007,199,254,740,993' : '1 3 0 9,007,199,254,740,992', // expected
                 [ // params
                     'a' => 1.5,
                     'b' => 3.5,

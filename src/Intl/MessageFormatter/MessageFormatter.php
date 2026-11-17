@@ -387,7 +387,10 @@ class MessageFormatter
                     throw new \DomainException('Found PHP float with absolute value too large for 64 bit integer argument.');
                 }
 
-                return preg_replace('/\B(?=(?:\d{3})+$)/', ',', (string) (int) $arg);
+                // On 32-bit platforms, a float can hold a 64-bit integer that an int cannot
+                $arg = \is_float($arg) && !(\PHP_INT_MIN <= $arg && $arg <= \PHP_INT_MAX) ? \sprintf('%.0f', $arg < 0 ? ceil($arg) : floor($arg)) : (string) (int) $arg;
+
+                return preg_replace('/\B(?=(?:\d{3})+$)/', ',', $arg);
 
             case 'none':
                 return $arg;
