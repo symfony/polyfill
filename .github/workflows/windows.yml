@@ -1,0 +1,60 @@
+name: Windows
+
+on:
+    push:
+    pull_request:
+
+jobs:
+
+    test:
+        name: PHPUnit Tests (x86, lowest PHP)
+        runs-on: windows-2022
+
+        defaults:
+            run:
+                shell: pwsh
+
+        env:
+            COMPOSER_NO_INTERACTION: '1'
+            COMPOSER_ROOT_VERSION: 1.x-dev
+
+        steps:
+            -   name: Setup Git
+                run: git config --global core.autocrlf false
+
+            -   name: Checkout
+                uses: actions/checkout@v6
+
+            -   name: Setup PHP
+                run: |
+                    mkdir c:\php && cd c:\php
+                    iwr -MaximumRetryCount 5 -RetryIntervalSec 10 -outf php.zip https://github.com/symfony-tools/binary-utils/releases/download/v0.1/php-7.2.5-Win32-VC15-x86.zip
+                    7z x php.zip -y >nul
+                    cd ext
+                    iwr -MaximumRetryCount 5 -RetryIntervalSec 10 -outf php_apcu.zip https://github.com/symfony-tools/binary-utils/releases/download/v0.1/php_apcu-5.1.19-7.2-ts-vc15-x86.zip
+                    7z x php_apcu.zip -y >nul
+                    cd ..
+                    Copy php.ini-development php.ini
+                    "memory_limit=-1" >> php.ini
+                    "max_execution_time=1200" >> php.ini
+                    "date.timezone=UTC" >> php.ini
+                    "extension_dir=ext" >> php.ini
+                    "extension=php_openssl.dll" >> php.ini
+                    "extension=php_apcu.dll" >> php.ini
+                    "apc.enable_cli=1" >> php.ini
+                    "extension=php_intl.dll" >> php.ini
+                    "extension=php_mbstring.dll" >> php.ini
+                    "extension=php_ldap.dll" >> php.ini
+                    iwr -MaximumRetryCount 5 -RetryIntervalSec 10 -outf composer.phar https://getcomposer.org/download/latest-stable/composer.phar
+                    "c:\php" >> $env:GITHUB_PATH
+
+            -   name: Install dependencies
+                run: |
+                    mkdir $env:APPDATA\Composer && Copy .github\composer-config.json $env:APPDATA\Composer\config.json
+                    # symfony/intl requires PHP 8.1
+                    php c:\php\composer.phar remove --dev --no-update symfony/intl
+                    php c:\php\composer.phar install --prefer-source --no-progress --ansi
+                    php -d allow_url_fopen=0 phpunit install
+
+            -   name: Run tests
+                run: php -d allow_url_fopen=0 phpunit
