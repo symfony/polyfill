@@ -422,6 +422,10 @@ class IdnTest extends TestCase
      */
     public function testLabelDecodingToAsciiOnlyIsRejected($input)
     {
+        if (!TestListenerTrait::$enabledPolyfills && \defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '68', '<')) {
+            $this->markTestSkipped('ICU rejects these labels since version 68.');
+        }
+
         $options = \IDNA_USE_STD3_RULES | \IDNA_CHECK_BIDI | \IDNA_CHECK_CONTEXTJ;
 
         idn_to_ascii($input, $options | \IDNA_NONTRANSITIONAL_TO_ASCII, \INTL_IDNA_VARIANT_UTS46, $info);
@@ -690,6 +694,10 @@ class IdnTest extends TestCase
      */
     public function testContextJUsesRecentUnicodeData($domain, $errors)
     {
+        if (!TestListenerTrait::$enabledPolyfills && \defined('INTL_ICU_VERSION') && version_compare(\INTL_ICU_VERSION, '70', '<')) {
+            $this->markTestSkipped('ICU uses the data of Unicode 14 since version 70.');
+        }
+
         idn_to_ascii($domain, \IDNA_CHECK_CONTEXTJ | \IDNA_NONTRANSITIONAL_TO_ASCII, \INTL_IDNA_VARIANT_UTS46, $info);
         $this->assertSame($errors, $info['errors']);
 
