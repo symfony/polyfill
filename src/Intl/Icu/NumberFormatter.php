@@ -220,13 +220,6 @@ abstract class NumberFormatter
      */
     private static $int32Max = 2147483647;
 
-    /**
-     * The maximum value of the integer type in 64 bit platforms.
-     *
-     * @var int|float
-     */
-    private static $int64Max = 9223372036854775807;
-
     private static $enSymbols = [
         self::DECIMAL => ['.', ',', ';', '%', '0', '#', '-', '+', '¤', '¤¤', '.', 'E', '‰', '*', '∞', 'NaN', '@', ','],
         self::CURRENCY => ['.', ',', ';', '%', '0', '#', '-', '+', '¤', '¤¤', '.', 'E', '‰', '*', '∞', 'NaN', '@', ','],
@@ -532,6 +525,14 @@ abstract class NumberFormatter
         $string = str_replace(',', '', $string);
         $string = $this->convertValueDataType($string, $type);
 
+        if (false === $string) {
+            Icu::setError(Icu::U_INVALID_FORMAT_ERROR, 'Number parsing failed');
+            $this->errorCode = Icu::getErrorCode();
+            $this->errorMessage = Icu::getErrorMessage();
+
+            return false;
+        }
+
         // behave like the intl extension
         $this->resetError();
 
@@ -793,7 +794,10 @@ abstract class NumberFormatter
      */
     private function getInt64Value($value)
     {
-        if ($value > self::$int64Max || $value < -self::$int64Max - 1) {
+        // compare the digits as strings because floats cannot tell 9223372036854775807 from 9223372036854775808
+        $digits = ltrim(strstr($value.'.', '.', true), '-0');
+
+        if (19 < \strlen($digits) || (19 === \strlen($digits) && 0 < strcmp($digits, '-' === $value[0] ? '9223372036854775808' : '9223372036854775807'))) {
             return false;
         }
 

@@ -843,6 +843,41 @@ abstract class AbstractNumberFormatterTest extends TestCase
         $this->assertIsInt($parsedValue);
 
         $this->assertEquals(-2147483649, $parsedValue, '->parse() TYPE_INT64 uses true 64 bit integers (PHP >= 5.3.14 and PHP >= 5.4.4).');
+
+        $this->assertSame(\PHP_INT_MAX, $formatter->parse('9,223,372,036,854,775,807', NumberFormatter::TYPE_INT64));
+        $this->assertSame(\PHP_INT_MIN, $formatter->parse('-9,223,372,036,854,775,808', NumberFormatter::TYPE_INT64));
+    }
+
+    /**
+     * @dataProvider parseTypeIntOverflowProvider
+     */
+    public function testParseTypeIntOverflow($type, $value, $expectedPosition)
+    {
+        $position = 0;
+        $formatter = static::getNumberFormatter('en', NumberFormatter::DECIMAL);
+
+        $this->assertFalse($formatter->parse($value, $type, $position));
+        $this->assertSame($expectedPosition, $position);
+
+        $errorMessage = 'Number parsing failed: U_INVALID_FORMAT_ERROR';
+
+        $this->assertSame($errorMessage, preg_replace('/^NumberFormatter::parse\(\): /', '', static::getIntlErrorMessage()));
+        $this->assertSame(Icu::U_INVALID_FORMAT_ERROR, static::getIntlErrorCode());
+        $this->assertTrue(static::isIntlFailure(static::getIntlErrorCode()));
+        $this->assertSame($errorMessage, preg_replace('/^NumberFormatter::parse\(\): /', '', $formatter->getErrorMessage()));
+        $this->assertSame(Icu::U_INVALID_FORMAT_ERROR, $formatter->getErrorCode());
+    }
+
+    public static function parseTypeIntOverflowProvider()
+    {
+        return [
+            [NumberFormatter::TYPE_INT32, '2,147,483,648', 13],
+            [NumberFormatter::TYPE_INT32, '-2,147,483,649', 14],
+            [NumberFormatter::TYPE_INT64, '9,223,372,036,854,775,808', 25],
+            [NumberFormatter::TYPE_INT64, '-9,223,372,036,854,775,809', 26],
+            [NumberFormatter::TYPE_INT64, '9,223,372,036,854,775,808.0', 27],
+            [NumberFormatter::TYPE_INT64, '99,999,999,999,999,999,999', 26],
+        ];
     }
 
     /**
