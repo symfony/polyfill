@@ -865,7 +865,7 @@ final class DeepClone
                 }
                 // Like serialize(), call it whatever its visibility
                 if (!\is_array($arrayValue = true === self::$classInfo[$class][2] ? $value->__serialize() : self::$classInfo[$class][2]->invoke($value))) {
-                    throw new \TypeError($class.'::__serialize() must return an array');
+                    throw new \TypeError(self::serializeErrorName($class).'::__serialize() must return an array');
                 }
 
                 // Before PHP 8.3, Random\Randomizer::__serialize() returns its raw
@@ -913,7 +913,7 @@ final class DeepClone
                             self::hideMarkers($refsPool);
                         }
                         if (!\is_array($sleep = true === (self::$classInfo[$class][4] ??= $reflector->getMethod('__sleep')->isPublic() ?: $reflector->getMethod('__sleep')) ? $value->__sleep() : self::$classInfo[$class][4]->invoke($value))) {
-                            trigger_error('serialize(): '.$class.'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
+                            trigger_error('serialize(): '.self::serializeErrorName($class).'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
                             $value = null;
                             goto handle_value;
                         }
@@ -2263,15 +2263,14 @@ final class DeepClone
 
         foreach ($names as $name) {
             if (!\is_string($name)) {
-                trigger_error('serialize(): '.$class.'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
+                trigger_error('serialize(): '.self::serializeErrorName($class).'::__sleep() should return an array only containing the names of instance-variables to serialize', \E_USER_WARNING);
                 $name = (string) $name;
             }
             // Numeric names are integer keys, which ReflectionReference::fromArrayElement() needs
             foreach ([$name === (string) (int) $name ? (int) $name : $name, "\0".$class."\0".$name, "\0*\0".$name] as $key) {
                 if (\array_key_exists($key, $properties)) {
                     if (\array_key_exists($key, $selected)) {
-                        // Names are cut at their first NUL byte, as by serialize()
-                        trigger_error(\sprintf('serialize(): "%s" is returned from __sleep() multiple times', explode("\0", $name, 2)[0]), \PHP_VERSION_ID >= 80300 ? \E_USER_WARNING : \E_USER_NOTICE);
+                        trigger_error(\sprintf('serialize(): "%s" is returned from __sleep() multiple times', self::serializeErrorName($name)), \PHP_VERSION_ID >= 80300 ? \E_USER_WARNING : \E_USER_NOTICE);
                     } elseif (\ReflectionReference::fromArrayElement($properties, $key)) {
                         $selected[$key] = &$properties[$key];
                     } else {
@@ -2285,11 +2284,19 @@ final class DeepClone
             // Uninitialized typed properties are skipped silently, unset untyped ones don't exist
             $typed = self::$typedPropertyKeys[$class] ??= self::getTypedPropertyKeys($reflector);
             if (!isset($typed[$name]) && !isset($typed["\0".$class."\0".$name]) && !isset($typed["\0*\0".$name])) {
-                trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', explode("\0", $name, 2)[0]), \E_USER_WARNING);
+                trigger_error(\sprintf('serialize(): "%s" returned as member variable from __sleep() but does not exist', self::serializeErrorName($name)), \E_USER_WARNING);
             }
         }
 
         return $selected;
+    }
+
+    /**
+     * serialize() cuts names at their first NUL byte in its messages before PHP 8.6, eg mangled property names.
+     */
+    private static function serializeErrorName(string $name): string
+    {
+        return \PHP_VERSION_ID >= 80600 ? $name : explode("\0", $name, 2)[0];
     }
 
     /**
