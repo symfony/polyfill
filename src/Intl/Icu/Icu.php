@@ -31,6 +31,11 @@ abstract class Icu
     public const U_ILLEGAL_ARGUMENT_ERROR = 1;
 
     /**
+     * Indicates that the data format is not what is expected.
+     */
+    public const U_INVALID_FORMAT_ERROR = 3;
+
+    /**
      * Indicates that the parse() operation failed.
      */
     public const U_PARSE_ERROR = 9;
@@ -41,6 +46,7 @@ abstract class Icu
     private static $errorCodes = [
         self::U_ZERO_ERROR => 'U_ZERO_ERROR',
         self::U_ILLEGAL_ARGUMENT_ERROR => 'U_ILLEGAL_ARGUMENT_ERROR',
+        self::U_INVALID_FORMAT_ERROR => 'U_INVALID_FORMAT_ERROR',
         self::U_PARSE_ERROR => 'U_PARSE_ERROR',
     ];
 
