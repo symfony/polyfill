@@ -65,7 +65,7 @@ final class Php86
 
     public static function grapheme_strrev(string $string)
     {
-        $iterator = \IntlBreakIterator::createCharacterInstance();
+        $iterator = \IntlBreakIterator::createCharacterInstance(null);
         $iterator->setText($string);
         $reversed = '';
         $end = $iterator->last();

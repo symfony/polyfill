@@ -239,6 +239,13 @@ class Php82Test extends TestCase
         $this->assertSame(1073741824, ini_parse_quantity('1 G'));
         $this->assertSame(1073741824, ini_parse_quantity('+1g'));
         $this->assertSame(-1073741824, ini_parse_quantity('-1G'));
+    }
+
+    public function testIniParseQuantityAbove32Bits()
+    {
+        if (8 > \PHP_INT_SIZE) {
+            $this->markTestSkipped('These values need 64-bit integers.');
+        }
 
         $this->assertSame(2147483648, ini_parse_quantity('0b10g'));
         $this->assertSame(2147483648, ini_parse_quantity('0b10 G'));
@@ -365,6 +372,10 @@ class Php82Test extends TestCase
 
     public function testIniParseQuantityOverflowWithMultiplier()
     {
+        if (8 > \PHP_INT_SIZE) {
+            $this->markTestSkipped('This overflow result is the one of 64-bit integers.');
+        }
+
         error_clear_last();
         $this->assertSame(-7709325833709551616, @ini_parse_quantity(' 10000000000G '));
         $this->assertSame('Invalid quantity " 10000000000G ": value is out of range, using overflow result for backwards compatibility', error_get_last()['message']);

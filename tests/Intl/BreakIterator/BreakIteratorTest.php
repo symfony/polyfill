@@ -397,6 +397,10 @@ class BreakIteratorTest extends TestCase
      */
     public function testMatchesIntl()
     {
+        if (version_compare(\INTL_ICU_VERSION, '62', '<')) {
+            $this->markTestSkipped('The polyfill follows the break rules of Unicode 11, that ICU implements since version 62.');
+        }
+
         mt_srand(714);
         $pieces = ['hello', 'world', "can't", '3.14', '1,000', '_id', ' ', '  ', "\n", "\r\n", ',', '.', '!', '"', 'é', 'Ελλάδα', 'мир', 'שָׁלוֹם', 'א"ב', 'مرحبا', '😀', '👍🏽', '👨‍👩‍👧', '🇫🇷', "e\u{301}", '—', 'ⓜ', "\u{3000}", '한국어', 'ア_', "a\u{3099}", '{"a":[1,2]}', "\xFF", "\xE2\x82"];
 

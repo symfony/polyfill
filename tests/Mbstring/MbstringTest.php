@@ -476,6 +476,10 @@ class MbstringTest extends TestCase
         $this->assertSame('ab', str_replace('?', '', mb_encode_numericentity("a\xF8\x88\x80\x80\x80b", $convmap, 'UTF-8')));
         $this->assertSame('ab', str_replace('?', '', mb_encode_numericentity("a\xFC\x84\x80\x80\x80\x80b", $convmap, 'UTF-8')));
 
+        if (TestListenerTrait::$enabledPolyfills && !self::iconvKeepsCodePointsAboveUnicode()) {
+            $this->markTestSkipped('The iconv() of this platform drops the code points above U+10FFFF.');
+        }
+
         $convmap = [0x100, 0x10FFFF, 0, 0x1FFFFF];
         $this->assertSame(pack('N*', 0x61, 0x200000, 0x4000000, ...unpack('C*', '&#256;')), mb_encode_numericentity(pack('N*', 0x61, 0x200000, 0x4000000, 0x100), $convmap, 'UCS-4BE'));
 
@@ -568,6 +572,10 @@ class MbstringTest extends TestCase
         $this->assertSame('AB', str_replace('?', '', mb_strtoupper("a\xF8\x88\x80\x80\x80b", 'UTF-8')));
         $this->assertSame('ab', str_replace('?', '', mb_strtolower("A\xFC\x84\x80\x80\x80\x80B", 'UTF-8')));
         $this->assertSame('Ab', str_replace('?', '', mb_convert_case("a\xF4\x90\x80\x80b", \MB_CASE_TITLE, 'UTF-8')));
+
+        if (TestListenerTrait::$enabledPolyfills && !self::iconvKeepsCodePointsAboveUnicode()) {
+            $this->markTestSkipped('The iconv() of this platform drops the code points above U+10FFFF.');
+        }
 
         $this->assertSame(pack('N*', 0x41, 0x200000, 0x4000000, 0x42), mb_strtoupper(pack('N*', 0x61, 0x200000, 0x4000000, 0x62), 'UCS-4BE'));
     }
@@ -1822,5 +1830,10 @@ class MbstringTest extends TestCase
         $this->assertSame('', @mb_ucfirst(null));
         $this->assertSame('', @mb_lcfirst(null));
         $this->assertSame('     ', @mb_str_pad(null, 5));
+    }
+
+    private static function iconvKeepsCodePointsAboveUnicode(): bool
+    {
+        return "\0\x20\0\0" === @iconv('UTF-8', 'UCS-4BE', (string) @iconv('UCS-4BE', 'UTF-8', "\0\x20\0\0"));
     }
 }

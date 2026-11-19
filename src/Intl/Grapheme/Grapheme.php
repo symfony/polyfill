@@ -451,7 +451,7 @@ final class Grapheme
     public static function grapheme_strrev(string $string)
     {
         if (\extension_loaded('intl')) {
-            $iterator = \IntlBreakIterator::createCharacterInstance();
+            $iterator = \IntlBreakIterator::createCharacterInstance(null);
             $iterator->setText($string);
             $reversed = '';
             $end = $iterator->last();
