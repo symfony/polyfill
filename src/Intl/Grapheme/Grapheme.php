@@ -64,7 +64,7 @@ final class Grapheme
         if (!\is_scalar($s)) {
             $hasError = false;
             set_error_handler(static function () use (&$hasError) { $hasError = true; });
-            $next = substr($s, $start);
+            $next = substr($s, 0);
             restore_error_handler();
             if ($hasError) {
                 substr($s, $start);
@@ -73,7 +73,7 @@ final class Grapheme
                 $s = $next;
             }
         } else {
-            $s = substr($s, $start);
+            $s = (string) $s;
         }
         $size = (int) $size;
         $type = (int) $type;
@@ -87,7 +87,9 @@ final class Grapheme
             throw new \ValueError('grapheme_extract(): Argument #3 ($type) must be one of GRAPHEME_EXTR_COUNT, GRAPHEME_EXTR_MAXBYTES, or GRAPHEME_EXTR_MAXCHARS');
         }
 
-        if (!isset($s[0]) || 0 > $size || 0 > $start) {
+        $len = \strlen($s);
+
+        if ($start >= $len || 0 > $size || 0 > $start) {
             return false;
         }
         if (0 === $size) {
@@ -96,30 +98,77 @@ final class Grapheme
 
         $next = $start;
 
-        $s = preg_split('/('.SYMFONY_GRAPHEME_CLUSTER_RX.')/u', "\r\n".$s, $size + 1, \PREG_SPLIT_NO_EMPTY | \PREG_SPLIT_DELIM_CAPTURE);
+        // Like intl, move a start that is not on the first byte of a character forward to the next one
+        if ("\x80" <= $s[$start] && ("\xC2" > $s[$start] || "\xF4" < $s[$start]) && preg_match('/\G[\x80-\xC1\xF5-\xFF]++/', $s, $m, 0, $start)) {
+            $start += \strlen($m[0]);
 
-        if (!isset($s[1])) {
-            return false;
+            if ($start >= $len) {
+                return false;
+            }
         }
 
-        $i = 1;
+        // Look ahead only as far as the requested clusters can reach, so that iterating
+        // over a string is linear: the window doubles when they don't fit in it
+        $window = 64 + min($len, \GRAPHEME_EXTR_MAXBYTES === $type ? $size : 4 * $size);
+        $pos = $start;
         $ret = '';
 
         do {
-            if (\GRAPHEME_EXTR_COUNT === $type) {
-                --$size;
-            } elseif (\GRAPHEME_EXTR_MAXBYTES === $type) {
-                $size -= \strlen($s[$i]);
+            $end = $pos + $window;
+
+            if ($end >= $len) {
+                $end = $len;
             } else {
-                $size -= iconv_strlen($s[$i], 'UTF-8//IGNORE');
+                // Cut between two characters, and not right after a ZWJ, that GRAPHEME_CLUSTER_RX would
+                // split from its cluster when nothing follows. The cluster the cut falls in can continue
+                // past the window, the ones before it cannot.
+                while ($end < $len && (("\x80" <= $s[$end] && "\xBF" >= $s[$end]) || "\u{200D}" === substr($s, $end - 3, 3))) {
+                    ++$end;
+                }
             }
 
-            if ($size >= 0) {
-                $ret .= $s[$i];
-            }
-        } while (isset($s[++$i]) && $size > 0);
+            $chunk = substr($s, $pos, $end - $pos);
 
-        $next += \strlen($ret);
+            if (preg_match_all('/'.SYMFONY_GRAPHEME_CLUSTER_RX.'/u', $chunk, $clusters)) {
+                $clusters = $clusters[0];
+                $wellFormed = true;
+            } else {
+                $clusters = self::splitIllFormed($chunk);
+                $wellFormed = false;
+            }
+
+            if ($end < $len) {
+                array_pop($clusters);
+            }
+
+            foreach ($clusters as $cluster) {
+                if (\GRAPHEME_EXTR_COUNT === $type) {
+                    --$size;
+                } elseif (\GRAPHEME_EXTR_MAXBYTES === $type) {
+                    $size -= \strlen($cluster);
+                } elseif ($wellFormed) {
+                    $size -= iconv_strlen($cluster, 'UTF-8//IGNORE');
+                } else {
+                    // like intl, count each maximal subpart of an ill-formed sequence as one character
+                    $size -= preg_match_all(self::UTF8_CHAR_OR_SUBPART_RX, $cluster);
+                }
+
+                if ($size < 0) {
+                    break 2;
+                }
+
+                $ret .= $cluster;
+
+                if (0 === $size) {
+                    break 2;
+                }
+            }
+
+            $pos = $start + \strlen($ret);
+            $window *= 2;
+        } while ($end < $len);
+
+        $next = $start + \strlen($ret);
 
         return $ret;
     }
