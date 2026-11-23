@@ -85,6 +85,90 @@ class GraphemeTest extends TestCase
     }
 
     /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     */
+    public function testGraphemeExtractFromInsideACharacter()
+    {
+        // The start moves forward to the next character
+        $this->assertSame('j', grapheme_extract('déjà', 1, \GRAPHEME_EXTR_COUNT, 2));
+        $this->assertSame('c', grapheme_extract("ab\xFFcd", 1, \GRAPHEME_EXTR_COUNT, 2));
+        $this->assertFalse(grapheme_extract('déjà', 1, \GRAPHEME_EXTR_COUNT, -1, $next));
+        $this->assertSame(5, $next);
+        $this->assertFalse(grapheme_extract("\xFF", 1));
+
+        // $next counts from there, like intl does since PHP 8.4.28 and 8.5.13
+        $this->assertSame('j', p::grapheme_extract('déjà', 1, \GRAPHEME_EXTR_COUNT, 2, $next));
+        $this->assertSame(4, $next);
+        $this->assertSame('c', p::grapheme_extract("ab\xFFcd", 1, \GRAPHEME_EXTR_COUNT, 2, $next));
+        $this->assertSame(4, $next);
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     */
+    public function testGraphemeExtractLongClusters()
+    {
+        $long = 'e'.str_repeat("\u{0301}", 200);
+        $s = 'a'.$long.'b'.$long;
+
+        $this->assertSame($long, grapheme_extract($s, 1, \GRAPHEME_EXTR_COUNT, 1, $next));
+        $this->assertSame(402, $next);
+        $this->assertSame('a'.$long.'b', grapheme_extract($s, 3));
+        $this->assertSame('a', grapheme_extract($s, 401, \GRAPHEME_EXTR_MAXBYTES));
+        $this->assertSame('a'.$long, grapheme_extract($s, 402, \GRAPHEME_EXTR_MAXBYTES));
+        $this->assertSame('a', grapheme_extract($s, 201, \GRAPHEME_EXTR_MAXCHARS));
+        $this->assertSame('a'.$long.'b', grapheme_extract($s, 203, \GRAPHEME_EXTR_MAXCHARS));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     */
+    public function testGraphemeExtractIteration()
+    {
+        $s = str_repeat("a\r\nd\u{00E9}j\u{00E0} \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{1F1EB}\u{1F1F7}\u{D55C}e\u{0301}\u{0302}", 20);
+
+        $clusters = [];
+        $next = 0;
+        while (false !== $cluster = grapheme_extract($s, 1, \GRAPHEME_EXTR_COUNT, $next, $next)) {
+            $clusters[] = $cluster;
+        }
+        $this->assertSame(grapheme_str_split($s), $clusters);
+
+        $chunks = [];
+        $next = 0;
+        while (false !== $chunk = grapheme_extract($s, 7, \GRAPHEME_EXTR_COUNT, $next, $next)) {
+            $chunks[] = $chunk;
+        }
+        $this->assertSame(grapheme_str_split($s, 7), $chunks);
+
+        foreach ([\GRAPHEME_EXTR_MAXBYTES => 32, \GRAPHEME_EXTR_MAXCHARS => 9] as $type => $size) {
+            $chunks = [];
+            $next = 0;
+            while (false !== $chunk = grapheme_extract($s, $size, $type, $next, $next)) {
+                $chunks[] = $chunk;
+            }
+            $this->assertSame($s, implode('', $chunks));
+            $this->assertCount(\count($chunks), array_filter($chunks));
+        }
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     *
+     * @requires function memory_reset_peak_usage
+     */
+    public function testGraphemeExtractDoesNotCopyTheRestOfTheString()
+    {
+        $s = str_repeat('é', 1 << 19);
+
+        memory_reset_peak_usage();
+        $usage = memory_get_usage();
+
+        $this->assertSame('é', grapheme_extract($s, 1, \GRAPHEME_EXTR_COUNT, 2));
+        $this->assertLessThan(1 << 16, memory_get_peak_usage() - $usage);
+    }
+
+    /**
      * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_strlen
      */
     public function testGraphemeStrlen()
@@ -517,6 +601,27 @@ class GraphemeTest extends TestCase
         $this->assertSame(["\xED", "\xA0", "\x80"], grapheme_str_split("\xED\xA0\x80"));
 
         $this->assertSame(['ab', "\xFFc", 'd'], grapheme_str_split("ab\xFFcd", 2));
+    }
+
+    /**
+     * @covers \Symfony\Polyfill\Intl\Grapheme\Grapheme::grapheme_extract
+     */
+    public function testGraphemeExtractInvalidUtf8()
+    {
+        // Ill-formed bytes after the extracted clusters don't matter
+        $this->assertSame('ab', grapheme_extract("ab\xFFcd", 2, \GRAPHEME_EXTR_COUNT, 0, $next));
+        $this->assertSame(2, $next);
+        $this->assertSame("e\u{0301}", grapheme_extract("e\u{0301}\xFF", 1));
+        $this->assertSame('a', grapheme_extract('a'.str_repeat('b', 1000)."\xFF", 1));
+
+        // Ill-formed bytes are kept, and cluster the way U+FFFD would, one character per maximal subpart
+        $this->assertSame("ab\xFF", grapheme_extract("ab\xFFcd", 3, \GRAPHEME_EXTR_COUNT, 0, $next));
+        $this->assertSame(3, $next);
+        $this->assertSame("ab\xFFcd", grapheme_extract("ab\xFFcd", 9));
+        $this->assertSame("ab\xFF", grapheme_extract("ab\xFFcd", 3, \GRAPHEME_EXTR_MAXBYTES));
+        $this->assertSame("a\xE2\x82", grapheme_extract("a\xE2\x82b", 3, \GRAPHEME_EXTR_MAXBYTES));
+        $this->assertSame("a\xE2\x82", grapheme_extract("a\xE2\x82b", 2, \GRAPHEME_EXTR_MAXCHARS));
+        $this->assertSame("a\xC0", grapheme_extract("a\xC0\x80b", 2, \GRAPHEME_EXTR_MAXCHARS));
     }
 
     /**
